@@ -1,0 +1,2 @@
+include ':libraclient', ':violasclient'
+rootProject.name='ViolasClientSdk'

@@ -1,8 +1,37 @@
+use client::client_proxy;
+use client_proxy::{AddressAndIndex, ClientProxy};
+use std::ptr;
+
 #[cfg(test)]
 mod tests {
     #[test]
     fn it_works() {
         assert_eq!(2 + 2, 4);
+    }
+
+    fn check_new() {
+        //let env: JNIEnv = ptr::null();
+        //let cls: JClass = ptr::null();
+
+        //let raw_ptr = android::Java_org_libra_client_ClientProxy_nativeClientProxyNew(env, cls);
+
+        let mnemonic_path = String::new();
+        let val_set_file = "";
+
+        // We don't need to specify host/port since the client won't be used to connect, only to
+        // generate random accounts
+        let client_proxy = ClientProxy::new(
+            "", /* host */
+            0,  /* port */
+            &val_set_file,
+            &"",
+            false,
+            None,
+            Some(mnemonic_path),
+        )
+        .unwrap();
+
+        assert_eq!(raw_ptr, 0);
     }
 }
 
@@ -20,9 +49,7 @@ pub mod android {
     use self::jni::sys::*;
     use self::jni::JNIEnv;
     use super::*;
-    use client::client_proxy;
 
-    use client_proxy::{AddressAndIndex, ClientProxy};
     // use config::{config::PersistableConfig, trusted_peers::ConfigHelpers};
     // use libra_wallet::io_utils;
     // use proptest::prelude::*;
@@ -84,7 +111,7 @@ pub mod android {
 
         // We don't need to specify host/port since the client won't be used to connect, only to
         // generate random accounts
-        let mut client_proxy = ClientProxy::new(
+        let client_proxy = ClientProxy::new(
             "", /* host */
             0,  /* port */
             &val_set_file,

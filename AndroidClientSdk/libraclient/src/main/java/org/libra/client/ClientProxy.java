@@ -8,14 +8,14 @@ public class ClientProxy {
     private native void nativeClientProxyDestory(long client_ptr);
 
     static {
-        System.loadLibrary("libra_client");
+        System.loadLibrary("client_proxy");
     }
 
     public ClientProxy() {
         native_client_proxy_ptr = nativeClientProxyNew();
     }
 
-    public void Destroy(){
+    public void Destroy() {
         nativeClientProxyDestory(native_client_proxy_ptr);
     }
 }

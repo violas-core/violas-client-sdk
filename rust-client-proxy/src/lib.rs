@@ -1,6 +1,7 @@
-use client::client_proxy;
-use client_proxy::{AddressAndIndex, ClientProxy};
-use std::ptr;
+//use client::client_proxy::*;
+use client::client_proxy::ClientProxy;
+//use client::{client_proxy::ClientProxy, commands::*};
+use std::*;
 
 #[cfg(test)]
 mod tests {
@@ -15,24 +16,63 @@ mod tests {
 
         //let raw_ptr = android::Java_org_libra_client_ClientProxy_nativeClientProxyNew(env, cls);
 
-        let mnemonic_path = String::new();
-        let val_set_file = "";
+        // let mnemonic_path = String::new();
+        // let val_set_file = "";
 
-        // We don't need to specify host/port since the client won't be used to connect, only to
-        // generate random accounts
-        let client_proxy = ClientProxy::new(
-            "", /* host */
-            0,  /* port */
-            &val_set_file,
-            &"",
-            false,
-            None,
-            Some(mnemonic_path),
-        )
-        .unwrap();
+        // // We don't need to specify host/port since the client won't be used to connect, only to
+        // // generate random accounts
+        // let client_proxy = ClientProxy::new(
+        //     "", /* host */
+        //     0,  /* port */
+        //     &val_set_file,
+        //     &"",
+        //     false,
+        //     None,
+        //     Some(mnemonic_path),
+        // )
+        // .unwrap();
+        let host = "localhost";
+        let port: u16 = 8000;
+        let validator_set_file = "";
+        let faucet_account_file = "";
+        let sync_on_wallet_recovery = false;
+        let faucet_server = None;
+        let mnemonic_file = None;
+        let client = ClientProxy::new(
+            host,
+            port,
+            validator_set_file,
+            faucet_account_file,
+            sync_on_wallet_recovery,
+            faucet_server,
+            mnemonic_file: Option<String>,
+        );
 
-        assert_eq!(raw_ptr, 0);
+        //assert_eq!(raw_ptr, 0);
     }
+}
+
+pub fn check_new() -> Result<ClientProxy> {
+    let host = "localhost";
+    let port: u16 = 8000;
+    let validator_set_file = "";
+    let faucet_account_file = "";
+    let sync_on_wallet_recovery = false;
+    let faucet_server = None;
+    let mnemonic_file = None;
+
+    // new a Client Proxy
+    let client = ClientProxy::new(
+        host,
+        port,
+        validator_set_file,
+        faucet_account_file,
+        sync_on_wallet_recovery,
+        faucet_server,
+        mnemonic_file,
+    );
+
+    OK(client)
 }
 
 //extern crate client;

@@ -1,6 +1,7 @@
 //use client::client_proxy::*;
 use client::client_proxy::ClientProxy;
 //use client::{client_proxy::ClientProxy, commands::*};
+use std::error::Error;
 use std::*;
 
 #[cfg(test)]
@@ -8,54 +9,31 @@ mod tests {
     #[test]
     fn it_works() {
         assert_eq!(2 + 2, 4);
+        println!("run it_works");
     }
 
+    use super::new_client_proxy;
+    use super::*;
+    #[test]
     fn check_new() {
-        //let env: JNIEnv = ptr::null();
-        //let cls: JClass = ptr::null();
+        //let proxy: ClientProxy = None;
 
-        //let raw_ptr = android::Java_org_libra_client_ClientProxy_nativeClientProxyNew(env, cls);
+        let ret = panic::catch_unwind(|| new_client_proxy().unwrap()).ok();
+        //assert!(ret.unwrap());
+        //let ret1 = ret.unwrap_or_else(|| println!(""));
+        match ret {
+            Some(value) => println!("Result: {:?}", value.accounts),
+            None => println!("caught panic"),
+        }
 
-        // let mnemonic_path = String::new();
-        // let val_set_file = "";
-
-        // // We don't need to specify host/port since the client won't be used to connect, only to
-        // // generate random accounts
-        // let client_proxy = ClientProxy::new(
-        //     "", /* host */
-        //     0,  /* port */
-        //     &val_set_file,
-        //     &"",
-        //     false,
-        //     None,
-        //     Some(mnemonic_path),
-        // )
-        // .unwrap();
-        let host = "localhost";
-        let port: u16 = 8000;
-        let validator_set_file = "";
-        let faucet_account_file = "";
-        let sync_on_wallet_recovery = false;
-        let faucet_server = None;
-        let mnemonic_file = None;
-        let client = ClientProxy::new(
-            host,
-            port,
-            validator_set_file,
-            faucet_account_file,
-            sync_on_wallet_recovery,
-            faucet_server,
-            mnemonic_file: Option<String>,
-        );
-
-        //assert_eq!(raw_ptr, 0);
+        println!("run check new");
     }
 }
 
-pub fn check_new() -> Result<ClientProxy> {
+pub fn new_client_proxy() -> Result<ClientProxy, Box<dyn Error>> {
     let host = "localhost";
     let port: u16 = 8000;
-    let validator_set_file = "";
+    let validator_set_file = "../../libra/scripts/cli/consensus_peers.config.toml";
     let faucet_account_file = "";
     let sync_on_wallet_recovery = false;
     let faucet_server = None;
@@ -70,20 +48,18 @@ pub fn check_new() -> Result<ClientProxy> {
         sync_on_wallet_recovery,
         faucet_server,
         mnemonic_file,
-    );
+    )?;
 
-    OK(client)
+    Ok(client)
 }
-
-//extern crate client;
-
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
 
 /// Expose the JNI interface for android below
 #[cfg(target_os = "android")]
 #[allow(non_snake_case)]
 pub mod android {
+    use std::ffi::{CStr, CString};
+    use std::os::raw::c_char;
+
     extern crate jni;
     use self::jni::objects::{JClass, JString};
     use self::jni::sys::*;

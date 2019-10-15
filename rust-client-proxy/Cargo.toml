@@ -16,3 +16,7 @@ jni = { version = "0.13.1", default-features = false }
 
 [lib]
 crate-type = ["cdylib"]
+
+[profile.release]
+#abort
+panic = "unwind" 

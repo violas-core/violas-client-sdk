@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     org_libra_client_ClientProxy
  * Method:    nativeClientProxyNew
- * Signature: ()J
+ * Signature: (Ljava/lang/String;SLjava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_org_libra_client_ClientProxy_nativeClientProxyNew
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject, jstring, jshort, jstring, jstring, jboolean, jstring, jstring);
 
 /*
  * Class:     org_libra_client_ClientProxy

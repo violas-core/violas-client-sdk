@@ -1,7 +1,7 @@
 #[cfg(target_arch = "x86_64")]
 #[allow(non_snake_case)]
 pub mod x86_64 {
-
+    //extern crate hex;
     use client::client_proxy::ClientProxy;
     use std::ffi::{CStr, CString};
     use std::os::raw::c_char;
@@ -11,12 +11,7 @@ pub mod x86_64 {
     //
     //
     #[no_mangle]
-    pub extern "C" fn add(first: i32, second: i32) -> i32 {
-        first + second
-    }
-
-    #[no_mangle]
-    pub extern "C" fn create_native_client_proxy(
+    pub extern "C" fn create_libra_client_proxy(
         c_host: *const c_char,
         c_port: u16,
         c_validator_set_file: *const c_char,
@@ -83,5 +78,51 @@ pub mod x86_64 {
         };
 
         raw_ptr
+    }
+    /// Destory the raw ClientProxy pointer
+    #[no_mangle]
+    pub extern "C" fn destory_libra_client_proxy(raw_ptr: u64) {
+        if raw_ptr != 0 {
+            let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ClientProxy) };
+            println!("destory_native_client_proxy enters ...");
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_test_validator_connection(raw_ptr: u64) -> bool {
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        //
+        let ret = client.test_validator_connection();
+
+        println!("test_validator_connection enters ...");
+        //return the boolean result
+        match ret {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_create_next_account(raw_ptr: u64, sync_with_validator: bool) {
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        //
+        match client.create_next_account(sync_with_validator) {
+            Ok(account_data) => println!(
+                "Created/retrieved account #{} address {}",
+                account_data.index,
+                hex::encode(account_data.address)
+            ),
+            Err(e) => println!("Error creating account, {}", e),
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn get_all_accounts() {
+        //
+    }
+
+    #[no_mangle]
+    pub extern "C" fn set_accounts() {
+        //
     }
 }

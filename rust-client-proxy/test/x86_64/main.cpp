@@ -13,12 +13,6 @@ bool test_libra_client();
 
 int main(int argc, const char *argv[])
 {
-    cout << "running test ..." << endl;
-
-    // cout << "add(3, 4) = " << add(3, 4) << endl;
-
-    // cout << "create_native_client_proxy " << create_native_client_proxy("localhost", 8000, "validator", "", false, "faucet", "mnemonic") << endl;
-
     try
     {
         assert(test_libra_client() == true);
@@ -33,12 +27,20 @@ int main(int argc, const char *argv[])
 
 bool test_libra_client()
 {
-    auto client = libra_client::create_libra_client("localhost",
-                                                    8000,
-                                                    "~/Projects/work/libra/scripts/cli/consensus_peers.config.toml",
-                                                    "", false,
-                                                    "faucet",
-                                                    "mnemonic");
+    cout << "running test ..." << endl;
 
-    return true;
+    auto client = Violas::client::create("ac.testnet.libra.org",
+                                         8000,
+                                         "../../../../libra/scripts/cli/consensus_peers.config.toml",
+                                         "", false,
+                                         "faucet",
+                                         "mnemonic");
+
+    bool ret = client->test_validator_connection();
+
+    auto Account = client->create_next_account(true);
+
+    cout << "finished all test jobs !" << endl;
+
+    return ret;
 }

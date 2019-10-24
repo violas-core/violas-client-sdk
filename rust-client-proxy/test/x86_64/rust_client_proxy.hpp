@@ -6,9 +6,7 @@ extern "C"
 {
 #endif
 
-    int add(int a, int b);
-
-    int64_t create_native_client_proxy(
+    uint64_t create_libra_client_proxy(
         const char *host,
         ushort port,
         const char *validator_set_file,
@@ -16,6 +14,12 @@ extern "C"
         bool sync_on_wallet_recovery,
         const char *faucet_server,
         const char *mnemonic_file);
+
+    void destory_libra_client_proxy(uint64_t raw_ptr);
+
+    bool libra_test_validator_connection(uint64_t raw_ptr);
+
+    void libra_create_next_account(uint64_t raw_ptr, bool sync_with_validator);
 
 #ifdef __cplusplus
 }

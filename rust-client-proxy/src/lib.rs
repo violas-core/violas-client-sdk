@@ -1,9 +1,6 @@
-//use client::client_proxy::*;
-use client::client_proxy::ClientProxy;
-//use client::{client_proxy::ClientProxy, commands::*};
-use std::error::Error;
-use std::*;
-
+//
+// export modules
+//
 #[cfg(target_os = "android")]
 pub mod android;
 
@@ -12,6 +9,19 @@ pub mod ios;
 
 #[cfg(target_os = "wasm")]
 pub mod wasm;
+
+#[cfg(target_arch = "x86_64")]
+pub mod x86_64;
+
+//
+// test code
+//
+
+//use client::client_proxy::*;
+use client::client_proxy::ClientProxy;
+//use client::{client_proxy::ClientProxy, commands::*};
+use std::error::Error;
+use std::*;
 
 #[cfg(test)]
 mod tests {

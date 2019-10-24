@@ -3,21 +3,62 @@
 
 #include <string_view>
 #include <memory>
+#include <array>
 
-struct libra_client
+using uint256 = std::array<uint8_t, 32>;
+
+///
+/// libra_client interface
+///
+namespace Libra
 {
-    static std::shared_ptr<libra_client>
-    create_libra_client(std::string_view host,
-                        ushort port,
-                        std::string_view validator_set_file,
-                        std::string_view faucet_account_file,
-                        bool sync_on_wallet_recovery,
-                        std::string_view faucet_server,
-                        std::string_view mnemonic_file);
+class client
+{
+public:
+    static std::shared_ptr<client>
+    create(std::string_view host,
+           ushort port,
+           std::string_view validator_set_file,
+           std::string_view faucet_account_file,
+           bool sync_on_wallet_recovery,
+           std::string_view faucet_server,
+           std::string_view mnemonic_file);
 
-    virtual ~libra_client(){};
+    virtual ~client(){};
+
+    virtual bool test_validator_connection() = 0;
+
+    /// Create a new account
+    /// return the index and address of account
+    virtual std::pair<size_t, uint256> create_next_account(bool sync_with_validator) = 0;
 };
 
-using libra_client_ptr = std::shared_ptr<libra_client>;
+using client_ptr = std::shared_ptr<client>;
+
+} // namespace Libra
+
+///
+/// Vioals client
+///
+namespace Violas
+{
+class client : virtual public Libra::client
+{
+public:
+    static std::shared_ptr<Violas::client>
+    create(std::string_view host,
+           ushort port,
+           std::string_view validator_set_file,
+           std::string_view faucet_account_file,
+           bool sync_on_wallet_recovery,
+           std::string_view faucet_server,
+           std::string_view mnemonic_file);
+
+    virtual ~client(){};
+};
+
+using client_ptr = std::shared_ptr<client>;
+
+} // namespace Violas
 
 #endif

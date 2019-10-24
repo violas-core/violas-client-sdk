@@ -131,7 +131,7 @@ pub mod android {
     #[no_mangle]
     pub unsafe extern "system" fn Java_org_libra_client_ClientProxy_nativeClientProxyDestory(
         _: JNIEnv,
-        _: JClass,5
+        _: JClass,
         raw_ptr: jlong,
     ) {
         if (raw_ptr != 0) {

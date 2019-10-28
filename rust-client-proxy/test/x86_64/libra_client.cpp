@@ -1,6 +1,32 @@
+#include <iomanip>
+#include <ctime>
+//#include <chrono>
 #include "libra_client.hpp"
 #include "rust_client_proxy.hpp"
+
 using namespace std;
+
+inline ostream &log(const char *file, int line, const char *func)
+{
+    time_t now = time(nullptr);
+
+    clog << put_time(std::localtime(&now), "%F %T") << " (" << file << ":" << line << ":" << func << ") : ";
+
+    return clog;
+}
+
+#define LOG log(__FILE__, __LINE__, __func__)
+
+ostream &operator<<(ostream &os, const uint256 &value)
+{
+    for (auto v : value)
+    {
+        os << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+    }
+
+    return os;
+}
+
 namespace Libra
 {
 class client_imp : virtual public client
@@ -31,6 +57,8 @@ public:
     virtual ~client_imp()
     {
         destory_libra_client_proxy((uint64_t)raw_client_proxy);
+
+        LOG << "entered" << endl;
     }
 
     virtual bool test_validator_connection() override
@@ -40,9 +68,41 @@ public:
 
     virtual std::pair<size_t, uint256> create_next_account(bool sync_with_validator) override
     {
-        libra_create_next_account((uint64_t)raw_client_proxy, sync_with_validator);
+        Address account = libra_create_next_account((uint64_t)raw_client_proxy, sync_with_validator);
 
-        return make_pair<>(0, uint256());
+        uint256 address;
+        copy(begin(account.address), end(account.address), begin(address));
+
+        return make_pair<>(account.index, address);
+    }
+
+    virtual std::vector<Account> get_all_accounts() override
+    {
+        Accounts all_accounts = libra_get_all_accounts((uint64_t)raw_client_proxy);
+
+        vector<Account> accounts;
+
+        for (int i = 0; i < all_accounts.len; i++)
+        {
+            Account a;
+            const auto &_a = all_accounts.data[i];
+
+            copy(begin(_a.address), end(_a.address), begin(a.address));
+            a.index = _a.index;
+            a.sequence_number = _a.sequence_number;
+            a.status = _a.status;
+
+            accounts.push_back(a);
+        }
+
+        libra_free_all_accounts_buf(all_accounts);
+
+        return accounts;
+    }
+
+    virtual double get_balance(uint64_t index) override
+    {
+        return libra_get_balance((uint64_t)raw_client_proxy, index);
     }
 };
 
@@ -89,7 +149,10 @@ public:
     {
     }
 
-    virtual ~client_imp(){};
+    virtual ~client_imp()
+    {
+        LOG << " entered" << endl;
+    };
 };
 
 std::shared_ptr<client>

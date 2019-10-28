@@ -3,8 +3,9 @@
 pub mod x86_64 {
     //extern crate hex;
     use client::client_proxy::ClientProxy;
+    use client::AccountStatus;
     use std::ffi::{CStr, CString};
-    use std::os::raw::c_char;
+    use std::os::raw::{c_char, c_uchar};
     use std::*;
 
     //
@@ -102,27 +103,140 @@ pub mod x86_64 {
         }
     }
 
-    #[no_mangle]
-    pub extern "C" fn libra_create_next_account(raw_ptr: u64, sync_with_validator: bool) {
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-        //
-        match client.create_next_account(sync_with_validator) {
-            Ok(account_data) => println!(
-                "Created/retrieved account #{} address {}",
-                account_data.index,
-                hex::encode(account_data.address)
-            ),
-            Err(e) => println!("Error creating account, {}", e),
-        }
+    #[repr(C)]
+    //#[derive(Copy, Clone)]
+    pub struct AccountAndIndex {
+        pub address: [c_uchar; 32],
+        pub index: u64,
     }
 
     #[no_mangle]
-    pub extern "C" fn get_all_accounts() {
+    pub extern "C" fn libra_create_next_account(
+        raw_ptr: u64,
+        sync_with_validator: bool,
+    ) -> AccountAndIndex {
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        let accountAndIndex = client
+            .create_next_account(sync_with_validator)
+            .expect("failed to call create_next_account");
+
+        println!(
+            "Created/retrieved account #{} address {}",
+            accountAndIndex.index,
+            hex::encode(accountAndIndex.address)
+        );
+
+        let mut account = AccountAndIndex {
+            index: accountAndIndex.index as u64,
+            address: [0; 32],
+        };
+
+        for (dst, src) in account
+            .address
+            .iter_mut()
+            .zip(accountAndIndex.address.as_ref())
+        {
+            *dst = *src
+        }
+        //ptr::copy(accountAndIndex.address.as_ref(), &account.address, 32);
+
+        account
+    }
+
+    #[repr(C)]
+    pub struct Account {
+        pub address: [c_uchar; 32],
+        pub index: u64,
+        pub sequence_number: u64,
+        pub status: i64,
+    }
+
+    #[repr(C)]
+    pub struct Accounts {
+        len: u64,
+        data: *mut Account,
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_get_all_accounts(raw_ptr: u64) -> Accounts {
         //
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        if client.accounts.is_empty() {
+            println!("No user accounts");
+        } else {
+            for (ref index, ref account) in client.accounts.iter().enumerate() {
+                println!(
+                    "User account index: {}, address: {}, sequence number: {}, status: {:?}",
+                    index,
+                    hex::encode(&account.address),
+                    account.sequence_number,
+                    account.status,
+                );
+            }
+        }
+
+        if let Some(faucet_account) = &client.faucet_account {
+            println!(
+                "Faucet account address: {}, sequence_number: {}, status: {:?}",
+                hex::encode(&faucet_account.address),
+                faucet_account.sequence_number,
+                faucet_account.status,
+            );
+        }
+        let mut accounts: Vec<Account> = Vec::new();
+
+        for (i, ref acc) in client.accounts.iter().enumerate() {
+            let mut accout = Account {
+                address: [0; 32],
+                index: i as u64,
+                sequence_number: acc.sequence_number,
+                status: match &acc.status {
+                    AccountStatus::Local => 0,
+                    AccountStatus::Persisted => 1,
+                    AccountStatus::Unknown => -1,
+                },
+            };
+
+            let bytes = &acc.address.to_vec();
+            accout.address.copy_from_slice(bytes);
+
+            accounts.push(accout);
+        }
+
+        let data = accounts.as_mut_ptr();
+        let len = accounts.len() as u64;
+        std::mem::forget(accounts);
+        //
+        Accounts { len, data }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_free_all_accounts_buf(buf: Accounts) {
+        //
+        let s = unsafe { std::slice::from_raw_parts_mut(buf.data, buf.len as usize) };
+        let s = s.as_mut_ptr();
+        unsafe {
+            Box::from_raw(s);
+        }
+
+        println!("free_all_accounts_buf entered");
     }
 
     #[no_mangle]
     pub extern "C" fn set_accounts() {
         //
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_get_balance(raw_ptr: u64, index: u64) -> f64 {
+        // convert raw ptr to object client
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        let balance = client.get_balance(&["b", "0"]).unwrap();
+
+        println!("balance = {}", balance);
+        balance.parse::<f64>().unwrap()
     }
 }

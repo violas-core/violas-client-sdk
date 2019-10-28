@@ -19,7 +19,34 @@ extern "C"
 
     bool libra_test_validator_connection(uint64_t raw_ptr);
 
-    void libra_create_next_account(uint64_t raw_ptr, bool sync_with_validator);
+    struct Address
+    {
+        uint8_t address[32];
+        uint64_t index;
+    };
+
+    Address libra_create_next_account(uint64_t raw_ptr, bool sync_with_validator);
+
+    struct _Account
+    {
+        uint8_t address[32];
+        uint64_t index;
+        uint64_t sequence_number;
+        int64_t status;
+    };
+
+    struct Accounts
+    {
+        uint64_t len;
+        _Account *data;
+    };
+
+    Accounts libra_get_all_accounts(uint64_t raw_ptr);
+
+    void libra_free_all_accounts_buf(Accounts accounts);
+
+    /// Get the latest sequence number from validator for the account specified.
+    double libra_get_balance(uint64_t raw_ptr, uint64_t index);
 
 #ifdef __cplusplus
 }

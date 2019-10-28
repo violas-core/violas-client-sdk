@@ -4,14 +4,17 @@
 #include <string_view>
 #include <memory>
 #include <array>
+#include <vector>
+#include <iostream>
 
 using uint256 = std::array<uint8_t, 32>;
+std::ostream &operator<<(std::ostream &os, const uint256 &value);
 
-///
-/// libra_client interface
-///
 namespace Libra
 {
+///
+/// Libra client
+///
 class client
 {
 public:
@@ -31,17 +34,29 @@ public:
     /// Create a new account
     /// return the index and address of account
     virtual std::pair<size_t, uint256> create_next_account(bool sync_with_validator) = 0;
+
+    struct Account
+    {
+        uint256 address;
+        uint64_t index;
+        uint64_t sequence_number;
+        int64_t status;
+    };
+
+    virtual std::vector<Account> get_all_accounts() = 0;
+
+    virtual double get_balance(uint64_t index) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;
 
 } // namespace Libra
 
+namespace Violas
+{
 ///
 /// Vioals client
 ///
-namespace Violas
-{
 class client : virtual public Libra::client
 {
 public:

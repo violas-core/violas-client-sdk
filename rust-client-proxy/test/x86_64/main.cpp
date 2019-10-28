@@ -3,6 +3,7 @@
 // compiling : clang++ -std=c++2a -stdlib=libc++ -g main.cpp -o test
 
 #include <iostream>
+#include <fstream>
 #include <assert.h>
 #include "rust_client_proxy.hpp"
 #include "libra_client.hpp"
@@ -13,6 +14,9 @@ bool test_libra_client();
 
 int main(int argc, const char *argv[])
 {
+    ofstream file("log.txt");
+    streambuf *err = clog.rdbuf(file.rdbuf());
+
     try
     {
         assert(test_libra_client() == true);
@@ -38,7 +42,26 @@ bool test_libra_client()
 
     bool ret = client->test_validator_connection();
 
-    auto Account = client->create_next_account(true);
+    auto account = client->create_next_account(true);
+
+    cout << "C++       Created account #" << account.first << " address " << account.second << endl;
+
+    account = client->create_next_account(true);
+
+    cout << "C++       Created account #" << account.first << " address " << account.second << endl;
+
+    auto accounts = client->get_all_accounts();
+
+    for (auto const &account : accounts)
+    {
+        cout << "Index : " << account.index << "\t"
+             << "Address : " << account.address << "\t"
+             << "Sequence : " << account.sequence_number << "\t"
+             << "Status : " << account.status << endl;
+    }
+
+    auto balance = client->get_balance(0);
+    cout << "Address 0's balance is " << balance << endl;
 
     cout << "finished all test jobs !" << endl;
 

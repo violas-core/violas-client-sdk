@@ -46,6 +46,10 @@ public:
     virtual std::vector<Account> get_all_accounts() = 0;
 
     virtual double get_balance(uint64_t index) = 0;
+
+    virtual uint64_t get_sequence_number(uint64_t index) = 0;
+
+    virtual void mint_coins(uint64_t index, uint64_t num_coins, bool is_blocking) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;

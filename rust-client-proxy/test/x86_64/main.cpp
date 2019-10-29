@@ -36,8 +36,9 @@ bool test_libra_client()
     auto client = Violas::client::create("ac.testnet.libra.org",
                                          8000,
                                          "../../../../libra/scripts/cli/consensus_peers.config.toml",
-                                         "", false,
-                                         "faucet",
+                                         "",
+                                         false,
+                                         "faucet.testnet.libra.org",
                                          "mnemonic");
 
     bool ret = client->test_validator_connection();
@@ -60,8 +61,15 @@ bool test_libra_client()
              << "Status : " << account.status << endl;
     }
 
-    auto balance = client->get_balance(0);
-    cout << "Address 0's balance is " << balance << endl;
+    uint64_t index = 0;
+
+    //client->mint_coins(0, 10, true);
+
+    auto balance = client->get_balance(index);
+    cout << "Address " << index << "'s balance is " << balance << endl;
+
+    uint64_t sequence_num = client->get_sequence_number(index);
+    cout << "Address " << index << "'s sequence number is " << sequence_num << endl;
 
     cout << "finished all test jobs !" << endl;
 

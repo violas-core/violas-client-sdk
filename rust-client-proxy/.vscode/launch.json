@@ -7,6 +7,14 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Launch",
+            "program": "${workspaceFolder}/test/x86_64/test",
+            "args": [],
+            "cwd": "${workspaceFolder}/test/x86_64"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Launch x86_64/test",
             "program": "${workspaceFolder}/test/x86_64/test",
             "args": [],

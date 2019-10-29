@@ -104,6 +104,16 @@ public:
     {
         return libra_get_balance((uint64_t)raw_client_proxy, index);
     }
+
+    virtual uint64_t get_sequence_number(uint64_t index) override
+    {
+        return libra_get_sequence_number((uint64_t)raw_client_proxy, index);
+    }
+
+    virtual void mint_coins(uint64_t index, uint64_t num_coins, bool is_blocking) override
+    {
+        libra_mint_coins((uint64_t)raw_client_proxy, index, num_coins, is_blocking);
+    }
 };
 
 std::shared_ptr<client>

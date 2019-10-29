@@ -85,7 +85,7 @@ pub mod x86_64 {
     pub extern "C" fn destory_libra_client_proxy(raw_ptr: u64) {
         if raw_ptr != 0 {
             let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ClientProxy) };
-            println!("destory_native_client_proxy enters ...");
+            println!("x86_64.rs: destory_native_client_proxy enters ...");
         }
     }
 
@@ -234,9 +234,43 @@ pub mod x86_64 {
         // convert raw ptr to object client
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        let balance = client.get_balance(&["b", "0"]).unwrap();
-
-        println!("balance = {}", balance);
+        let balance = client
+            .get_balance(&["b", index.to_string().as_str()])
+            .unwrap();
         balance.parse::<f64>().unwrap()
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_get_sequence_number(raw_ptr: u64, index: u64) -> u64 {
+        // convert raw ptr to object client
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        let sequence_num = client
+            .get_sequence_number(&["sequence", index.to_string().as_str()])
+            .unwrap();
+
+        sequence_num
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_mint_coins(
+        raw_ptr: u64,
+        index: u64,
+        num_coins: u64,
+        is_blocking: bool,
+    ) {
+        // convert raw ptr to object client
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        client
+            .mint_coins(
+                &[
+                    "mintb",
+                    index.to_string().as_str(),
+                    num_coins.to_string().as_str(),
+                ],
+                is_blocking,
+            )
+            .unwrap();
     }
 }

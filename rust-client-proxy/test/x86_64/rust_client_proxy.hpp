@@ -48,6 +48,12 @@ extern "C"
     /// Get the latest sequence number from validator for the account specified.
     double libra_get_balance(uint64_t raw_ptr, uint64_t index);
 
+    /// Get the latest sequence number from validator for the account specified.
+    uint64_t libra_get_sequence_number(uint64_t raw_ptr, uint64_t index);
+
+    /// Mints coins for the receiver specified.
+    void libra_mint_coins(uint64_t raw_ptr, uint64_t index, uint64_t num_coins, bool is_blocking);
+
 #ifdef __cplusplus
 }
 #endif

@@ -54,6 +54,22 @@ extern "C"
     /// Mints coins for the receiver specified.
     void libra_mint_coins(uint64_t raw_ptr, uint64_t index, uint64_t num_coins, bool is_blocking);
 
+    struct index_sequence
+    {
+        uint64_t index;
+        uint64_t sequence;
+    };
+
+    bool libra_transfer_coins_int(
+        uint64_t raw_ptr,
+        uint64_t sender_account_ref_id,
+        uint8_t receiver_addr[], // length 32
+        uint64_t num_coins,
+        uint64_t gas_unit_price,
+        uint max_gas_amount,
+        bool is_blocking,
+        index_sequence *result);
+
 #ifdef __cplusplus
 }
 #endif

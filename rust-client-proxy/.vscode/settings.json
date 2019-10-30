@@ -2,6 +2,7 @@
     "files.associations": {
         "string_view": "cpp",
         "iosfwd": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "utility": "cpp"
     }
 }

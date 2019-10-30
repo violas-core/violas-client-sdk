@@ -2,9 +2,11 @@
 #[allow(non_snake_case)]
 pub mod x86_64 {
     //extern crate hex;
-    use client::client_proxy::ClientProxy;
+    use client::client_proxy::{AccountEntry, ClientProxy};
     use client::AccountStatus;
-    use std::ffi::{CStr, CString};
+    use libra_types::account_address::AccountAddress; //ADDRESS_LENGTH
+                                                      // access_path::AccessPath,
+    use std::ffi::CStr; //CString
     use std::os::raw::{c_char, c_uchar};
     use std::*;
 
@@ -90,6 +92,11 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
+    pub extern "C" fn libra_get_last_error() {
+        //
+    }
+
+    #[no_mangle]
     pub extern "C" fn libra_test_validator_connection(raw_ptr: u64) -> bool {
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
         //
@@ -132,14 +139,18 @@ pub mod x86_64 {
             address: [0; 32],
         };
 
-        for (dst, src) in account
-            .address
-            .iter_mut()
-            .zip(accountAndIndex.address.as_ref())
-        {
-            *dst = *src
-        }
+        // for (dst, src) in account
+        //     .address
+        //     .iter_mut()
+        //     .zip(accountAndIndex.address.as_ref())
+        // {
+        //     *dst = *src
+        // }
         //ptr::copy(accountAndIndex.address.as_ref(), &account.address, 32);
+        //let bytes = &accountAndIndex.address.to_vec();
+        account
+            .address
+            .copy_from_slice(&accountAndIndex.address.to_vec());
 
         account
     }
@@ -272,5 +283,54 @@ pub mod x86_64 {
                 is_blocking,
             )
             .unwrap();
+    }
+
+    #[repr(C)]
+    pub struct IndexAndSeq {
+        pub index: u64,
+        pub sequence_number: u64,
+    }
+    /// Transfer num_coins from sender account to receiver. If is_blocking = true,
+    /// it will keep querying validator till the sequence number is bumped up in validator.
+    #[no_mangle]
+    pub extern "C" fn libra_transfer_coins_int(
+        raw_ptr: u64,
+        sender_account_ref_id: usize,
+        receiver_addr: [u8; 32],
+        num_coins: u64,
+        gas_unit_price: u64,
+        max_gas_amount: u64,
+        is_blocking: bool,
+        result: *mut IndexAndSeq,
+    ) -> bool {
+        // convert raw ptr to object client
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        let receiver_address = AccountAddress::new(receiver_addr);
+        let ret = client
+            .transfer_coins_int(
+                sender_account_ref_id,
+                &receiver_address,
+                num_coins,
+                match gas_unit_price {
+                    0 => None,
+                    _ => Some(gas_unit_price),
+                },
+                match max_gas_amount {
+                    0 => None,
+                    _ => Some(max_gas_amount),
+                },
+                is_blocking,
+            )
+            .unwrap();
+        // save the result
+        unsafe {
+            (*result).index = match ret.account_index {
+                AccountEntry::Index(i) => i as u64,
+                _AccountAddress => 0,
+            };
+            (*result).sequence_number = ret.sequence_number;
+        }
+        true
     }
 }

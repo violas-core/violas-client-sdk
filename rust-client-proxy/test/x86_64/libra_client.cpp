@@ -114,6 +114,29 @@ public:
     {
         libra_mint_coins((uint64_t)raw_client_proxy, index, num_coins, is_blocking);
     }
+
+    virtual std::pair<uint64_t, uint64_t>
+    transfer_coins_int(uint64_t sender_account_ref_id,
+                       uint256 receiver_address,
+                       uint64_t num_coins,
+                       uint64_t gas_unit_price,
+                       uint max_gas_amount,
+                       bool is_blocking) override
+    {
+        index_sequence index_seq;
+        bool ret = libra_transfer_coins_int((uint64_t)raw_client_proxy,
+                                            sender_account_ref_id,
+                                            receiver_address.data(),
+                                            num_coins,
+                                            gas_unit_price,
+                                            max_gas_amount,
+                                            is_blocking,
+                                            &index_seq);
+        if (!ret)
+            throw runtime_error("failed to transfer coins");
+
+        return make_pair(index_seq.index, index_seq.sequence);
+    }
 };
 
 std::shared_ptr<client>

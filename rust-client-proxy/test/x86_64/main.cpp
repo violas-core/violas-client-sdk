@@ -71,6 +71,15 @@ bool test_libra_client()
     uint64_t sequence_num = client->get_sequence_number(index);
     cout << "Address " << index << "'s sequence number is " << sequence_num << endl;
 
+    client->transfer_coins_int(0, accounts[1].address, 10, 0, 0, true);
+
+    balance = client->get_balance(index);
+    cout << "Address " << index << "'s balance is " << balance << endl;
+
+    index = 1;
+    balance = client->get_balance(index);
+    cout << "Address " << index << "'s balance is " << balance << endl;
+
     cout << "finished all test jobs !" << endl;
 
     return ret;

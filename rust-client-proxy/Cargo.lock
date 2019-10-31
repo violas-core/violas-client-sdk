@@ -10,13 +10,13 @@ name = "admission-control-proto"
 version = "0.1.0"
 dependencies = [
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure_ext 0.1.0",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "grpcio 0.5.0-alpha.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "grpcio-compiler 0.5.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-failure-ext 0.1.0",
+ "libra-logger 0.1.0",
  "libra-mempool-shared-proto 0.1.0",
  "libra-types 0.1.0",
- "logger 0.1.0",
  "prost 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost-build 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -117,16 +117,6 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "bincode"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "autocfg 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "bindgen"
 version = "0.51.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -223,29 +213,31 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "bytecode-verifier"
+name = "bytecode-source-map"
 version = "0.1.0"
 dependencies = [
- "failure_ext 0.1.0",
- "libra-types 0.1.0",
- "mirai-annotations 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "petgraph 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "vm 0.1.0",
- "vm_runtime_types 0.1.0",
-]
-
-[[package]]
-name = "bytecode_source_map"
-version = "0.1.0"
-dependencies = [
+ "bytecode-verifier 0.1.0",
+ "codespan 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "codespan-reporting 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure_ext 0.1.0",
- "ir_to_bytecode_syntax 0.1.0",
+ "ir-to-bytecode-syntax 0.1.0",
+ "libra-failure-ext 0.1.0",
  "libra-types 0.1.0",
  "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "vm 0.1.0",
+]
+
+[[package]]
+name = "bytecode-verifier"
+version = "0.1.0"
+dependencies = [
+ "libra-failure-ext 0.1.0",
+ "libra-types 0.1.0",
+ "mirai-annotations 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "petgraph 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "vm 0.1.0",
+ "vm-runtime-types 0.1.0",
 ]
 
 [[package]]
@@ -348,20 +340,21 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "admission-control-proto 0.1.0",
- "bincode 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "config 0.1.0",
  "crash-handler 0.1.0",
- "crypto 0.1.0",
- "failure_ext 0.1.0",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "grpcio 0.5.0-alpha.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-canonical-serialization 0.1.0",
+ "libra-config 0.1.0",
+ "libra-crypto 0.1.0",
+ "libra-failure-ext 0.1.0",
+ "libra-logger 0.1.0",
+ "libra-metrics 0.1.0",
+ "libra-tools 0.1.0",
  "libra-types 0.1.0",
- "libra_wallet 0.1.0",
- "logger 0.1.0",
- "metrics 0.1.0",
+ "libra-wallet 0.1.0",
  "num-traits 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.22 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -370,8 +363,7 @@ dependencies = [
  "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "tools 0.1.0",
- "transaction_builder 0.1.0",
+ "transaction-builder 0.1.0",
 ]
 
 [[package]]
@@ -435,24 +427,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "config"
-version = "0.1.0"
-dependencies = [
- "crypto 0.1.0",
- "failure_ext 0.1.0",
- "get_if_addrs 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libra-types 0.1.0",
- "mirai-annotations 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-multiaddr 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "prost 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
- "toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "tools 0.1.0",
-]
-
-[[package]]
 name = "constant_time_eq"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -488,7 +462,7 @@ name = "crash-handler"
 version = "0.1.0"
 dependencies = [
  "backtrace 0.3.38 (registry+https://github.com/rust-lang/crates.io-index)",
- "logger 0.1.0",
+ "libra-logger 0.1.0",
  "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -567,49 +541,12 @@ version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "crypto"
-version = "0.1.0"
-dependencies = [
- "bincode 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "crypto_derive 0.1.0",
- "curve25519-dalek 1.2.3 (git+https://github.com/calibra/curve25519-dalek.git?branch=fiat)",
- "digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "ed25519-dalek 1.0.0-pre.1 (git+https://github.com/calibra/ed25519-dalek.git?branch=fiat)",
- "failure_ext 0.1.0",
- "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "hmac 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "nibble 0.1.0",
- "pairing 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "proptest-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha3 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "threshold_crypto 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "tiny-keccak 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "x25519-dalek 0.5.2 (git+https://github.com/calibra/x25519-dalek.git?branch=fiat)",
-]
-
-[[package]]
 name = "crypto-mac"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "generic-array 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "crypto_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -819,18 +756,6 @@ dependencies = [
  "syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)",
  "synstructure 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "failure_ext"
-version = "0.1.0"
-dependencies = [
- "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure_macros 0.1.0",
-]
-
-[[package]]
-name = "failure_macros"
-version = "0.1.0"
 
 [[package]]
 name = "fake-simd"
@@ -1111,30 +1036,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "ir_to_bytecode"
+name = "ir-to-bytecode"
 version = "0.1.0"
 dependencies = [
- "bytecode_source_map 0.1.0",
+ "bytecode-source-map 0.1.0",
  "codespan 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "codespan-reporting 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure_ext 0.1.0",
- "ir_to_bytecode_syntax 0.1.0",
+ "ir-to-bytecode-syntax 0.1.0",
  "lalrpop-util 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-failure-ext 0.1.0",
  "libra-types 0.1.0",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "vm 0.1.0",
 ]
 
 [[package]]
-name = "ir_to_bytecode_syntax"
+name = "ir-to-bytecode-syntax"
 version = "0.1.0"
 dependencies = [
  "codespan 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure_ext 0.1.0",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop-util 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-failure-ext 0.1.0",
  "libra-types 0.1.0",
  "regex 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1240,13 +1165,138 @@ dependencies = [
 ]
 
 [[package]]
+name = "libra-config"
+version = "0.1.0"
+dependencies = [
+ "get_if_addrs 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-crypto 0.1.0",
+ "libra-failure-ext 0.1.0",
+ "libra-tools 0.1.0",
+ "libra-types 0.1.0",
+ "mirai-annotations 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-multiaddr 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prost 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libra-crypto"
+version = "0.1.0"
+dependencies = [
+ "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "curve25519-dalek 1.2.3 (git+https://github.com/calibra/curve25519-dalek.git?branch=fiat)",
+ "digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ed25519-dalek 1.0.0-pre.1 (git+https://github.com/calibra/ed25519-dalek.git?branch=fiat)",
+ "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hmac 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-canonical-serialization 0.1.0",
+ "libra-crypto-derive 0.1.0",
+ "libra-failure-ext 0.1.0",
+ "libra-nibble 0.1.0",
+ "pairing 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proptest-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sha3 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "threshold_crypto 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tiny-keccak 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "x25519-dalek 0.5.2 (git+https://github.com/calibra/x25519-dalek.git?branch=fiat)",
+]
+
+[[package]]
+name = "libra-crypto-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libra-failure-ext"
+version = "0.1.0"
+dependencies = [
+ "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-failure-macros 0.1.0",
+]
+
+[[package]]
+name = "libra-failure-macros"
+version = "0.1.0"
+
+[[package]]
+name = "libra-logger"
+version = "0.1.0"
+dependencies = [
+ "backtrace 0.3.38 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slog 2.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slog-async 2.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slog-envlogger 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slog-scope 4.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slog-term 2.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thread-id 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "libra-mempool-shared-proto"
 version = "0.1.0"
 dependencies = [
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure_ext 0.1.0",
+ "libra-failure-ext 0.1.0",
  "prost 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost-build 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libra-metrics"
+version = "0.1.0"
+dependencies = [
+ "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grpcio 0.5.0-alpha.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.12.35 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-failure-ext 0.1.0",
+ "libra-logger 0.1.0",
+ "prometheus 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libra-nibble"
+version = "0.1.0"
+dependencies = [
+ "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libra-proptest-helpers"
+version = "0.1.0"
+dependencies = [
+ "crossbeam 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proptest-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libra-tools"
+version = "0.1.0"
+dependencies = [
+ "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1257,17 +1307,17 @@ dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "crypto 0.1.0",
- "failure_ext 0.1.0",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-canonical-serialization 0.1.0",
- "logger 0.1.0",
+ "libra-crypto 0.1.0",
+ "libra-failure-ext 0.1.0",
+ "libra-logger 0.1.0",
+ "libra-proptest-helpers 0.1.0",
  "num_enum 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "proptest-helpers 0.1.0",
  "prost 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost-build 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "radix_trie 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1277,14 +1327,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "libra_wallet"
+name = "libra-wallet"
 version = "0.1.0"
 dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "crypto 0.1.0",
  "ed25519-dalek 1.0.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure_ext 0.1.0",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-crypto 0.1.0",
+ "libra-failure-ext 0.1.0",
  "libra-types 0.1.0",
  "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_core 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1308,25 +1358,6 @@ version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "logger"
-version = "0.1.0"
-dependencies = [
- "backtrace 0.3.38 (registry+https://github.com/rust-lang/crates.io-index)",
- "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
- "slog 2.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "slog-async 2.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "slog-envlogger 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "slog-scope 4.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "slog-term 2.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "thread-id 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1361,20 +1392,6 @@ dependencies = [
  "libc 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
  "mach_o_sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "metrics"
-version = "0.1.0"
-dependencies = [
- "failure_ext 0.1.0",
- "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
- "grpcio 0.5.0-alpha.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper 0.12.35 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "logger 0.1.0",
- "prometheus 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1451,14 +1468,6 @@ dependencies = [
 name = "new_debug_unreachable"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "nibble"
-version = "0.1.0"
-dependencies = [
- "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "nibble_vec"
@@ -1792,15 +1801,6 @@ dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "proptest-helpers"
-version = "0.1.0"
-dependencies = [
- "crossbeam 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "proptest-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2428,9 +2428,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "stdlib"
 version = "0.1.0"
 dependencies = [
+ "bytecode-source-map 0.1.0",
  "bytecode-verifier 0.1.0",
- "bytecode_source_map 0.1.0",
- "ir_to_bytecode 0.1.0",
+ "ir-to-bytecode 0.1.0",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-types 0.1.0",
 ]
@@ -2777,21 +2777,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "tools"
+name = "transaction-builder"
 version = "0.1.0"
 dependencies = [
- "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "transaction_builder"
-version = "0.1.0"
-dependencies = [
- "config 0.1.0",
- "crypto 0.1.0",
- "ir_to_bytecode 0.1.0",
+ "ir-to-bytecode 0.1.0",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-config 0.1.0",
+ "libra-crypto 0.1.0",
  "libra-types 0.1.0",
  "stdlib 0.1.0",
  "vm 0.1.0",
@@ -2920,28 +2912,28 @@ name = "vm"
 version = "0.1.0"
 dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "crypto 0.1.0",
- "failure_ext 0.1.0",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-canonical-serialization 0.1.0",
+ "libra-crypto 0.1.0",
+ "libra-failure-ext 0.1.0",
+ "libra-proptest-helpers 0.1.0",
  "libra-types 0.1.0",
  "mirai-annotations 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "proptest-helpers 0.1.0",
  "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "vm_runtime_types"
+name = "vm-runtime-types"
 version = "0.1.0"
 dependencies = [
  "bit-vec 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crypto 0.1.0",
- "failure_ext 0.1.0",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-canonical-serialization 0.1.0",
+ "libra-crypto 0.1.0",
+ "libra-failure-ext 0.1.0",
  "libra-types 0.1.0",
  "proptest 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3133,7 +3125,6 @@ dependencies = [
 "checksum backtrace-sys 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)" = "82a830b4ef2d1124a711c71d263c5abdc710ef8e907bd508c88be475cebc422b"
 "checksum base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
 "checksum bech32 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "58946044516aa9dc922182e0d6e9d124a31aafe6b421614654eb27cf90cec09c"
-"checksum bincode 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b8ab639324e3ee8774d296864fbc0dbbb256cf1a41c490b94cba90c082915f92"
 "checksum bindgen 0.51.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ebd71393f1ec0509b553aa012b9b58e81dadbdff7130bd3b8cba576e69b32f75"
 "checksum bit-set 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e84c238982c4b1e1ee668d136c510c67a13465279c0cb367ea6baf6310620a80"
 "checksum bit-vec 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f59bbe95d4e52a6398ec21238d31577f2b28a9d86807f06ca59d191d8440d0bb"

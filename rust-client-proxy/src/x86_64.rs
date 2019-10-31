@@ -248,6 +248,10 @@ pub mod x86_64 {
         let balance = client
             .get_balance(&["b", index.to_string().as_str()])
             .unwrap();
+        // match balance {
+        //     Ok(value) => value,
+        //     Err(error) => println!("{:?}", error),
+        // }
         balance.parse::<f64>().unwrap()
     }
 

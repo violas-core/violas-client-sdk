@@ -5,7 +5,6 @@
 #include <iostream>
 #include <fstream>
 #include <assert.h>
-#include "rust_client_proxy.hpp"
 #include "libra_client.hpp"
 
 using namespace std;
@@ -15,7 +14,7 @@ bool test_libra_client();
 int main(int argc, const char *argv[])
 {
     ofstream file("log.txt");
-    streambuf *err = clog.rdbuf(file.rdbuf());
+    streambuf *log = clog.rdbuf(file.rdbuf());
 
     try
     {
@@ -25,6 +24,8 @@ int main(int argc, const char *argv[])
     {
         std::cerr << e.what() << '\n';
     }
+
+    clog.rdbuf(log);
 
     return 0;
 }
@@ -63,22 +64,42 @@ bool test_libra_client()
 
     uint64_t index = 0;
 
-    // client->mint_coins(0, 10, true);
-
+    //
+    //  test mint coins
+    //
+    cout << "test minting coins" << endl;
     auto balance = client->get_balance(index);
-    cout << "Address " << index << "'s balance is " << balance << endl;
 
-    uint64_t sequence_num = client->get_sequence_number(index);
-    cout << "Address " << index << "'s sequence number is " << sequence_num << endl;
+    client->mint_coins(0, 10, true);
 
-    client->transfer_coins_int(0, accounts[1].address, 10, 0, 0, true);
+    assert(balance + 10 == client->get_balance(index));
 
-    balance = client->get_balance(index);
-    cout << "Address " << index << "'s balance is " << balance << endl;
+    //
+    //  print account's information before transferring coins
+    //
+    cout << "Address " << index
+         << "'s balance is " << client->get_balance(index)
+         << ", sequence number is " << client->get_sequence_number(index) << endl;
 
-    index = 1;
-    balance = client->get_balance(index);
-    cout << "Address " << index << "'s balance is " << balance << endl;
+    cout << "Address " << index + 1
+         << "'s balance is " << client->get_balance(index + 1)
+         << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
+
+    //
+    //  transfer coins 1 cion(1000000 micro coin) from account 0 to account 1
+    //
+    client->transfer_coins_int(0, accounts[1].address, 1 * micro_libra_coin, 0, 0, true);
+
+    //
+    //  print account's information before transferring coins
+    //
+    cout << "Address " << index
+         << "'s balance is " << client->get_balance(index)
+         << ", sequence number is " << client->get_sequence_number(index) << endl;
+
+    cout << "Address " << index + 1
+         << "'s balance is " << client->get_balance(index + 1)
+         << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
 
     cout << "finished all test jobs !" << endl;
 

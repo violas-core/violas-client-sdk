@@ -10,6 +10,8 @@ using uint256 = std::array<uint8_t, 32>;
 std::ostream &operator<<(std::ostream &os, const uint256 &value);
 std::ostream &operator>>(std::ostream &os, const uint256 &value);
 
+const uint64_t micro_libra_coin = 1000000;
+
 namespace Libra
 {
 ///
@@ -51,16 +53,16 @@ public:
 
     virtual void mint_coins(uint64_t index, uint64_t num_coins, bool is_blocking) = 0;
 
-    /// Transfer num_coins from sender account to receiver. If is_blocking = true,
-    /// it will keep querying validator till the sequence number is bumped up in validator.
+    /// Transfer num_coins from sender account to receiver.
+    //  If is_blocking = true, it will keep querying validator till the sequence number is bumped up in validator.
     //  return : account's index and sequence number
     virtual std::pair<uint64_t, uint64_t>
-    transfer_coins_int(uint64_t sender_account_ref_id,
-                       uint256 receiver_address,
-                       uint64_t num_coins,
-                       uint64_t gas_unit_price,
-                       uint max_gas_amount,
-                       bool is_blocking) = 0;
+    transfer_coins_int(uint64_t sender_account_ref_id, // the reference id of account
+                       uint256 receiver_address,       // the address of receiver
+                       uint64_t micro_coins,           // a millionth of a coin
+                       uint64_t gas_unit_price,        // set gas unit price or 0
+                       uint max_gas_amount,            // set the max gas account or 0
+                       bool is_blocking) = 0;          // true for sync, fasle for async
 };
 
 using client_ptr = std::shared_ptr<client>;

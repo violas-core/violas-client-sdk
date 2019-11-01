@@ -64,7 +64,7 @@ extern "C"
         uint64_t raw_ptr,
         uint64_t sender_account_ref_id,
         uint8_t receiver_addr[], // length 32
-        uint64_t num_coins,
+        uint64_t micro_coins,    // 1 / 1000000
         uint64_t gas_unit_price,
         uint max_gas_amount,
         bool is_blocking,

@@ -27,6 +27,11 @@ ostream &operator<<(ostream &os, const uint256 &value)
     return os;
 }
 
+std::ostream &operator>>(std::ostream &os, const uint256 &value)
+{
+    return os;
+}
+
 namespace Libra
 {
 class client_imp : virtual public client

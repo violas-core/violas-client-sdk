@@ -13,6 +13,8 @@ crate-type = ["cdylib"]
 # change this directory for the path of Libra client 
 client = { path = "/home/hunter/Projects/work/libra/client" } 
 libra-types = { path = "/home/hunter/Projects/work/libra/types" }
+compiler = { path = "/home/hunter/Projects/work/libra/language/compiler"  }
+
 hex = "0.3.2"
 libc = "0.2"
 

@@ -10,6 +10,8 @@ pub mod x86_64 {
     use std::os::raw::{c_char, c_uchar};
     use std::*;
 
+    const DEBUG: bool = true;
+
     //
     //
     //
@@ -36,23 +38,25 @@ pub mod x86_64 {
             let mnemonic_file =
                 unsafe { CStr::from_ptr(c_mnemonic_file).to_str().unwrap().to_owned() };
 
-            println!(
-                "create_native_client_proxy arguments : 
-                host = {}, 
-                port = {}, 
-                validator_set_file = {},
-                faucet_account_file = {},
-                sync_on_wallet_recovery = {},
-                faucet_server = {},
-                mnemonic_file = {}",
-                host,
-                port,
-                validator_set_file,
-                faucet_account_file,
-                sync_on_wallet_recovery,
-                faucet_server,
-                mnemonic_file,
-            );
+            if DEBUG {
+                println!(
+                    "create_native_client_proxy arguments : 
+                        host = {}, 
+                        port = {}, 
+                        validator_set_file = {},
+                        faucet_account_file = {},
+                        sync_on_wallet_recovery = {},
+                        faucet_server = {},
+                        mnemonic_file = {}",
+                    host,
+                    port,
+                    validator_set_file,
+                    faucet_account_file,
+                    sync_on_wallet_recovery,
+                    faucet_server,
+                    mnemonic_file,
+                );
+            }
             //
             // new Client Proxy
             //
@@ -128,26 +132,17 @@ pub mod x86_64 {
             .create_next_account(sync_with_validator)
             .expect("failed to call create_next_account");
 
-        println!(
-            "Created/retrieved account #{} address {}",
-            accountAndIndex.index,
-            hex::encode(accountAndIndex.address)
-        );
+        // println!(
+        //     "Created/retrieved account #{} address {}",
+        //     accountAndIndex.index,
+        //     hex::encode(accountAndIndex.address)
+        // );
 
         let mut account = AccountAndIndex {
             index: accountAndIndex.index as u64,
             address: [0; 32],
         };
 
-        // for (dst, src) in account
-        //     .address
-        //     .iter_mut()
-        //     .zip(accountAndIndex.address.as_ref())
-        // {
-        //     *dst = *src
-        // }
-        //ptr::copy(accountAndIndex.address.as_ref(), &account.address, 32);
-        //let bytes = &accountAndIndex.address.to_vec();
         account
             .address
             .copy_from_slice(&accountAndIndex.address.to_vec());
@@ -245,14 +240,13 @@ pub mod x86_64 {
         // convert raw ptr to object client
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        let balance = client
-            .get_balance(&["b", index.to_string().as_str()])
-            .unwrap();
+        let balance = client.get_balance(&["b", index.to_string().as_str()]);
+
         // match balance {
         //     Ok(value) => value,
         //     Err(error) => println!("{:?}", error),
         // }
-        balance.parse::<f64>().unwrap()
+        balance.unwrap().parse::<f64>().unwrap()
     }
 
     #[no_mangle]
@@ -300,22 +294,22 @@ pub mod x86_64 {
     pub extern "C" fn libra_transfer_coins_int(
         raw_ptr: u64,
         sender_account_ref_id: usize,
-        receiver_addr: [u8; 32],
-        num_coins: u64,
+        receiver_addr: &[u8; 32],
+        micro_coins: u64,
         gas_unit_price: u64,
         max_gas_amount: u64,
         is_blocking: bool,
-        result: *mut IndexAndSeq,
+        result: &mut IndexAndSeq,
     ) -> bool {
         // convert raw ptr to object client
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        let receiver_address = AccountAddress::new(receiver_addr);
+        let receiver_address = AccountAddress::new(*receiver_addr);
         let ret = client
             .transfer_coins_int(
                 sender_account_ref_id,
                 &receiver_address,
-                num_coins,
+                micro_coins,
                 match gas_unit_price {
                     0 => None,
                     _ => Some(gas_unit_price),
@@ -328,13 +322,13 @@ pub mod x86_64 {
             )
             .unwrap();
         // save the result
-        unsafe {
-            (*result).index = match ret.account_index {
-                AccountEntry::Index(i) => i as u64,
-                _AccountAddress => 0,
-            };
-            (*result).sequence_number = ret.sequence_number;
-        }
+        result.index = match ret.account_index {
+            AccountEntry::Index(i) => i as u64,
+            _AccountAddress => 0,
+        };
+        result.sequence_number = ret.sequence_number;
+
+        // println!("libra_transfer_coins_int entered");
         true
     }
 }

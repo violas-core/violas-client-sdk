@@ -1,7 +1,6 @@
 #ifndef LIBRA_CLIENT
 #define LIBRA_CLIENT
 
-#include <string_view>
 #include <memory>
 #include <array>
 #include <vector>

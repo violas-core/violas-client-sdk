@@ -107,7 +107,13 @@ public:
 
     virtual double get_balance(uint64_t index) override
     {
-        return libra_get_balance((uint64_t)raw_client_proxy, index);
+        double balance = 0.f;
+
+        bool ret = libra_get_balance((uint64_t)raw_client_proxy, index, &balance);
+        if (!ret)
+            throw runtime_error("failed to get balance ");
+
+        return balance;
     }
 
     virtual uint64_t get_sequence_number(uint64_t index) override

@@ -46,7 +46,7 @@ extern "C"
     void libra_free_all_accounts_buf(Accounts accounts);
 
     /// Get the latest sequence number from validator for the account specified.
-    double libra_get_balance(uint64_t raw_ptr, uint64_t index);
+    bool libra_get_balance(uint64_t raw_ptr, uint64_t index, double *result);
 
     /// Get the latest sequence number from validator for the account specified.
     uint64_t libra_get_sequence_number(uint64_t raw_ptr, uint64_t index);

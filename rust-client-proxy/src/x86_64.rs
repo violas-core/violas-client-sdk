@@ -4,13 +4,14 @@ pub mod x86_64 {
     //extern crate hex;
     use client::client_proxy::{AccountEntry, ClientProxy};
     use client::AccountStatus;
-    use libra_types::account_address::AccountAddress; //ADDRESS_LENGTH
-                                                      // access_path::AccessPath,
+    use libra_types::account_address::AccountAddress; //ADDRESS_LENGTH access_path::AccessPath,
     use std::ffi::CStr; //CString
     use std::os::raw::{c_char, c_uchar};
     use std::*;
 
+    use crate::compiler_proxy;
     const DEBUG: bool = true;
+    //let last_error : error::Error;
 
     //
     //
@@ -236,17 +237,20 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_get_balance(raw_ptr: u64, index: u64) -> f64 {
+    pub extern "C" fn libra_get_balance(raw_ptr: u64, index: u64, result: &mut f64) -> bool {
         // convert raw ptr to object client
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        let balance = client.get_balance(&["b", index.to_string().as_str()]);
+        let balance = client
+            .get_balance(&["b", index.to_string().as_str()])
+            .unwrap_or_else(|err| {
+                println!("failed to get balance, {}", err);
+                String::from("0")
+            });
 
-        // match balance {
-        //     Ok(value) => value,
-        //     Err(error) => println!("{:?}", error),
-        // }
-        balance.unwrap().parse::<f64>().unwrap()
+        *result = balance.parse::<f64>().unwrap();
+
+        true
     }
 
     #[no_mangle]
@@ -331,4 +335,7 @@ pub mod x86_64 {
         // println!("libra_transfer_coins_int entered");
         true
     }
+
+    #[no_mangle]
+    pub extern "C" fn libra_compile() {}
 }

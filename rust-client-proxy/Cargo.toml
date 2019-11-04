@@ -14,6 +14,11 @@ crate-type = ["cdylib"]
 client = { path = "/home/hunter/Projects/work/libra/client" } 
 libra-types = { path = "/home/hunter/Projects/work/libra/types" }
 compiler = { path = "/home/hunter/Projects/work/libra/language/compiler"  }
+bytecode-verifier = { path = "/home/hunter/Projects/work/libra/language/bytecode-verifier", version = "0.1.0" }
+ir-to-bytecode = { path = "/home/hunter/Projects/work/libra/language/compiler/ir-to-bytecode", version = "0.1.0" }
+bytecode-source-map = { path = "/home/hunter/Projects/work/libra/language/compiler/bytecode-source-map", version = "0.1.0" }
+stdlib = { path = "/home/hunter/Projects/work/libra/language/stdlib", version = "0.1.0" }
+vm = { path = "/home/hunter/Projects/work/libra/language/vm", version = "0.1.0" }
 
 hex = "0.3.2"
 libc = "0.2"

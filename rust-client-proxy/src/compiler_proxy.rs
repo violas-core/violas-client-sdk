@@ -26,7 +26,7 @@ use vm::file_format::CompiledModule;
 
 // #[derive(Debug, StructOpt)]
 // #[structopt(name = "IR Compiler", about = "Move IR to bytecode compiler.")]
-struct Args {
+pub struct Args {
     /// Treat input file as a module (default is to treat file as a program)
     pub module_input: bool,
     /// Account address used for publishing
@@ -70,9 +70,7 @@ fn write_output(path: &PathBuf, buf: &[u8]) {
         .unwrap_or_else(|err| panic!("Unable to write to output file {:?}: {}", path, err));
 }
 
-fn main() {
-    let args = Args::from_args();
-
+pub fn compile(args: Args) -> Result<bool, String> {
     let address = args
         .address
         .map(|a| AccountAddress::try_from(a).unwrap())
@@ -85,11 +83,10 @@ fn main() {
         .extension()
         .expect("Missing file extension for input source file");
     if extension != mvir_extension {
-        println!(
+        return Err(format!(
             "Bad source file extension {:?}; expected {}",
-            extension, mvir_extension
-        );
-        std::process::exit(1);
+            extension, mvir_extension,
+        ));
     }
 
     if args.list_dependencies {
@@ -104,11 +101,11 @@ fn main() {
         .into_iter()
         .map(|m| AccessPath::code_access_path(&m))
         .collect();
-        println!(
+        //
+        return Err(format!(
             "{}",
             serde_json::to_string(&dependency_list).expect("Unable to serialize dependencies")
-        );
-        return;
+        ));
     }
 
     let deps = {
@@ -197,4 +194,6 @@ fn main() {
         let payload_bytes = serde_json::to_vec(&payload).expect("Unable to serialize program");
         write_output(&source_path.with_extension(mv_extension), &payload_bytes);
     }
+
+    Ok(true)
 }

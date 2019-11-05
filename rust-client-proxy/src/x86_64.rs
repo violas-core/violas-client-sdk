@@ -337,5 +337,29 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_compile() {}
+    pub extern "C" fn libra_compile(script_path: &str) -> bool {
+        let args = compiler_proxy::Args {
+            module_input: false,
+            address: Some("".to_string()),
+            no_stdlib: false,
+            no_verify: false,
+            source_path: path::PathBuf::from(script_path),
+            list_dependencies: false,
+            deps_path: None,
+            output_source_maps: false,
+        };
+
+        let ret = match compiler_proxy::compile(args) {
+            Ok(t) => {
+                println!("{}", t);
+                true
+            }
+            Err(e) => {
+                println!("{}", e);
+                false
+            }
+        };
+
+        ret
+    }
 }

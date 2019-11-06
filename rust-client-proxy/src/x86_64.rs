@@ -337,13 +337,15 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_compile(script_path: &str) -> bool {
+    pub extern "C" fn libra_compile(addr: *const c_char, script_path: *const c_char) -> bool {
         let args = compiler_proxy::Args {
             module_input: false,
-            address: Some("".to_string()),
+            address: Some(unsafe { CStr::from_ptr(addr).to_str().unwrap().to_string() }),
             no_stdlib: false,
             no_verify: false,
-            source_path: path::PathBuf::from(script_path),
+            source_path: path::PathBuf::from(unsafe {
+                CStr::from_ptr(script_path).to_str().unwrap()
+            }),
             list_dependencies: false,
             deps_path: None,
             output_source_maps: false,
@@ -361,5 +363,21 @@ pub mod x86_64 {
         };
 
         ret
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_publish_module(raw_ptr: u64) {
+        // convert raw ptr to object client
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        client.publish_module(&[]);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_execute_script(raw_ptr: u64) {
+        // convert raw ptr to object client
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        client.execute_script(&[]);
     }
 }

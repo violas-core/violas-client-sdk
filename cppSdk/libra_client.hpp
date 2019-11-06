@@ -63,6 +63,8 @@ public:
                        uint64_t gas_unit_price,        // set gas unit price or 0
                        uint max_gas_amount,            // set the max gas account or 0
                        bool is_blocking) = 0;          // true for sync, fasle for async
+
+    virtual void compile(uint64_t account_index, const std::string &source_file_with_path) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;

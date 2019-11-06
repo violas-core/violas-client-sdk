@@ -1,6 +1,7 @@
 #include <iomanip>
 #include <ctime>
 //#include <chrono>
+#include <sstream>
 #include "libra_client.hpp"
 #include "rust_client_proxy.hpp"
 
@@ -147,6 +148,19 @@ public:
             throw runtime_error("failed to transfer coins");
 
         return make_pair(index_seq.index, index_seq.sequence);
+    }
+
+    virtual void compile(uint64_t account_index, const string &source_file_with_path) override
+    {
+        auto accounts = get_all_accounts();
+
+        ostringstream oss;
+
+        oss << accounts[account_index].address;
+
+        bool ret = libra_compile(oss.str().c_str(), source_file_with_path.c_str());
+        if (!ret)
+            throw runtime_error("failed to compile move script file");
     }
 };
 

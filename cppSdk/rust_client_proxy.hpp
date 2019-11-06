@@ -70,6 +70,8 @@ extern "C"
         bool is_blocking,
         _index_sequence *result);
 
+    bool libra_compile(const char *address, const char *script_file_path);
+
 #ifdef __cplusplus
 }
 #endif

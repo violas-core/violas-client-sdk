@@ -191,7 +191,13 @@ bool test_violas_client()
           << "'s balance is " << client->get_balance(index + 1)
           << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
 
-     client->compile(0, "my_module.mvir");
+     client->compile(0, "my_module.mvir", true);
+
+     client->publish_module(0, "my_module.mv");
+     cout << "Successfully published module" << endl;
+
+     client->compile(0, "custom_script.mvir");
+     client->execute_script(0, "custom_script.mv", vector<string>{"10"});
 
      cout << "finished all test jobs !" << endl;
 

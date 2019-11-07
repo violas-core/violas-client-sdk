@@ -150,7 +150,7 @@ public:
         return make_pair(index_seq.index, index_seq.sequence);
     }
 
-    virtual void compile(uint64_t account_index, const string &source_file_with_path) override
+    virtual void compile(uint64_t account_index, const string &source_file_with_path, bool is_module) override
     {
         auto accounts = get_all_accounts();
 
@@ -158,9 +158,34 @@ public:
 
         oss << accounts[account_index].address;
 
-        bool ret = libra_compile(oss.str().c_str(), source_file_with_path.c_str());
+        bool ret = libra_compile(oss.str().c_str(), source_file_with_path.c_str(), is_module);
         if (!ret)
             throw runtime_error("failed to compile move script file");
+    }
+
+    virtual void publish_module(uint64_t account_index, const std::string &module_file) override
+    {
+        bool ret = libra_publish_module((uint64_t)raw_client_proxy, account_index, module_file.c_str());
+        if (!ret)
+            throw runtime_error("failed to publish module file");
+    }
+
+    virtual void execute_script(uint64_t account_index, const std::string &script_file, const std::vector<std::string> &script_args) override
+    {
+        ScriptArgs args;
+
+        vector<const char *> args_array;
+        for (auto &arg : script_args)
+        {
+            args_array.push_back(arg.c_str());
+        }
+
+        args.len = script_args.size();
+        args.data = args_array.data();
+
+        bool ret = libra_execute_script((uint64_t)raw_client_proxy, account_index, script_file.c_str(), &args);
+        if (!ret)
+            throw runtime_error("failed to publish module file");
     }
 };
 

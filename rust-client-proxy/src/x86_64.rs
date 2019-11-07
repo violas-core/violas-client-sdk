@@ -13,6 +13,9 @@ pub mod x86_64 {
     const DEBUG: bool = true;
     //let last_error : error::Error;
 
+    fn set_last_error(err: Box<dyn error::Error>) {
+        println!("set last error {:?}", err.description());
+    }
     //
     //
     //
@@ -94,11 +97,6 @@ pub mod x86_64 {
             let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ClientProxy) };
             println!("x86_64.rs: destory_native_client_proxy enters ...");
         }
-    }
-
-    #[no_mangle]
-    pub extern "C" fn libra_get_last_error() {
-        //
     }
 
     #[no_mangle]
@@ -337,9 +335,13 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_compile(addr: *const c_char, script_path: *const c_char) -> bool {
+    pub extern "C" fn libra_compile(
+        addr: *const c_char,
+        script_path: *const c_char,
+        is_module: bool,
+    ) -> bool {
         let args = compiler_proxy::Args {
-            module_input: false,
+            module_input: is_module,
             address: Some(unsafe { CStr::from_ptr(addr).to_str().unwrap().to_string() }),
             no_stdlib: false,
             no_verify: false,
@@ -352,10 +354,7 @@ pub mod x86_64 {
         };
 
         let ret = match compiler_proxy::compile(args) {
-            Ok(t) => {
-                println!("{}", t);
-                true
-            }
+            Ok(_) => true,
             Err(e) => {
                 println!("{}", e);
                 false
@@ -366,18 +365,60 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_publish_module(raw_ptr: u64) {
+    pub extern "C" fn libra_publish_module(
+        raw_ptr: u64,
+        account_index: u64,
+        module_file: *const c_char,
+    ) -> bool {
         // convert raw ptr to object client
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let module = unsafe { CStr::from_ptr(module_file).to_str().unwrap() };
+        let index = account_index.to_string();
 
-        client.publish_module(&[]);
+        let ret = client.publish_module(&["publish", index.as_str(), module]);
+        match ret {
+            Ok(_) => true,
+            Err(err) => {
+                println!("{}", err);
+                false
+            }
+        }
+    }
+
+    #[repr(C)]
+    pub struct ScriptArgs {
+        len: u64,
+        data: *const *const c_char, // C string array
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_execute_script(raw_ptr: u64) {
+    pub extern "C" fn libra_execute_script(
+        raw_ptr: u64,
+        account_index: u64,
+        script_file: *const c_char,
+        script_args: &ScriptArgs,
+    ) -> bool {
         // convert raw ptr to object client
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let index = account_index.to_string();
+        let script = unsafe { CStr::from_ptr(script_file).to_str().unwrap() };
+        let mut args = vec!["execute", index.as_str(), script];
+        let s = unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
 
-        client.execute_script(&[]);
+        for i in 0..s.len() {
+            let arg = unsafe { CStr::from_ptr(s[i]).to_str().unwrap() };
+            args.push(arg);
+        }
+        //
+        //  execute script
+        //
+        let ret = client.execute_script(&args); //&["execute", index.as_str(), script]
+        match ret {
+            Ok(_) => true,
+            Err(_err) => {
+                //set_last_error(err);
+                false
+            }
+        }
     }
 }

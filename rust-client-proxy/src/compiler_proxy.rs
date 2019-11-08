@@ -17,8 +17,9 @@ use libra_types::{
 use std::{
     convert::TryFrom,
     fs,
-    io::Write,
+    io::{Error, ErrorKind, Write},
     path::{Path, PathBuf},
+    *,
 };
 use stdlib::stdlib_modules;
 //use structopt::StructOpt;
@@ -70,7 +71,7 @@ fn write_output(path: &PathBuf, buf: &[u8]) {
         .unwrap_or_else(|err| panic!("Unable to write to output file {:?}: {}", path, err));
 }
 
-pub fn compile(args: Args) -> Result<bool, String> {
+pub fn compile(args: Args) -> io::Result<()> {
     let address = args
         .address
         .map(|a| AccountAddress::try_from(a).unwrap())
@@ -83,14 +84,17 @@ pub fn compile(args: Args) -> Result<bool, String> {
         .extension()
         .expect("Missing file extension for input source file");
     if extension != mvir_extension {
-        return Err(format!(
-            "Bad source file extension {:?}; expected {}",
-            extension, mvir_extension,
+        return Err(io::Error::new(
+            ErrorKind::Other,
+            format!(
+                "Bad source file extension {:?}; expected {}",
+                extension, mvir_extension
+            ),
         ));
     }
 
     if args.list_dependencies {
-        let source = fs::read_to_string(args.source_path.clone()).expect("Unable to read file");
+        let source = fs::read_to_string(args.source_path.clone())?;
         let dependency_list: Vec<AccessPath> = if args.module_input {
             let module = parse_module(&source).expect("Unable to parse module");
             module.get_external_deps()
@@ -101,10 +105,12 @@ pub fn compile(args: Args) -> Result<bool, String> {
         .into_iter()
         .map(|m| AccessPath::code_access_path(&m))
         .collect();
-        //
-        return Err(format!(
-            "{}",
-            serde_json::to_string(&dependency_list).expect("Unable to serialize dependencies")
+
+        serde_json::to_string(&dependency_list)?;
+
+        return Err(Error::new(
+            ErrorKind::Other,
+            "Unable to serialize dependencies",
         ));
     }
 
@@ -195,5 +201,40 @@ pub fn compile(args: Args) -> Result<bool, String> {
         write_output(&source_path.with_extension(mv_extension), &payload_bytes);
     }
 
-    Ok(true)
+    Ok(())
 }
+
+fn handle_dependencies(
+        &mut self,
+        source_path: Display,
+        is_module: bool,
+    ) -> Result<Option<TempPath>> {
+        let mut args = format!("run -p compiler -- -l {}", source_path);
+        if is_module {
+            args.push_str(" -m");
+        }
+        let child = Command::new("cargo")
+            .args(args.split(' '))
+            .stdout(Stdio::piped())
+            .spawn()?;
+        let output = child.wait_with_output()?;
+        let paths: Vec<AccessPath> = serde_json::from_str(str::from_utf8(&output.stdout)?)?;
+        let mut dependencies = vec![];
+        for path in paths {
+            if path.address != core_code_address() {
+                if let (Some(blob), _) = self.client.get_account_blob(path.address)? {
+                    let map = BTreeMap::<Vec<u8>, Vec<u8>>::try_from(&blob)?;
+                    if let Some(code) = map.get(&path.path) {
+                        dependencies.push(code.clone());
+                    }
+                }
+            }
+        }
+        if dependencies.is_empty() {
+            return Ok(None);
+        }
+        let path = TempPath::new();
+        let mut file = std::fs::File::create(path.as_ref())?;
+        file.write_all(&serde_json::to_vec(&dependencies)?)?;
+        Ok(Some(path))
+    }

@@ -152,13 +152,13 @@ public:
 
     virtual void compile(uint64_t account_index, const string &source_file_with_path, bool is_module) override
     {
-        auto accounts = get_all_accounts();
+        // auto accounts = get_all_accounts();
 
-        ostringstream oss;
+        // ostringstream oss;
 
-        oss << accounts[account_index].address;
+        // oss << accounts[account_index].address;
 
-        bool ret = libra_compile(oss.str().c_str(), source_file_with_path.c_str(), is_module);
+        bool ret = libra_compile((uint64_t)raw_client_proxy, account_index, source_file_with_path.c_str(), is_module);
         if (!ret)
             throw runtime_error("failed to compile move script file");
     }

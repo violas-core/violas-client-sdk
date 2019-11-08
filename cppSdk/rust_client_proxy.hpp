@@ -70,7 +70,7 @@ extern "C"
         bool is_blocking,
         _index_sequence *result);
 
-    bool libra_compile(const char *address, const char *script_file_path, bool is_module);
+    bool libra_compile(uint64_t raw_ptr, uint64_t account_index, const char *script_file_path, bool is_module);
 
     bool libra_publish_module(uint64_t raw_ptr, uint64_t account_index, const char *module_file);
 

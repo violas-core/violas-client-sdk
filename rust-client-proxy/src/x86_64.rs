@@ -7,7 +7,8 @@ pub mod x86_64 {
     use libra_types::account_address::AccountAddress; //ADDRESS_LENGTH access_path::AccessPath,
     use std::ffi::CStr; //CString
     use std::os::raw::{c_char, c_uchar};
-    use std::*;
+    use std::{io::Write, *};
+    use tempfile::tempdir;
 
     use crate::compiler_proxy;
     const DEBUG: bool = true;
@@ -336,32 +337,52 @@ pub mod x86_64 {
 
     #[no_mangle]
     pub extern "C" fn libra_compile(
-        addr: *const c_char,
+        raw_ptr: u64,
+        account_index: u64,
         script_path: *const c_char,
         is_module: bool,
     ) -> bool {
-        let args = compiler_proxy::Args {
-            module_input: is_module,
-            address: Some(unsafe { CStr::from_ptr(addr).to_str().unwrap().to_string() }),
-            no_stdlib: false,
-            no_verify: false,
-            source_path: path::PathBuf::from(unsafe {
-                CStr::from_ptr(script_path).to_str().unwrap()
-            }),
-            list_dependencies: false,
-            deps_path: None,
-            output_source_maps: false,
-        };
+        let ret = panic::catch_unwind(|| -> Result<(), Box<dyn error::Error>> {
+            // convert raw ptr to object client
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let address =
+                client.get_account_address_from_parameter(account_index.to_string().as_str())?;
+            let file_path = unsafe { CStr::from_ptr(script_path).to_str().unwrap().to_string() };
+            // replace sender tag with local address
+            let temp = tempdir()?;
+            let tmp_source_path = temp.path().join("temp.mvir");
+            let mut tmp_source_file = fs::File::create(tmp_source_path.clone())?;
+            let mut code = fs::read_to_string(file_path)?;
+            code = code.replace("{{sender}}", &format!("0x{}", address));
+            writeln!(tmp_source_file, "{}", code)?;
 
-        let ret = match compiler_proxy::compile(args) {
-            Ok(_) => true,
-            Err(e) => {
-                println!("{}", e);
-                false
+            //
+            let args = compiler_proxy::Args {
+                module_input: is_module,
+                address: Some(address.to_string()), //
+                no_stdlib: false,
+                no_verify: false,
+                source_path: path::PathBuf::from(tmp_source_path),
+                list_dependencies: false,
+                deps_path: None,
+                output_source_maps: false,
+            };
+
+            compiler_proxy::compile(args)?;
+
+            Ok(())
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => (),
+                Err(err) => println!("erro , {}", err),
             }
-        };
-
-        ret
+            true
+        } else {
+            println!(" catch panic !");
+            false
+        }
     }
 
     #[no_mangle]

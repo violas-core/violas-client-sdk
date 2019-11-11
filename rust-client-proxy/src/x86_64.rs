@@ -4,11 +4,15 @@ pub mod x86_64 {
     //extern crate hex;
     use client::client_proxy::{AccountEntry, ClientProxy};
     use client::AccountStatus;
-    use libra_types::account_address::AccountAddress; //ADDRESS_LENGTH access_path::AccessPath,
+    use libra_types::{
+        access_path::AccessPath, account_address::AccountAddress, account_config::core_code_address,
+    }; //ADDRESS_LENGTH access_path::AccessPath,
     use std::ffi::CStr; //CString
     use std::os::raw::{c_char, c_uchar};
-    use std::{io::Write, *};
-    use tempfile::tempdir;
+    use std::{
+        collections::BTreeMap, convert::TryFrom, error::Error, io::Write, result::Result, *,
+    };
+    //use tempfile::tempdir;
 
     use crate::compiler_proxy;
     const DEBUG: bool = true;
@@ -349,25 +353,34 @@ pub mod x86_64 {
                 client.get_account_address_from_parameter(account_index.to_string().as_str())?;
             let file_path = unsafe { CStr::from_ptr(script_path).to_str().unwrap().to_string() };
             // replace sender tag with local address
-            let temp = tempdir()?;
-            let tmp_source_path = temp.path().join("temp.mvir");
+            let tempdir = env::temp_dir();
+            let tmp_source_path = tempdir.join("temp.mvir");
             let mut tmp_source_file = fs::File::create(tmp_source_path.clone())?;
             let mut code = fs::read_to_string(file_path)?;
             code = code.replace("{{sender}}", &format!("0x{}", address));
             writeln!(tmp_source_file, "{}", code)?;
 
+            let dependencies_path = tempdir.join("dependencies.mv");
+            handle_dependencies(
+                client,
+                address.to_string(),
+                tmp_source_path,
+                dependencies_path,
+                is_module,
+            )?;
+            //
+            // compile the source code
             //
             let args = compiler_proxy::Args {
                 module_input: is_module,
                 address: Some(address.to_string()), //
                 no_stdlib: false,
                 no_verify: false,
-                source_path: path::PathBuf::from(tmp_source_path),
+                source_path: tmp_source_path,
                 list_dependencies: false,
-                deps_path: None,
+                deps_path: None, //Option(String::from_str(dependencies_path.to_str())),
                 output_source_maps: false,
             };
-
             compiler_proxy::compile(args)?;
 
             Ok(())
@@ -383,6 +396,53 @@ pub mod x86_64 {
             println!(" catch panic !");
             false
         }
+    }
+
+    fn handle_dependencies(
+        client: &mut ClientProxy,
+        address: String,
+        source_path: path::PathBuf,
+        output_path: path::PathBuf,
+        is_module: bool,
+    ) -> Result<Option<path::PathBuf>, Box<dyn Error>> {
+        //
+        // get all dependencies
+        //
+        let args = compiler_proxy::Args {
+            module_input: is_module,
+            address: Some(address),
+            no_stdlib: false,
+            no_verify: false,
+            source_path: source_path,
+            list_dependencies: true, //specify the this flag for getting all dependencies
+            deps_path: None,
+            output_source_maps: false,
+        };
+        compiler_proxy::compile(args)?;
+
+        //let mut tmp_output_file = fs::File::create(output_path)?;
+        let code = fs::read_to_string(output_path)?;
+        //
+        //
+        //
+        let paths: Vec<AccessPath> = serde_json::from_str(code.as_str())?;
+        let mut dependencies = vec![];
+        for path in paths {
+            if path.address != core_code_address() {
+                if let (Some(blob), _) = client.client.get_account_blob(path.address)? {
+                    let map = BTreeMap::<Vec<u8>, Vec<u8>>::try_from(&blob)?;
+                    if let Some(code) = map.get(&path.path) {
+                        dependencies.push(code.clone());
+                    }
+                }
+            }
+        }
+        if dependencies.is_empty() {
+            return Ok(None);
+        }
+        let mut file = std::fs::File::create(output_path)?;
+        file.write_all(&serde_json::to_vec(&dependencies)?)?;
+        Ok(Some(output_path))
     }
 
     #[no_mangle]

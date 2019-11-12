@@ -31,7 +31,7 @@ public:
 
     virtual ~client(){};
 
-    virtual bool test_validator_connection() = 0;
+    virtual void test_validator_connection() = 0;
 
     /// Create a new account
     /// return the index and address of account

@@ -12,6 +12,7 @@ pub mod x86_64 {
     use std::{
         collections::BTreeMap, convert::TryFrom, error::Error, io::Write, result::Result, *,
     };
+    use tempdir::TempDir;
     //use tempfile::tempdir;
 
     use crate::compiler_proxy;
@@ -353,19 +354,20 @@ pub mod x86_64 {
                 client.get_account_address_from_parameter(account_index.to_string().as_str())?;
             let file_path = unsafe { CStr::from_ptr(script_path).to_str().unwrap().to_string() };
             // replace sender tag with local address
-            let tempdir = env::temp_dir();
-            let tmp_source_path = tempdir.join("temp.mvir");
+            let temp_dir = TempDir::new("")?; //env::temp_dir();
+            let tmp_source_path = temp_dir.path().join("temp.mvir");
             let mut tmp_source_file = fs::File::create(tmp_source_path.clone())?;
             let mut code = fs::read_to_string(file_path)?;
             code = code.replace("{{sender}}", &format!("0x{}", address));
             writeln!(tmp_source_file, "{}", code)?;
-
-            let dependencies_path = tempdir.join("dependencies.mv");
+            //
+            // handle dependencies
+            //
             handle_dependencies(
                 client,
                 address.to_string(),
-                tmp_source_path,
-                dependencies_path,
+                tmp_source_path.clone(),
+                temp_dir.path().to_path_buf(),
                 is_module,
             )?;
             //
@@ -376,7 +378,7 @@ pub mod x86_64 {
                 address: Some(address.to_string()), //
                 no_stdlib: false,
                 no_verify: false,
-                source_path: tmp_source_path,
+                source_path: tmp_source_path.clone(),
                 list_dependencies: false,
                 deps_path: None, //Option(String::from_str(dependencies_path.to_str())),
                 output_source_maps: false,
@@ -402,7 +404,7 @@ pub mod x86_64 {
         client: &mut ClientProxy,
         address: String,
         source_path: path::PathBuf,
-        output_path: path::PathBuf,
+        tempdir: path::PathBuf,
         is_module: bool,
     ) -> Result<Option<path::PathBuf>, Box<dyn Error>> {
         //
@@ -413,15 +415,16 @@ pub mod x86_64 {
             address: Some(address),
             no_stdlib: false,
             no_verify: false,
-            source_path: source_path,
+            source_path: source_path.clone(),
             list_dependencies: true, //specify the this flag for getting all dependencies
             deps_path: None,
             output_source_maps: false,
         };
         compiler_proxy::compile(args)?;
 
+        let dependencies_path = source_path.with_extension("mv");
         //let mut tmp_output_file = fs::File::create(output_path)?;
-        let code = fs::read_to_string(output_path)?;
+        let code = fs::read_to_string(dependencies_path.clone())?;
         //
         //
         //
@@ -440,9 +443,11 @@ pub mod x86_64 {
         if dependencies.is_empty() {
             return Ok(None);
         }
-        let mut file = std::fs::File::create(output_path)?;
+
+        let dependencies_path = source_path.with_extension("dep");
+        let mut file = std::fs::File::create(dependencies_path.clone())?;
         file.write_all(&serde_json::to_vec(&dependencies)?)?;
-        Ok(Some(output_path))
+        Ok(Some(dependencies_path))
     }
 
     #[no_mangle]

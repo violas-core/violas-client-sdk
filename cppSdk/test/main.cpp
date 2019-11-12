@@ -45,7 +45,7 @@ bool test_libra_client()
                                           "faucet.testnet.libra.org",
                                           "mnemonic");
 
-     bool ret = client->test_validator_connection();
+     client->test_validator_connection();
 
      auto account = client->create_next_account(true);
 
@@ -109,7 +109,7 @@ bool test_libra_client()
 
      cout << "finished all test jobs !" << endl;
 
-     return ret;
+     return true;
 }
 
 bool test_violas_client()
@@ -127,9 +127,14 @@ bool test_violas_client()
                                           "faucet.testnet.libra.org",
                                           "mnemonic");
 
-     bool ret = client->test_validator_connection();
-     if (!ret)
-          throw "failed to test validator connection";
+     // auto client = Violas::client::create("localhost",
+     //                                      44487,
+     //                                      "/tmp/02c904ab576c83d61463984208f155c6/0/consensus_peers.config.toml",
+     //                                      "/tmp/9481f8402299ade9b18bed1fa39d21a2/temp_faucet_keys",
+     //                                      false,
+     //                                      "faucet.testnet.libra.org",
+     //                                      "mnemonic");
+     client->test_validator_connection();
 
      auto account = client->create_next_account(true);
 

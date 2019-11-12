@@ -67,9 +67,11 @@ public:
         LOG << "entered" << endl;
     }
 
-    virtual bool test_validator_connection() override
+    virtual void test_validator_connection() override
     {
-        return libra_test_validator_connection((uint64_t)raw_client_proxy);
+        bool ret = libra_test_validator_connection((uint64_t)raw_client_proxy);
+        if (!ret)
+            throw runtime_error("failed to test validator connection");
     }
 
     virtual std::pair<size_t, uint256> create_next_account(bool sync_with_validator) override

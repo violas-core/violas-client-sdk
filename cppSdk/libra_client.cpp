@@ -64,7 +64,7 @@ public:
     {
         destory_libra_client_proxy((uint64_t)raw_client_proxy);
 
-        LOG << "entered" << endl;
+        // LOG << "entered" << endl;
     }
 
     virtual void test_validator_connection() override
@@ -154,15 +154,12 @@ public:
 
     virtual void compile(uint64_t account_index, const string &source_file_with_path, bool is_module) override
     {
-        // auto accounts = get_all_accounts();
-
-        // ostringstream oss;
-
-        // oss << accounts[account_index].address;
-
         bool ret = libra_compile((uint64_t)raw_client_proxy, account_index, source_file_with_path.c_str(), is_module);
         if (!ret)
             throw runtime_error("failed to compile move script file");
+
+        LOG << "succeeded to compiled '" << source_file_with_path << "', "
+            << "is_module = " << (is_module ? "true" : "false") << endl;
     }
 
     virtual void publish_module(uint64_t account_index, const std::string &module_file) override
@@ -170,6 +167,8 @@ public:
         bool ret = libra_publish_module((uint64_t)raw_client_proxy, account_index, module_file.c_str());
         if (!ret)
             throw runtime_error("failed to publish module file");
+
+        LOG << "succeeded to publish module " << module_file << endl;
     }
 
     virtual void execute_script(uint64_t account_index, const std::string &script_file, const std::vector<std::string> &script_args) override
@@ -187,7 +186,9 @@ public:
 
         bool ret = libra_execute_script((uint64_t)raw_client_proxy, account_index, script_file.c_str(), &args);
         if (!ret)
-            throw runtime_error("failed to publish module file");
+            throw runtime_error("failed to excute script file");
+
+        LOG << "succeeded to excute script " << script_file << endl;
     }
 };
 

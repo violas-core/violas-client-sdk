@@ -6,8 +6,29 @@ SDK support the follwing programming language
 2. Swift for IOS
 3. C++ for Linux, MacOS and Windows.
 
-## build
-change code for libra/client/src/grpc_client.rs
 
-original :  pub(crate) fn get_account_blob
-modified :  pub fn get_account_blob
+
+## Build
+
+1. download Libra source code and change file libra/client/src/grpc_client.rs
+
+#### original  
+
+```Rust
+pub(crate) fn get_account_blob
+```
+
+#### modified  
+
+```rust
+pub fn get_account_blob
+```
+
+
+2. open ViolasClientSdk/rust-client-proxy/cargo.toml, replace all reference for 'Libra' with correct path.
+
+3. run "cargo build"
+
+   ​
+
+

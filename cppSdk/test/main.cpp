@@ -119,21 +119,21 @@ bool test_violas_client()
 
      cout << "running Libra test ..." << endl;
 
-     auto client = Violas::client::create(host,
-                                          port,
-                                          "violas_consensus_peers.config.toml",
-                                          "temp_faucet_keys",
-                                          false,
-                                          "faucet.testnet.libra.org",
-                                          "mnemonic");
-
-     // auto client = Violas::client::create("localhost",
-     //                                      44487,
-     //                                      "/tmp/02c904ab576c83d61463984208f155c6/0/consensus_peers.config.toml",
-     //                                      "/tmp/9481f8402299ade9b18bed1fa39d21a2/temp_faucet_keys",
+     // auto client = Violas::client::create(host,
+     //                                      port,
+     //                                      "violas_consensus_peers.config.toml",
+     //                                      "temp_faucet_keys",
      //                                      false,
      //                                      "faucet.testnet.libra.org",
      //                                      "mnemonic");
+
+     auto client = Violas::client::create("localhost",
+                                          44487,
+                                          "/tmp/02c904ab576c83d61463984208f155c6/0/consensus_peers.config.toml",
+                                          "/tmp/9481f8402299ade9b18bed1fa39d21a2/temp_faucet_keys",
+                                          false,
+                                          "faucet.testnet.libra.org",
+                                          "mnemonic");
      client->test_validator_connection();
 
      auto account = client->create_next_account(true);

@@ -19,6 +19,7 @@ pub mod x86_64 {
     const DEBUG: bool = true;
     //let last_error : error::Error;
 
+    #[warn(dead_code)]
     fn set_last_error(err: Box<dyn error::Error>) {
         println!("set last error {:?}", err.description());
     }
@@ -101,7 +102,7 @@ pub mod x86_64 {
     pub extern "C" fn destory_libra_client_proxy(raw_ptr: u64) {
         if raw_ptr != 0 {
             let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ClientProxy) };
-            println!("x86_64.rs: destory_native_client_proxy enters ...");
+            //println!("x86_64.rs: destory_native_client_proxy enters ...");
         }
     }
 
@@ -357,17 +358,16 @@ pub mod x86_64 {
             let temp_dir = TempDir::new("")?; //env::temp_dir();
             let tmp_source_path = temp_dir.path().join("temp.mvir");
             let mut tmp_source_file = fs::File::create(tmp_source_path.clone())?;
-            let mut code = fs::read_to_string(file_path)?;
+            let mut code = fs::read_to_string(file_path.clone())?;
             code = code.replace("{{sender}}", &format!("0x{}", address));
             writeln!(tmp_source_file, "{}", code)?;
             //
             // handle dependencies
             //
-            handle_dependencies(
+            let deps_path = handle_dependencies(
                 client,
                 address.to_string(),
                 tmp_source_path.clone(),
-                temp_dir.path().to_path_buf(),
                 is_module,
             )?;
             //
@@ -380,10 +380,16 @@ pub mod x86_64 {
                 no_verify: false,
                 source_path: tmp_source_path.clone(),
                 list_dependencies: false,
-                deps_path: None, //Option(String::from_str(dependencies_path.to_str())),
+                deps_path: deps_path, //Option(String::from_str(dependencies_path.to_str())),
                 output_source_maps: false,
             };
             compiler_proxy::compile(args)?;
+
+            let output_path = path::PathBuf::from(file_path);
+            fs::copy(
+                tmp_source_path.with_extension("mv"),
+                output_path.with_extension("mv"),
+            )?;
 
             Ok(())
         });
@@ -404,9 +410,8 @@ pub mod x86_64 {
         client: &mut ClientProxy,
         address: String,
         source_path: path::PathBuf,
-        tempdir: path::PathBuf,
         is_module: bool,
-    ) -> Result<Option<path::PathBuf>, Box<dyn Error>> {
+    ) -> Result<Option<String>, Box<dyn Error>> {
         //
         // get all dependencies
         //
@@ -422,7 +427,7 @@ pub mod x86_64 {
         };
         compiler_proxy::compile(args)?;
 
-        let dependencies_path = source_path.with_extension("mv");
+        let dependencies_path = source_path.with_extension("depir");
         //let mut tmp_output_file = fs::File::create(output_path)?;
         let code = fs::read_to_string(dependencies_path.clone())?;
         //
@@ -447,7 +452,7 @@ pub mod x86_64 {
         let dependencies_path = source_path.with_extension("dep");
         let mut file = std::fs::File::create(dependencies_path.clone())?;
         file.write_all(&serde_json::to_vec(&dependencies)?)?;
-        Ok(Some(dependencies_path))
+        Ok(Some(String::from(dependencies_path.to_str().unwrap())))
     }
 
     #[no_mangle]

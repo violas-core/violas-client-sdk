@@ -17,7 +17,7 @@ use libra_types::{
 use std::{
     convert::TryFrom,
     fs,
-    io::{Error, ErrorKind, Write},
+    io::{ErrorKind, Write},
     path::{Path, PathBuf},
     *,
 };
@@ -108,10 +108,9 @@ pub fn compile(args: Args) -> io::Result<()> {
 
         serde_json::to_string(&dependency_list)?;
 
-        // return Err(Error::new(
-        //     ErrorKind::Other,
-        //     "Unable to serialize dependencies",
-        // ));
+        let payload_bytes =
+            serde_json::to_vec(&dependency_list).expect("Unable to serialize program");
+        write_output(&source_path.with_extension("depir"), &payload_bytes);
 
         return Ok(());
     }

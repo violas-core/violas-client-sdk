@@ -13,6 +13,7 @@ pub mod x86_64 {
         collections::BTreeMap, convert::TryFrom, error::Error, io::Write, result::Result, *,
     };
     use tempdir::TempDir;
+    use transaction_builder::get_transaction_name;
     //use tempfile::tempdir;
 
     use crate::compiler_proxy;
@@ -175,28 +176,28 @@ pub mod x86_64 {
         //
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        if client.accounts.is_empty() {
-            println!("No user accounts");
-        } else {
-            for (ref index, ref account) in client.accounts.iter().enumerate() {
-                println!(
-                    "User account index: {}, address: {}, sequence number: {}, status: {:?}",
-                    index,
-                    hex::encode(&account.address),
-                    account.sequence_number,
-                    account.status,
-                );
-            }
-        }
+        // if client.accounts.is_empty() {
+        //     println!("No user accounts");
+        // } else {
+        //     for (ref index, ref account) in client.accounts.iter().enumerate() {
+        //         println!(
+        //             "User account index: {}, address: {}, sequence number: {}, status: {:?}",
+        //             index,
+        //             hex::encode(&account.address),
+        //             account.sequence_number,
+        //             account.status,
+        //         );
+        //     }
+        // }
 
-        if let Some(faucet_account) = &client.faucet_account {
-            println!(
-                "Faucet account address: {}, sequence_number: {}, status: {:?}",
-                hex::encode(&faucet_account.address),
-                faucet_account.sequence_number,
-                faucet_account.status,
-            );
-        }
+        // if let Some(faucet_account) = &client.faucet_account {
+        //     println!(
+        //         "Faucet account address: {}, sequence_number: {}, status: {:?}",
+        //         hex::encode(&faucet_account.address),
+        //         faucet_account.sequence_number,
+        //         faucet_account.status,
+        //     );
+        // }
         let mut accounts: Vec<Account> = Vec::new();
 
         for (i, ref acc) in client.accounts.iter().enumerate() {
@@ -233,7 +234,7 @@ pub mod x86_64 {
             Box::from_raw(s);
         }
 
-        println!("free_all_accounts_buf entered");
+        //println!("free_all_accounts_buf entered");
     }
 
     #[no_mangle]
@@ -511,5 +512,48 @@ pub mod x86_64 {
                 false
             }
         }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn lib_get_committed_txn_by_acc_seq(
+        raw_ptr: u64,
+        account_index: u64,
+        sequence_num: u64,
+    ) -> bool {
+        //
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        match client.get_committed_txn_by_acc_seq(&[
+            "txn_acc_seq",
+            account_index.to_string().as_str(),
+            sequence_num.to_string().as_str(),
+            "true",
+        ]) {
+            Ok(txn_and_events) => {
+                match txn_and_events {
+                    Some((comm_txn, events)) => {
+                        println!(
+                            "Committed transaction: {}",
+                            comm_txn.format_for_client(get_transaction_name)
+                        );
+                        if let Some(events_inner) = &events {
+                            println!("Events: ");
+                            for event in events_inner {
+                                println!("{}", event);
+                            }
+                        }
+
+                        return true;
+                    }
+                    None => println!("Transaction not available"),
+                };
+            }
+            Err(e) => println!(
+                "Error getting committed transaction by account and sequence number, {}",
+                e,
+            ),
+        }
+
+        false
     }
 }

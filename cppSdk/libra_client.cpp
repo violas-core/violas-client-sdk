@@ -7,16 +7,28 @@
 
 using namespace std;
 
-inline ostream &log(const char *file, int line, const char *func)
+inline ostream &log(ostream &ost, const char *flag, const char *file, int line, const char *func)
 {
     time_t now = time(nullptr);
 
-    clog << put_time(std::localtime(&now), "%F %T") << " (" << file << ":" << line << ":" << func << ") : ";
+    ost << flag
+        << put_time(std::localtime(&now), "%F %T")
+        << " (" << file << ":" << line << ":" << func << ") : ";
 
-    return clog;
+    return ost;
 }
 
-#define LOG log(__FILE__, __LINE__, __func__)
+template <typename... Args>
+std::string format(const std::string &format, Args... args)
+{
+    size_t size = snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
+    std::unique_ptr<char[]> buf(new char[size]);
+    snprintf(buf.get(), size, format.c_str(), args...);
+
+    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+}
+
+#define EXCEPTION_AT format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
 
 ostream &operator<<(ostream &os, const uint256 &value)
 {
@@ -25,12 +37,22 @@ ostream &operator<<(ostream &os, const uint256 &value)
         os << std::setfill('0') << std::setw(2) << std::hex << (int)v;
     }
 
+    os << std::dec;
+
     return os;
 }
 
 std::ostream &operator>>(std::ostream &os, const uint256 &value)
 {
     return os;
+}
+
+std::string uint256_to_string(const uint256 &address)
+{
+    ostringstream oss;
+    oss << address;
+
+    return oss.str();
 }
 
 namespace Libra
@@ -156,9 +178,9 @@ public:
     {
         bool ret = libra_compile((uint64_t)raw_client_proxy, account_index, source_file_with_path.c_str(), is_module);
         if (!ret)
-            throw runtime_error("failed to compile move script file");
+            throw runtime_error(format("failed to compile move script file '%s'", source_file_with_path.c_str()));
 
-        LOG << "succeeded to compiled '" << source_file_with_path << "', "
+        LOG << "compiled '" << source_file_with_path << "', "
             << "is_module = " << (is_module ? "true" : "false") << endl;
     }
 
@@ -166,9 +188,9 @@ public:
     {
         bool ret = libra_publish_module((uint64_t)raw_client_proxy, account_index, module_file.c_str());
         if (!ret)
-            throw runtime_error("failed to publish module file");
+            throw runtime_error(format("failed to publish module file '%s'", module_file.c_str()));
 
-        LOG << "succeeded to publish module " << module_file << endl;
+        LOG << "published module " << module_file << endl;
     }
 
     virtual void execute_script(uint64_t account_index, const std::string &script_file, const std::vector<std::string> &script_args) override
@@ -186,9 +208,18 @@ public:
 
         bool ret = libra_execute_script((uint64_t)raw_client_proxy, account_index, script_file.c_str(), &args);
         if (!ret)
-            throw runtime_error("failed to excute script file");
+            throw runtime_error(format("failed to execute script file '%s' for account index %d", script_file.c_str(), account_index) + EXCEPTION_AT);
 
-        LOG << "succeeded to excute script " << script_file << endl;
+        LOG << format("excuted script file '%s' for account index %d", script_file.c_str(), account_index) << endl;
+    }
+
+    virtual void get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) override
+    {
+        bool ret = lib_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy, account_index, sequence_num);
+        if (!ret)
+            throw runtime_error(format("failed to get committed transaction by account index %d and sequence number %d, ", account_index, sequence_num) + EXCEPTION_AT);
+
+        LOG << format("get committed transaction by account index %d and sequence number %d", account_index, sequence_num) << endl;
     }
 };
 
@@ -237,8 +268,8 @@ public:
 
     virtual ~client_imp()
     {
-        LOG << " entered" << endl;
-    };
+        // LOG << " entered" << endl;
+    }
 };
 
 std::shared_ptr<client>

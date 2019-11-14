@@ -19,6 +19,7 @@ ir-to-bytecode = { path = "/home/hunter/Projects/work/libra/language/compiler/ir
 bytecode-source-map = { path = "/home/hunter/Projects/work/libra/language/compiler/bytecode-source-map", version = "0.1.0" }
 stdlib = { path = "/home/hunter/Projects/work/libra/language/stdlib", version = "0.1.0" }
 vm = { path = "/home/hunter/Projects/work/libra/language/vm", version = "0.1.0" }
+transaction-builder = { path = "/home/hunter/Projects/work/libra/language/transaction-builder", version = "0.1.0" }
 
 serde_json = "1.0.40"
 hex = "0.3.2"

@@ -1,0 +1,8 @@
+import {{sender}}.DToken;
+
+main(payee: address, amount: u64) {
+
+    DToken.mint_to_address(move(payee), move(amount));
+
+    return;
+}

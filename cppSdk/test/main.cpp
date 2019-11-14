@@ -25,7 +25,7 @@ int main(int argc, const char *argv[])
      }
      catch (const std::exception &e)
      {
-          std::cerr << e.what() << '\n';
+          ERROR << e.what() << endl;
      }
 
      // clog.rdbuf(log);
@@ -118,6 +118,7 @@ bool test_violas_client()
 
      // auto host = "18.220.66.235";
      // uint16_t port = 40001;
+     const uint64_t account_amout = 5;
 
      // auto client = Violas::client::create(host,
      //                                      port,
@@ -136,21 +137,21 @@ bool test_violas_client()
                                           "mnemonic");
      client->test_validator_connection();
 
-     for (int i = 0; i < 4; i++)
+     for (int i = 0; i < account_amout; i++)
      {
           auto account = client->create_next_account(true);
 
-          cout << "C++       Created account #" << account.first << " address " << account.second << endl;
+          LOG << "Created account #" << account.first << " address " << account.second << endl;
      }
 
      auto accounts = client->get_all_accounts();
 
      for (auto const &account : accounts)
      {
-          cout << "Index : " << account.index << "\t"
-               << "Address : " << account.address << "\t"
-               << "Sequence : " << account.sequence_number << "\t"
-               << "Status : " << account.status << endl;
+          LOG << "Index : " << account.index << "\t"
+              << "Address : " << account.address << "\t"
+              << "Sequence : " << account.sequence_number << "\t"
+              << "Status : " << account.status << endl;
      }
 
      uint64_t index = 0;
@@ -160,28 +161,28 @@ bool test_violas_client()
      //
      auto balance = client->get_balance(index);
 
-     cout << "Mint 2 coins to account 0 " << endl;
+     LOG << "Mint 2 coins to account 0 " << endl;
 
      client->mint_coins(0, 100, true);
 
      assert(balance + 100 == client->get_balance(index));
-     cout << "succeeded to test minting coins " << endl;
+     LOG << "succeeded to test minting coins " << endl;
 
      //
      //  print account's information before transferring coins
      //
-     cout << "Address " << index
-          << "'s balance is " << client->get_balance(index)
-          << ", sequence number is " << client->get_sequence_number(index) << endl;
+     LOG << "Address " << index
+         << "'s balance is " << client->get_balance(index)
+         << ", sequence number is " << client->get_sequence_number(index) << endl;
 
-     cout << "Address " << index + 1
-          << "'s balance is " << client->get_balance(index + 1)
-          << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
+     LOG << "Address " << index + 1
+         << "'s balance is " << client->get_balance(index + 1)
+         << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
 
      //
      //  transfer coins 1 cion(1000000 micro coin) from account 0 to account 1
      //
-     for (int i = 0; i < 4; i++)
+     for (int i = 1; i < account_amout; i++)
      {
           client->transfer_coins_int(0, accounts[i].address, 10 * micro_libra_coin, 0, 0, true);
           cout << "Transferred one coin from account 0 to account 1 ..." << endl;
@@ -189,26 +190,45 @@ bool test_violas_client()
      //
      //  print account's information before transferring coins
      //
-     cout << "Address " << index
-          << "'s balance is " << client->get_balance(index)
-          << ", sequence number is " << client->get_sequence_number(index) << endl;
+     LOG << "Address " << index
+         << "'s balance is " << client->get_balance(index)
+         << ", sequence number is " << client->get_sequence_number(index) << endl;
 
-     cout << "Address " << index + 1
-          << "'s balance is " << client->get_balance(index + 1)
-          << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
+     LOG << "Address " << index + 1
+         << "'s balance is " << client->get_balance(index + 1)
+         << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
 
+     //
+     //   module token is published by account 2
+     //
      string module = "scripts/token";
-     client->compile(3, module + ".mvir", true); //my_module.mvir
-     client->publish_module(3, module + ".mv");
+     client->compile(2, module + ".mvir", true); //my_module.mvir
+     client->publish_module(2, module + ".mv");
 
+     //
+     //   script publish is executed by account 2 and account 4
+     //
      string script = "scripts/publish";
-     client->compile(3, script + ".mvir");
+     client->compile(2, script + ".mvir");
 
-     client->execute_script(3, script + ".mv", vector<string>{"10"});
+     client->execute_script(2, script + ".mv", vector<string>{});
 
-     client->execute_script(4, script + ".mv", vector<string>{"10"});
+     client->execute_script(4, script + ".mv", vector<string>{});
 
-     cout << "finished all test jobs !" << endl;
+     //
+     //   get transaction and event with sequence 0 for account 4
+     //
+     client->get_committed_txn_by_acc_seq(4, 0);
+
+     //
+     //   mint  and transfer stable coin DToken from account 2 to account 4
+     //
+     script = "scripts/mint";
+     client->compile(2, script + ".mvir");
+     client->execute_script(2, script + ".mv", vector<string>{uint256_to_string(accounts[4].address), "10"});
+     client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(4) - 1);
+
+     LOG << "finished all test jobs !" << endl;
 
      return true;
 }

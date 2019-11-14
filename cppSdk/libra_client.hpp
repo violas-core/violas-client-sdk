@@ -5,10 +5,23 @@
 #include <array>
 #include <vector>
 #include <iostream>
+//
+//  log
+//
+std::ostream &log(std::ostream &ost, const char *flag, const char *file, int line, const char *func);
 
+#define LOG log(clog, "[ LOG   ] ", __FILE__, __LINE__, __func__)
+#define ERROR log(cerr, "[ ERROR ] ", __FILE__, __LINE__, __func__)
+///
+/// uint256
+///
 using uint256 = std::array<uint8_t, 32>;
+
 std::ostream &operator<<(std::ostream &os, const uint256 &value);
 std::ostream &operator>>(std::ostream &os, const uint256 &value);
+
+std::string uint256_to_string(const uint256 &address);
+uint256 uint256_from_string(const std::string &str_addr);
 
 const uint64_t micro_libra_coin = 1000000;
 
@@ -69,6 +82,8 @@ public:
     virtual void publish_module(uint64_t account_index, const std::string &module_file) = 0;
 
     virtual void execute_script(uint64_t account_index, const std::string &script_file, const std::vector<std::string> &script_args) = 0;
+
+    virtual void get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;

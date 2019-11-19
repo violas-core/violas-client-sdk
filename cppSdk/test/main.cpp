@@ -118,7 +118,6 @@ bool test_violas_client()
 
      // auto host = "18.220.66.235";
      // uint16_t port = 40001;
-     const uint64_t account_amout = 5;
 
      // auto client = Violas::client::create(host,
      //                                      port,
@@ -129,14 +128,16 @@ bool test_violas_client()
      //                                      "mnemonic");
 
      auto client = Violas::client::create("localhost",
-                                          44487,
-                                          "/tmp/02c904ab576c83d61463984208f155c6/0/consensus_peers.config.toml",
-                                          "/tmp/9481f8402299ade9b18bed1fa39d21a2/temp_faucet_keys",
+                                          34193,
+                                          "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
+                                          "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
                                           false,
                                           "faucet.testnet.libra.org",
                                           "mnemonic");
+
      client->test_validator_connection();
 
+     const uint64_t account_amout = 5;
      for (int i = 0; i < account_amout; i++)
      {
           auto account = client->create_next_account(true);
@@ -185,7 +186,8 @@ bool test_violas_client()
      for (int i = 1; i < account_amout; i++)
      {
           client->transfer_coins_int(0, accounts[i].address, 10 * micro_libra_coin, 0, 0, true);
-          cout << "Transferred one coin from account 0 to account 1 ..." << endl;
+          cout << "Transferred one coin from account 0 to account " << i << " ..." << endl;
+          cout << "Account " << i << "'s balance is " << client->get_balance(i) << endl;
      }
      //
      //  print account's information before transferring coins
@@ -218,15 +220,18 @@ bool test_violas_client()
      //
      //   get transaction and event with sequence 0 for account 4
      //
-     client->get_committed_txn_by_acc_seq(4, 0);
+     //client->get_committed_txn_by_acc_seq(4, 0);
 
      //
      //   mint  and transfer stable coin DToken from account 2 to account 4
      //
      script = "scripts/mint";
      client->compile(2, script + ".mvir");
-     client->execute_script(2, script + ".mv", vector<string>{uint256_to_string(accounts[4].address), "10"});
-     client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(4) - 1);
+     client->execute_script(2, script + ".mv", vector<string>{uint256_to_string(accounts[4].address), "11"});
+     client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
+
+     balance = client->get_violas_balance(4);
+     LOG << "stable cion is " << balance << endl;
 
      LOG << "finished all test jobs !" << endl;
 

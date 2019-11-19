@@ -1,6 +1,6 @@
-import {{sender}}.DToken;
+import {{sender}}.ViolasToken;
 
 main() {
-    DToken.publish();
+    ViolasToken.publish();
     return;
 }

@@ -82,7 +82,9 @@ extern "C"
 
     bool libra_execute_script(uint64_t raw_ptr, uint64_t account_index, const char *script_file, const ScriptArgs *script_args);
 
-    bool lib_get_committed_txn_by_acc_seq(uint64_t raw_ptr, uint64_t account_index, uint64_t sequence_num);
+    bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, uint64_t account_index, uint64_t sequence_num);
+
+    bool violas_get_balance(uint64_t raw_ptr, uint64_t account_index, uint64_t *balance);
 
 #ifdef __cplusplus
 }

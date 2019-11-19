@@ -108,6 +108,8 @@ public:
            const std::string &mnemonic_file);
 
     virtual ~client(){};
+
+    virtual uint64_t get_violas_balance(uint64_t account_index) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;

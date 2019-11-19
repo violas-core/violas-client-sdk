@@ -16,7 +16,7 @@ pub mod x86_64 {
     use transaction_builder::get_transaction_name;
     //use tempfile::tempdir;
 
-    use crate::compiler_proxy;
+    use crate::{compiler_proxy, violas_account};
     const DEBUG: bool = true;
     //let last_error : error::Error;
 
@@ -515,7 +515,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn lib_get_committed_txn_by_acc_seq(
+    pub extern "C" fn libra_get_committed_txn_by_acc_seq(
         raw_ptr: u64,
         account_index: u64,
         sequence_num: u64,
@@ -555,5 +555,42 @@ pub mod x86_64 {
         }
 
         false
+    }
+
+    #[no_mangle]
+    pub extern "C" fn violas_get_balance(raw_ptr: u64, index: u64, balance: &mut u64) -> bool {
+        let ret = panic::catch_unwind(|| -> Result<u64, Box<dyn error::Error>> {
+            let mut value = 0;
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let address = client.get_account_address_from_parameter(index.to_string().as_str())?;
+
+            if let (Some(blob), _) = client.client.get_account_blob(address)? {
+                let map = BTreeMap::<Vec<u8>, Vec<u8>>::try_from(&blob)?;
+                // for (movie, review) in &map {
+                //     println!("{:?}: \"{:?}\"", movie, review);
+                // }
+
+                let ar = violas_account::ViolasAccountResource::make_from(&map)?;
+
+                value = ar.balance;
+            }
+            Ok(value)
+        });
+
+        let mut result = false;
+        *balance = 0;
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(value) => {
+                    *balance = value;
+                    result = true;
+                }
+                Err(err) => println!("erro , {}", err),
+            }
+        } else {
+            println!("panic at violas_get_balance()");
+        }
+
+        result
     }
 }

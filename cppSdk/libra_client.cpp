@@ -215,7 +215,7 @@ public:
 
     virtual void get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) override
     {
-        bool ret = lib_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy, account_index, sequence_num);
+        bool ret = libra_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy, account_index, sequence_num);
         if (!ret)
             throw runtime_error(format("failed to get committed transaction by account index %d and sequence number %d, ", account_index, sequence_num) + EXCEPTION_AT);
 
@@ -269,6 +269,17 @@ public:
     virtual ~client_imp()
     {
         // LOG << " entered" << endl;
+    }
+
+    virtual uint64_t get_violas_balance(uint64_t account_index) override
+    {
+        uint64_t balance = 0;
+
+        bool ret = violas_get_balance((uint64_t)raw_client_proxy, account_index, &balance);
+        if (!ret)
+            throw runtime_error(format("failed to get Violas balance for account index %d ", account_index) + EXCEPTION_AT);
+
+        return balance;
     }
 };
 

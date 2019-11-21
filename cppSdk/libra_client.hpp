@@ -127,6 +127,27 @@ public:
 
 using client_ptr = std::shared_ptr<client>;
 
+class VStake
+{
+public:
+    static std::shared_ptr<VStake> create(Libra::client_ptr client,
+                                          uint256 governor_addr,
+                                          const std::string &name);
+    virtual std::string name() = 0;
+
+    virtual void deploy() = 0;
+
+    virtual void publish(uint256 address) = 0;
+
+    virtual void mint() = 0;
+
+    virtual void transfer(uint64_t micro_coin) = 0;
+
+    virtual uint64_t get_account_balance(uint64_t addr) = 0;
+};
+
+using token_ptr = std::shared_ptr<VStake>;
+
 } // namespace Violas
 
 #endif

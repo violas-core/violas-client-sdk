@@ -116,24 +116,24 @@ bool test_violas_client()
 {
      cout << "running Libra test ..." << endl;
 
-     auto host = "18.220.66.235";
-     uint16_t port = 40001;
+     // auto host = "18.220.66.235";
+     // uint16_t port = 40001;
 
-     auto client = Violas::client::create(host,
-                                          port,
-                                          "violas_consensus_peers.config.toml",
-                                          "temp_faucet_keys",
-                                          false,
-                                          "faucet.testnet.libra.org",
-                                          "mnemonic");
-
-     // auto client = Violas::client::create("localhost",
-     //                                      34193,
-     //                                      "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
-     //                                      "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+     // auto client = Violas::client::create(host,
+     //                                      port,
+     //                                      "violas_consensus_peers.config.toml",
+     //                                      "temp_faucet_keys",
      //                                      false,
      //                                      "faucet.testnet.libra.org",
      //                                      "mnemonic");
+
+     auto client = Violas::client::create("localhost",
+                                          34193,
+                                          "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
+                                          "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+                                          false,
+                                          "faucet.testnet.libra.org",
+                                          "mnemonic");
 
      client->test_validator_connection();
 
@@ -192,12 +192,13 @@ bool test_violas_client()
           //   compiles all scripts for governor
           //
           client->compile(governor, module + ".mvir", true);
+          // publish the module to validator node
+          client->publish_module(governor, module + ".mv");
+
           client->compile(governor, publish_script + ".mvir");
           client->compile(governor, mint_script + ".mvir");
           client->compile(governor, transfer_script + ".mvir");
 
-          // publish the module to validator node
-          client->publish_module(governor, module + ".mv");
           //
           // Governor transfers VStake to SSO
           //
@@ -243,10 +244,10 @@ bool test_violas_client()
      };
 
      //"州长(1) 为SSO用户(3)和SSO用户(4) 铸稳定币(1) 1000个, 转帐给用户5和6稳定币10个"
-     test_mint_stable_coion(1, 3, 4, 1000, 5, 6, 10);
+     test_mint_stable_coion(1, 3, 4, 1000, 5, 6, 100);
 
      //"州长(2) 为SSO用户(3) 和SSO用户(4)铸稳定币(1) 2000个， 转帐给用户5和6稳定币10个"
-     test_mint_stable_coion(2, 3, 4, 2000, 5, 6, 20);
+     test_mint_stable_coion(2, 3, 4, 2000, 5, 6, 200);
 
      LOG << "\n\n"
          << "All balances of all accounts"

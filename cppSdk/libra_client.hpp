@@ -36,6 +36,8 @@ uint256 uint256_from_string(const std::string &str_addr);
 
 const uint64_t MICRO_LIBRO_COIN = 1000000;
 
+bool is_valid_balance(uint64_t value);
+
 namespace Libra
 {
 ///

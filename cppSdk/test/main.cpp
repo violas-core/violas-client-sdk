@@ -116,24 +116,24 @@ bool test_violas_client()
 {
      cout << "running Libra test ..." << endl;
 
-     // auto host = "18.220.66.235";
-     // uint16_t port = 40001;
+     auto host = "18.220.66.235";
+     uint16_t port = 40001;
 
-     // auto client = Violas::client::create(host,
-     //                                      port,
-     //                                      "violas_consensus_peers.config.toml",
-     //                                      "temp_faucet_keys",
-     //                                      false,
-     //                                      "faucet.testnet.libra.org",
-     //                                      "mnemonic");
-
-     auto client = Violas::client::create("localhost",
-                                          34193,
-                                          "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
-                                          "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+     auto client = Violas::client::create(host,
+                                          port,
+                                          "violas_consensus_peers.config.toml",
+                                          "temp_faucet_keys",
                                           false,
                                           "faucet.testnet.libra.org",
                                           "mnemonic");
+
+     // auto client = Violas::client::create("localhost",
+     //                                      34193,
+     //                                      "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
+     //                                      "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+     //                                      false,
+     //                                      "faucet.testnet.libra.org",
+     //                                      "mnemonic");
 
      client->test_validator_connection();
 
@@ -158,18 +158,15 @@ bool test_violas_client()
      uint64_t chairman = 0;
 
      //
-     //  test mint coins
+     //  Account #0 as Governor mint and transer 100 VToken
      //
      auto balance = client->get_balance(chairman);
 
      client->mint_coins(0, 200, true);
-
      assert(balance + 200 == client->get_balance(chairman));
-     LOG << "Address 0's balance is " << client->get_balance(1) << endl;
 
-     //
-     //  transfer 100 vtoken to account #1 and #2
-     //
+     LOG << "\n\n董事长转帐100个VToken给每个州长" << endl;
+
      client->transfer_coins_int(chairman, accounts[1].address, 100 * MICRO_LIBRO_COIN);
      LOG << "Address 1's balance is " << client->get_balance(1) << endl;
 
@@ -202,10 +199,12 @@ bool test_violas_client()
           //
           // Governor transfers VStake to SSO
           //
+          // LOG << "州长转帐10个VToken给每个SSO发币商" << endl;
+
           client->transfer_coins_int(governor, accounts[sso1].address, 10 * MICRO_LIBRO_COIN);
-          LOG << "Governor (" << governor << ") transer 1 VToken(Libra) to user #" << sso1 << endl;
+          LOG << "Governor (" << governor << ") transer 10 VToken(Libra) to user #" << sso1 << endl;
           client->transfer_coins_int(governor, accounts[sso2].address, 10 * MICRO_LIBRO_COIN);
-          LOG << "Governor (" << governor << ") transer 1 VToken(Libra) to user #" << sso2 << endl;
+          LOG << "Governor (" << governor << ") transer 10 VToken(Libra) to user #" << sso2 << endl;
 
           //
           //   executing publish script for registering stable 1
@@ -227,6 +226,7 @@ bool test_violas_client()
           //
           //   SSO transfer VToken to user
           //
+          // LOG << "SSO转帐1个VToken给每个用户" << endl;
           client->transfer_coins_int(sso1, accounts[u1].address, 1 * MICRO_LIBRO_COIN);
           client->transfer_coins_int(sso2, accounts[u2].address, 1 * MICRO_LIBRO_COIN);
           //
@@ -253,12 +253,19 @@ bool test_violas_client()
          << "All balances of all accounts"
          << endl;
 
+     auto balance_to_string = [](uint64_t value) -> string {
+          if (is_valid_balance(value))
+               return to_string(value);
+          else
+               return "N/A";
+     };
+
      for (auto &account : accounts)
      {
           LOG << "Account " << account.index << "'s balances ------ "
               << "VToken : " << client->get_balance(account.index) << ", "
-              << "VStake 1 : " << client->get_violas_balance(account.index, accounts[1].address) << ", "
-              << "VStake 2 : " << client->get_violas_balance(account.index, accounts[2].address) << endl;
+              << "VStake-1 : " << balance_to_string(client->get_violas_balance(account.index, accounts[1].address)) << ", "
+              << "VStake-2 : " << balance_to_string(client->get_violas_balance(account.index, accounts[2].address)) << endl;
      }
 
      cout << "\n\n"

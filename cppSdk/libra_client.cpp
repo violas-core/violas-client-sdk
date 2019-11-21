@@ -45,6 +45,13 @@ std::string uint256_to_string(const uint256 &address)
     return oss.str();
 }
 
+bool is_valid_balance(uint64_t value)
+{
+    const uint64_t max_uint64 = numeric_limits<uint64_t>::max();
+
+    return value != max_uint64;
+}
+
 namespace Libra
 {
 class client_imp : virtual public client
@@ -266,7 +273,7 @@ public:
         uint64_t balance = 0;
         string addr = "0x" + uint256_to_string(account_path_addr);
 
-        bool ret = violas_get_balance((uint64_t)raw_client_proxy, account_index, addr.c_str(), &balance);
+        bool ret = libra_get_account_resource((uint64_t)raw_client_proxy, account_index, addr.c_str(), &balance);
         if (!ret)
             throw runtime_error(format("failed to get Violas balance for account index %d ", account_index) + EXCEPTION_AT);
 

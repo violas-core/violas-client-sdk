@@ -4,14 +4,13 @@ pub mod x86_64 {
     //extern crate hex;
     use client::client_proxy::{AccountEntry, ClientProxy};
     use client::AccountStatus;
+    use failure::{bail, format_err, Error};
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress, account_config::core_code_address,
     }; //ADDRESS_LENGTH access_path::AccessPath,
     use std::ffi::CStr; //CString
     use std::os::raw::{c_char, c_uchar};
-    use std::{
-        collections::BTreeMap, convert::TryFrom, error::Error, io::Write, result::Result, *,
-    };
+    use std::{collections::BTreeMap, convert::TryFrom, io::Write, result::Result, *};
     use tempdir::TempDir;
     use transaction_builder::get_transaction_name;
     //use tempfile::tempdir;
@@ -21,8 +20,8 @@ pub mod x86_64 {
     //let last_error : error::Error;
 
     #[allow(dead_code)]
-    fn set_last_error(err: Box<dyn error::Error>) {
-        println!("set last error {:?}", err.description());
+    fn set_last_error(_err: Error) {
+        //println!("set last error {:?}", err);
     }
     //
     //
@@ -349,7 +348,7 @@ pub mod x86_64 {
         script_path: *const c_char,
         is_module: bool,
     ) -> bool {
-        let ret = panic::catch_unwind(|| -> Result<(), Box<dyn error::Error>> {
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
             // convert raw ptr to object client
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let address =
@@ -412,7 +411,7 @@ pub mod x86_64 {
         address: String,
         source_path: path::PathBuf,
         is_module: bool,
-    ) -> Result<Option<String>, Box<dyn Error>> {
+    ) -> Result<Option<String>, Error> {
         //
         // get all dependencies
         //
@@ -558,14 +557,13 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn violas_get_balance(
+    pub extern "C" fn libra_get_account_resource(
         raw_ptr: u64,
         index: u64,
         c_account_path_addr: *const c_char,
         balance: &mut u64,
     ) -> bool {
-        let ret = panic::catch_unwind(|| -> Result<u64, Box<dyn error::Error>> {
-            let mut value = 0;
+        let ret = panic::catch_unwind(|| -> Result<u64, Error> {
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let address = client.get_account_address_from_parameter(index.to_string().as_str())?;
 
@@ -575,33 +573,31 @@ pub mod x86_64 {
                 // for (movie, review) in &map {
                 //     println!("{:?}: \"{:?}\"", movie, review);
                 // }
-                // let addr = AccountAddress::from_hex_literal(
-                //     "0x626402307f19f28a41e9ea42e7bbc5a739aab6f225f8f3d725c11f960e89a649",
-                // )
-                // .unwrap();
                 let account_path_addr =
                     unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
                 let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
                 let ar = violas_account::ViolasAccountResource::make_from(&addr, &map)?;
 
-                value = ar.balance;
+                return Ok(ar.balance);
             }
-            Ok(value)
+
+            bail!("Account hasn't published the module")
         });
 
         let mut result = false;
-        *balance = 0;
+        *balance = u64::max_value(); //set invalid balance;
+
         if ret.is_ok() {
             match ret.unwrap() {
                 Ok(value) => {
                     *balance = value;
                 }
-                Err(err) => {} //println!("erro , {}", err),
+                Err(err) => set_last_error(err),
             }
             result = true;
         } else {
-            println!("panic at violas_get_balance()");
+            set_last_error(format_err!("panic at libra_get_account_resource()"));
         }
 
         result

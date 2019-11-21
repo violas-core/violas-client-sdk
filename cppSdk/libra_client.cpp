@@ -18,16 +18,6 @@ inline ostream &log(ostream &ost, const char *flag, const char *file, int line, 
     return ost;
 }
 
-template <typename... Args>
-std::string format(const std::string &format, Args... args)
-{
-    size_t size = snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
-    std::unique_ptr<char[]> buf(new char[size]);
-    snprintf(buf.get(), size, format.c_str(), args...);
-
-    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
-}
-
 #define EXCEPTION_AT format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
 
 ostream &operator<<(ostream &os, const uint256 &value)
@@ -271,11 +261,12 @@ public:
         // LOG << " entered" << endl;
     }
 
-    virtual uint64_t get_violas_balance(uint64_t account_index) override
+    virtual uint64_t get_violas_balance(uint64_t account_index, const uint256 &account_path_addr) override
     {
         uint64_t balance = 0;
+        string addr = "0x" + uint256_to_string(account_path_addr);
 
-        bool ret = violas_get_balance((uint64_t)raw_client_proxy, account_index, &balance);
+        bool ret = violas_get_balance((uint64_t)raw_client_proxy, account_index, addr.c_str(), &balance);
         if (!ret)
             throw runtime_error(format("failed to get Violas balance for account index %d ", account_index) + EXCEPTION_AT);
 

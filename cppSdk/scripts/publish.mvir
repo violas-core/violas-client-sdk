@@ -1,0 +1,6 @@
+import {{sender}}.DToken;
+
+main() {
+    DToken.publish();
+    return;
+}

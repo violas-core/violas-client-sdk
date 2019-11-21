@@ -1,6 +1,0 @@
-import {{sender}}.ViolasToken;
-
-main(payee: address, amount: u64) {
-    ViolasToken.transfer(move(payee), move(amount));
-    return;
-}

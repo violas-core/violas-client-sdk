@@ -12,6 +12,17 @@ std::ostream &log(std::ostream &ost, const char *flag, const char *file, int lin
 
 #define LOG log(clog, "[ LOG   ] ", __FILE__, __LINE__, __func__)
 #define ERROR log(cerr, "[ ERROR ] ", __FILE__, __LINE__, __func__)
+
+template <typename... Args>
+std::string format(const std::string &format, Args... args)
+{
+    size_t size = snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
+    std::unique_ptr<char[]> buf(new char[size]);
+    snprintf(buf.get(), size, format.c_str(), args...);
+
+    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+}
+
 ///
 /// uint256
 ///
@@ -23,7 +34,7 @@ std::ostream &operator>>(std::ostream &os, const uint256 &value);
 std::string uint256_to_string(const uint256 &address);
 uint256 uint256_from_string(const std::string &str_addr);
 
-const uint64_t micro_libra_coin = 1000000;
+const uint64_t MICRO_LIBRO_COIN = 1000000;
 
 namespace Libra
 {
@@ -64,7 +75,7 @@ public:
 
     virtual uint64_t get_sequence_number(uint64_t index) = 0;
 
-    virtual void mint_coins(uint64_t index, uint64_t num_coins, bool is_blocking) = 0;
+    virtual void mint_coins(uint64_t index, uint64_t num_coins, bool is_blocking = true) = 0;
 
     /// Transfer num_coins from sender account to receiver.
     //  If is_blocking = true, it will keep querying validator till the sequence number is bumped up in validator.
@@ -73,9 +84,9 @@ public:
     transfer_coins_int(uint64_t sender_account_ref_id, // the reference id of account
                        uint256 receiver_address,       // the address of receiver
                        uint64_t micro_coins,           // a millionth of a coin
-                       uint64_t gas_unit_price,        // set gas unit price or 0
-                       uint max_gas_amount,            // set the max gas account or 0
-                       bool is_blocking) = 0;          // true for sync, fasle for async
+                       uint64_t gas_unit_price = 0,    // set gas unit price or 0
+                       uint max_gas_amount = 0,        // set the max gas account or 0
+                       bool is_blocking = true) = 0;   // true for sync, fasle for async
 
     virtual void compile(uint64_t account_index, const std::string &source_file, bool is_module = false) = 0;
 
@@ -109,7 +120,7 @@ public:
 
     virtual ~client(){};
 
-    virtual uint64_t get_violas_balance(uint64_t account_index) = 0;
+    virtual uint64_t get_violas_balance(uint64_t account_index, const uint256 &account_path_addr) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;

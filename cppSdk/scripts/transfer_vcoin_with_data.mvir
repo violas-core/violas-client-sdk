@@ -1,0 +1,6 @@
+import {{sender}}.DToken;
+
+main(payee: address, amount: u64, data: bytearray) {
+    DToken.transfer_vcoin_with_data(move(payee), move(amount), move(data));
+    return;
+}

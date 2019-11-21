@@ -1,4 +1,4 @@
-module ViolasToken {
+module DToken {
 
     import 0x00.LibraAccount;
     import 0x0.LibraCoin;
@@ -10,7 +10,7 @@ module ViolasToken {
     
     resource Owner { }
 
-    // A resource representing the ViolasToken
+    // A resource representing the DToken
     resource T {
         value: u64,
     }
@@ -20,7 +20,7 @@ module ViolasToken {
     }
     
     resource Info {
-        allinone_events: Event.Handle<Self.AllInOneEvent>,
+        allinone_events: Event.Handle<Self.AllinoneEvent>,
     }
 
     resource OwnerData {
@@ -37,7 +37,7 @@ module ViolasToken {
         price: u64,
     }
     
-    struct AllInOneEvent {
+    struct AllinoneEvent {
         etype: u64, 
         sender: address,
         receiver: address,
@@ -66,7 +66,7 @@ module ViolasToken {
         move_to_sender<TokenAddr>(TokenAddr{ addr: {{sender}} });
 
         move_to_sender<Info>(Info{
-            allinone_events: Event.new_event_handle<Self.AllInOneEvent>(),
+            allinone_events: Event.new_event_handle<Self.AllinoneEvent>(),
         });
 
         Self.emit_events(0, copy(sender), 0, 0, h"");
@@ -92,7 +92,7 @@ module ViolasToken {
         move_to_sender<TokenAddr>(TokenAddr{ addr: {{sender}} });
 
         move_to_sender<Info>(Info{
-            allinone_events: Event.new_event_handle<Self.AllInOneEvent>(),
+            allinone_events: Event.new_event_handle<Self.AllinoneEvent>(),
         });
 
         move_to_sender<OwnerData>(OwnerData{ data: copy(data) });
@@ -350,7 +350,7 @@ module ViolasToken {
         let sender: address;
         let token: address;
         
-        let allinone_event: Self.AllInOneEvent;
+        let allinone_event: Self.AllinoneEvent;
         
         let sender_info_ref: &mut Self.Info;
         let receiver_info_ref: &mut Self.Info;
@@ -358,7 +358,7 @@ module ViolasToken {
         sender = get_txn_sender();
         token = {{sender}};
 
-        allinone_event = AllInOneEvent {
+        allinone_event = AllinoneEvent {
             etype: copy(etype),
             sender: copy(sender),
             receiver: copy(receiver),
@@ -370,7 +370,7 @@ module ViolasToken {
 
         if(true) {
             sender_info_ref = borrow_global_mut<Info>(copy(sender));
-            Event.emit_event<Self.AllInOneEvent>(&mut move(sender_info_ref).allinone_events, copy(allinone_event));
+            Event.emit_event<Self.AllinoneEvent>(&mut move(sender_info_ref).allinone_events, copy(allinone_event));
         }
 
         if((copy(etype) == 1)  ||
@@ -381,7 +381,7 @@ module ViolasToken {
            (copy(etype) == 12))
         {
             receiver_info_ref = borrow_global_mut<Info>(copy(receiver));  
-            Event.emit_event<Self.AllInOneEvent>(&mut move(receiver_info_ref).allinone_events, copy(allinone_event));
+            Event.emit_event<Self.AllinoneEvent>(&mut move(receiver_info_ref).allinone_events, copy(allinone_event));
         }
         
         return;

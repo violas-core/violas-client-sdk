@@ -20,7 +20,7 @@ pub mod x86_64 {
     const DEBUG: bool = true;
     //let last_error : error::Error;
 
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     fn set_last_error(err: Box<dyn error::Error>) {
         println!("set last error {:?}", err.description());
     }
@@ -480,7 +480,7 @@ pub mod x86_64 {
     #[repr(C)]
     pub struct ScriptArgs {
         len: u64,
-        data: *const *const c_char, // C string array
+        data: *const *const c_char, // C char* array
     }
 
     #[no_mangle]
@@ -558,7 +558,12 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn violas_get_balance(raw_ptr: u64, index: u64, balance: &mut u64) -> bool {
+    pub extern "C" fn violas_get_balance(
+        raw_ptr: u64,
+        index: u64,
+        c_account_path_addr: *const c_char,
+        balance: &mut u64,
+    ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<u64, Box<dyn error::Error>> {
             let mut value = 0;
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
@@ -566,11 +571,19 @@ pub mod x86_64 {
 
             if let (Some(blob), _) = client.client.get_account_blob(address)? {
                 let map = BTreeMap::<Vec<u8>, Vec<u8>>::try_from(&blob)?;
+                // debugging
                 // for (movie, review) in &map {
                 //     println!("{:?}: \"{:?}\"", movie, review);
                 // }
+                // let addr = AccountAddress::from_hex_literal(
+                //     "0x626402307f19f28a41e9ea42e7bbc5a739aab6f225f8f3d725c11f960e89a649",
+                // )
+                // .unwrap();
+                let account_path_addr =
+                    unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
+                let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
-                let ar = violas_account::ViolasAccountResource::make_from(&map)?;
+                let ar = violas_account::ViolasAccountResource::make_from(&addr, &map)?;
 
                 value = ar.balance;
             }
@@ -583,10 +596,10 @@ pub mod x86_64 {
             match ret.unwrap() {
                 Ok(value) => {
                     *balance = value;
-                    result = true;
                 }
-                Err(err) => println!("erro , {}", err),
+                Err(err) => {} //println!("erro , {}", err),
             }
+            result = true;
         } else {
             println!("panic at violas_get_balance()");
         }

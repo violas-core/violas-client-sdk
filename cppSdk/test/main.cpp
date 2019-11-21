@@ -93,7 +93,7 @@ bool test_libra_client()
      //
      //  transfer coins 1 cion(1000000 micro coin) from account 0 to account 1
      //
-     client->transfer_coins_int(0, accounts[1].address, 1 * micro_libra_coin, 0, 0, true);
+     client->transfer_coins_int(0, accounts[1].address, 1 * MICRO_LIBRO_COIN, 0, 0, true);
      cout << "Transferred one coin from account 0 to account 1 ..." << endl;
 
      //
@@ -116,124 +116,152 @@ bool test_violas_client()
 {
      cout << "running Libra test ..." << endl;
 
-     // auto host = "18.220.66.235";
-     // uint16_t port = 40001;
+     auto host = "18.220.66.235";
+     uint16_t port = 40001;
 
-     // auto client = Violas::client::create(host,
-     //                                      port,
-     //                                      "violas_consensus_peers.config.toml",
-     //                                      "temp_faucet_keys",
-     //                                      false,
-     //                                      "faucet.testnet.libra.org",
-     //                                      "mnemonic");
-
-     auto client = Violas::client::create("localhost",
-                                          34193,
-                                          "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
-                                          "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+     auto client = Violas::client::create(host,
+                                          port,
+                                          "violas_consensus_peers.config.toml",
+                                          "temp_faucet_keys",
                                           false,
                                           "faucet.testnet.libra.org",
                                           "mnemonic");
 
+     // auto client = Violas::client::create("localhost",
+     //                                      34193,
+     //                                      "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
+     //                                      "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+     //                                      false,
+     //                                      "faucet.testnet.libra.org",
+     //                                      "mnemonic");
+
      client->test_validator_connection();
 
-     const uint64_t account_amout = 5;
-     for (int i = 0; i < account_amout; i++)
+     const uint64_t account_amount = 10;
+     for (int i = 0; i < account_amount; i++)
      {
-          auto account = client->create_next_account(true);
-
-          LOG << "Created account #" << account.first << " address " << account.second << endl;
+          client->create_next_account(true);
      }
 
      auto accounts = client->get_all_accounts();
 
      for (auto const &account : accounts)
      {
-          LOG << "Index : " << account.index << "\t"
-              << "Address : " << account.address << "\t"
-              << "Sequence : " << account.sequence_number << "\t"
-              << "Status : " << account.status << endl;
+          LOG << "\n\tIndex : " << account.index
+              << "\n\tAddress : " << account.address
+              << "\n\tSequence : " << account.sequence_number
+              << "\n\tStatus : " << account.status
+              << "\n\tVToken Balance : " << client->get_balance(account.index)
+              << endl;
      }
 
-     uint64_t index = 0;
+     uint64_t chairman = 0;
 
      //
      //  test mint coins
      //
-     auto balance = client->get_balance(index);
+     auto balance = client->get_balance(chairman);
 
-     LOG << "Mint 2 coins to account 0 " << endl;
+     client->mint_coins(0, 200, true);
 
-     client->mint_coins(0, 100, true);
-
-     assert(balance + 100 == client->get_balance(index));
-     LOG << "succeeded to test minting coins " << endl;
+     assert(balance + 200 == client->get_balance(chairman));
+     LOG << "Address 0's balance is " << client->get_balance(1) << endl;
 
      //
-     //  print account's information before transferring coins
+     //  transfer 100 vtoken to account #1 and #2
      //
-     LOG << "Address " << index
-         << "'s balance is " << client->get_balance(index)
-         << ", sequence number is " << client->get_sequence_number(index) << endl;
+     client->transfer_coins_int(chairman, accounts[1].address, 100 * MICRO_LIBRO_COIN);
+     LOG << "Address 1's balance is " << client->get_balance(1) << endl;
 
-     LOG << "Address " << index + 1
-         << "'s balance is " << client->get_balance(index + 1)
-         << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
+     client->transfer_coins_int(chairman, accounts[2].address, 100 * MICRO_LIBRO_COIN);
+     LOG << "Address 2's balance is " << client->get_balance(2) << endl;
 
-     //
-     //  transfer coins 1 cion(1000000 micro coin) from account 0 to account 1
-     //
-     for (int i = 1; i < account_amout; i++)
+     //                                         州长索引   SSO用户1        SSO用户2        minted稳定币数量   用户1        用户2         transferrd稳定币数量
+     auto test_mint_stable_coion = [&](uint64_t governor, uint64_t sso1, uint64_t sso2, uint64_t vstake, uint64_t u1, uint64_t u2, uint64_t transerred_vstake) {
+          LOG << "\n\n"
+              << format("州长(%d)为SSO(%d)和SSO(%d)铸造(%d)个稳定币(%d), 每个SSO转帐给用户(%d)和(%d)稳定币(%d)个", governor, sso1, sso2, vstake, governor, u1, u2, transerred_vstake)
+              << endl;
+          //
+          //   all scripts
+          //
+          string module = "../scripts/token";
+          string publish_script = "../scripts/publish";
+          string mint_script = "../scripts/mint";
+          string transfer_script = "../scripts/transfer";
+          //
+          //   compiles all scripts for governor
+          //
+          client->compile(governor, module + ".mvir", true);
+          client->compile(governor, publish_script + ".mvir");
+          client->compile(governor, mint_script + ".mvir");
+          client->compile(governor, transfer_script + ".mvir");
+
+          // publish the module to validator node
+          client->publish_module(governor, module + ".mv");
+          //
+          // Governor transfers VStake to SSO
+          //
+          client->transfer_coins_int(governor, accounts[sso1].address, 10 * MICRO_LIBRO_COIN);
+          LOG << "Governor (" << governor << ") transer 1 VToken(Libra) to user #" << sso1 << endl;
+          client->transfer_coins_int(governor, accounts[sso2].address, 10 * MICRO_LIBRO_COIN);
+          LOG << "Governor (" << governor << ") transer 1 VToken(Libra) to user #" << sso2 << endl;
+
+          //
+          //   executing publish script for registering stable 1
+          //
+          client->execute_script(governor, publish_script + ".mv", vector<string>{});
+          client->execute_script(sso1, publish_script + ".mv", vector<string>{});
+          client->execute_script(sso2, publish_script + ".mv", vector<string>{});
+
+          //
+          // Governor mints VStake and transfer cions to SSO user #3 and #4
+          //
+          client->execute_script(governor, mint_script + ".mv", vector<string>{uint256_to_string(accounts[sso1].address), to_string(vstake)});
+          client->execute_script(governor, mint_script + ".mv", vector<string>{uint256_to_string(accounts[sso2].address), to_string(vstake)});
+          LOG << "Account # " << sso1 << "'s balance of VStake " << governor << " : " << client->get_violas_balance(sso1, accounts[governor].address) << endl;
+          LOG << "Account # " << sso2 << "'s balance of VStake " << governor << " : " << client->get_violas_balance(sso2, accounts[governor].address) << endl;
+
+          //client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
+
+          //
+          //   SSO transfer VToken to user
+          //
+          client->transfer_coins_int(sso1, accounts[u1].address, 1 * MICRO_LIBRO_COIN);
+          client->transfer_coins_int(sso2, accounts[u2].address, 1 * MICRO_LIBRO_COIN);
+          //
+          //   user registers VStake
+          //
+          client->execute_script(u1, publish_script + ".mv", vector<string>{});
+          client->execute_script(u2, publish_script + ".mv", vector<string>{});
+          //
+          //   transfer VStake coin from SSO to user
+          //
+          client->execute_script(sso1, transfer_script + ".mv", vector<string>{uint256_to_string(accounts[u1].address), to_string(transerred_vstake)});
+          client->execute_script(sso1, transfer_script + ".mv", vector<string>{uint256_to_string(accounts[u2].address), to_string(transerred_vstake)});
+          client->execute_script(sso2, transfer_script + ".mv", vector<string>{uint256_to_string(accounts[u1].address), to_string(transerred_vstake)});
+          client->execute_script(sso2, transfer_script + ".mv", vector<string>{uint256_to_string(accounts[u2].address), to_string(transerred_vstake)});
+     };
+
+     //"州长(1) 为SSO用户(3)和SSO用户(4) 铸稳定币(1) 1000个, 转帐给用户5和6稳定币10个"
+     test_mint_stable_coion(1, 3, 4, 1000, 5, 6, 10);
+
+     //"州长(2) 为SSO用户(3) 和SSO用户(4)铸稳定币(1) 2000个， 转帐给用户5和6稳定币10个"
+     test_mint_stable_coion(2, 3, 4, 2000, 5, 6, 20);
+
+     LOG << "\n\n"
+         << "All balances of all accounts"
+         << endl;
+
+     for (auto &account : accounts)
      {
-          client->transfer_coins_int(0, accounts[i].address, 10 * micro_libra_coin, 0, 0, true);
-          cout << "Transferred one coin from account 0 to account " << i << " ..." << endl;
-          cout << "Account " << i << "'s balance is " << client->get_balance(i) << endl;
+          LOG << "Account " << account.index << "'s balances ------ "
+              << "VToken : " << client->get_balance(account.index) << ", "
+              << "VStake 1 : " << client->get_violas_balance(account.index, accounts[1].address) << ", "
+              << "VStake 2 : " << client->get_violas_balance(account.index, accounts[2].address) << endl;
      }
-     //
-     //  print account's information before transferring coins
-     //
-     LOG << "Address " << index
-         << "'s balance is " << client->get_balance(index)
-         << ", sequence number is " << client->get_sequence_number(index) << endl;
 
-     LOG << "Address " << index + 1
-         << "'s balance is " << client->get_balance(index + 1)
-         << ", sequence number is " << client->get_sequence_number(index + 1) << endl;
-
-     //
-     //   module token is published by account 2
-     //
-     string module = "scripts/token";
-     client->compile(2, module + ".mvir", true); //my_module.mvir
-     client->publish_module(2, module + ".mv");
-
-     //
-     //   script publish is executed by account 2 and account 4
-     //
-     string script = "scripts/publish";
-     client->compile(2, script + ".mvir");
-
-     client->execute_script(2, script + ".mv", vector<string>{});
-
-     client->execute_script(4, script + ".mv", vector<string>{});
-
-     //
-     //   get transaction and event with sequence 0 for account 4
-     //
-     //client->get_committed_txn_by_acc_seq(4, 0);
-
-     //
-     //   mint  and transfer stable coin DToken from account 2 to account 4
-     //
-     script = "scripts/mint";
-     client->compile(2, script + ".mvir");
-     client->execute_script(2, script + ".mv", vector<string>{uint256_to_string(accounts[4].address), "11"});
-     client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
-
-     balance = client->get_violas_balance(4);
-     LOG << "stable cion is " << balance << endl;
-
-     LOG << "finished all test jobs !" << endl;
+     cout << "\n\n"
+          << "finished all test jobs !" << endl;
 
      return true;
 }

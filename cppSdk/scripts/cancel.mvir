@@ -1,0 +1,8 @@
+import {{sender}}.DToken;
+
+main(flag: u64) {
+
+    DToken.cancel_order(move(flag));
+
+    return;
+}

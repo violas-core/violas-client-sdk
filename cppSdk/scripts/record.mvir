@@ -1,0 +1,6 @@
+import {{sender}}.DToken;
+
+main(data: bytearray) {
+    DToken.record(move(data));
+    return;
+}

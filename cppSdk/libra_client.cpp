@@ -299,4 +299,43 @@ client::create(const std::string &host,
                                    mnemonic_file);
 }
 
+class VStakeImp : public VStake
+{
+public:
+    VStakeImp()
+    {
+    }
+
+    virtual ~VStakeImp()
+    {
+    }
+
+    virtual std::string name() override
+    {
+    }
+
+    virtual void deploy() override
+    {
+    }
+
+    virtual void publish(uint256 address) override
+    {
+    }
+
+    virtual void mint() override
+    {
+    }
+
+    virtual void transfer(uint64_t micro_coin) override
+    {
+    }
+
+    virtual uint64_t get_account_balance(uint64_t addr) override
+    {
+    }
+
+protected:
+private:
+};
+
 } // namespace Violas

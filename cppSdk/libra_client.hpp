@@ -133,6 +133,9 @@ public:
     static std::shared_ptr<VStake> create(Libra::client_ptr client,
                                           uint256 governor_addr,
                                           const std::string &name);
+
+    virtual ~VStake() {}
+
     virtual std::string name() = 0;
 
     virtual void deploy() = 0;

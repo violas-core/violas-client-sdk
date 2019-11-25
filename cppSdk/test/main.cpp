@@ -11,6 +11,7 @@ using namespace std;
 
 bool test_libra_client();
 bool test_violas_client();
+bool test_vstake();
 
 int main(int argc, const char *argv[])
 {
@@ -21,7 +22,9 @@ int main(int argc, const char *argv[])
      {
           //assert(test_libra_client() == true);
 
-          assert(test_violas_client() == true);
+          //assert(test_violas_client() == true);
+
+          assert(test_vstake() == true);
      }
      catch (const std::exception &e)
      {
@@ -138,7 +141,7 @@ bool test_violas_client()
      client->test_validator_connection();
 
      const uint64_t account_amount = 10;
-     for (int i = 0; i < account_amount; i++)
+     for (uint64_t i = 0; i < account_amount; i++)
      {
           client->create_next_account(true);
      }
@@ -270,6 +273,58 @@ bool test_violas_client()
 
      cout << "\n\n"
           << "finished all test jobs !" << endl;
+
+     return true;
+}
+
+bool test_vstake()
+{
+     using namespace Violas;
+
+     cout << "running Libra test ..." << endl;
+
+     auto host = "18.220.66.235";
+     uint16_t port = 40001;
+
+     auto client = Violas::client::create(host,
+                                          port,
+                                          "violas_consensus_peers.config.toml",
+                                          "temp_faucet_keys",
+                                          false,
+                                          "faucet.testnet.libra.org",
+                                          "mnemonic");
+
+     // auto client = Violas::client::create("localhost",
+     //                                      34193,
+     //                                      "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
+     //                                      "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+     //                                      false,
+     //                                      "faucet.testnet.libra.org",
+     //                                      "mnemonic");
+
+     client->test_validator_connection();
+
+     const uint64_t account_amount = 4;
+     for (uint64_t i = 0; i < account_amount; i++)
+     {
+          client->create_next_account(true);
+     }
+
+     auto accounts = client->get_all_accounts();
+
+     for (auto const &account : accounts)
+     {
+          LOG << "\n\tIndex : " << account.index
+              << "\n\tAddress : " << account.address
+              << "\n\tSequence : " << account.sequence_number
+              << "\n\tStatus : " << account.status
+              << "\n\tVToken Balance : " << client->get_balance(account.index)
+              << endl;
+     }
+
+     //uint64_t chairman = 0;
+
+     auto v1 = VStake::create(client, accounts[1].address, "V1");
 
      return true;
 }

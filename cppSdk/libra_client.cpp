@@ -1,24 +1,29 @@
-#include <iomanip>
 #include <ctime>
+#include <iomanip>
 //#include <chrono>
 #include <sstream>
+#if __cplusplus >= 201703L
+#include <filesystem>
+#endif
+
 #include "libra_client.hpp"
 #include "rust_client_proxy.hpp"
 
 using namespace std;
 
-inline ostream &log(ostream &ost, const char *flag, const char *file, int line, const char *func)
+inline ostream &log(ostream &ost, const char *flag, const char *file, int line,
+                    const char *func)
 {
     time_t now = time(nullptr);
 
-    ost << flag
-        << put_time(std::localtime(&now), "%F %T")
-        << " (" << file << ":" << line << ":" << func << ") : ";
+    ost << flag << put_time(std::localtime(&now), "%F %T") << " (" << file << ":"
+        << line << ":" << func << ") : ";
 
     return ost;
 }
 
-#define EXCEPTION_AT format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
+#define EXCEPTION_AT \
+    format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
 
 ostream &operator<<(ostream &os, const uint256 &value)
 {
@@ -32,10 +37,7 @@ ostream &operator<<(ostream &os, const uint256 &value)
     return os;
 }
 
-std::ostream &operator>>(std::ostream &os, const uint256 &value)
-{
-    return os;
-}
+std::ostream &operator>>(std::ostream &os, const uint256 &value) { return os; }
 
 std::string uint256_to_string(const uint256 &address)
 {
@@ -60,21 +62,16 @@ protected:
     void *raw_client_proxy = nullptr;
 
 public:
-    client_imp(const std::string &host,
-               ushort port,
+    client_imp(const std::string &host, ushort port,
                const std::string &validator_set_file,
                const std::string &faucet_account_file,
-               bool sync_on_wallet_recovery,
-               const std::string &faucet_server,
+               bool sync_on_wallet_recovery, const std::string &faucet_server,
                const std::string &mnemonic_file)
     {
-        raw_client_proxy = (void *)create_libra_client_proxy(host.data(),
-                                                             port,
-                                                             validator_set_file.data(),
-                                                             faucet_account_file.data(),
-                                                             sync_on_wallet_recovery,
-                                                             faucet_server.data(),
-                                                             mnemonic_file.data());
+        raw_client_proxy = (void *)create_libra_client_proxy(
+            host.data(), port, validator_set_file.data(),
+            faucet_account_file.data(), sync_on_wallet_recovery,
+            faucet_server.data(), mnemonic_file.data());
         if (raw_client_proxy == nullptr)
             throw runtime_error("failed to create native rust client proxy");
     }
@@ -93,9 +90,11 @@ public:
             throw runtime_error("failed to test validator connection");
     }
 
-    virtual std::pair<size_t, uint256> create_next_account(bool sync_with_validator) override
+    virtual std::pair<size_t, uint256>
+    create_next_account(bool sync_with_validator) override
     {
-        Address account = libra_create_next_account((uint64_t)raw_client_proxy, sync_with_validator);
+        Address account = libra_create_next_account((uint64_t)raw_client_proxy,
+                                                    sync_with_validator);
 
         uint256 address;
         copy(begin(account.address), end(account.address), begin(address));
@@ -109,7 +108,7 @@ public:
 
         vector<Account> accounts;
 
-        for (int i = 0; i < all_accounts.len; i++)
+        for (uint64_t i = 0; i < all_accounts.len; i++)
         {
             Account a;
             const auto &_a = all_accounts.data[i];
@@ -143,54 +142,57 @@ public:
         return libra_get_sequence_number((uint64_t)raw_client_proxy, index);
     }
 
-    virtual void mint_coins(uint64_t index, uint64_t num_coins, bool is_blocking) override
+    virtual void mint_coins(uint64_t index, uint64_t num_coins,
+                            bool is_blocking) override
     {
         libra_mint_coins((uint64_t)raw_client_proxy, index, num_coins, is_blocking);
     }
 
     virtual std::pair<uint64_t, uint64_t>
-    transfer_coins_int(uint64_t sender_account_ref_id,
-                       uint256 receiver_address,
-                       uint64_t num_coins,
-                       uint64_t gas_unit_price,
-                       uint max_gas_amount,
-                       bool is_blocking) override
+    transfer_coins_int(uint64_t sender_account_ref_id, uint256 receiver_address,
+                       uint64_t num_coins, uint64_t gas_unit_price,
+                       uint max_gas_amount, bool is_blocking) override
     {
         _index_sequence index_seq;
-        bool ret = libra_transfer_coins_int((uint64_t)raw_client_proxy,
-                                            sender_account_ref_id,
-                                            receiver_address.data(),
-                                            num_coins,
-                                            gas_unit_price,
-                                            max_gas_amount,
-                                            is_blocking,
-                                            &index_seq);
+        bool ret = libra_transfer_coins_int(
+            (uint64_t)raw_client_proxy, sender_account_ref_id,
+            receiver_address.data(), num_coins, gas_unit_price, max_gas_amount,
+            is_blocking, &index_seq);
         if (!ret)
             throw runtime_error("failed to transfer coins");
 
         return make_pair(index_seq.index, index_seq.sequence);
     }
 
-    virtual void compile(uint64_t account_index, const string &source_file_with_path, bool is_module) override
+    virtual void compile(uint64_t account_index,
+                         const string &source_file_with_path,
+                         bool is_module) override
     {
-        bool ret = libra_compile((uint64_t)raw_client_proxy, account_index, source_file_with_path.c_str(), is_module);
+        bool ret = libra_compile((uint64_t)raw_client_proxy, account_index,
+                                 source_file_with_path.c_str(), is_module);
         if (!ret)
-            throw runtime_error(format("failed to compile move script file '%s'", source_file_with_path.c_str()));
+            throw runtime_error(format("failed to compile move script file '%s'",
+                                       source_file_with_path.c_str()));
 
         LOG << "compiled '" << source_file_with_path << "', "
             << "is_module = " << (is_module ? "true" : "false") << endl;
     }
 
-    virtual void publish_module(uint64_t account_index, const std::string &module_file) override
+    virtual void publish_module(uint64_t account_index,
+                                const std::string &module_file) override
     {
-        bool ret = libra_publish_module((uint64_t)raw_client_proxy, account_index, module_file.c_str());
+        bool ret = libra_publish_module((uint64_t)raw_client_proxy, account_index,
+                                        module_file.c_str());
         if (!ret)
-            throw runtime_error(format("failed to publish module file '%s'", module_file.c_str()));
+            throw runtime_error(
+                format("failed to publish module file '%s'", module_file.c_str()));
 
         LOG << "published module " << module_file << endl;
     }
 
-    virtual void execute_script(uint64_t account_index, const std::string &script_file, const std::vector<std::string> &script_args) override
+    virtual void
+    execute_script(uint64_t account_index, const std::string &script_file,
+                   const std::vector<std::string> &script_args) override
     {
         ScriptArgs args;
 
@@ -203,39 +205,47 @@ public:
         args.len = script_args.size();
         args.data = args_array.data();
 
-        bool ret = libra_execute_script((uint64_t)raw_client_proxy, account_index, script_file.c_str(), &args);
+        bool ret = libra_execute_script((uint64_t)raw_client_proxy, account_index,
+                                        script_file.c_str(), &args);
         if (!ret)
-            throw runtime_error(format("failed to execute script file '%s' for account index %d", script_file.c_str(), account_index) + EXCEPTION_AT);
+            throw runtime_error(
+                format("failed to execute script file '%s' for account index %d",
+                       script_file.c_str(), account_index) +
+                EXCEPTION_AT);
 
-        LOG << format("excuted script file '%s' for account index %d", script_file.c_str(), account_index) << endl;
+        LOG << format("excuted script file '%s' for account index %d",
+                      script_file.c_str(), account_index)
+            << endl;
     }
 
-    virtual void get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) override
+    virtual void get_committed_txn_by_acc_seq(uint64_t account_index,
+                                              uint64_t sequence_num) override
     {
-        bool ret = libra_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy, account_index, sequence_num);
+        bool ret = libra_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy,
+                                                      account_index, sequence_num);
         if (!ret)
-            throw runtime_error(format("failed to get committed transaction by account index %d and sequence number %d, ", account_index, sequence_num) + EXCEPTION_AT);
+            throw runtime_error(format("failed to get committed transaction by "
+                                       "account index %d and sequence number %d, ",
+                                       account_index, sequence_num) +
+                                EXCEPTION_AT);
 
-        LOG << format("get committed transaction by account index %d and sequence number %d", account_index, sequence_num) << endl;
+        LOG << format("get committed transaction by account index %d and sequence "
+                      "number %d",
+                      account_index, sequence_num)
+            << endl;
     }
 };
 
-std::shared_ptr<client>
-client::create(const std::string &host,
-               ushort port,
-               const std::string &validator_set_file,
-               const std::string &faucet_account_file,
-               bool sync_on_wallet_recovery,
-               const std::string &faucet_server,
-               const std::string &mnemonic_file)
+std::shared_ptr<client> client::create(const std::string &host, ushort port,
+                                       const std::string &validator_set_file,
+                                       const std::string &faucet_account_file,
+                                       bool sync_on_wallet_recovery,
+                                       const std::string &faucet_server,
+                                       const std::string &mnemonic_file)
 {
-    return make_shared<client_imp>(host,
-                                   port,
-                                   validator_set_file,
-                                   faucet_account_file,
-                                   sync_on_wallet_recovery,
-                                   faucet_server,
-                                   mnemonic_file);
+    return make_shared<client_imp>(host, port, validator_set_file,
+                                   faucet_account_file, sync_on_wallet_recovery,
+                                   faucet_server, mnemonic_file);
 }
 } // namespace Libra
 
@@ -246,96 +256,126 @@ class client_imp : virtual public client, virtual public Libra::client_imp
 private:
     /* data */
 public:
-    client_imp(const std::string &host,
-               ushort port,
+    client_imp(const std::string &host, ushort port,
                const std::string &validator_set_file,
                const std::string &faucet_account_file,
-               bool sync_on_wallet_recovery,
-               const std::string &faucet_server,
+               bool sync_on_wallet_recovery, const std::string &faucet_server,
                const std::string &mnemonic_file)
-        : Libra::client_imp(host,
-                            port,
-                            validator_set_file,
-                            faucet_account_file,
-                            sync_on_wallet_recovery,
-                            faucet_server,
-                            mnemonic_file)
-    {
-    }
+        : Libra::client_imp(host, port, validator_set_file, faucet_account_file,
+                            sync_on_wallet_recovery, faucet_server,
+                            mnemonic_file) {}
 
     virtual ~client_imp()
     {
         // LOG << " entered" << endl;
     }
 
-    virtual uint64_t get_violas_balance(uint64_t account_index, const uint256 &account_path_addr) override
+    virtual uint64_t
+    get_violas_balance(uint64_t account_index,
+                       const uint256 &account_path_addr) override
     {
         uint64_t balance = 0;
         string addr = "0x" + uint256_to_string(account_path_addr);
 
-        bool ret = libra_get_account_resource((uint64_t)raw_client_proxy, account_index, addr.c_str(), &balance);
+        bool ret = libra_get_account_resource(
+            (uint64_t)raw_client_proxy, account_index, addr.c_str(), &balance);
         if (!ret)
-            throw runtime_error(format("failed to get Violas balance for account index %d ", account_index) + EXCEPTION_AT);
+            throw runtime_error(
+                format("failed to get Violas balance for account index %d ",
+                       account_index) +
+                EXCEPTION_AT);
 
         return balance;
     }
 };
 
-std::shared_ptr<client>
-client::create(const std::string &host,
-               ushort port,
-               const std::string &validator_set_file,
-               const std::string &faucet_account_file,
-               bool sync_on_wallet_recovery,
-               const std::string &faucet_server,
-               const std::string &mnemonic_file)
+std::shared_ptr<client> client::create(const std::string &host, ushort port,
+                                       const std::string &validator_set_file,
+                                       const std::string &faucet_account_file,
+                                       bool sync_on_wallet_recovery,
+                                       const std::string &faucet_server,
+                                       const std::string &mnemonic_file)
 {
-    return make_shared<client_imp>(host,
-                                   port,
-                                   validator_set_file,
-                                   faucet_account_file,
-                                   sync_on_wallet_recovery,
-                                   faucet_server,
-                                   mnemonic_file);
+    return make_shared<client_imp>(host, port, validator_set_file,
+                                   faucet_account_file, sync_on_wallet_recovery,
+                                   faucet_server, mnemonic_file);
 }
 
+#if __cplusplus >= 201703L
 class VStakeImp : public VStake
 {
 public:
-    VStakeImp()
+    VStakeImp(Libra::client_ptr client, const std::string &name,
+              uint256 governor_addr)
+        : m_libra_client(client), m_name(name)
     {
+        init_all_script();
     }
 
-    virtual ~VStakeImp()
-    {
-    }
+    virtual ~VStakeImp() {}
 
-    virtual std::string name() override
-    {
-    }
+    virtual std::string name() override { return m_name; }
 
-    virtual void deploy() override
-    {
-    }
+    virtual void deploy() override {}
 
-    virtual void publish(uint256 address) override
-    {
-    }
+    virtual void publish(uint256 address) override {}
 
-    virtual void mint() override
-    {
-    }
+    virtual void mint() override {}
 
-    virtual void transfer(uint64_t micro_coin) override
-    {
-    }
+    virtual void transfer(uint64_t micro_coin) override {}
 
-    virtual uint64_t get_account_balance(uint64_t addr) override
-    {
-    }
+    virtual uint64_t get_account_balance(uint64_t addr) override { return 0; }
 
 protected:
+    Libra::client_ptr m_libra_client;
+    string m_name;
+    uint256 m_governor_addr;
+    string m_module;
+    filesystem::path m_temp_path;
+    const string token_module = "token";
+    const string publish_script = "publish";
+    const string mint_script = "mint";
+    const string transfer_script = "transfer";
+
+    void init_all_script()
+    {
+        using namespace std::filesystem;
+
+        string governor = uint256_to_string(m_governor_addr);
+        auto m_temp_path = temp_directory_path().string() / uint256_to_string(m_governor_addr); ///tmp/xxxxx
+
+        try
+        {
+            create_directory(m_temp_path);
+            LOG << m_temp_path.string() << endl;
+
+            for (auto &file : directory_iterator("../scripts"))
+            {
+                if (file.path().extension() == ".mvir")
+                {
+                    string new_file = m_temp_path / file.path().filename().string();
+                    copy_file(file.path().string(), new_file, copy_options::overwrite_existing);
+
+                    bool is_module = file.path().stem().string() == token_module;
+                    m_libra_client->compile(1, new_file, is_module);
+                }
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+    }
+
 private:
 };
+
+std::shared_ptr<VStake> VStake::create(Libra::client_ptr client,
+                                       uint256 governor_addr,
+                                       const std::string &name)
+{
+    return make_shared<VStakeImp>(client, name, governor_addr);
+}
+#endif
 
 } // namespace Violas

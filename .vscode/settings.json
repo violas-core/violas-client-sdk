@@ -46,7 +46,8 @@
         "new": "cpp",
         "streambuf": "cpp",
         "cinttypes": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "filesystem": "cpp"
     },
     "git.ignoreLimitWarning": true
 }

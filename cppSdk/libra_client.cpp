@@ -49,8 +49,11 @@ std::string uint256_to_string(const uint256 &address)
 
 bool is_valid_balance(uint64_t value)
 {
+#if __cplusplus >= 201703L
     const uint64_t max_uint64 = numeric_limits<uint64_t>::max();
-
+#else
+    const uint64_t max_uint64 = 0xFFFFFFFFFFFFFFFF;
+#endif
     return value != max_uint64;
 }
 

@@ -1,6 +1,7 @@
 #include <ctime>
 #include <iomanip>
 //#include <chrono>
+#include <cassert>
 #include <sstream>
 #if __cplusplus >= 201703L
 #include <filesystem>
@@ -237,6 +238,20 @@ public:
                       account_index, sequence_num)
             << endl;
     }
+
+    virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) override
+    {
+        uint64_t result = 0;
+        string addr = "0x" + uint256_to_string(res_path_addr);
+
+        bool ret = libra_get_account_resource(
+            (uint64_t)raw_client_proxy, account_index, addr.c_str(), &result);
+        if (!ret)
+            throw runtime_error(
+                format("failed to get get resource for account index %d ", account_index) + EXCEPTION_AT);
+
+        return result;
+    }
 };
 
 std::shared_ptr<client> client::create(const std::string &host, ushort port,
@@ -250,6 +265,7 @@ std::shared_ptr<client> client::create(const std::string &host, ushort port,
                                    faucet_account_file, sync_on_wallet_recovery,
                                    faucet_server, mnemonic_file);
 }
+
 } // namespace Libra
 
 namespace Violas
@@ -308,9 +324,11 @@ std::shared_ptr<client> client::create(const std::string &host, ushort port,
 class VStakeImp : public VStake
 {
 public:
-    VStakeImp(Libra::client_ptr client, const std::string &name,
-              uint256 governor_addr)
-        : m_libra_client(client), m_name(name)
+    VStakeImp(Libra::client_ptr client,
+              const std::string &name,
+              uint256 governor_addr) : m_libra_client(client),
+                                       m_name(name),
+                                       m_governor_addr(governor_addr)
     {
         init_all_script();
     }
@@ -319,17 +337,72 @@ public:
 
     virtual std::string name() override { return m_name; }
 
-    virtual void deploy() override {}
+    virtual void deploy(uint64_t account_index) override
+    {
+        // make sure the account-index has the deploying permission
+        assert(m_libra_client->get_all_accounts()[account_index].address == m_governor_addr);
 
-    virtual void publish(uint256 address) override {}
+        m_libra_client->publish_module(1, (m_temp_path / token_module += ".mv").string());
+    }
 
-    virtual void mint() override {}
+    virtual void mint(uint64_t account_index, uint256 address, uint64_t amount) override
+    {
+        // make sure the account-index has the minting permission
+        assert(m_libra_client->get_all_accounts()[account_index].address == m_governor_addr);
 
-    virtual void transfer(uint64_t micro_coin) override {}
+        auto script = (m_temp_path / mint_script += ".mv").string();
+        auto args = vector<string>{uint256_to_string(address), to_string(amount)};
 
-    virtual uint64_t get_account_balance(uint64_t addr) override { return 0; }
+        m_libra_client->execute_script(account_index, script, args);
+    }
+
+    virtual void publish(uint64_t account_index) override
+    {
+        auto script = (m_temp_path / publish_script += ".mv").string();
+        auto args = vector<string>{};
+
+        m_libra_client->execute_script(account_index, script, args);
+    }
+
+    virtual void transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) override
+    {
+        auto script = (m_temp_path / transfer_script += ".mv").string();
+        auto args = vector<string>{uint256_to_string(address), to_string(amount_micro_coin)};
+
+        m_libra_client->execute_script(account_index, script, args);
+    }
+
+    virtual uint64_t get_account_balance(uint64_t account_index) override
+    {
+        uint64_t balance = m_libra_client->get_account_resource_uint64(account_index, m_governor_addr);
+        return balance;
+    }
 
 protected:
+    void init_all_script()
+    {
+        using namespace std::filesystem;
+
+        string governor = uint256_to_string(m_governor_addr);
+        m_temp_path = temp_directory_path() / uint256_to_string(m_governor_addr); ///tmp/xxxxx
+
+        create_directory(m_temp_path);
+        LOG << m_temp_path.string() << endl;
+
+        for (auto &file : directory_iterator("../scripts"))
+        {
+            if (file.path().extension() == ".mvir")
+            {
+                string new_file = m_temp_path / file.path().filename().string();
+                copy_file(file.path().string(), new_file, copy_options::overwrite_existing);
+
+                bool is_module = file.path().stem().string() == token_module;
+                m_libra_client->compile(1, new_file, is_module);
+            }
+        }
+    }
+
+private:
     Libra::client_ptr m_libra_client;
     string m_name;
     uint256 m_governor_addr;
@@ -339,38 +412,6 @@ protected:
     const string publish_script = "publish";
     const string mint_script = "mint";
     const string transfer_script = "transfer";
-
-    void init_all_script()
-    {
-        using namespace std::filesystem;
-
-        string governor = uint256_to_string(m_governor_addr);
-        auto m_temp_path = temp_directory_path().string() / uint256_to_string(m_governor_addr); ///tmp/xxxxx
-
-        try
-        {
-            create_directory(m_temp_path);
-            LOG << m_temp_path.string() << endl;
-
-            for (auto &file : directory_iterator("../scripts"))
-            {
-                if (file.path().extension() == ".mvir")
-                {
-                    string new_file = m_temp_path / file.path().filename().string();
-                    copy_file(file.path().string(), new_file, copy_options::overwrite_existing);
-
-                    bool is_module = file.path().stem().string() == token_module;
-                    m_libra_client->compile(1, new_file, is_module);
-                }
-            }
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-    }
-
-private:
 };
 
 std::shared_ptr<VStake> VStake::create(Libra::client_ptr client,

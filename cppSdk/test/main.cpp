@@ -22,7 +22,7 @@ int main(int argc, const char *argv[])
     {
         //assert(test_libra_client() == true);
 
-        //assert(test_violas_client() == true);
+        // assert(test_violas_client() == true);
 
         assert(test_vstake() == true);
     }
@@ -315,17 +315,38 @@ bool test_vstake()
 
     for (auto const &account : accounts)
     {
+        uint64_t balance = client->get_balance(account.index);
+        // assert(balance > 0);
+
         LOG << "\n\tIndex : " << account.index
             << "\n\tAddress : " << account.address
             << "\n\tSequence : " << account.sequence_number
             << "\n\tStatus : " << account.status
-            << "\n\tVToken Balance : " << client->get_balance(account.index)
+            << "\n\tVToken Balance : " << balance
             << endl;
     }
 
     //uint64_t chairman = 0;
 
-    auto v1 = VStake::create(client, accounts[1].address, "V1");
+    auto vstake1 = VStake::create(client, accounts[1].address, "V1");
+
+    vstake1->deploy(1);
+
+    vstake1->publish(1);
+    vstake1->publish(2);
+    vstake1->publish(3);
+
+    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << endl;
+    vstake1->mint(1, accounts[2].address, 100 * MICRO_LIBRO_COIN);
+    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << endl;
+
+    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << endl;
+    vstake1->transfer(2, accounts[3].address, 50 * MICRO_LIBRO_COIN);
+
+    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << endl;
+    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << endl;
+
+    client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
 
     return true;
 }

@@ -200,7 +200,13 @@ module DToken {
         value = *(&copy(sender_token_ref).value);
 
         // Make sure that sender has enough tokens
-        assert(copy(value) >= copy(amount), 103);
+        //assert(copy(value) >= copy(amount), 103);
+        if(copy(value) >= copy(amount))
+        {
+            sender = get_txn_sender();
+            //Self.emit_events(0, move(sender), copy(value), 0, h"");
+            assert(copy(value) >= copy(amount), 103);
+        }       
 
         // Split the senders token and return the amount specified
         *(&mut move(sender_token_ref).value) = move(value) - copy(amount);

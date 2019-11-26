@@ -97,6 +97,12 @@ public:
     virtual void execute_script(uint64_t account_index, const std::string &script_file, const std::vector<std::string> &script_args) = 0;
 
     virtual void get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
+    //
+    //  get unsigned int 64 resource of a account
+    //  account_index : the index of account
+    //  res_path : the path of resouce, usually the format is address.module.struct
+    //
+    virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;
@@ -140,13 +146,13 @@ public:
 
     virtual std::string name() = 0;
 
-    virtual void deploy() = 0;
+    virtual void deploy(uint64_t account_index) = 0;
 
-    virtual void publish(uint256 address) = 0;
+    virtual void publish(uint64_t account_index) = 0;
 
-    virtual void mint() = 0;
+    virtual void mint(uint64_t account_index, uint256 address, uint64_t amount) = 0;
 
-    virtual void transfer(uint64_t micro_coin) = 0;
+    virtual void transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
 
     virtual uint64_t get_account_balance(uint64_t addr) = 0;
 };

@@ -5,8 +5,18 @@
 extern "C"
 {
 #endif
-
-    uint64_t create_libra_client_proxy(
+    //
+    // when the function return false, call get_last_error to get the detail
+    //
+    char *libra_get_last_error();
+    //
+    // free the the memory of string got from Rust
+    //
+    void libra_free_string(char *str);
+    //
+    //  crete a Libra client proxy pointer
+    //
+    uint64_t libra_create_client_proxy(
         const char *host,
         ushort port,
         const char *validator_set_file,
@@ -15,7 +25,7 @@ extern "C"
         const char *faucet_server,
         const char *mnemonic_file);
 
-    void destory_libra_client_proxy(uint64_t raw_ptr);
+    void libra_destory_client_proxy(uint64_t raw_ptr);
 
     bool libra_test_validator_connection(uint64_t raw_ptr);
 
@@ -82,7 +92,11 @@ extern "C"
 
     bool libra_execute_script(uint64_t raw_ptr, uint64_t account_index, const char *script_file, const ScriptArgs *script_args);
 
-    bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, uint64_t account_index, uint64_t sequence_num);
+    //
+    //  get committed transaction and events info
+    //  note that :  you must call 'libra_free_string' for argumets 'out_txn' and 'events' after calling 'libra_get_committed_txn_by_acc_seq'
+    //
+    bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, uint64_t account_index, uint64_t sequence_num, char **out_txn, char **events);
 
     bool libra_get_account_resource(uint64_t raw_ptr, uint64_t account_index, const char *account_path_addr, uint64_t *balance);
 

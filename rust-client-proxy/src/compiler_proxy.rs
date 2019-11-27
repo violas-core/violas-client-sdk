@@ -17,12 +17,13 @@ use libra_types::{
 use std::{
     convert::TryFrom,
     fs,
-    io::{ErrorKind, Write},
+    io::Write,
     path::{Path, PathBuf},
     *,
 };
 use stdlib::stdlib_modules;
 //use structopt::StructOpt;
+use failure::{bail, Error};
 use vm::file_format::CompiledModule;
 
 // #[derive(Debug, StructOpt)]
@@ -71,7 +72,7 @@ fn write_output(path: &PathBuf, buf: &[u8]) {
         .unwrap_or_else(|err| panic!("Unable to write to output file {:?}: {}", path, err));
 }
 
-pub fn compile(args: Args) -> io::Result<()> {
+pub fn compile(args: Args) -> Result<(), Error> {
     let address = args
         .address
         .map(|a| AccountAddress::try_from(a).unwrap())
@@ -84,13 +85,11 @@ pub fn compile(args: Args) -> io::Result<()> {
         .extension()
         .expect("Missing file extension for input source file");
     if extension != mvir_extension {
-        return Err(io::Error::new(
-            ErrorKind::Other,
-            format!(
-                "Bad source file extension {:?}; expected {}",
-                extension, mvir_extension
-            ),
-        ));
+        bail!(
+            "Bad source file extension {:?}; expected {}",
+            extension,
+            mvir_extension
+        );
     }
 
     if args.list_dependencies {
@@ -145,9 +144,8 @@ pub fn compile(args: Args) -> io::Result<()> {
             extra_deps: deps,
             ..Compiler::default()
         };
-        let (compiled_program, source_map, dependencies) = compiler
-            .into_compiled_program_and_source_maps_deps(&source)
-            .expect("Failed to compile program");
+        let (compiled_program, source_map, dependencies) =
+            compiler.into_compiled_program_and_source_maps_deps(&source)?;
 
         let compiled_program = if !args.no_verify {
             let verified_program = VerifiedProgram::new(compiled_program, &dependencies)

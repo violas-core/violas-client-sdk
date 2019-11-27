@@ -72,7 +72,7 @@ public:
                bool sync_on_wallet_recovery, const std::string &faucet_server,
                const std::string &mnemonic_file)
     {
-        raw_client_proxy = (void *)create_libra_client_proxy(
+        raw_client_proxy = (void *)libra_create_client_proxy(
             host.data(), port, validator_set_file.data(),
             faucet_account_file.data(), sync_on_wallet_recovery,
             faucet_server.data(), mnemonic_file.data());
@@ -82,9 +82,18 @@ public:
 
     virtual ~client_imp()
     {
-        destory_libra_client_proxy((uint64_t)raw_client_proxy);
+        libra_destory_client_proxy((uint64_t)raw_client_proxy);
 
         // LOG << "entered" << endl;
+    }
+
+    string get_last_error()
+    {
+        char *last_error = libra_get_last_error();
+        string error = last_error;
+        libra_free_string(last_error);
+
+        return error;
     }
 
     virtual void test_validator_connection() override
@@ -175,9 +184,12 @@ public:
         bool ret = libra_compile((uint64_t)raw_client_proxy, account_index,
                                  source_file_with_path.c_str(), is_module);
         if (!ret)
-            throw runtime_error(format("failed to compile move script file '%s'",
-                                       source_file_with_path.c_str()));
+        {
 
+            throw runtime_error(format("failed to compile move script file '%s', error : %s",
+                                       source_file_with_path.c_str(),
+                                       get_last_error().c_str()));
+        }
         LOG << "compiled '" << source_file_with_path << "', "
             << "is_module = " << (is_module ? "true" : "false") << endl;
     }
@@ -222,21 +234,31 @@ public:
             << endl;
     }
 
-    virtual void get_committed_txn_by_acc_seq(uint64_t account_index,
-                                              uint64_t sequence_num) override
+    virtual std::pair<std::string, std::string> get_committed_txn_by_acc_seq(uint64_t account_index,
+                                                                             uint64_t sequence_num) override
     {
+        char *out_txn = nullptr, *events = nullptr;
+
         bool ret = libra_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy,
-                                                      account_index, sequence_num);
+                                                      account_index, sequence_num,
+                                                      &out_txn, &events);
         if (!ret)
             throw runtime_error(format("failed to get committed transaction by "
-                                       "account index %d and sequence number %d, ",
-                                       account_index, sequence_num) +
+                                       "account index %d and sequence number %d, "
+                                       "error : %s",
+                                       account_index, sequence_num,
+                                       get_last_error().c_str()) +
                                 EXCEPTION_AT);
 
-        LOG << format("get committed transaction by account index %d and sequence "
-                      "number %d",
-                      account_index, sequence_num)
+        LOG << format("get committed transaction by account index %d and sequence number %d", account_index, sequence_num)
             << endl;
+
+        auto txn_events = make_pair<string, string>(out_txn, events);
+
+        libra_free_string(out_txn);
+        libra_free_string(events);
+
+        return txn_events;
     }
 
     virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) override

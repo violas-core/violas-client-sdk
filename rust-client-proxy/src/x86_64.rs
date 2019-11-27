@@ -8,7 +8,7 @@ pub mod x86_64 {
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress, account_config::core_code_address,
     }; //ADDRESS_LENGTH access_path::AccessPath,
-    use std::ffi::CStr; //CString
+    use std::ffi::{CStr, CString};
     use std::os::raw::{c_char, c_uchar};
     use std::{collections::BTreeMap, convert::TryFrom, io::Write, result::Result, *};
     use tempdir::TempDir;
@@ -17,17 +17,24 @@ pub mod x86_64 {
 
     use crate::{compiler_proxy, violas_account};
     const DEBUG: bool = true;
-    //let last_error : error::Error;
+    static mut LAST_ERROR: String = String::new();
 
     #[allow(dead_code)]
-    fn set_last_error(_err: Error) {
-        //println!("set last error {:?}", err);
+    fn set_last_error(err: Error) {
+        unsafe {
+            LAST_ERROR = format!("{:?}", err);
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_get_last_error() -> *const c_char {
+        unsafe { CString::new(LAST_ERROR.clone()).unwrap().into_raw() }
     }
     //
     //
     //
     #[no_mangle]
-    pub extern "C" fn create_libra_client_proxy(
+    pub extern "C" fn libra_create_client_proxy(
         c_host: *const c_char,
         c_port: u16,
         c_validator_set_file: *const c_char,
@@ -90,7 +97,7 @@ pub mod x86_64 {
         let raw_ptr = match ret {
             Some(value) => Box::into_raw(Box::new(value)) as u64,
             None => {
-                println!("failed to new client proxy ");
+                set_last_error(format_err!("failed to new client proxy "));
                 0
             }
         };
@@ -99,7 +106,7 @@ pub mod x86_64 {
     }
     /// Destory the raw ClientProxy pointer
     #[no_mangle]
-    pub extern "C" fn destory_libra_client_proxy(raw_ptr: u64) {
+    pub extern "C" fn libra_destory_client_proxy(raw_ptr: u64) {
         if raw_ptr != 0 {
             let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ClientProxy) };
             //println!("x86_64.rs: destory_native_client_proxy enters ...");
@@ -396,12 +403,14 @@ pub mod x86_64 {
 
         if ret.is_ok() {
             match ret.unwrap() {
-                Ok(_) => (),
-                Err(err) => println!("erro , {}", err),
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
             }
-            true
         } else {
-            println!(" catch panic !");
+            set_last_error(format_err!("catch panic at function (libra_compile) !"));
             false
         }
     }
@@ -513,47 +522,85 @@ pub mod x86_64 {
         }
     }
 
+    ///
+    ///
+    ///
+    #[no_mangle]
+    pub extern "C" fn libra_free_string(s: *mut c_char) {
+        unsafe {
+            if s.is_null() {
+                return;
+            }
+            CString::from_raw(s)
+        };
+    }
+    ///
+    ///
+    ///
     #[no_mangle]
     pub extern "C" fn libra_get_committed_txn_by_acc_seq(
         raw_ptr: u64,
         account_index: u64,
         sequence_num: u64,
+        out_transaction: *mut *mut c_char,
+        out_event: *mut *mut c_char,
     ) -> bool {
         //
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let result = panic::catch_unwind(|| -> Result<(String, String), Error> {
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        match client.get_committed_txn_by_acc_seq(&[
-            "txn_acc_seq",
-            account_index.to_string().as_str(),
-            sequence_num.to_string().as_str(),
-            "true",
-        ]) {
-            Ok(txn_and_events) => {
-                match txn_and_events {
-                    Some((comm_txn, events)) => {
-                        println!(
-                            "Committed transaction: {}",
-                            comm_txn.format_for_client(get_transaction_name)
-                        );
-                        if let Some(events_inner) = &events {
-                            println!("Events: ");
-                            for event in events_inner {
-                                println!("{}", event);
+            match client.get_committed_txn_by_acc_seq(&[
+                "txn_acc_seq",
+                account_index.to_string().as_str(),
+                sequence_num.to_string().as_str(),
+                "true",
+            ]) {
+                Ok(txn_and_events) => {
+                    match txn_and_events {
+                        Some((comm_txn, events)) => {
+                            let txn =
+                                format!("{}", comm_txn.format_for_client(get_transaction_name));
+                            let mut all_events = String::new();
+                            if let Some(events_inner) = &events {
+                                for event in events_inner {
+                                    all_events += format!("{}\n", event).as_str();
+                                }
                             }
-                        }
 
-                        return true;
-                    }
-                    None => println!("Transaction not available"),
-                };
+                            return Ok((txn, all_events));
+                        }
+                        None => bail!("Transaction not available"),
+                    };
+                }
+                Err(e) => bail!(
+                    "Error getting committed transaction by account and sequence number, {}",
+                    e,
+                ),
             }
-            Err(e) => println!(
-                "Error getting committed transaction by account and sequence number, {}",
-                e,
-            ),
+        });
+
+        let mut ret = false;
+        if result.is_ok() {
+            match result.unwrap() {
+                Ok((txn, event)) => {
+                    unsafe {
+                        //c_char = Box::new(CString::new(txn));
+                        *out_transaction = CString::new(txn)
+                            .expect("new transaction detail")
+                            .into_raw();
+                        *out_event = CString::new(event).expect("new event detail").into_raw();
+                    }
+                    ret = true
+                }
+                Err(err) => set_last_error(err),
+            }
+        } else {
+            set_last_error(format_err!(
+                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+            ));
         }
 
-        false
+        ret
     }
 
     #[no_mangle]

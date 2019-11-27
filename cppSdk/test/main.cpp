@@ -282,26 +282,26 @@ bool test_vstake()
 {
     using namespace Violas;
 
-    cout << "running Libra test ..." << endl;
+    cout << "running test vstake ..." << endl;
 
-    auto host = "18.220.66.235";
-    uint16_t port = 40001;
+    // auto host = "18.220.66.235";
+    // uint16_t port = 40001;
 
-    auto client = Violas::client::create(host,
-                                         port,
-                                         "violas_consensus_peers.config.toml",
-                                         "temp_faucet_keys",
-                                         false,
-                                         "faucet.testnet.libra.org",
-                                         "mnemonic");
-
-    // auto client = Violas::client::create("localhost",
-    //                                      34193,
-    //                                      "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
-    //                                      "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+    // auto client = Violas::client::create(host,
+    //                                      port,
+    //                                      "violas_consensus_peers.config.toml",
+    //                                      "temp_faucet_keys",
     //                                      false,
     //                                      "faucet.testnet.libra.org",
     //                                      "mnemonic");
+
+    auto client = Violas::client::create("localhost",
+                                         39745,
+                                         "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
+                                         "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
+                                         false,
+                                         "faucet.testnet.libra.org",
+                                         "mnemonic");
 
     client->test_validator_connection();
 
@@ -326,8 +326,6 @@ bool test_vstake()
             << endl;
     }
 
-    //uint64_t chairman = 0;
-
     auto vstake1 = VStake::create(client, accounts[1].address, "V1");
 
     vstake1->deploy(1);
@@ -336,17 +334,31 @@ bool test_vstake()
     vstake1->publish(2);
     vstake1->publish(3);
 
+    auto micro_to_double = [](uint64_t amount) -> double {
+        return (double)amount / MICRO_LIBRO_COIN;
+    };
+    clog.precision(10);
+    //
+    //  mint
+    //
     LOG << "account 2's balance is " << vstake1->get_account_balance(2) << endl;
     vstake1->mint(1, accounts[2].address, 100 * MICRO_LIBRO_COIN);
-    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << endl;
-
-    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << endl;
+    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << ", " << micro_to_double(vstake1->get_account_balance(2)) << endl;
+    //
+    //  transfer
+    //
+    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << ", " << micro_to_double(vstake1->get_account_balance(3)) << endl;
     vstake1->transfer(2, accounts[3].address, 50 * MICRO_LIBRO_COIN);
-
-    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << endl;
-    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << endl;
-
-    client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
+    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << ", " << micro_to_double(vstake1->get_account_balance(2)) << endl;
+    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << ", " << micro_to_double(vstake1->get_account_balance(3)) << endl;
+    //
+    //  get transaction detail
+    //
+    auto [txn, events] = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
+    LOG << "Committed Transaction : \n"
+        << txn << endl
+        << "Events:\n"
+        << events << endl;
 
     return true;
 }

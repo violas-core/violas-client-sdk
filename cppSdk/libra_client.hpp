@@ -91,6 +91,7 @@ public:
                        bool is_blocking = true) = 0;   // true for sync, fasle for async
 
     virtual void compile(uint64_t account_index, const std::string &source_file, bool is_module = false) = 0;
+    virtual void compile(uint256 account_address, const std::string &source_file, bool is_module = false) = 0;
 
     virtual void publish_module(uint64_t account_index, const std::string &module_file) = 0;
 

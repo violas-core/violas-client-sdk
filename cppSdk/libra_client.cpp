@@ -177,11 +177,27 @@ public:
         return make_pair(index_seq.index, index_seq.sequence);
     }
 
+    virtual void compile(uint256 account_address, const std::string &source_file, bool is_module = false) override
+    {
+        auto addr = uint256_to_string(account_address);
+        bool ret = libra_compile((uint64_t)raw_client_proxy, addr.c_str(),
+                                 source_file.c_str(), is_module);
+        if (!ret)
+        {
+
+            throw runtime_error(format("failed to compile move script file '%s', error : %s",
+                                       source_file.c_str(),
+                                       get_last_error().c_str()));
+        }
+        LOG << "compiled '" << source_file << "', "
+            << "is_module = " << (is_module ? "true" : "false") << endl;
+    }
+
     virtual void compile(uint64_t account_index,
                          const string &source_file_with_path,
                          bool is_module) override
     {
-        bool ret = libra_compile((uint64_t)raw_client_proxy, account_index,
+        bool ret = libra_compile((uint64_t)raw_client_proxy, to_string(account_index).c_str(),
                                  source_file_with_path.c_str(), is_module);
         if (!ret)
         {
@@ -200,8 +216,10 @@ public:
         bool ret = libra_publish_module((uint64_t)raw_client_proxy, account_index,
                                         module_file.c_str());
         if (!ret)
-            throw runtime_error(
-                format("failed to publish module file '%s'", module_file.c_str()));
+        {
+            auto error = format("failed to publish module file '%s', error : %s", module_file.c_str(), get_last_error().c_str());
+            throw runtime_error(error);
+        }
 
         LOG << "published module " << module_file << endl;
     }
@@ -343,6 +361,9 @@ std::shared_ptr<client> client::create(const std::string &host, ushort port,
 }
 
 #if __cplusplus >= 201703L
+
+namespace fs = std::filesystem;
+
 class VStakeImp : public VStake
 {
 public:
@@ -362,9 +383,13 @@ public:
     virtual void deploy(uint64_t account_index) override
     {
         // make sure the account-index has the deploying permission
-        assert(m_libra_client->get_all_accounts()[account_index].address == m_governor_addr);
+        // assert(m_libra_client->get_all_accounts()[account_index].address == m_governor_addr);
 
-        m_libra_client->publish_module(1, (m_temp_path / token_module += ".mv").string());
+        auto script_name = m_temp_path / token_module;
+
+        try_compile(script_name, true);
+
+        m_libra_client->publish_module(account_index, script_name += ".mv");
     }
 
     virtual void mint(uint64_t account_index, uint256 address, uint64_t amount) override
@@ -372,26 +397,33 @@ public:
         // make sure the account-index has the minting permission
         assert(m_libra_client->get_all_accounts()[account_index].address == m_governor_addr);
 
-        auto script = (m_temp_path / mint_script += ".mv").string();
+        auto script_name = m_temp_path / mint_script;
+
+        try_compile(script_name);
+
         auto args = vector<string>{uint256_to_string(address), to_string(amount)};
 
-        m_libra_client->execute_script(account_index, script, args);
+        m_libra_client->execute_script(account_index, script_name += ".mv", args);
     }
 
     virtual void publish(uint64_t account_index) override
     {
-        auto script = (m_temp_path / publish_script += ".mv").string();
-        auto args = vector<string>{};
+        auto script_name = m_temp_path / publish_script;
 
-        m_libra_client->execute_script(account_index, script, args);
+        try_compile(script_name);
+
+        m_libra_client->execute_script(account_index, script_name += ".mv", vector<string>{});
     }
 
     virtual void transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) override
     {
-        auto script = (m_temp_path / transfer_script += ".mv").string();
+        auto script_name = m_temp_path / transfer_script;
+
+        try_compile(script_name);
+
         auto args = vector<string>{uint256_to_string(address), to_string(amount_micro_coin)};
 
-        m_libra_client->execute_script(account_index, script, args);
+        m_libra_client->execute_script(account_index, script_name += ".mv", args);
     }
 
     virtual uint64_t get_account_balance(uint64_t account_index) override
@@ -408,7 +440,9 @@ protected:
         string governor = uint256_to_string(m_governor_addr);
         m_temp_path = temp_directory_path() / uint256_to_string(m_governor_addr); ///tmp/xxxxx
 
-        create_directory(m_temp_path);
+        fs::remove_all(m_temp_path);
+
+        fs::create_directory(m_temp_path);
         LOG << m_temp_path.string() << endl;
 
         for (auto &file : directory_iterator("../scripts"))
@@ -417,11 +451,17 @@ protected:
             {
                 string new_file = m_temp_path / file.path().filename().string();
                 copy_file(file.path().string(), new_file, copy_options::overwrite_existing);
-
-                bool is_module = file.path().stem().string() == token_module;
-                m_libra_client->compile(1, new_file, is_module);
             }
         }
+    }
+
+    void try_compile(fs::path script_name, bool is_module = false)
+    {
+        auto mv(fs::path(script_name) += ".mv");
+        auto mvir(fs::path(script_name) += ".mvir");
+
+        if (!fs::exists(mv))
+            m_libra_client->compile(m_governor_addr, mvir, is_module);
     }
 
 private:

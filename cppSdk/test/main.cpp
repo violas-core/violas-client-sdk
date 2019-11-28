@@ -20,11 +20,14 @@ int main(int argc, const char *argv[])
 
     try
     {
+
         //assert(test_libra_client() == true);
 
-        // assert(test_violas_client() == true);
+        //assert(test_violas_client() == true);
 
         assert(test_vstake() == true);
+
+        cout << "\nFinished all test jobs !" << endl;
     }
     catch (const std::exception &e)
     {
@@ -271,18 +274,16 @@ bool test_violas_client()
             << "VStake-2 : " << balance_to_string(client->get_violas_balance(account.index, accounts[2].address)) << endl;
     }
 
-    cout << "\n\n"
-         << "finished all test jobs !" << endl;
-
     return true;
 }
 
 #if __cplusplus >= 201703L
 bool test_vstake()
 {
-    using namespace Violas;
+    cout << "running test vstake ...\n"
+         << endl;
 
-    cout << "running test vstake ..." << endl;
+    using namespace Violas;
 
     // auto host = "18.220.66.235";
     // uint16_t port = 40001;
@@ -311,10 +312,14 @@ bool test_vstake()
         client->create_next_account(true);
     }
 
+    client->mint_coins(0, 10);
+
     auto accounts = client->get_all_accounts();
 
     for (auto const &account : accounts)
     {
+        client->transfer_coins_int(0, account.address, 1 * MICRO_LIBRO_COIN);
+
         uint64_t balance = client->get_balance(account.index);
         // assert(balance > 0);
 
@@ -327,12 +332,23 @@ bool test_vstake()
     }
 
     auto vstake1 = VStake::create(client, accounts[1].address, "V1");
+    auto vstake2 = VStake::create(client, accounts[2].address, "V2");
 
     vstake1->deploy(1);
 
     vstake1->publish(1);
     vstake1->publish(2);
     vstake1->publish(3);
+
+    vstake2->deploy(2);
+
+    vstake2->publish(1);
+    vstake2->publish(2);
+    vstake2->publish(3);
+
+    vstake2->mint(2, accounts[1].address, 1000); // * MICRO_LIBRO_COIN
+    vstake2->transfer(1, accounts[2].address, 500);
+    vstake2->transfer(1, accounts[3].address, 500);
 
     auto micro_to_double = [](uint64_t amount) -> double {
         return (double)amount / MICRO_LIBRO_COIN;
@@ -349,16 +365,23 @@ bool test_vstake()
     //
     LOG << "account 3's balance is " << vstake1->get_account_balance(3) << ", " << micro_to_double(vstake1->get_account_balance(3)) << endl;
     vstake1->transfer(2, accounts[3].address, 50 * MICRO_LIBRO_COIN);
-    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << ", " << micro_to_double(vstake1->get_account_balance(2)) << endl;
-    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << ", " << micro_to_double(vstake1->get_account_balance(3)) << endl;
+
+    LOG << "account 2's balance is "
+        << "V1 : " << vstake1->get_account_balance(2) << "(" << micro_to_double(vstake1->get_account_balance(2)) << "), "
+        << "V2 : " << vstake2->get_account_balance(2) << "(" << micro_to_double(vstake2->get_account_balance(2)) << ")"
+        << endl;
+    LOG << "account 3's balance is "
+        << "V1 : " << vstake1->get_account_balance(3) << "(" << micro_to_double(vstake1->get_account_balance(3)) << "), "
+        << "V2 : " << vstake2->get_account_balance(3) << "(" << micro_to_double(vstake2->get_account_balance(3)) << "), "
+        << endl;
     //
     //  get transaction detail
     //
     auto [txn, events] = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
-    LOG << "Committed Transaction : \n"
-        << txn << endl
-        << "Events:\n"
-        << events << endl;
+    // LOG << "Committed Transaction : \n"
+    //     << txn << endl
+    //     << "Events:\n"
+    //     << events << endl;
 
     return true;
 }

@@ -351,15 +351,16 @@ pub mod x86_64 {
     #[no_mangle]
     pub extern "C" fn libra_compile(
         raw_ptr: u64,
-        account_index: u64,
+        account_index_or_addr: *const c_char,
         script_path: *const c_char,
         is_module: bool,
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             // convert raw ptr to object client
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let address =
-                client.get_account_address_from_parameter(account_index.to_string().as_str())?;
+            let address = client.get_account_address_from_parameter(unsafe {
+                CStr::from_ptr(account_index_or_addr).to_str().unwrap()
+            })?;
             let file_path = unsafe { CStr::from_ptr(script_path).to_str().unwrap().to_string() };
             // replace sender tag with local address
             let temp_dir = TempDir::new("")?; //env::temp_dir();
@@ -479,7 +480,7 @@ pub mod x86_64 {
         match ret {
             Ok(_) => true,
             Err(err) => {
-                println!("{}", err);
+                set_last_error(err);
                 false
             }
         }

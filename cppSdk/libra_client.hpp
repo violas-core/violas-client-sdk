@@ -48,7 +48,7 @@ class client
 public:
     static std::shared_ptr<client>
     create(const std::string &host,
-           ushort port,
+           uint16_t port,
            const std::string &validator_set_file,
            const std::string &faucet_account_file,
            bool sync_on_wallet_recovery,
@@ -87,7 +87,7 @@ public:
                        uint256 receiver_address,       // the address of receiver
                        uint64_t micro_coins,           // a millionth of a coin
                        uint64_t gas_unit_price = 0,    // set gas unit price or 0
-                       uint max_gas_amount = 0,        // set the max gas account or 0
+                       uint64_t max_gas_amount = 0,    // set the max gas account or 0
                        bool is_blocking = true) = 0;   // true for sync, fasle for async
 
     virtual void compile(uint64_t account_index, const std::string &source_file, bool is_module = false) = 0;
@@ -113,27 +113,6 @@ using client_ptr = std::shared_ptr<client>;
 
 namespace Violas
 {
-///
-/// Vioals client
-///
-class client : virtual public Libra::client
-{
-public:
-    static std::shared_ptr<Violas::client>
-    create(const std::string &host,
-           ushort port,
-           const std::string &validator_set_file,
-           const std::string &faucet_account_file,
-           bool sync_on_wallet_recovery,
-           const std::string &faucet_server,
-           const std::string &mnemonic_file);
-
-    virtual ~client(){};
-
-    virtual uint64_t get_violas_balance(uint64_t account_index, const uint256 &account_path_addr) = 0;
-};
-
-using client_ptr = std::shared_ptr<client>;
 
 #if __cplusplus >= 201703L
 

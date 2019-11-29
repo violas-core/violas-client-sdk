@@ -23,9 +23,9 @@ int main(int argc, const char *argv[])
 
         //assert(test_libra_client() == true);
 
-        //assert(test_violas_client() == true);
+        assert(test_violas_client() == true);
 
-        assert(test_vstake() == true);
+        //assert(test_vstake() == true);
 
         cout << "\nFinished all test jobs !" << endl;
     }
@@ -43,13 +43,13 @@ bool test_libra_client()
 {
     cout << "running Libra test ..." << endl;
 
-    auto client = Violas::client::create("ac.testnet.libra.org",
-                                         8000,
-                                         "../../../libra/scripts/cli/consensus_peers.config.toml",
-                                         "",
-                                         false,
-                                         "faucet.testnet.libra.org",
-                                         "mnemonic");
+    auto client = Libra::client::create("ac.testnet.libra.org",
+                                        8000,
+                                        "../../../libra/scripts/cli/consensus_peers.config.toml",
+                                        "",
+                                        false,
+                                        "faucet.testnet.libra.org",
+                                        "mnemonic");
 
     client->test_validator_connection();
 
@@ -122,24 +122,24 @@ bool test_violas_client()
 {
     cout << "running Libra test ..." << endl;
 
-    auto host = "18.220.66.235";
-    uint16_t port = 40001;
+    // auto host = "18.220.66.235";
+    // uint16_t port = 40001;
 
-    auto client = Violas::client::create(host,
-                                         port,
-                                         "violas_consensus_peers.config.toml",
-                                         "temp_faucet_keys",
-                                         false,
-                                         "faucet.testnet.libra.org",
-                                         "mnemonic");
-
-    // auto client = Violas::client::create("localhost",
-    //                                      34193,
-    //                                      "/tmp/4a3e24e555ba466f2d04299ebd26581f/0/consensus_peers.config.toml",
-    //                                      "/tmp/35771165f7de9f14e9419fceadde4d49/temp_faucet_keys",
+    // auto client = Violas::client::create(host,
+    //                                      port,
+    //                                      "violas_consensus_peers.config.toml",
+    //                                      "temp_faucet_keys",
     //                                      false,
     //                                      "faucet.testnet.libra.org",
     //                                      "mnemonic");
+
+    auto client = Libra::client::create("localhost",
+                                        39745,
+                                        "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
+                                        "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
+                                        false,
+                                        "faucet.testnet.libra.org",
+                                        "mnemonic");
 
     client->test_validator_connection();
 
@@ -178,6 +178,10 @@ bool test_violas_client()
 
     client->transfer_coins_int(chairman, accounts[2].address, 100 * MICRO_LIBRO_COIN);
     LOG << "Address 2's balance is " << client->get_balance(2) << endl;
+
+    auto get_violas_balance = [client](uint64_t account_index, const uint256 &account_reource_path) -> uint64_t {
+        return client->get_account_resource_uint64(account_index, account_reource_path);
+    };
 
     //                                         州长索引   SSO用户1        SSO用户2        minted稳定币数量   用户1        用户2         transferrd稳定币数量
     auto test_mint_stable_coion = [&](uint64_t governor, uint64_t sso1, uint64_t sso2, uint64_t vstake, uint64_t u1, uint64_t u2, uint64_t transerred_vstake) {
@@ -224,8 +228,8 @@ bool test_violas_client()
         //
         client->execute_script(governor, mint_script + ".mv", vector<string>{uint256_to_string(accounts[sso1].address), to_string(vstake)});
         client->execute_script(governor, mint_script + ".mv", vector<string>{uint256_to_string(accounts[sso2].address), to_string(vstake)});
-        LOG << "Account # " << sso1 << "'s balance of VStake " << governor << " : " << client->get_violas_balance(sso1, accounts[governor].address) << endl;
-        LOG << "Account # " << sso2 << "'s balance of VStake " << governor << " : " << client->get_violas_balance(sso2, accounts[governor].address) << endl;
+        LOG << "Account # " << sso1 << "'s balance of VStake " << governor << " : " << get_violas_balance(sso1, accounts[governor].address) << endl;
+        LOG << "Account # " << sso2 << "'s balance of VStake " << governor << " : " << get_violas_balance(sso2, accounts[governor].address) << endl;
 
         //client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
 
@@ -270,8 +274,8 @@ bool test_violas_client()
     {
         LOG << "Account " << account.index << "'s balances ------ "
             << "VToken : " << client->get_balance(account.index) << ", "
-            << "VStake-1 : " << balance_to_string(client->get_violas_balance(account.index, accounts[1].address)) << ", "
-            << "VStake-2 : " << balance_to_string(client->get_violas_balance(account.index, accounts[2].address)) << endl;
+            << "VStake-1 : " << balance_to_string(get_violas_balance(account.index, accounts[1].address)) << ", "
+            << "VStake-2 : " << balance_to_string(get_violas_balance(account.index, accounts[2].address)) << endl;
     }
 
     return true;
@@ -296,13 +300,13 @@ bool test_vstake()
     //                                      "faucet.testnet.libra.org",
     //                                      "mnemonic");
 
-    auto client = Violas::client::create("localhost",
-                                         39745,
-                                         "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
-                                         "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
-                                         false,
-                                         "faucet.testnet.libra.org",
-                                         "mnemonic");
+    auto client = Libra::client::create("localhost",
+                                        39745,
+                                        "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
+                                        "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
+                                        false,
+                                        "faucet.testnet.libra.org",
+                                        "mnemonic");
 
     client->test_validator_connection();
 

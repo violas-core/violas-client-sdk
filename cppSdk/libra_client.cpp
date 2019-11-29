@@ -66,7 +66,7 @@ protected:
     void *raw_client_proxy = nullptr;
 
 public:
-    client_imp(const std::string &host, ushort port,
+    client_imp(const std::string &host, uint16_t port,
                const std::string &validator_set_file,
                const std::string &faucet_account_file,
                bool sync_on_wallet_recovery, const std::string &faucet_server,
@@ -155,16 +155,20 @@ public:
         return libra_get_sequence_number((uint64_t)raw_client_proxy, index);
     }
 
-    virtual void mint_coins(uint64_t index, uint64_t num_coins,
+    virtual void mint_coins(uint64_t index,
+                            uint64_t num_coins,
                             bool is_blocking) override
     {
         libra_mint_coins((uint64_t)raw_client_proxy, index, num_coins, is_blocking);
     }
 
     virtual std::pair<uint64_t, uint64_t>
-    transfer_coins_int(uint64_t sender_account_ref_id, uint256 receiver_address,
-                       uint64_t num_coins, uint64_t gas_unit_price,
-                       uint max_gas_amount, bool is_blocking) override
+    transfer_coins_int(uint64_t sender_account_ref_id,
+                       uint256 receiver_address,
+                       uint64_t num_coins,
+                       uint64_t gas_unit_price,
+                       uint64_t max_gas_amount,
+                       bool is_blocking) override
     {
         _index_sequence index_seq;
         bool ret = libra_transfer_coins_int(
@@ -294,7 +298,8 @@ public:
     }
 };
 
-std::shared_ptr<client> client::create(const std::string &host, ushort port,
+std::shared_ptr<client> client::create(const std::string &host,
+                                       uint16_t port,
                                        const std::string &validator_set_file,
                                        const std::string &faucet_account_file,
                                        bool sync_on_wallet_recovery,
@@ -310,56 +315,6 @@ std::shared_ptr<client> client::create(const std::string &host, ushort port,
 
 namespace Violas
 {
-class client_imp : virtual public client, virtual public Libra::client_imp
-{
-private:
-    /* data */
-public:
-    client_imp(const std::string &host, ushort port,
-               const std::string &validator_set_file,
-               const std::string &faucet_account_file,
-               bool sync_on_wallet_recovery, const std::string &faucet_server,
-               const std::string &mnemonic_file)
-        : Libra::client_imp(host, port, validator_set_file, faucet_account_file,
-                            sync_on_wallet_recovery, faucet_server,
-                            mnemonic_file) {}
-
-    virtual ~client_imp()
-    {
-        // LOG << " entered" << endl;
-    }
-
-    virtual uint64_t
-    get_violas_balance(uint64_t account_index,
-                       const uint256 &account_path_addr) override
-    {
-        uint64_t balance = 0;
-        string addr = "0x" + uint256_to_string(account_path_addr);
-
-        bool ret = libra_get_account_resource(
-            (uint64_t)raw_client_proxy, account_index, addr.c_str(), &balance);
-        if (!ret)
-            throw runtime_error(
-                format("failed to get Violas balance for account index %d ",
-                       account_index) +
-                EXCEPTION_AT);
-
-        return balance;
-    }
-};
-
-std::shared_ptr<client> client::create(const std::string &host, ushort port,
-                                       const std::string &validator_set_file,
-                                       const std::string &faucet_account_file,
-                                       bool sync_on_wallet_recovery,
-                                       const std::string &faucet_server,
-                                       const std::string &mnemonic_file)
-{
-    return make_shared<client_imp>(host, port, validator_set_file,
-                                   faucet_account_file, sync_on_wallet_recovery,
-                                   faucet_server, mnemonic_file);
-}
-
 #if __cplusplus >= 201703L
 
 namespace fs = std::filesystem;

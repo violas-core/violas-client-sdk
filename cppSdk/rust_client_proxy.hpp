@@ -18,7 +18,7 @@ extern "C"
     //
     uint64_t libra_create_client_proxy(
         const char *host,
-        ushort port,
+        uint64_t port,
         const char *validator_set_file,
         const char *faucet_account_file,
         bool sync_on_wallet_recovery,
@@ -76,7 +76,7 @@ extern "C"
         uint8_t receiver_addr[], // length 32
         uint64_t micro_coins,    // 1 / 1000000
         uint64_t gas_unit_price,
-        uint max_gas_amount,
+        uint64_t max_gas_amount,
         bool is_blocking,
         _index_sequence *result);
 

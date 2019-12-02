@@ -403,8 +403,8 @@ bool test_vstake()
     }
 
     //  get transaction detail
-    //
     auto [txn, events] = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
+
     // LOG << "Committed Transaction : \n"
     //     << txn << endl
     //     << "Events:\n"

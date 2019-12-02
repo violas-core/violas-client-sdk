@@ -23,9 +23,9 @@ int main(int argc, const char *argv[])
 
         //assert(test_libra_client() == true);
 
-        assert(test_violas_client() == true);
+        // assert(test_violas_client() == true);
 
-        //assert(test_vstake() == true);
+        assert(test_vstake() == true);
 
         cout << "\nFinished all test jobs !" << endl;
     }
@@ -289,28 +289,28 @@ bool test_vstake()
 
     using namespace Violas;
 
-    // auto host = "18.220.66.235";
-    // uint16_t port = 40001;
+    auto host = "18.220.66.235";
+    uint16_t port = 40001;
 
-    // auto client = Violas::client::create(host,
-    //                                      port,
-    //                                      "violas_consensus_peers.config.toml",
-    //                                      "temp_faucet_keys",
-    //                                      false,
-    //                                      "faucet.testnet.libra.org",
-    //                                      "mnemonic");
-
-    auto client = Libra::client::create("localhost",
-                                        39745,
-                                        "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
-                                        "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
+    auto client = Libra::client::create(host,
+                                        port,
+                                        "violas_consensus_peers.config.toml",
+                                        "temp_faucet_keys",
                                         false,
                                         "faucet.testnet.libra.org",
                                         "mnemonic");
 
+    // auto client = Libra::client::create("localhost",
+    //                                     39745,
+    //                                     "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
+    //                                     "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
+    //                                     false,
+    //                                     "faucet.testnet.libra.org",
+    //                                     "mnemonic");
+
     client->test_validator_connection();
 
-    const uint64_t account_amount = 4;
+    const uint64_t account_amount = 7;
     for (uint64_t i = 0; i < account_amount; i++)
     {
         client->create_next_account(true);
@@ -335,10 +335,24 @@ bool test_vstake()
             << endl;
     }
 
-    auto vstake1 = VStake::create(client, accounts[1].address, "V1");
-    auto vstake2 = VStake::create(client, accounts[2].address, "V2");
+    vector<string> names = {"ABCUSD", "HIJUDS", "XYZUSD", "BCDCAN", "CDESDG", "DEFHKD"};
+    vector<vstake_ptr> vstakes;
 
-    vstake1->deploy(1);
+    assert(accounts.size() == names.size() + 1);
+
+    for (size_t i = 0; i < names.size(); i++)
+    {
+        auto vstake = VStake::create(client, accounts[i + 1].address, names.at(i));
+
+        vstake->deploy(i + 1);
+
+        vstake->publish(i + 1);
+
+        vstakes.push_back(vstake);
+    }
+
+    auto &vstake1 = vstakes[0];
+    auto &vstake2 = vstakes[1];
 
     vstake1->publish(1);
     vstake1->publish(2);
@@ -350,35 +364,41 @@ bool test_vstake()
     vstake2->publish(2);
     vstake2->publish(3);
 
+    vstake1->mint(1, accounts[2].address, 100 * MICRO_LIBRO_COIN);
+    vstake1->transfer(2, accounts[3].address, 50 * MICRO_LIBRO_COIN);
+
     vstake2->mint(2, accounts[1].address, 1000); // * MICRO_LIBRO_COIN
     vstake2->transfer(1, accounts[2].address, 500);
     vstake2->transfer(1, accounts[3].address, 500);
 
     auto micro_to_double = [](uint64_t amount) -> double {
-        return (double)amount / MICRO_LIBRO_COIN;
+        if (is_valid_balance(amount))
+            return (double)amount / MICRO_LIBRO_COIN;
+        else
+            return 0;
     };
-    clog.precision(10);
-    //
-    //  mint
-    //
-    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << endl;
-    vstake1->mint(1, accounts[2].address, 100 * MICRO_LIBRO_COIN);
-    LOG << "account 2's balance is " << vstake1->get_account_balance(2) << ", " << micro_to_double(vstake1->get_account_balance(2)) << endl;
-    //
-    //  transfer
-    //
-    LOG << "account 3's balance is " << vstake1->get_account_balance(3) << ", " << micro_to_double(vstake1->get_account_balance(3)) << endl;
-    vstake1->transfer(2, accounts[3].address, 50 * MICRO_LIBRO_COIN);
 
-    LOG << "account 2's balance is "
-        << "V1 : " << vstake1->get_account_balance(2) << "(" << micro_to_double(vstake1->get_account_balance(2)) << "), "
-        << "V2 : " << vstake2->get_account_balance(2) << "(" << micro_to_double(vstake2->get_account_balance(2)) << ")"
-        << endl;
-    LOG << "account 3's balance is "
-        << "V1 : " << vstake1->get_account_balance(3) << "(" << micro_to_double(vstake1->get_account_balance(3)) << "), "
-        << "V2 : " << vstake2->get_account_balance(3) << "(" << micro_to_double(vstake2->get_account_balance(3)) << "), "
-        << endl;
-    //
+    auto balance_to_string = [](uint64_t value) -> string {
+        if (is_valid_balance(value))
+            return to_string(value);
+        else
+            return "N/A";
+    };
+
+    clog.precision(10);
+
+    for (auto &account : accounts)
+    {
+        auto index = account.index;
+        auto balance1 = vstake1->get_account_balance(index);
+        auto balance2 = vstake2->get_account_balance(index);
+
+        LOG << "account " << index << "'s balance is "
+            << "V1 : " << balance_to_string(balance1) << "(" << micro_to_double(balance1) << "), "
+            << "V2 : " << balance_to_string(balance2) << "(" << micro_to_double(balance2) << "), "
+            << endl;
+    }
+
     //  get transaction detail
     //
     auto [txn, events] = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);

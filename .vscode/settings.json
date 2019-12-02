@@ -47,7 +47,8 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "ratio": "cpp"
     },
     "git.ignoreLimitWarning": true
 }

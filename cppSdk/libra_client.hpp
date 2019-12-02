@@ -138,7 +138,7 @@ public:
     virtual uint64_t get_account_balance(uint64_t addr) = 0;
 };
 
-using token_ptr = std::shared_ptr<VStake>;
+using vstake_ptr = std::shared_ptr<VStake>;
 
 #endif //__cplusplus >= 201703L
 

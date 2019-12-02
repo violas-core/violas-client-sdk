@@ -9,3 +9,6 @@
     cd cppSdk/test
     g++ -std=c++11 -g main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/bin -lclient_proxy -I..
 ```
+
+#6 VStake for test
+    ABCUSD；HIJUDS；XYZUSD；BCDCAN；CDESDG；DEFHKD

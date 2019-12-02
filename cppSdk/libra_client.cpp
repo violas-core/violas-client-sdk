@@ -335,6 +335,8 @@ public:
 
     virtual std::string name() override { return m_name; }
 
+    virtual uint256 address() override { return m_governor_addr; }
+
     virtual void deploy(uint64_t account_index) override
     {
         // make sure the account-index has the deploying permission

@@ -15,8 +15,8 @@ bool test_vstake();
 
 int main(int argc, const char *argv[])
 {
-    ofstream file("log.txt");
-    streambuf *mylog = clog.rdbuf(file.rdbuf());
+    //ofstream file("log.txt");
+    //streambuf *mylog = clog.rdbuf(file.rdbuf());
 
     try
     {
@@ -34,7 +34,7 @@ int main(int argc, const char *argv[])
         ERROR << e.what() << endl;
     }
 
-    clog.rdbuf(mylog);
+    //clog.rdbuf(mylog);
 
     return 0;
 }
@@ -349,8 +349,11 @@ bool test_vstake()
         vstake->publish(i + 1);
 
         vstakes.push_back(vstake);
+    }
 
-        cout << "VStake's name is " << names.at(i) << ", address is " << accounts[i + 1].address << endl;
+    for (auto vstake : vstakes)
+    {
+        cout << "VStake's name is " << vstake->name() << ", address is " << vstake->address() << endl;
     }
 
     auto &vstake1 = vstakes[0];
@@ -359,8 +362,6 @@ bool test_vstake()
     vstake1->publish(1);
     vstake1->publish(2);
     vstake1->publish(3);
-
-    vstake2->deploy(2);
 
     vstake2->publish(1);
     vstake2->publish(2);

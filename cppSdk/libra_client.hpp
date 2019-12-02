@@ -127,6 +127,8 @@ public:
 
     virtual std::string name() = 0;
 
+    virtual uint256 address() = 0;
+
     virtual void deploy(uint64_t account_index) = 0;
 
     virtual void publish(uint64_t account_index) = 0;

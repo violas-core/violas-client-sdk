@@ -15,8 +15,8 @@ bool test_vstake();
 
 int main(int argc, const char *argv[])
 {
-    // ofstream file("log.txt");
-    // streambuf *log = clog.rdbuf(file.rdbuf());
+    ofstream file("log.txt");
+    streambuf *mylog = clog.rdbuf(file.rdbuf());
 
     try
     {
@@ -34,7 +34,7 @@ int main(int argc, const char *argv[])
         ERROR << e.what() << endl;
     }
 
-    // clog.rdbuf(log);
+    clog.rdbuf(mylog);
 
     return 0;
 }
@@ -327,12 +327,12 @@ bool test_vstake()
         uint64_t balance = client->get_balance(account.index);
         // assert(balance > 0);
 
-        LOG << "\n\tIndex : " << account.index
-            << "\n\tAddress : " << account.address
-            << "\n\tSequence : " << account.sequence_number
-            << "\n\tStatus : " << account.status
-            << "\n\tVToken Balance : " << balance
-            << endl;
+        cout << "\n\tIndex : " << account.index
+             << "\n\tAddress : " << account.address
+             << "\n\tSequence : " << account.sequence_number
+             << "\n\tStatus : " << account.status
+             << "\n\tVToken Balance : " << balance
+             << endl;
     }
 
     vector<string> names = {"ABCUSD", "HIJUDS", "XYZUSD", "BCDCAN", "CDESDG", "DEFHKD"};
@@ -349,6 +349,8 @@ bool test_vstake()
         vstake->publish(i + 1);
 
         vstakes.push_back(vstake);
+
+        cout << "VStake's name is " << names.at(i) << ", address is " << accounts[i + 1].address << endl;
     }
 
     auto &vstake1 = vstakes[0];

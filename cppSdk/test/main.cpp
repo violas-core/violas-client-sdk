@@ -281,7 +281,6 @@ bool test_violas_client()
     return true;
 }
 
-#if __cplusplus >= 201703L
 bool test_vstake()
 {
     cout << "running test vstake ...\n"
@@ -401,9 +400,16 @@ bool test_vstake()
             << "V2 : " << balance_to_string(balance2) << "(" << micro_to_double(balance2) << "), "
             << endl;
     }
-
+    //
     //  get transaction detail
+    //
+#if __cplusplus >= 201703L
     auto [txn, events] = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
+#else
+    auto txn_events = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
+    auto &txn = txn_events.first;
+    auto &events = txn_events.second;
+#endif
 
     // LOG << "Committed Transaction : \n"
     //     << txn << endl
@@ -412,9 +418,3 @@ bool test_vstake()
 
     return true;
 }
-#else
-bool test_vstake()
-{
-    return true;
-}
-#endif

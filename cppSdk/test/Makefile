@@ -5,7 +5,7 @@ test : clean
 	# -stdlib=libc++ 
 	
 gcc : clean
-	g++ -std=c++11 -g -Wall main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/debug/ -lclient_proxy -I../
+	g++ -std=c++11 -g -Wall main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/debug/ -lclient_proxy -lboost_system -lboost_filesystem -I../
 
 mingw : clean
 	x86_64-w64-mingw32-g++ -std=c++11 -g -Wall main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/debug/ -lclient_proxy -I../

@@ -4,7 +4,7 @@
     1. add libra_client.cpp to your project
     2. link rust-client-proxy/bin libclient_proxy.so    
     
-for example, to compile cppSdk/test 
+3. for example, to compile cppSdk/test 
 ```
 cd cppSdk/test
 g++ -std=c++11 -g main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/bin -lclient_proxy -I..

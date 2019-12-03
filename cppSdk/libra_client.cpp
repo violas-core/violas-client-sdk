@@ -5,6 +5,10 @@
 #include <sstream>
 #if __cplusplus >= 201703L
 #include <filesystem>
+namespace fs = std::filesystem;
+#else
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
 #endif
 
 #include "libra_client.hpp"
@@ -315,9 +319,7 @@ std::shared_ptr<client> client::create(const std::string &host,
 
 namespace Violas
 {
-#if __cplusplus >= 201703L
-
-namespace fs = std::filesystem;
+//#if __cplusplus >= 201703L
 
 class VStakeImp : public VStake
 {
@@ -346,7 +348,7 @@ public:
 
         try_compile(script_name, true);
 
-        m_libra_client->publish_module(account_index, script_name += ".mv");
+        m_libra_client->publish_module(account_index, (script_name += ".mv").c_str());
     }
 
     virtual void mint(uint64_t account_index, uint256 address, uint64_t amount) override
@@ -360,7 +362,7 @@ public:
 
         auto args = vector<string>{uint256_to_string(address), to_string(amount)};
 
-        m_libra_client->execute_script(account_index, script_name += ".mv", args);
+        m_libra_client->execute_script(account_index, (script_name += ".mv").c_str(), args);
     }
 
     virtual void publish(uint64_t account_index) override
@@ -369,7 +371,7 @@ public:
 
         try_compile(script_name);
 
-        m_libra_client->execute_script(account_index, script_name += ".mv", vector<string>{});
+        m_libra_client->execute_script(account_index, (script_name += ".mv").c_str(), vector<string>{});
     }
 
     virtual void transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) override
@@ -380,7 +382,7 @@ public:
 
         auto args = vector<string>{uint256_to_string(address), to_string(amount_micro_coin)};
 
-        m_libra_client->execute_script(account_index, script_name += ".mv", args);
+        m_libra_client->execute_script(account_index, (script_name += ".mv").c_str(), args);
     }
 
     virtual uint64_t get_account_balance(uint64_t account_index) override
@@ -392,22 +394,26 @@ public:
 protected:
     void init_all_script()
     {
-        using namespace std::filesystem;
-
         string governor = uint256_to_string(m_governor_addr);
-        m_temp_path = temp_directory_path() / uint256_to_string(m_governor_addr); ///tmp/xxxxx
+        m_temp_path = fs::temp_directory_path() / uint256_to_string(m_governor_addr); ///tmp/xxxxx
 
         fs::remove_all(m_temp_path);
 
         fs::create_directory(m_temp_path);
         LOG << m_temp_path.string() << endl;
 
-        for (auto &file : directory_iterator("../scripts"))
+        for (auto &file : fs::directory_iterator("../scripts"))
         {
             if (file.path().extension() == ".mvir")
             {
-                string new_file = m_temp_path / file.path().filename().string();
-                copy_file(file.path().string(), new_file, copy_options::overwrite_existing);
+                auto new_file = m_temp_path / file.path().filename().string();
+
+#if __cplusplus >= 201703L
+                auto option = fs::copy_options::overwrite_existing;
+#else
+                auto option = fs::copy_option::overwrite_if_exists;
+#endif
+                fs::copy_file(file.path().string(), new_file, option);
             }
         }
     }
@@ -418,7 +424,7 @@ protected:
         auto mvir(fs::path(script_name) += ".mvir");
 
         if (!fs::exists(mv))
-            m_libra_client->compile(m_governor_addr, mvir, is_module);
+            m_libra_client->compile(m_governor_addr, mvir.c_str(), is_module);
     }
 
 private:
@@ -426,7 +432,7 @@ private:
     string m_name;
     uint256 m_governor_addr;
     string m_module;
-    filesystem::path m_temp_path;
+    fs::path m_temp_path;
     const string token_module = "token";
     const string publish_script = "publish";
     const string mint_script = "mint";
@@ -439,6 +445,6 @@ std::shared_ptr<VStake> VStake::create(Libra::client_ptr client,
 {
     return make_shared<VStakeImp>(client, name, governor_addr);
 }
-#endif
+//#endif
 
 } // namespace Violas

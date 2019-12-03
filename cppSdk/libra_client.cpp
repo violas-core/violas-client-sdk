@@ -319,8 +319,6 @@ std::shared_ptr<client> client::create(const std::string &host,
 
 namespace Violas
 {
-//#if __cplusplus >= 201703L
-
 class VStakeImp : public VStake
 {
 public:
@@ -445,6 +443,5 @@ std::shared_ptr<VStake> VStake::create(Libra::client_ptr client,
 {
     return make_shared<VStakeImp>(client, name, governor_addr);
 }
-//#endif
 
 } // namespace Violas

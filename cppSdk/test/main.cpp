@@ -407,8 +407,8 @@ bool test_vstake()
     auto [txn, events] = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
 #else
     auto txn_events = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
-    auto &txn = txn_events.first;
-    auto &events = txn_events.second;
+    //auto &txn = txn_events.first;
+    //auto &events = txn_events.second;
 #endif
 
     // LOG << "Committed Transaction : \n"

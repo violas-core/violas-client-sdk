@@ -114,8 +114,6 @@ using client_ptr = std::shared_ptr<client>;
 namespace Violas
 {
 
-//#if __cplusplus >= 201703L
-
 class VStake
 {
 public:
@@ -141,8 +139,6 @@ public:
 };
 
 using vstake_ptr = std::shared_ptr<VStake>;
-
-//#endif //__cplusplus >= 201703L
 
 } // namespace Violas
 

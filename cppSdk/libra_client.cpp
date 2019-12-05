@@ -319,19 +319,19 @@ std::shared_ptr<client> client::create(const std::string &host,
 
 namespace Violas
 {
-class VStakeImp : public VStake
+class TokenImp : public Token
 {
 public:
-    VStakeImp(Libra::client_ptr client,
-              const std::string &name,
-              uint256 governor_addr) : m_libra_client(client),
-                                       m_name(name),
-                                       m_governor_addr(governor_addr)
+    TokenImp(Libra::client_ptr client,
+             const std::string &name,
+             uint256 governor_addr) : m_libra_client(client),
+                                      m_name(name),
+                                      m_governor_addr(governor_addr)
     {
         init_all_script();
     }
 
-    virtual ~VStakeImp() {}
+    virtual ~TokenImp() {}
 
     virtual std::string name() override { return m_name; }
 
@@ -437,11 +437,13 @@ private:
     const string transfer_script = "transfer";
 };
 
-std::shared_ptr<VStake> VStake::create(Libra::client_ptr client,
-                                       uint256 governor_addr,
-                                       const std::string &name)
+std::shared_ptr<Token> Token::create(Libra::client_ptr client,
+                                     uint256 governor_addr,
+                                     const std::string &name)
 {
-    return make_shared<VStakeImp>(client, name, governor_addr);
+    return make_shared<TokenImp>(client, name, governor_addr);
 }
 
 } // namespace Violas
+
+//#include <boost/python.hpp>

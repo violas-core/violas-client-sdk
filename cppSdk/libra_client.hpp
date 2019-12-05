@@ -114,14 +114,14 @@ using client_ptr = std::shared_ptr<client>;
 namespace Violas
 {
 
-class VStake
+class Token
 {
 public:
-    static std::shared_ptr<VStake> create(Libra::client_ptr client,
-                                          uint256 governor_addr,
-                                          const std::string &name);
+    static std::shared_ptr<Token> create(Libra::client_ptr client,
+                                         uint256 governor_addr,
+                                         const std::string &name);
 
-    virtual ~VStake() {}
+    virtual ~Token() {}
 
     virtual std::string name() = 0;
 
@@ -131,14 +131,14 @@ public:
 
     virtual void publish(uint64_t account_index) = 0;
 
-    virtual void mint(uint64_t account_index, uint256 address, uint64_t amount) = 0;
+    virtual void mint(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
 
     virtual void transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
 
     virtual uint64_t get_account_balance(uint64_t addr) = 0;
 };
 
-using vstake_ptr = std::shared_ptr<VStake>;
+using token_ptr = std::shared_ptr<Token>;
 
 } // namespace Violas
 

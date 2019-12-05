@@ -11,12 +11,12 @@ using namespace std;
 
 bool test_libra_client();
 bool test_violas_client();
-bool test_vstake();
+bool test_violas_token();
 
 int main(int argc, const char *argv[])
 {
-    //ofstream file("log.txt");
-    //streambuf *mylog = clog.rdbuf(file.rdbuf());
+    ofstream file("log.txt");
+    streambuf *mylog = clog.rdbuf(file.rdbuf());
 
     try
     {
@@ -25,7 +25,7 @@ int main(int argc, const char *argv[])
 
         // assert(test_violas_client() == true);
 
-        assert(test_vstake() == true);
+        assert(test_violas_token() == true);
 
         cout << "\nFinished all test jobs !" << endl;
     }
@@ -34,7 +34,7 @@ int main(int argc, const char *argv[])
         ERROR << e.what() << endl;
     }
 
-    //clog.rdbuf(mylog);
+    clog.rdbuf(mylog);
 
     return 0;
 }
@@ -157,21 +157,21 @@ bool test_violas_client()
             << "\n\tAddress : " << account.address
             << "\n\tSequence : " << account.sequence_number
             << "\n\tStatus : " << account.status
-            << "\n\tVToken Balance : " << client->get_balance(account.index)
+            << "\n\tToken Balance : " << client->get_balance(account.index)
             << endl;
     }
 
     uint64_t chairman = 0;
 
     //
-    //  Account #0 as Governor mint and transer 100 VToken
+    //  Account #0 as Governor mint and transer 100 Token
     //
     auto balance = client->get_balance(chairman);
 
     client->mint_coins(0, 200, true);
     assert(balance + 200 == client->get_balance(chairman));
 
-    LOG << "\n\n董事长转帐100个VToken给每个州长" << endl;
+    LOG << "\n\n董事长转帐100个Token给每个州长" << endl;
 
     client->transfer_coins_int(chairman, accounts[1].address, 100 * MICRO_LIBRO_COIN);
     LOG << "Address 1's balance is " << client->get_balance(1) << endl;
@@ -209,12 +209,12 @@ bool test_violas_client()
         //
         // Governor transfers VStake to SSO
         //
-        // LOG << "州长转帐10个VToken给每个SSO发币商" << endl;
+        // LOG << "州长转帐10个Token给每个SSO发币商" << endl;
 
         client->transfer_coins_int(governor, accounts[sso1].address, 10 * MICRO_LIBRO_COIN);
-        LOG << "Governor (" << governor << ") transer 10 VToken(Libra) to user #" << sso1 << endl;
+        LOG << "Governor (" << governor << ") transer 10 Token(Libra) to user #" << sso1 << endl;
         client->transfer_coins_int(governor, accounts[sso2].address, 10 * MICRO_LIBRO_COIN);
-        LOG << "Governor (" << governor << ") transer 10 VToken(Libra) to user #" << sso2 << endl;
+        LOG << "Governor (" << governor << ") transer 10 Token(Libra) to user #" << sso2 << endl;
 
         //
         //   executing publish script for registering stable 1
@@ -234,9 +234,9 @@ bool test_violas_client()
         //client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
 
         //
-        //   SSO transfer VToken to user
+        //   SSO transfer Token to user
         //
-        // LOG << "SSO转帐1个VToken给每个用户" << endl;
+        // LOG << "SSO转帐1个Token给每个用户" << endl;
         client->transfer_coins_int(sso1, accounts[u1].address, 1 * MICRO_LIBRO_COIN);
         client->transfer_coins_int(sso2, accounts[u2].address, 1 * MICRO_LIBRO_COIN);
         //
@@ -273,7 +273,7 @@ bool test_violas_client()
     for (auto &account : accounts)
     {
         LOG << "Account " << account.index << "'s balances ------ "
-            << "VToken : " << client->get_balance(account.index) << ", "
+            << "Token : " << client->get_balance(account.index) << ", "
             << "VStake-1 : " << balance_to_string(get_violas_balance(account.index, accounts[1].address)) << ", "
             << "VStake-2 : " << balance_to_string(get_violas_balance(account.index, accounts[2].address)) << endl;
     }
@@ -281,12 +281,10 @@ bool test_violas_client()
     return true;
 }
 
-bool test_vstake()
+bool test_violas_token()
 {
     cout << "running test vstake ...\n"
          << endl;
-
-    using namespace Violas;
 
     auto host = "18.220.66.235";
     uint16_t port = 40001;
@@ -296,7 +294,7 @@ bool test_vstake()
                                         "violas_consensus_peers.config.toml",
                                         "temp_faucet_keys",
                                         false,
-                                        "faucet.testnet.libra.org",
+                                        "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
                                         "mnemonic");
 
     // auto client = Libra::client::create("localhost",
@@ -309,7 +307,7 @@ bool test_vstake()
 
     client->test_validator_connection();
 
-    const uint64_t account_amount = 7;
+    const uint64_t account_amount = 10;
     for (uint64_t i = 0; i < account_amount; i++)
     {
         client->create_next_account(true);
@@ -330,48 +328,74 @@ bool test_vstake()
              << "\n\tAddress : " << account.address
              << "\n\tSequence : " << account.sequence_number
              << "\n\tStatus : " << account.status
-             << "\n\tVToken Balance : " << balance
+             << "\n\tToken Balance : " << balance
              << endl;
     }
+    //
+    //  所有角色的账户的索引
+    //  董事长的账户 : 0
+    //  州长1的账户  : 1
+    //  州长2的账户  : 2
+    //  SSO账户1    : 3
+    //  SSO账户2    : 4
+    //  董事长的VStake1 : 8
+    //  董事长的VStake2 : 9
+    //
+    //董事长用账户8发行VStake1给州长1, 转帐1个VStake
+    auto vstake1 = Violas::Token::create(client, accounts[8].address, "VStake1");
+    vstake1->deploy(8);
+    vstake1->publish(8);
+    vstake1->publish(1);
+    vstake1->mint(8, accounts[1].address, 1 * MICRO_LIBRO_COIN);
+    cout << "州长1的 VStake 1 balnce " << vstake1->get_account_balance(1) << endl;
 
+    //董事长用账户8发行VStake1给州长2, 转帐1个VStake
+    auto vstake2 = Violas::Token::create(client, accounts[9].address, "VStake2");
+    vstake2->deploy(9);
+    vstake2->publish(9);
+    vstake2->publish(2);
+    vstake2->mint(9, accounts[2].address, 1 * MICRO_LIBRO_COIN);
+    cout << "州长2的 VStake 2 balnce " << vstake2->get_account_balance(2) << endl;
+
+    //6个州长发行6种稳定币
     vector<string> names = {"ABCUSD", "HIJUDS", "XYZUSD", "BCDCAN", "CDESDG", "DEFHKD"};
-    vector<vstake_ptr> vstakes;
+    vector<Violas::token_ptr> tokens;
 
-    assert(accounts.size() == names.size() + 1);
+    assert(accounts.size() >= names.size() + 1);
 
     for (size_t i = 0; i < names.size(); i++)
     {
-        auto vstake = VStake::create(client, accounts[i + 1].address, names.at(i));
+        auto vstake = Violas::Token::create(client, accounts[i + 1].address, names.at(i));
 
         vstake->deploy(i + 1);
 
         vstake->publish(i + 1);
 
-        vstakes.push_back(vstake);
+        tokens.push_back(vstake);
     }
 
-    for (auto vstake : vstakes)
+    for (auto vstake : tokens)
     {
         cout << "VStake's name is " << vstake->name() << ", address is " << vstake->address() << endl;
     }
 
-    auto &vstake1 = vstakes[0];
-    auto &vstake2 = vstakes[1];
+    auto &token1 = tokens[0];
+    auto &token2 = tokens[1];
 
-    vstake1->publish(1);
-    vstake1->publish(2);
-    vstake1->publish(3);
+    token1->publish(1);
+    token1->publish(2);
+    token1->publish(3);
 
-    vstake2->publish(1);
-    vstake2->publish(2);
-    vstake2->publish(3);
+    token2->publish(1);
+    token2->publish(2);
+    token2->publish(3);
 
-    vstake1->mint(1, accounts[2].address, 100 * MICRO_LIBRO_COIN);
-    vstake1->transfer(2, accounts[3].address, 50 * MICRO_LIBRO_COIN);
+    token1->mint(1, accounts[2].address, 100 * MICRO_LIBRO_COIN);
+    token1->transfer(2, accounts[3].address, 50 * MICRO_LIBRO_COIN);
 
-    vstake2->mint(2, accounts[1].address, 1000); // * MICRO_LIBRO_COIN
-    vstake2->transfer(1, accounts[2].address, 500);
-    vstake2->transfer(1, accounts[3].address, 500);
+    token2->mint(2, accounts[1].address, 1000); // * MICRO_LIBRO_COIN
+    token2->transfer(1, accounts[2].address, 500);
+    token2->transfer(1, accounts[3].address, 500);
 
     auto micro_to_double = [](uint64_t amount) -> double {
         if (is_valid_balance(amount))
@@ -392,13 +416,13 @@ bool test_vstake()
     for (auto &account : accounts)
     {
         auto index = account.index;
-        auto balance1 = vstake1->get_account_balance(index);
-        auto balance2 = vstake2->get_account_balance(index);
+        auto balance1 = token1->get_account_balance(index);
+        auto balance2 = token2->get_account_balance(index);
 
-        LOG << "account " << index << "'s balance is "
-            << "V1 : " << balance_to_string(balance1) << "(" << micro_to_double(balance1) << "), "
-            << "V2 : " << balance_to_string(balance2) << "(" << micro_to_double(balance2) << "), "
-            << endl;
+        cout << "account " << index << "'s balance is "
+             << "T1 : " << balance_to_string(balance1) << "(" << micro_to_double(balance1) << "), "
+             << "T2 : " << balance_to_string(balance2) << "(" << micro_to_double(balance2) << "), "
+             << endl;
     }
     //
     //  get transaction detail
@@ -411,10 +435,10 @@ bool test_vstake()
     //auto &events = txn_events.second;
 #endif
 
-    // LOG << "Committed Transaction : \n"
-    //     << txn << endl
-    //     << "Events:\n"
-    //     << events << endl;
+    cout << "Committed Transaction : \n"
+         << txn << endl
+         << "Events:\n"
+         << events << endl;
 
     return true;
 }

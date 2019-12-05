@@ -1,28 +1,91 @@
-# How to use cppSdk
-1. include "libra_client.hpp" to your code
-2. compiling 
-    1. add libra_client.cpp to your project
-    2. link rust-client-proxy/bin libclient_proxy.so    
-    
-3. for example, to compile cppSdk/test 
-```
-cd cppSdk/test
-g++ -std=c++11 -g main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/bin -lclient_proxy -I..
-```
+# Libra
 
-# Token for test
-```
-Token's name is ABCUSD, address is b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e
-Token's name is HIJUDS, address is 75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782
-Token's name is XYZUSD, address is f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1
-Token's name is BCDCAN, address is ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568
-Token's name is CDESDG, address is 15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622
-Token's name is DEFHKD, address is e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd
-```
-
-## Json format for Transaction
+## 1.client::create 
+    创建libra客户端
+```c++
+create(const std::string &host,                     //远程验证节点IP地址
+           uint16_t port,                           //端口
+           const std::string &validator_set_file,   //验证节点集合文件
+           const std::string &faucet_account_file,  //铸币账户的配置文件
+           bool sync_on_wallet_recovery,            //是否同步recovery
+           const std::string &faucet_server,        //libra节点的获取测试币的URL
+           const std::string &mnemonic_file);       //本地助记文件
 
 ```
+
+## 2. client::test_validator_connection
+      测试网络连接  
+
+## 3. client::create_next_account
+    创建一个新的账户
+## 4. client::transfer_coins_int
+
+```
+/// Transfer num_coins from sender account to receiver.
+//  If is_blocking = true, it will keep querying validator till the sequence number is bumped up in validator.
+    //  return : account's index and sequence number
+    virtual std::pair<uint64_t, uint64_t>
+    transfer_coins_int(uint64_t sender_account_ref_id, // the reference id of account
+                       uint256 receiver_address,       // the address of receiver
+                       uint64_t micro_coins,           // a millionth of a coin
+                       uint64_t gas_unit_price = 0,    // set gas unit price or 0
+                       uint64_t max_gas_amount = 0,    // set the max gas account or 0
+                       bool is_blocking = true) = 0;   // true for sync, fasle for async
+
+```
+
+
+
+# Violas
+
+## Token::create
+
+```c++
+static std::shared_ptr<Token> 
+create(Libra::client_ptr client,	//Libra client object
+       uint256 governor_addr,		//governor address
+       const std::string &name);	//Token name
+```
+
+## Token::deploy, 
+
+```
+deploy(uint64_t account_index); //account index
+```
+
+## Token::publish
+
+```
+publish(uint64_t account_index); //account index
+```
+
+## Token::mint
+
+```
+mint(uint64_t account_index, // account index
+	 uint256 address, 		// receiver address
+	 uint64_t amount_micro_coin)		// amount, 1
+```
+
+## Token::transfer
+
+```
+transfer(uint64_t account_index, // account index
+		uint256 address, 			//receiver address
+		uint64_t amount_micro_coin)	//
+```
+
+## Token::get_account_balance
+
+```
+get_account_balance(uint64_t account_index) // account index
+```
+
+
+
+# Transaction JSON foramt
+
+```json
 SignedTransaction { 
  raw_txn: RawTransaction { 
 	sender: 75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782, 
@@ -52,11 +115,12 @@ SignedTransaction {
     } ),
 ), 
  }
-
 ```
 
-## Json format for Events
-```
+# Events JSON format
+
+```json
 ContractEvent { key: EventKey([220, 140, 203, 162, 15, 80, 32, 231, 100, 186, 197, 36, 151, 99, 158, 91, 88, 12, 116, 46, 133, 101, 176, 100, 50, 253, 197, 115, 152, 181, 126, 38]), index: 35, type: Struct(StructTag { address: 75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782, module: Identifier("DToken"), name: Identifier("AllinoneEvent"), type_params: [] }), event_data: "010000000000000075bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782e803000000000000000000000000000000000000" }
 ContractEvent { key: EventKey([13, 139, 76, 150, 189, 177, 87, 230, 131, 172, 12, 175, 128, 86, 221, 190, 254, 159, 102, 97, 18, 196, 84, 81, 151, 253, 8, 103, 67, 115, 153, 62]), index: 52, type: Struct(StructTag { address: 75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782, module: Identifier("DToken"), name: Identifier("AllinoneEvent"), type_params: [] }), event_data: "010000000000000075bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782e803000000000000000000000000000000000000" }
 ```
+

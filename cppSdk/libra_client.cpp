@@ -446,4 +446,26 @@ std::shared_ptr<Token> Token::create(Libra::client_ptr client,
 
 } // namespace Violas
 
-//#include <boost/python.hpp>
+#ifdef PYTHON
+#include <boost/python.hpp>
+
+BOOST_PYTHON_MODULE(violas)
+{
+    {
+        using client = Libra::client_imp;
+
+        class_<client>("client", init<string, uint16_t, string, string, bool, string, string>())
+            .def("test_validator_connection", &client::test_validator_connection)
+            .def("create_next_account", &client::create_next_account);
+    }
+
+    {
+        using Token = Violas::TokenImp;
+
+        // class_<Token>("Token", init<string, uint16_t>)
+        //     .def("name", &Token::name)
+        //     .def("address", &Token::address);
+    }
+}
+
+#endif

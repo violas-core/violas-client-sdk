@@ -20,6 +20,11 @@ Token's name is CDESDG, address is 15d3e4bea615b78c3782553df712a4f86d85280f11939
 Token's name is DEFHKD, address is e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd
 ```
 
+## mnemonic for test
+```
+card tobacco message ordinary deer cement brick task memory prison bomb diet gallery letter office swing south provide grit decorate pistol grain apart enact;0
+```
+
 ## Json format for Transaction
 
 ```

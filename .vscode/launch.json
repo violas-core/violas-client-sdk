@@ -7,6 +7,21 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Launch transfer",
+            "program": "${workspaceFolder}/cppSdk/test/transfer",
+            "args": [],
+            "cwd": "${workspaceFolder}/cppSdk/test"
+        },
+        {
+            "name": "Python: violas.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cppSdk/test/violas.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "(lldb) Launch",
             "program": "${workspaceFolder}/cppSdk/test/test",
             "args": [],

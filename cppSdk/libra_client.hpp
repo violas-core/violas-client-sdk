@@ -105,6 +105,7 @@ public:
     //  res_path : the path of resouce, usually the format is address.module.struct
     //
     virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) = 0;
+    virtual uint64_t get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr) = 0;
 };
 
 using client_ptr = std::shared_ptr<client>;
@@ -135,7 +136,8 @@ public:
 
     virtual void transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
 
-    virtual uint64_t get_account_balance(uint64_t addr) = 0;
+    virtual uint64_t get_account_balance(uint64_t index) = 0;
+    virtual uint64_t get_account_balance(uint256 addr) = 0;
 };
 
 using token_ptr = std::shared_ptr<Token>;

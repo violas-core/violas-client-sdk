@@ -52,6 +52,23 @@ std::string uint256_to_string(const uint256 &address)
     return oss.str();
 }
 
+uint256 uint256_from_string(const std::string &str)
+{
+    uint256 addr;
+    auto iter = begin(addr);
+
+    for (size_t i = 0; i < str.size() && i < 64; i += 2)
+    {
+        std::istringstream iss(str.substr(i, 2));
+        uint32_t byte;
+
+        iss >> std::hex >> std::setw(2) >> byte; // std::setfill('0') >> std::setw(2)
+        *iter++ = byte;
+    }
+
+    return addr;
+}
+
 bool is_valid_balance(uint64_t value)
 {
 #if __cplusplus >= 201703L
@@ -70,10 +87,12 @@ protected:
     void *raw_client_proxy = nullptr;
 
 public:
-    client_imp(const std::string &host, uint16_t port,
+    client_imp(const std::string &host,
+               uint16_t port,
                const std::string &validator_set_file,
                const std::string &faucet_account_file,
-               bool sync_on_wallet_recovery, const std::string &faucet_server,
+               bool sync_on_wallet_recovery,
+               const std::string &faucet_server,
                const std::string &mnemonic_file)
     {
         raw_client_proxy = (void *)libra_create_client_proxy(
@@ -82,6 +101,16 @@ public:
             faucet_server.data(), mnemonic_file.data());
         if (raw_client_proxy == nullptr)
             throw runtime_error("failed to create native rust client proxy");
+
+        LOG << "\ncreate violas client with "
+            << "\n\thost = " << host
+            << "\n\tport = " << port
+            << "\n\tvalidator_set_file = " << validator_set_file
+            << "\n\tfaucet_account_file = " << faucet_account_file
+            << "\n\tsync_on_wallet_recovery = " << sync_on_wallet_recovery
+            << "\n\tfaucet_server = " << faucet_server
+            << "\n\tmnemonic_file = " << mnemonic_file
+            << endl;
     }
 
     virtual ~client_imp()
@@ -105,6 +134,8 @@ public:
         bool ret = libra_test_validator_connection((uint64_t)raw_client_proxy);
         if (!ret)
             throw runtime_error("failed to test validator connection");
+
+        LOG << "\nsucceeded to test validator connection" << endl;
     }
 
     virtual std::pair<size_t, uint256>
@@ -290,13 +321,28 @@ public:
     virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) override
     {
         uint64_t result = 0;
-        string addr = "0x" + uint256_to_string(res_path_addr);
+        string path_addr = "0x" + uint256_to_string(res_path_addr);
 
         bool ret = libra_get_account_resource(
-            (uint64_t)raw_client_proxy, account_index, addr.c_str(), &result);
+            (uint64_t)raw_client_proxy, to_string(account_index).c_str(), path_addr.c_str(), &result);
         if (!ret)
             throw runtime_error(
                 format("failed to get get resource for account index %d ", account_index) + EXCEPTION_AT);
+
+        return result;
+    }
+
+    virtual uint64_t get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr) override
+    {
+        uint64_t result = 0;
+        string path_addr = "0x" + uint256_to_string(res_path_addr);
+        auto addr = uint256_to_string(account_addr);
+
+        bool ret = libra_get_account_resource(
+            (uint64_t)raw_client_proxy, addr.c_str(), path_addr.c_str(), &result);
+        if (!ret)
+            throw runtime_error(
+                format("failed to get get resource for account address %d ", addr.c_str()) + EXCEPTION_AT);
 
         return result;
     }
@@ -389,6 +435,12 @@ public:
         return balance;
     }
 
+    virtual uint64_t get_account_balance(uint256 account_addr) override
+    {
+        uint64_t balance = m_libra_client->get_account_resource_uint64(account_addr, m_governor_addr);
+        return balance;
+    }
+
 protected:
     void init_all_script()
     {
@@ -448,24 +500,21 @@ std::shared_ptr<Token> Token::create(Libra::client_ptr client,
 
 #ifdef PYTHON
 #include <boost/python.hpp>
+using namespace boost::python;
 
 BOOST_PYTHON_MODULE(violas)
 {
-    {
-        using client = Libra::client_imp;
+    using client = Libra::client_imp;
 
-        class_<client>("client", init<string, uint16_t, string, string, bool, string, string>())
-            .def("test_validator_connection", &client::test_validator_connection)
-            .def("create_next_account", &client::create_next_account);
-    }
+    class_<client>("Client", init<string, uint16_t, string, string, bool, string, string>())
+        .def("test_validator_connection", &client::test_validator_connection)
+        .def("create_next_account", &client::create_next_account);
 
-    {
-        using Token = Violas::TokenImp;
+    //using Token = Violas::TokenImp;
 
-        // class_<Token>("Token", init<string, uint16_t>)
-        //     .def("name", &Token::name)
-        //     .def("address", &Token::address);
-    }
+    // class_<Token>("Token", init<string, uint16_t>)
+    //     .def("name", &Token::name)
+    //     .def("address", &Token::address);
 }
 
 #endif

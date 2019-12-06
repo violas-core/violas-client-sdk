@@ -98,7 +98,7 @@ extern "C"
     //
     bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, uint64_t account_index, uint64_t sequence_num, char **out_txn, char **events);
 
-    bool libra_get_account_resource(uint64_t raw_ptr, uint64_t account_index, const char *account_path_addr, uint64_t *balance);
+    bool libra_get_account_resource(uint64_t raw_ptr, const char *account_index_or_addr, const char *account_path_addr, uint64_t *balance);
 
 #ifdef __cplusplus
 }

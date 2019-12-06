@@ -56,25 +56,25 @@ pub mod x86_64 {
             let mnemonic_file =
                 unsafe { CStr::from_ptr(c_mnemonic_file).to_str().unwrap().to_owned() };
 
-            if DEBUG {
-                println!(
-                    "create_native_client_proxy arguments : 
-                        host = {}, 
-                        port = {}, 
-                        validator_set_file = {},
-                        faucet_account_file = {},
-                        sync_on_wallet_recovery = {},
-                        faucet_server = {},
-                        mnemonic_file = {}",
-                    host,
-                    port,
-                    validator_set_file,
-                    faucet_account_file,
-                    sync_on_wallet_recovery,
-                    faucet_server,
-                    mnemonic_file,
-                );
-            }
+            // if DEBUG {
+            //     println!(
+            //         "create_native_client_proxy arguments :
+            //             host = {},
+            //             port = {},
+            //             validator_set_file = {},
+            //             faucet_account_file = {},
+            //             sync_on_wallet_recovery = {},
+            //             faucet_server = {},
+            //             mnemonic_file = {}",
+            //         host,
+            //         port,
+            //         validator_set_file,
+            //         faucet_account_file,
+            //         sync_on_wallet_recovery,
+            //         faucet_server,
+            //         mnemonic_file,
+            //     );
+            // }
             //
             // new Client Proxy
             //
@@ -119,7 +119,7 @@ pub mod x86_64 {
         //
         let ret = client.test_validator_connection();
 
-        println!("test_validator_connection enters ...");
+        //println!("test_validator_connection enters ...");
         //return the boolean result
         match ret {
             Ok(_) => true,
@@ -607,13 +607,15 @@ pub mod x86_64 {
     #[no_mangle]
     pub extern "C" fn libra_get_account_resource(
         raw_ptr: u64,
-        index: u64,
+        account_index_or_addr: *const c_char,
         c_account_path_addr: *const c_char,
         balance: &mut u64,
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<u64, Error> {
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let address = client.get_account_address_from_parameter(index.to_string().as_str())?;
+            let address = client.get_account_address_from_parameter(unsafe {
+                CStr::from_ptr(account_index_or_addr).to_str().unwrap()
+            })?;
 
             if let (Some(blob), _) = client.client.get_account_blob(address)? {
                 let map = BTreeMap::<Vec<u8>, Vec<u8>>::try_from(&blob)?;

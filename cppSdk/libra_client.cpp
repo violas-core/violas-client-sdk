@@ -291,8 +291,9 @@ public:
             << endl;
     }
 
-    virtual std::pair<std::string, std::string> get_committed_txn_by_acc_seq(uint64_t account_index,
-                                                                             uint64_t sequence_num) override
+    virtual std::pair<std::string, std::string>
+    get_committed_txn_by_acc_seq(uint64_t account_index,
+                                 uint64_t sequence_num) override
     {
         char *out_txn = nullptr, *events = nullptr;
 
@@ -316,6 +317,21 @@ public:
         libra_free_string(events);
 
         return txn_events;
+    }
+
+    virtual void get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) override
+    {
+        AllTxnEvents all_txn_events{nullptr, 0, 0};
+
+        bool ret = libra_get_txn_by_range((uint64_t)raw_client_proxy, start_version, limit, fetch_events, &all_txn_events);
+        if (!ret)
+        {
+            //auto last_error =
+            throw runtime_error(
+                format("failed to get txn by range, %d ", get_last_error().c_str()) + EXCEPTION_AT);
+        }
+
+        libra_free_all_txn_events(&all_txn_events);
     }
 
     virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) override

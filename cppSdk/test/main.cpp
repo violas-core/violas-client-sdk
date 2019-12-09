@@ -440,5 +440,7 @@ bool test_violas_token()
          << "Events:\n"
          << events << endl;
 
+    client->get_txn_by_range(100, 10, true);
+
     return true;
 }

@@ -1,7 +1,6 @@
 #[cfg(target_arch = "x86_64")]
 #[allow(non_snake_case)]
 pub mod x86_64 {
-    //extern crate hex;
     use client::client_proxy::{AccountEntry, ClientProxy};
     use client::AccountStatus;
     use failure::{bail, format_err, Error};
@@ -16,7 +15,7 @@ pub mod x86_64 {
     //use tempfile::tempdir;
 
     use crate::{compiler_proxy, violas_account};
-    const DEBUG: bool = true;
+    //const DEBUG: bool = true;
     static mut LAST_ERROR: String = String::new();
 
     #[allow(dead_code)]
@@ -25,10 +24,21 @@ pub mod x86_64 {
             LAST_ERROR = format!("{:?}", err);
         }
     }
-
     #[no_mangle]
     pub extern "C" fn libra_get_last_error() -> *const c_char {
         unsafe { CString::new(LAST_ERROR.clone()).unwrap().into_raw() }
+    }
+    ///
+    ///
+    ///
+    #[no_mangle]
+    pub extern "C" fn libra_free_string(s: *mut c_char) {
+        unsafe {
+            if s.is_null() {
+                return;
+            }
+            CString::from_raw(s)
+        };
     }
     //
     //
@@ -527,18 +537,6 @@ pub mod x86_64 {
     ///
     ///
     #[no_mangle]
-    pub extern "C" fn libra_free_string(s: *mut c_char) {
-        unsafe {
-            if s.is_null() {
-                return;
-            }
-            CString::from_raw(s)
-        };
-    }
-    ///
-    ///
-    ///
-    #[no_mangle]
     pub extern "C" fn libra_get_committed_txn_by_acc_seq(
         raw_ptr: u64,
         account_index: u64,
@@ -602,6 +600,102 @@ pub mod x86_64 {
         }
 
         ret
+    }
+
+    #[repr(C)]
+    struct txn_events {
+        transaction: *mut c_char,
+        events: *mut c_char,
+    }
+
+    #[repr(C)]
+    pub struct all_txn_events {
+        data: *mut txn_events,
+        len: u64,
+        cap: u64,
+    }
+    #[no_mangle]
+    pub extern "C" fn libra_get_txn_by_range(
+        raw_ptr: u64,
+        start_version: u64,
+        limit: u64,
+        fetch_events: bool,
+        out_all_txn_events: *mut all_txn_events,
+    ) -> bool {
+        let result = panic::catch_unwind(|| {
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+            match client
+                .client
+                .get_txn_by_range(start_version, limit, fetch_events)
+            {
+                Ok(comm_txns_and_events) => {
+                    let mut vec_txn_events: Vec<txn_events> = vec![];
+                    let mut cur_version = start_version;
+                    for (txn, opt_events) in comm_txns_and_events {
+                        //txn_events output;
+
+                        println!(
+                            "Transaction at version {}: {}",
+                            cur_version,
+                            txn.format_for_client(get_transaction_name)
+                        );
+                        let txn_format = txn.format_for_client(get_transaction_name);
+                        let mut all_events = String::new();
+
+                        if let Some(events) = opt_events {
+                            if events.is_empty() {
+                                println!("No events returned");
+                            } else {
+                                for event in events {
+                                    println!("{}", event);
+                                    all_events += format!("{}\n", event).as_str();
+                                }
+                            }
+                        }
+                        cur_version += 1;
+
+                        let output = txn_events {
+                            transaction: CString::new(txn_format)
+                                .expect("new transaction detail")
+                                .into_raw(),
+                            events: CString::new(all_events)
+                                .expect("new transaction detail")
+                                .into_raw(),
+                        };
+                        vec_txn_events.push(output);
+                    }
+                    unsafe {
+                        (*out_all_txn_events).data = vec_txn_events.as_mut_ptr();
+                        (*out_all_txn_events).len = vec_txn_events.len() as u64;
+                        (*out_all_txn_events).cap = vec_txn_events.capacity() as u64;
+                    }
+                    std::mem::forget(vec_txn_events);
+                }
+                Err(e) => set_last_error(format_err!(
+                    "Error getting committed transactions by range, {}",
+                    e
+                )),
+            }
+        });
+
+        if result.is_ok() {
+            true
+        } else {
+            set_last_error(format_err!("panic at function libra_get_txn_by_range"));
+            false
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn libra_free_all_txn_events(out_all_txn_events: *mut all_txn_events) {
+        unsafe {
+            let _vec_txn_events: Vec<txn_events> = Vec::from_raw_parts(
+                (*out_all_txn_events).data,
+                (*out_all_txn_events).len as usize,
+                (*out_all_txn_events).cap as usize,
+            );
+        }
     }
 
     #[no_mangle]

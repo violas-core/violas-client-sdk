@@ -98,6 +98,30 @@ extern "C"
     //
     bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, uint64_t account_index, uint64_t sequence_num, char **out_txn, char **events);
 
+    struct TxnEvents
+    {
+        const char *transaction;
+        const char *events;
+    };
+
+    struct AllTxnEvents
+    {
+        const TxnEvents *data;
+        uint64_t len;
+        uint64_t cap;
+    };
+
+    //
+    //  Get transactions in range (start_version..start_version + limit - 1) from validator.
+    //  raw_pt : raw pointor created by libra_create_client_proxy
+    //  start_version : start version
+    //  limit : limit ammount
+    //  fetch_events : whether fetch events
+    //
+    bool libra_get_txn_by_range(uint64_t raw_ptr, uint64_t start_version, uint64_t limit, bool fetch_events, AllTxnEvents *all_txn_events);
+
+    void libra_free_all_txn_events(AllTxnEvents *all_txn_events);
+
     bool libra_get_account_resource(uint64_t raw_ptr, const char *account_index_or_addr, const char *account_path_addr, uint64_t *balance);
 
 #ifdef __cplusplus

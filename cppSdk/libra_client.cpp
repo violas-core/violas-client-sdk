@@ -30,6 +30,9 @@ inline ostream &log(ostream &ost, const char *flag, const char *file, int line,
 #define EXCEPTION_AT \
     format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
 
+namespace Violas
+{
+
 ostream &operator<<(ostream &os, const uint256 &value)
 {
     for (auto v : value)
@@ -79,21 +82,19 @@ bool is_valid_balance(uint64_t value)
     return value != max_uint64;
 }
 
-namespace Libra
-{
-class client_imp : virtual public client
+class ClientImp : virtual public Client
 {
 protected:
     void *raw_client_proxy = nullptr;
 
 public:
-    client_imp(const std::string &host,
-               uint16_t port,
-               const std::string &validator_set_file,
-               const std::string &faucet_account_file,
-               bool sync_on_wallet_recovery,
-               const std::string &faucet_server,
-               const std::string &mnemonic_file)
+    ClientImp(const std::string &host,
+              uint16_t port,
+              const std::string &validator_set_file,
+              const std::string &faucet_account_file,
+              bool sync_on_wallet_recovery,
+              const std::string &faucet_server,
+              const std::string &mnemonic_file)
     {
         raw_client_proxy = (void *)libra_create_client_proxy(
             host.data(), port, validator_set_file.data(),
@@ -113,7 +114,7 @@ public:
             << endl;
     }
 
-    virtual ~client_imp()
+    virtual ~ClientImp()
     {
         libra_destory_client_proxy((uint64_t)raw_client_proxy);
 
@@ -374,7 +375,7 @@ public:
     }
 };
 
-std::shared_ptr<client> client::create(const std::string &host,
+std::shared_ptr<Client> Client::create(const std::string &host,
                                        uint16_t port,
                                        const std::string &validator_set_file,
                                        const std::string &faucet_account_file,
@@ -382,19 +383,15 @@ std::shared_ptr<client> client::create(const std::string &host,
                                        const std::string &faucet_server,
                                        const std::string &mnemonic_file)
 {
-    return make_shared<client_imp>(host, port, validator_set_file,
-                                   faucet_account_file, sync_on_wallet_recovery,
-                                   faucet_server, mnemonic_file);
+    return make_shared<ClientImp>(host, port, validator_set_file,
+                                  faucet_account_file, sync_on_wallet_recovery,
+                                  faucet_server, mnemonic_file);
 }
 
-} // namespace Libra
-
-namespace Violas
-{
 class TokenImp : public Token
 {
 public:
-    TokenImp(Libra::client_ptr client,
+    TokenImp(client_ptr client,
              uint256 governor_addr,
              const std::string &name,
              const std::string &script_files_path)
@@ -506,7 +503,7 @@ protected:
     }
 
 private:
-    Libra::client_ptr m_libra_client;
+    client_ptr m_libra_client;
     string m_name;
     uint256 m_governor_addr;
     string m_module;
@@ -517,7 +514,7 @@ private:
     const string transfer_script = "transfer";
 };
 
-std::shared_ptr<Token> Token::create(Libra::client_ptr client,
+std::shared_ptr<Token> Token::create(client_ptr client,
                                      uint256 governor_addr,
                                      const std::string &name,
                                      const std::string &script_files_path)
@@ -533,13 +530,12 @@ using namespace boost::python;
 
 BOOST_PYTHON_MODULE(violas)
 {
-    using client = Libra::client_imp;
-
-    class_<client>("Client", init<string, uint16_t, string, string, bool, string, string>())
-        .def("test_validator_connection", &client::test_validator_connection)
-        .def("create_next_account", &client::create_next_account);
-
+    using ClientImp = Violas::ClientImp;
     //using Token = Violas::TokenImp;
+
+    class_<ClientImp>("Client", init<string, uint16_t, string, string, bool, string, string>())
+        .def("test_validator_connection", &ClientImp::test_validator_connection)
+        .def("create_next_account", &ClientImp::create_next_account);
 
     // class_<Token>("Token", init<string, uint16_t>)
     //     .def("name", &Token::name)

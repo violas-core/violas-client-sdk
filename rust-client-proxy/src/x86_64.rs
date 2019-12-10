@@ -1,6 +1,7 @@
 #[cfg(target_arch = "x86_64")]
 #[allow(non_snake_case)]
 pub mod x86_64 {
+    use crate::{compiler_proxy, violas_account};
     use client::client_proxy::{AccountEntry, ClientProxy};
     use client::AccountStatus;
     use failure::{bail, format_err, Error};
@@ -12,11 +13,23 @@ pub mod x86_64 {
     use std::{collections::BTreeMap, convert::TryFrom, io::Write, result::Result, *};
     use tempdir::TempDir;
     use transaction_builder::get_transaction_name;
-    //use tempfile::tempdir;
-
-    use crate::{compiler_proxy, violas_account};
     //const DEBUG: bool = true;
     static mut LAST_ERROR: String = String::new();
+
+    struct LibraClient {
+        client: ClientProxy,
+        last_error: Error,
+    }
+
+    impl LibraClient {
+        fn set_last_error(&mut self, err: Error) {
+            self.last_error = err;
+        }
+
+        fn get_last_error(&self) -> String {
+            format!("{:?}", self.last_error)
+        }
+    }
 
     #[allow(dead_code)]
     fn set_last_error(err: Error) {
@@ -65,26 +78,6 @@ pub mod x86_64 {
                 unsafe { CStr::from_ptr(c_faucet_server).to_str().unwrap().to_owned() };
             let mnemonic_file =
                 unsafe { CStr::from_ptr(c_mnemonic_file).to_str().unwrap().to_owned() };
-
-            // if DEBUG {
-            //     println!(
-            //         "create_native_client_proxy arguments :
-            //             host = {},
-            //             port = {},
-            //             validator_set_file = {},
-            //             faucet_account_file = {},
-            //             sync_on_wallet_recovery = {},
-            //             faucet_server = {},
-            //             mnemonic_file = {}",
-            //         host,
-            //         port,
-            //         validator_set_file,
-            //         faucet_account_file,
-            //         sync_on_wallet_recovery,
-            //         faucet_server,
-            //         mnemonic_file,
-            //     );
-            // }
             //
             // new Client Proxy
             //

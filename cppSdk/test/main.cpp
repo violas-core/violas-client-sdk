@@ -41,15 +41,16 @@ int main(int argc, const char *argv[])
 
 bool test_libra_client()
 {
+    using namespace Violas;
     cout << "running Libra test ..." << endl;
 
-    auto client = Libra::client::create("ac.testnet.libra.org",
-                                        8000,
-                                        "../../../libra/scripts/cli/consensus_peers.config.toml",
-                                        "",
-                                        false,
-                                        "faucet.testnet.libra.org",
-                                        "mnemonic");
+    auto client = Client::create("ac.testnet.libra.org",
+                                 8000,
+                                 "../../../libra/scripts/cli/consensus_peers.config.toml",
+                                 "",
+                                 false,
+                                 "faucet.testnet.libra.org",
+                                 "mnemonic");
 
     client->test_validator_connection();
 
@@ -120,6 +121,7 @@ bool test_libra_client()
 
 bool test_violas_client()
 {
+    using namespace Violas;
     cout << "running Libra test ..." << endl;
 
     // auto host = "18.220.66.235";
@@ -133,13 +135,13 @@ bool test_violas_client()
     //                                      "faucet.testnet.libra.org",
     //                                      "mnemonic");
 
-    auto client = Libra::client::create("localhost",
-                                        39745,
-                                        "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
-                                        "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
-                                        false,
-                                        "faucet.testnet.libra.org",
-                                        "mnemonic");
+    auto client = Client::create("localhost",
+                                 39745,
+                                 "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
+                                 "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
+                                 false,
+                                 "faucet.testnet.libra.org",
+                                 "mnemonic");
 
     client->test_validator_connection();
 
@@ -283,19 +285,21 @@ bool test_violas_client()
 
 bool test_violas_token()
 {
+    using namespace Violas;
+
     cout << "running test vstake ...\n"
          << endl;
 
     auto host = "18.220.66.235";
     uint16_t port = 40001;
 
-    auto client = Libra::client::create(host,
-                                        port,
-                                        "violas_consensus_peers.config.toml",
-                                        "temp_faucet_keys",
-                                        false,
-                                        "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
-                                        "mnemonic");
+    auto client = Client::create(host,
+                                 port,
+                                 "violas_consensus_peers.config.toml",
+                                 "temp_faucet_keys",
+                                 false,
+                                 "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
+                                 "mnemonic");
 
     // auto client = Libra::client::create("localhost",
     //                                     39745,

@@ -23,6 +23,8 @@ std::string format(const std::string &format, Args... args)
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
+namespace Violas
+{
 ///
 /// uint256
 ///
@@ -38,15 +40,10 @@ const uint64_t MICRO_LIBRO_COIN = 1000000;
 
 bool is_valid_balance(uint64_t value);
 
-namespace Libra
-{
-///
-/// Libra client
-///
-class client
+class Client
 {
 public:
-    static std::shared_ptr<client>
+    static std::shared_ptr<Client>
     create(const std::string &host,
            uint16_t port,
            const std::string &validator_set_file,
@@ -55,7 +52,7 @@ public:
            const std::string &faucet_server,
            const std::string &mnemonic_file);
 
-    virtual ~client(){};
+    virtual ~Client(){};
 
     virtual void test_validator_connection() = 0;
 
@@ -111,17 +108,12 @@ public:
     virtual uint64_t get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr) = 0;
 };
 
-using client_ptr = std::shared_ptr<client>;
-
-} // namespace Libra
-
-namespace Violas
-{
+using client_ptr = std::shared_ptr<Client>;
 
 class Token
 {
 public:
-    static std::shared_ptr<Token> create(Libra::client_ptr client,
+    static std::shared_ptr<Token> create(client_ptr client,
                                          uint256 governor_addr,
                                          const std::string &name,
                                          const std::string &script_files_path = "../scripts");

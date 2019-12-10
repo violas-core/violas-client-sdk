@@ -431,8 +431,8 @@ bool test_violas_token()
     auto [txn, events] = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
 #else
     auto txn_events = client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
-    //auto &txn = txn_events.first;
-    //auto &events = txn_events.second;
+    auto &txn = txn_events.first;
+    auto &events = txn_events.second;
 #endif
 
     cout << "Committed Transaction : \n"
@@ -440,7 +440,14 @@ bool test_violas_token()
          << "Events:\n"
          << events << endl;
 
-    client->get_txn_by_range(100, 10, true);
+#if __cplusplus >= 201703L
+    auto all_txn_events = client->get_txn_by_range(100, 10, true);
+    for (auto [txn, events] : all_txn_events)
+    {
+        cout << txn << endl;
+        cout << events << endl;
+    }
+#endif
 
     return true;
 }

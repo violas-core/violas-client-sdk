@@ -631,15 +631,11 @@ pub mod x86_64 {
             {
                 Ok(comm_txns_and_events) => {
                     let mut vec_txn_events: Vec<txn_events> = vec![];
-                    let mut cur_version = start_version;
                     for (txn, opt_events) in comm_txns_and_events {
-                        //txn_events output;
-
-                        println!(
-                            "Transaction at version {}: {}",
-                            cur_version,
-                            txn.format_for_client(get_transaction_name)
-                        );
+                        // println!(
+                        //     "Transaction at version {}: {}",
+                        //     txn.format_for_client(get_transaction_name)
+                        // );
                         let txn_format = txn.format_for_client(get_transaction_name);
                         let mut all_events = String::new();
 
@@ -648,12 +644,11 @@ pub mod x86_64 {
                                 println!("No events returned");
                             } else {
                                 for event in events {
-                                    println!("{}", event);
+                                    //println!("{}", event);
                                     all_events += format!("{}\n", event).as_str();
                                 }
                             }
                         }
-                        cur_version += 1;
 
                         let output = txn_events {
                             transaction: CString::new(txn_format)
@@ -688,13 +683,22 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_free_all_txn_events(out_all_txn_events: *mut all_txn_events) {
+    pub extern "C" fn libra_free_all_txn_events(all_txn_events: *mut all_txn_events) {
+        if all_txn_events.is_null() {
+            return;
+        }
+
         unsafe {
-            let _vec_txn_events: Vec<txn_events> = Vec::from_raw_parts(
-                (*out_all_txn_events).data,
-                (*out_all_txn_events).len as usize,
-                (*out_all_txn_events).cap as usize,
+            let vec_txn_events: Vec<txn_events> = Vec::from_raw_parts(
+                (*all_txn_events).data,
+                (*all_txn_events).len as usize,
+                (*all_txn_events).cap as usize,
             );
+
+            for txn_events in vec_txn_events {
+                libra_free_string(txn_events.transaction);
+                libra_free_string(txn_events.events);
+            }
         }
     }
 

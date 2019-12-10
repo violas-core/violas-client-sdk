@@ -100,7 +100,8 @@ public:
     virtual std::pair<std::string, std::string>
     get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
 
-    virtual void get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) = 0;
+    virtual std::vector<std::pair<std::string, std::string>>
+    get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) = 0;
     //
     //  get unsigned int 64 resource of a account
     //  account_index : the index of account
@@ -122,7 +123,8 @@ class Token
 public:
     static std::shared_ptr<Token> create(Libra::client_ptr client,
                                          uint256 governor_addr,
-                                         const std::string &name);
+                                         const std::string &name,
+                                         const std::string &script_files_path = "../scripts");
 
     virtual ~Token() {}
 

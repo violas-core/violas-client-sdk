@@ -319,19 +319,29 @@ public:
         return txn_events;
     }
 
-    virtual void get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) override
+    virtual std::vector<std::pair<std::string, std::string>>
+    get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) override
     {
+        std::vector<std::pair<std::string, std::string>> vec_txn_events;
+
         AllTxnEvents all_txn_events{nullptr, 0, 0};
 
         bool ret = libra_get_txn_by_range((uint64_t)raw_client_proxy, start_version, limit, fetch_events, &all_txn_events);
         if (!ret)
         {
-            //auto last_error =
             throw runtime_error(
-                format("failed to get txn by range, %d ", get_last_error().c_str()) + EXCEPTION_AT);
+                format("failed to get tansaction and events by range, %d ", get_last_error().c_str()) + EXCEPTION_AT);
+        }
+
+        for (uint64_t i = 0; i < all_txn_events.len; i++)
+        {
+            auto txn_events = make_pair(all_txn_events.data[i].transaction, all_txn_events.data[i].events);
+            vec_txn_events.push_back(txn_events);
         }
 
         libra_free_all_txn_events(&all_txn_events);
+
+        return vec_txn_events;
     }
 
     virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) override
@@ -385,12 +395,14 @@ class TokenImp : public Token
 {
 public:
     TokenImp(Libra::client_ptr client,
+             uint256 governor_addr,
              const std::string &name,
-             uint256 governor_addr) : m_libra_client(client),
-                                      m_name(name),
-                                      m_governor_addr(governor_addr)
+             const std::string &script_files_path)
+        : m_libra_client(client),
+          m_name(name),
+          m_governor_addr(governor_addr)
     {
-        init_all_script();
+        init_all_script(script_files_path);
     }
 
     virtual ~TokenImp() {}
@@ -458,7 +470,7 @@ public:
     }
 
 protected:
-    void init_all_script()
+    void init_all_script(const std::string &script_files_path)
     {
         string governor = uint256_to_string(m_governor_addr);
         m_temp_path = fs::temp_directory_path() / uint256_to_string(m_governor_addr); ///tmp/xxxxx
@@ -468,7 +480,7 @@ protected:
         fs::create_directory(m_temp_path);
         LOG << m_temp_path.string() << endl;
 
-        for (auto &file : fs::directory_iterator("../scripts"))
+        for (auto &file : fs::directory_iterator(script_files_path))
         {
             if (file.path().extension() == ".mvir")
             {
@@ -507,9 +519,10 @@ private:
 
 std::shared_ptr<Token> Token::create(Libra::client_ptr client,
                                      uint256 governor_addr,
-                                     const std::string &name)
+                                     const std::string &name,
+                                     const std::string &script_files_path)
 {
-    return make_shared<TokenImp>(client, name, governor_addr);
+    return make_shared<TokenImp>(client, governor_addr, name, script_files_path);
 }
 
 } // namespace Violas

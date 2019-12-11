@@ -1,3 +1,4 @@
+use anyhow::{bail, Error};
 use lazy_static::lazy_static;
 use libra_types::{
     access_path::{AccessPath, Accesses},
@@ -67,11 +68,11 @@ impl ViolasAccountResource {
     pub fn make_from(
         path_addr: &AccountAddress,
         account_map: &BTreeMap<Vec<u8>, Vec<u8>>,
-    ) -> result::Result<Self, failure::Error> {
+    ) -> result::Result<Self, Error> {
         let ap = account_resource_path(path_addr);
         match account_map.get(&ap) {
             Some(bytes) => lcs::from_bytes(bytes).map_err(Into::into),
-            None => failure::bail!("No data for {:?}", ap),
+            None => bail!("No data for {:?}", ap),
         }
     }
 }

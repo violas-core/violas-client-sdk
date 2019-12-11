@@ -2,44 +2,54 @@
 #[allow(non_snake_case)]
 pub mod x86_64 {
     use crate::{compiler_proxy, violas_account};
+    use anyhow::{bail, format_err, Error};
     use client::client_proxy::{AccountEntry, ClientProxy};
     use client::AccountStatus;
-    use failure::{bail, format_err, Error};
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress, account_config::core_code_address,
     }; //ADDRESS_LENGTH access_path::AccessPath,
+    use std::cell::RefCell;
     use std::ffi::{CStr, CString};
     use std::os::raw::{c_char, c_uchar};
     use std::{collections::BTreeMap, convert::TryFrom, io::Write, result::Result, *};
     use tempdir::TempDir;
     use transaction_builder::get_transaction_name;
     //const DEBUG: bool = true;
-    static mut LAST_ERROR: String = String::new();
-
-    struct LibraClient {
-        client: ClientProxy,
-        last_error: Error,
+    thread_local! {
+        static LAST_ERROR: RefCell<String> = RefCell::new(String::new());
     }
 
-    impl LibraClient {
-        fn set_last_error(&mut self, err: Error) {
-            self.last_error = err;
-        }
+    // struct LibraClient {
+    //     pub client: ClientProxy,
+    //     last_error: Error,
+    // }
 
-        fn get_last_error(&self) -> String {
-            format!("{:?}", self.last_error)
-        }
-    }
+    // impl LibraClient {
+    //     fn set_last_error(&mut self, err: Error) {
+    //         self.last_error = err;
+    //     }
+
+    //     fn get_last_error(&self) -> String {
+    //         format!("{:?}", self.last_error)
+    //     }
+    // }
 
     #[allow(dead_code)]
     fn set_last_error(err: Error) {
-        unsafe {
-            LAST_ERROR = format!("{:?}", err);
-        }
+        // unsafe {
+        //     LAST_ERROR = format!("{:?}", err);
+        // }
+        LAST_ERROR.with(|prev| {
+            *prev.borrow_mut() = format!("{:?}", err);
+        });
     }
     #[no_mangle]
     pub extern "C" fn libra_get_last_error() -> *const c_char {
-        unsafe { CString::new(LAST_ERROR.clone()).unwrap().into_raw() }
+        //unsafe { CString::new(LAST_ERROR.clone()).unwrap().into_raw() }
+        LAST_ERROR.with(|prev| {
+            let err = prev.borrow_mut();
+            CString::new(err.clone()).unwrap().into_raw()
+        })
     }
     ///
     ///

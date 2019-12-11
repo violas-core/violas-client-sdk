@@ -33,13 +33,14 @@ int main(int argc, char *argv[])
 
 void deploy(string_view host, uint16_t port)
 {
-    auto client = Libra::client::create(host.data(),
-                                        port,
-                                        "violas_consensus_peers.config.toml",
-                                        "temp_faucet_keys",
-                                        false,
-                                        "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
-                                        "mnemonic.bak");
+    using namespace Violas;
+    auto client = Client::create(host.data(),
+                                 port,
+                                 "violas_consensus_peers.config.toml",
+                                 "temp_faucet_keys",
+                                 false,
+                                 "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
+                                 "mnemonic.bak");
 
     client->test_validator_connection();
 
@@ -99,14 +100,15 @@ void deploy(string_view host, uint16_t port)
 
 void transfer(string_view host, uint16_t port)
 {
+    using namespace Violas;
 
-    auto client = Libra::client::create(host.data(),
-                                        port,
-                                        "violas_consensus_peers.config.toml",
-                                        "", //temp_faucet_keys
-                                        false,
-                                        "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
-                                        "mnemonic.bak");
+    auto client = client::create(host.data(),
+                                 port,
+                                 "violas_consensus_peers.config.toml",
+                                 "", //temp_faucet_keys
+                                 false,
+                                 "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
+                                 "mnemonic.bak");
 
     client->test_validator_connection();
 

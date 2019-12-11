@@ -23,7 +23,7 @@ use std::{
 };
 use stdlib::stdlib_modules;
 //use structopt::StructOpt;
-use failure::{bail, Error};
+use anyhow::{bail, Error};
 use vm::file_format::CompiledModule;
 
 // #[derive(Debug, StructOpt)]

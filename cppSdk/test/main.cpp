@@ -15,8 +15,8 @@ bool test_violas_token();
 
 int main(int argc, const char *argv[])
 {
-    ofstream file("log.txt");
-    streambuf *mylog = clog.rdbuf(file.rdbuf());
+    //ofstream file("log.txt");
+    //streambuf *mylog = clog.rdbuf(file.rdbuf());
 
     try
     {
@@ -34,7 +34,7 @@ int main(int argc, const char *argv[])
         ERROR << e.what() << endl;
     }
 
-    clog.rdbuf(mylog);
+    //clog.rdbuf(mylog);
 
     return 0;
 }
@@ -290,24 +290,24 @@ bool test_violas_token()
     cout << "running test vstake ...\n"
          << endl;
 
-    auto host = "18.220.66.235";
+    auto host = "52.151.2.66"; //"18.220.66.235";
     uint16_t port = 40001;
 
     auto client = Client::create(host,
                                  port,
-                                 "violas_consensus_peers.config.toml",
+                                 "consensus_peers.config.toml",
                                  "temp_faucet_keys",
                                  false,
-                                 "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
+                                 "", //"faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
                                  "mnemonic");
 
-    // auto client = Libra::client::create("localhost",
-    //                                     39745,
-    //                                     "/tmp/65e58a1ef0eb427d25e843df76570757/0/consensus_peers.config.toml",
-    //                                     "/tmp/1655bc456184141676176251ddb5e5dd/temp_faucet_keys",
-    //                                     false,
-    //                                     "faucet.testnet.libra.org",
-    //                                     "mnemonic");
+    // auto client = Client::create("localhost",
+    //                              46243,
+    //                              "/tmp/b35b5e6bfc503b6385b37926bcf97086/0/consensus_peers.config.toml",
+    //                              "/tmp/12269974404173c769d775ce64a3b1a1/temp_faucet_keys",
+    //                              false,
+    //                              "faucet.testnet.libra.org",
+    //                              "mnemonic");
 
     client->test_validator_connection();
 

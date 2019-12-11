@@ -1,6 +1,8 @@
 import {{sender}}.ViolasToken;
 
 main() {
-    ViolasToken.publish();
+
+    ViolasToken.cancel_owner_order();
+
     return;
 }

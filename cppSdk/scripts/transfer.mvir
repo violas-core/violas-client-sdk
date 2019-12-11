@@ -1,6 +1,6 @@
-import {{sender}}.DToken;
+import {{sender}}.ViolasToken;
 
 main(payee: address, amount: u64) {
-    DToken.transfer(move(payee), move(amount));
+    ViolasToken.transfer(move(payee), move(amount));
     return;
 }

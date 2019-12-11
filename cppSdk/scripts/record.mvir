@@ -1,6 +1,6 @@
-import {{sender}}.DToken;
+import {{sender}}.ViolasToken;
 
 main(data: bytearray) {
-    DToken.record(move(data));
+    ViolasToken.record(move(data));
     return;
 }

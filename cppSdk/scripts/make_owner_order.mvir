@@ -1,0 +1,8 @@
+import {{sender}}.ViolasToken;
+
+main(price: u64, buyer: address) {
+
+    ViolasToken.make_owner_order(move(price), move(buyer));
+
+    return;
+}

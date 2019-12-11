@@ -18,7 +18,7 @@ lazy_static! {
     //static ref COIN_STRUCT_NAME: Identifier = Identifier::new("T").unwrap();
 
     // Module name
-    static ref ACCOUNT_MODULE_NAME: Identifier = Identifier::new("DToken").unwrap();
+    static ref ACCOUNT_MODULE_NAME: Identifier = Identifier::new("ViolasToken").unwrap();
     // Structs' name
     static ref TOKEN_STRUCT_NAME: Identifier = Identifier::new("T").unwrap();
     static ref TOKEN_ADDR_STRUCT_NAME: Identifier = Identifier::new("TokenAddr").unwrap();

@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 {
     try
     {
-        auto host = "52.27.228.84";
+        auto host = "52.151.2.66";
         uint16_t port = 40001;
 
         if (argc == 2 && string("deploy") == argv[1])
@@ -36,7 +36,7 @@ void deploy(string_view host, uint16_t port)
     using namespace Violas;
     auto client = Client::create(host.data(),
                                  port,
-                                 "violas_consensus_peers.config.toml",
+                                 "consensus_peers.config.toml",
                                  "temp_faucet_keys",
                                  false,
                                  "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
@@ -102,9 +102,9 @@ void transfer(string_view host, uint16_t port)
 {
     using namespace Violas;
 
-    auto client = client::create(host.data(),
+    auto client = Client::create(host.data(),
                                  port,
-                                 "violas_consensus_peers.config.toml",
+                                 "consensus_peers.config.toml",
                                  "", //temp_faucet_keys
                                  false,
                                  "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin

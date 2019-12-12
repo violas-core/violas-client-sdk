@@ -1,11 +1,10 @@
 CXX = clang++
 
 test : clean
-	$(CXX) -g -std=c++17 -Wall -Werror main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/debug/ -lclient_proxy -I../ -lstdc++fs
-	# -stdlib=libc++ 
-	
+	$(CXX) -g -std=c++17 -stdlib=libc++ -Wall -Werror main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/debug/ -lclient_proxy -I../ -lstdc++fs
+	 	
 gcc : clean
-	g++ -std=c++11 -g -Wall main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/debug/ -lclient_proxy -lboost_system -lboost_filesystem -I../
+	g++ -std=c++11 -g -Wall main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/release -lclient_proxy -lboost_system -lboost_filesystem -I../
 
 mingw : clean
 	x86_64-w64-mingw32-g++ -std=c++17 -g -Wall main.cpp ../libra_client.cpp -o test -L../../rust-client-proxy/target/debug/ -lclient_proxy -I../
@@ -18,7 +17,12 @@ python :
 	-I../ -lstdc++fs
 
 transfer : clean_transfer
-	$(CXX) -g -std=c++17 -Wall -Werror transfer.cpp ../libra_client.cpp -o transfer -L../../rust-client-proxy/target/debug/ -lclient_proxy -I../ -lstdc++fs
+	$(CXX) -g -std=c++17 -stdlib=libc++ -Wall -Werror \
+	transfer.cpp ../libra_client.cpp \
+	-o transfer \
+	-I../ \
+	-L../../rust-client-proxy/target/debug/ -lclient_proxy 
+	#-lstdc++fs
 
 clean :
 	rm -f test log.txt

@@ -103,22 +103,22 @@ public:
         if (raw_client_proxy == nullptr)
             throw runtime_error("failed to create native rust client proxy");
 
-        LOG << "\ncreate violas client with "
-            << "\n\thost = " << host
-            << "\n\tport = " << port
-            << "\n\tvalidator_set_file = " << validator_set_file
-            << "\n\tfaucet_account_file = " << faucet_account_file
-            << "\n\tsync_on_wallet_recovery = " << sync_on_wallet_recovery
-            << "\n\tfaucet_server = " << faucet_server
-            << "\n\tmnemonic_file = " << mnemonic_file
-            << endl;
+        CLOG << "\ncreate violas client with "
+             << "\n\thost = " << host
+             << "\n\tport = " << port
+             << "\n\tvalidator_set_file = " << validator_set_file
+             << "\n\tfaucet_account_file = " << faucet_account_file
+             << "\n\tsync_on_wallet_recovery = " << sync_on_wallet_recovery
+             << "\n\tfaucet_server = " << faucet_server
+             << "\n\tmnemonic_file = " << mnemonic_file
+             << endl;
     }
 
     virtual ~ClientImp()
     {
         libra_destory_client_proxy((uint64_t)raw_client_proxy);
 
-        // LOG << "entered" << endl;
+        // CLOG << "entered" << endl;
     }
 
     string get_last_error()
@@ -136,7 +136,7 @@ public:
         if (!ret)
             throw runtime_error("failed to test validator connection");
 
-        LOG << "\nsucceeded to test validator connection" << endl;
+        CLOG << "\nsucceeded to test validator connection" << endl;
     }
 
     virtual std::pair<size_t, uint256>
@@ -179,7 +179,18 @@ public:
     {
         double balance = 0.f;
 
-        bool ret = libra_get_balance((uint64_t)raw_client_proxy, index, &balance);
+        bool ret = libra_get_balance((uint64_t)raw_client_proxy, to_string(index).c_str(), &balance);
+        if (!ret)
+            throw runtime_error("failed to get balance ");
+
+        return balance;
+    }
+
+    virtual double get_balance(uint256 address) override
+    {
+        double balance = 0.f;
+
+        bool ret = libra_get_balance((uint64_t)raw_client_proxy, uint256_to_string(address).c_str(), &balance);
         if (!ret)
             throw runtime_error("failed to get balance ");
 
@@ -229,8 +240,8 @@ public:
                                        source_file.c_str(),
                                        get_last_error().c_str()));
         }
-        LOG << "compiled '" << source_file << "', "
-            << "is_module = " << (is_module ? "true" : "false") << endl;
+        CLOG << "compiled '" << source_file << "', "
+             << "is_module = " << (is_module ? "true" : "false") << endl;
     }
 
     virtual void compile(uint64_t account_index,
@@ -246,8 +257,8 @@ public:
                                        source_file_with_path.c_str(),
                                        get_last_error().c_str()));
         }
-        LOG << "compiled '" << source_file_with_path << "', "
-            << "is_module = " << (is_module ? "true" : "false") << endl;
+        CLOG << "compiled '" << source_file_with_path << "', "
+             << "is_module = " << (is_module ? "true" : "false") << endl;
     }
 
     virtual void publish_module(uint64_t account_index,
@@ -261,7 +272,7 @@ public:
             throw runtime_error(error);
         }
 
-        LOG << "published module " << module_file << endl;
+        CLOG << "published module " << module_file << endl;
     }
 
     virtual void
@@ -287,9 +298,9 @@ public:
                        script_file.c_str(), account_index) +
                 EXCEPTION_AT);
 
-        LOG << format("excuted script file '%s' for account index %d",
-                      script_file.c_str(), account_index)
-            << endl;
+        CLOG << format("excuted script file '%s' for account index %d",
+                       script_file.c_str(), account_index)
+             << endl;
     }
 
     virtual std::pair<std::string, std::string>
@@ -309,8 +320,8 @@ public:
                                        get_last_error().c_str()) +
                                 EXCEPTION_AT);
 
-        LOG << format("get committed transaction by account index %d and sequence number %d", account_index, sequence_num)
-            << endl;
+        CLOG << format("get committed transaction by account index %d and sequence number %d", account_index, sequence_num)
+             << endl;
 
         auto txn_events = make_pair<string, string>(out_txn, events);
 
@@ -475,7 +486,7 @@ protected:
         fs::remove_all(m_temp_path);
 
         fs::create_directory(m_temp_path);
-        LOG << m_temp_path.string() << endl;
+        CLOG << m_temp_path.string() << endl;
 
         for (auto &file : fs::directory_iterator(script_files_path))
         {

@@ -10,8 +10,9 @@
 //
 std::ostream &log(std::ostream &ost, const char *flag, const char *file, int line, const char *func);
 
-#define LOG log(clog, "[ LOG   ] ", __FILE__, __LINE__, __func__)
-#define ERROR log(cerr, "[ ERROR ] ", __FILE__, __LINE__, __func__)
+#define COUT log(cout, "[ INFO  ] ", __FILE__, __LINE__, __func__)
+#define CLOG log(clog, "[ LOG   ] ", __FILE__, __LINE__, __func__)
+#define CERR log(cerr, "[ ERROR ] ", __FILE__, __LINE__, __func__)
 
 template <typename... Args>
 std::string format(const std::string &format, Args... args)
@@ -71,6 +72,8 @@ public:
     virtual std::vector<Account> get_all_accounts() = 0;
 
     virtual double get_balance(uint64_t index) = 0;
+
+    virtual double get_balance(uint256 address) = 0;
 
     virtual uint64_t get_sequence_number(uint64_t index) = 0;
 

@@ -20,7 +20,6 @@ int main(int argc, const char *argv[])
 
     try
     {
-
         //assert(test_libra_client() == true);
 
         // assert(test_violas_client() == true);
@@ -31,7 +30,7 @@ int main(int argc, const char *argv[])
     }
     catch (const std::exception &e)
     {
-        ERROR << e.what() << endl;
+        CERR << e.what() << endl;
     }
 
     //clog.rdbuf(mylog);
@@ -155,7 +154,7 @@ bool test_violas_client()
 
     for (auto const &account : accounts)
     {
-        LOG << "\n\tIndex : " << account.index
+        COUT << "\n\tIndex : " << account.index
             << "\n\tAddress : " << account.address
             << "\n\tSequence : " << account.sequence_number
             << "\n\tStatus : " << account.status
@@ -173,13 +172,13 @@ bool test_violas_client()
     client->mint_coins(0, 200, true);
     assert(balance + 200 == client->get_balance(chairman));
 
-    LOG << "\n\n董事长转帐100个Token给每个州长" << endl;
+    COUT << "\n\n董事长转帐100个Token给每个州长" << endl;
 
     client->transfer_coins_int(chairman, accounts[1].address, 100 * MICRO_LIBRO_COIN);
-    LOG << "Address 1's balance is " << client->get_balance(1) << endl;
+    COUT << "Address 1's balance is " << client->get_balance(1) << endl;
 
     client->transfer_coins_int(chairman, accounts[2].address, 100 * MICRO_LIBRO_COIN);
-    LOG << "Address 2's balance is " << client->get_balance(2) << endl;
+    COUT << "Address 2's balance is " << client->get_balance(2) << endl;
 
     auto get_violas_balance = [client](uint64_t account_index, const uint256 &account_reource_path) -> uint64_t {
         return client->get_account_resource_uint64(account_index, account_reource_path);
@@ -187,7 +186,7 @@ bool test_violas_client()
 
     //                                         州长索引   SSO用户1        SSO用户2        minted稳定币数量   用户1        用户2         transferrd稳定币数量
     auto test_mint_stable_coion = [&](uint64_t governor, uint64_t sso1, uint64_t sso2, uint64_t vstake, uint64_t u1, uint64_t u2, uint64_t transerred_vstake) {
-        LOG << "\n\n"
+        COUT << "\n\n"
             << format("州长(%d)为SSO(%d)和SSO(%d)铸造(%d)个稳定币(%d), 每个SSO转帐给用户(%d)和(%d)稳定币(%d)个", governor, sso1, sso2, vstake, governor, u1, u2, transerred_vstake)
             << endl;
         //
@@ -211,12 +210,12 @@ bool test_violas_client()
         //
         // Governor transfers VStake to SSO
         //
-        // LOG << "州长转帐10个Token给每个SSO发币商" << endl;
+        // COUT << "州长转帐10个Token给每个SSO发币商" << endl;
 
         client->transfer_coins_int(governor, accounts[sso1].address, 10 * MICRO_LIBRO_COIN);
-        LOG << "Governor (" << governor << ") transer 10 Token(Libra) to user #" << sso1 << endl;
+        COUT << "Governor (" << governor << ") transer 10 Token(Libra) to user #" << sso1 << endl;
         client->transfer_coins_int(governor, accounts[sso2].address, 10 * MICRO_LIBRO_COIN);
-        LOG << "Governor (" << governor << ") transer 10 Token(Libra) to user #" << sso2 << endl;
+        COUT << "Governor (" << governor << ") transer 10 Token(Libra) to user #" << sso2 << endl;
 
         //
         //   executing publish script for registering stable 1
@@ -230,15 +229,15 @@ bool test_violas_client()
         //
         client->execute_script(governor, mint_script + ".mv", vector<string>{uint256_to_string(accounts[sso1].address), to_string(vstake)});
         client->execute_script(governor, mint_script + ".mv", vector<string>{uint256_to_string(accounts[sso2].address), to_string(vstake)});
-        LOG << "Account # " << sso1 << "'s balance of VStake " << governor << " : " << get_violas_balance(sso1, accounts[governor].address) << endl;
-        LOG << "Account # " << sso2 << "'s balance of VStake " << governor << " : " << get_violas_balance(sso2, accounts[governor].address) << endl;
+        COUT << "Account # " << sso1 << "'s balance of VStake " << governor << " : " << get_violas_balance(sso1, accounts[governor].address) << endl;
+        COUT << "Account # " << sso2 << "'s balance of VStake " << governor << " : " << get_violas_balance(sso2, accounts[governor].address) << endl;
 
         //client->get_committed_txn_by_acc_seq(2, client->get_sequence_number(2) - 1);
 
         //
         //   SSO transfer Token to user
         //
-        // LOG << "SSO转帐1个Token给每个用户" << endl;
+        // COUT << "SSO转帐1个Token给每个用户" << endl;
         client->transfer_coins_int(sso1, accounts[u1].address, 1 * MICRO_LIBRO_COIN);
         client->transfer_coins_int(sso2, accounts[u2].address, 1 * MICRO_LIBRO_COIN);
         //
@@ -261,7 +260,7 @@ bool test_violas_client()
     //"州长(2) 为SSO用户(3) 和SSO用户(4)铸稳定币(1) 2000个， 转帐给用户5和6稳定币10个"
     test_mint_stable_coion(2, 3, 4, 2000, 5, 6, 200);
 
-    LOG << "\n\n"
+    COUT << "\n\n"
         << "All balances of all accounts"
         << endl;
 
@@ -274,7 +273,7 @@ bool test_violas_client()
 
     for (auto &account : accounts)
     {
-        LOG << "Account " << account.index << "'s balances ------ "
+        COUT << "Account " << account.index << "'s balances ------ "
             << "Token : " << client->get_balance(account.index) << ", "
             << "VStake-1 : " << balance_to_string(get_violas_balance(account.index, accounts[1].address)) << ", "
             << "VStake-2 : " << balance_to_string(get_violas_balance(account.index, accounts[2].address)) << endl;
@@ -448,8 +447,8 @@ bool test_violas_token()
     auto all_txn_events = client->get_txn_by_range(100, 10, true);
     for (auto [txn, events] : all_txn_events)
     {
-        cout << txn << endl;
-        cout << events << endl;
+        //cout << txn << endl;
+        //cout << events << endl;
     }
 #endif
 

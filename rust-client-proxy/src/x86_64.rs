@@ -262,12 +262,20 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_get_balance(raw_ptr: u64, index: u64, result: &mut f64) -> bool {
+    pub extern "C" fn libra_get_balance(
+        raw_ptr: u64,
+        account_index_or_addr: *const c_char,
+        result: &mut f64,
+    ) -> bool {
+        if raw_ptr == 0 || account_index_or_addr.is_null() {
+            return false;
+        }
         // convert raw ptr to object client
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let index_or_addr = unsafe { CStr::from_ptr(account_index_or_addr).to_str().unwrap() };
 
         let balance = client
-            .get_balance(&["b", index.to_string().as_str()])
+            .get_balance(&["b", index_or_addr])
             .unwrap_or_else(|err| {
                 println!("failed to get balance, {}", err);
                 String::from("0")

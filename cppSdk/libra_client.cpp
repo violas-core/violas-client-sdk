@@ -537,16 +537,30 @@ std::shared_ptr<Token> Token::create(client_ptr client,
 
 #ifdef PYTHON
 #include <boost/python.hpp>
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(violas)
 {
-    using ClientImp = Violas::ClientImp;
-    //using Token = Violas::TokenImp;
+    using namespace Violas;
+
+    class_<std::pair<ulong, uint256>>("IntPair")
+        .def_readwrite("first", &std::pair<ulong, uint256>::first)
+        .def_readwrite("second", &std::pair<ulong, uint256>::second);
+
+    class_<Client::Account>("Account")
+        .add_property("index", &Client::Account::index)
+        .add_property("address", &Client::Account::address)
+        .add_property("sequence_number", &Client::Account::sequence_number)
+        .add_property("status", &Client::Account::status);
+
+    class_<std::vector<Client::Account>>("Accounts")
+        .def(vector_indexing_suite<std::vector<Client::Account>>());
 
     class_<ClientImp>("Client", init<string, uint16_t, string, string, bool, string, string>())
         .def("test_validator_connection", &ClientImp::test_validator_connection)
-        .def("create_next_account", &ClientImp::create_next_account);
+        .def("create_next_account", &ClientImp::create_next_account)
+        .def("get_all_accounts", &ClientImp::get_all_accounts);
 
     // class_<Token>("Token", init<string, uint16_t>)
     //     .def("name", &Token::name)

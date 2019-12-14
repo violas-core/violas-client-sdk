@@ -1,9 +1,9 @@
 try:
     import violas;
 
-    client = violas.Client("18.220.66.235", 
+    client = violas.Client("52.151.2.66", 
                             40001,  
-                            "violas_consensus_peers.config.toml",
+                            "consensus_peers.config.toml",
                             "temp_faucet_keys",
                             False,
                             "faucet.testnet.libra.org", 
@@ -12,8 +12,13 @@ try:
     client.test_validator_connection()
 
     for i in range(5):    
-        a, b = client.create_next_account(True)
+        client.create_next_account(True)
 
+    accounts = client.get_all_accounts()
+
+    for a in accounts
+        print("", a.index)
+        
     print("Finished test job !")
 
 except BaseException as e:

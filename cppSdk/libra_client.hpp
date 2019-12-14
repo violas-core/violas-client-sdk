@@ -63,10 +63,12 @@ public:
 
     struct Account
     {
-        uint256 address;
         uint64_t index;
+        uint256 address;
         uint64_t sequence_number;
         int64_t status;
+
+        bool operator==(const Account &r) const { return index == r.index && address == r.address; }
     };
 
     virtual std::vector<Account> get_all_accounts() = 0;

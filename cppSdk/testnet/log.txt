@@ -1,0 +1,128 @@
+[ LOG   ] 2019-12-17 18:59:09 (../libra_client.cpp:106:ClientImp) : 
+create violas client with 
+	host = 13.68.141.242
+	port = 40001
+	validator_set_file = consensus_peers.config.toml
+	faucet_account_file = faucet_keys
+	sync_on_wallet_recovery = 0
+	faucet_server = faucet.testnet.libra.org
+	mnemonic_file = governor
+[ LOG   ] 2019-12-17 18:59:09 (../libra_client.cpp:139:test_validator_connection) : 
+succeeded to test validator connection
+[ LOG   ] 2019-12-17 18:59:23 (../libra_client.cpp:489:init_all_script) : /tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e
+[ LOG   ] 2019-12-17 18:59:23 (../libra_client.cpp:243:compile) : compiled '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/token.mvir', is_module = true
+[ LOG   ] 2019-12-17 18:59:24 (../libra_client.cpp:275:publish_module) : published module /tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/token.mv
+[ LOG   ] 2019-12-17 18:59:24 (../libra_client.cpp:243:compile) : compiled '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/publish.mvir', is_module = false
+[ LOG   ] 2019-12-17 18:59:26 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/publish.mv' for account index 1
+[ LOG   ] 2019-12-17 18:59:26 (../libra_client.cpp:489:init_all_script) : /tmp/75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782
+[ LOG   ] 2019-12-17 18:59:26 (../libra_client.cpp:243:compile) : compiled '/tmp/75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782/token.mvir', is_module = true
+[ LOG   ] 2019-12-17 18:59:27 (../libra_client.cpp:275:publish_module) : published module /tmp/75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782/token.mv
+[ LOG   ] 2019-12-17 18:59:27 (../libra_client.cpp:243:compile) : compiled '/tmp/75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782/publish.mvir', is_module = false
+[ LOG   ] 2019-12-17 18:59:28 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782/publish.mv' for account index 2
+[ LOG   ] 2019-12-17 18:59:28 (../libra_client.cpp:489:init_all_script) : /tmp/f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1
+[ LOG   ] 2019-12-17 18:59:28 (../libra_client.cpp:243:compile) : compiled '/tmp/f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1/token.mvir', is_module = true
+[ LOG   ] 2019-12-17 18:59:29 (../libra_client.cpp:275:publish_module) : published module /tmp/f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1/token.mv
+[ LOG   ] 2019-12-17 18:59:29 (../libra_client.cpp:243:compile) : compiled '/tmp/f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1/publish.mvir', is_module = false
+[ LOG   ] 2019-12-17 18:59:31 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1/publish.mv' for account index 3
+[ LOG   ] 2019-12-17 18:59:31 (../libra_client.cpp:489:init_all_script) : /tmp/ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568
+[ LOG   ] 2019-12-17 18:59:31 (../libra_client.cpp:243:compile) : compiled '/tmp/ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568/token.mvir', is_module = true
+[ LOG   ] 2019-12-17 18:59:32 (../libra_client.cpp:275:publish_module) : published module /tmp/ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568/token.mv
+[ LOG   ] 2019-12-17 18:59:32 (../libra_client.cpp:243:compile) : compiled '/tmp/ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568/publish.mvir', is_module = false
+[ LOG   ] 2019-12-17 18:59:33 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568/publish.mv' for account index 4
+[ LOG   ] 2019-12-17 18:59:33 (../libra_client.cpp:489:init_all_script) : /tmp/15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622
+[ LOG   ] 2019-12-17 18:59:33 (../libra_client.cpp:243:compile) : compiled '/tmp/15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622/token.mvir', is_module = true
+[ LOG   ] 2019-12-17 18:59:34 (../libra_client.cpp:275:publish_module) : published module /tmp/15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622/token.mv
+[ LOG   ] 2019-12-17 18:59:34 (../libra_client.cpp:243:compile) : compiled '/tmp/15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622/publish.mvir', is_module = false
+[ LOG   ] 2019-12-17 18:59:36 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622/publish.mv' for account index 5
+[ LOG   ] 2019-12-17 18:59:36 (../libra_client.cpp:489:init_all_script) : /tmp/e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd
+[ LOG   ] 2019-12-17 18:59:36 (../libra_client.cpp:243:compile) : compiled '/tmp/e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd/token.mvir', is_module = true
+[ LOG   ] 2019-12-17 18:59:37 (../libra_client.cpp:275:publish_module) : published module /tmp/e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd/token.mv
+[ LOG   ] 2019-12-17 18:59:37 (../libra_client.cpp:243:compile) : compiled '/tmp/e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd/publish.mvir', is_module = false
+[ LOG   ] 2019-12-17 18:59:38 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd/publish.mv' for account index 6
+[ LOG   ] 2019-12-17 19:00:16 (../libra_client.cpp:489:init_all_script) : /tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e
+[ LOG   ] 2019-12-17 19:00:16 (../libra_client.cpp:489:init_all_script) : /tmp/75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782
+[ LOG   ] 2019-12-17 19:00:16 (../libra_client.cpp:489:init_all_script) : /tmp/f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1
+[ LOG   ] 2019-12-17 19:00:16 (../libra_client.cpp:489:init_all_script) : /tmp/ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568
+[ LOG   ] 2019-12-17 19:00:16 (../libra_client.cpp:489:init_all_script) : /tmp/15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622
+[ LOG   ] 2019-12-17 19:00:16 (../libra_client.cpp:489:init_all_script) : /tmp/e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd
+[ LOG   ] 2019-12-17 19:01:08 (../libra_client.cpp:243:compile) : compiled '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/mint.mvir', is_module = false
+[ LOG   ] 2019-12-17 19:01:09 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/mint.mv' for account index 1
+[ LOG   ] 2019-12-17 19:01:11 (../libra_client.cpp:323:get_committed_txn_by_acc_seq) : get committed transaction by account index 1 and sequence number 11
+[ LOG   ] 2019-12-17 19:01:11 (transfer.cpp:291:transfer) : Committed Transaction : 
+SignedTransaction { 
+ raw_txn: RawTransaction { 
+	sender: b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e, 
+	sequence_number: 11, 
+	payload: {, 
+		transaction: <unknown transaction>, 
+		args: [ 
+			{ADDRESS: 000000000000000040f498749b7f002c00000000000000000100000000000000},
+			{U64: 100000000}, 
+		]
+	}, 
+	max_gas_amount: 140000, 
+	gas_unit_price: 0, 
+	expiration_time: 1576580568s, 
+}, 
+ public_key: Ed25519PublicKey(
+    PublicKey(CompressedEdwardsY: [75, 120, 184, 132, 235, 175, 143, 50, 19, 103, 70, 24, 40, 175, 8, 236, 102, 181, 198, 4, 254, 11, 249, 119, 45, 187, 188, 80, 78, 150, 145, 72]), EdwardsPoint{
+    	X: FieldElement51([883867961919620, 2228032464473336, 1123098019536682, 1709439319894511, 1255383892052822]),
+    	Y: FieldElement51([2163750915831883, 1410711215564369, 873929672499900, 1573109023244034, 1276642066762699]),
+    	Z: FieldElement51([1, 0, 0, 0, 0]),
+    	T: FieldElement51([2002913340025382, 563350848082661, 1190348743104933, 153493412274490, 2025704987216322])
+    }),
+), 
+ signature: Ed25519Signature(
+    Signature( R: CompressedEdwardsY: [164, 123, 241, 118, 231, 199, 170, 142, 76, 59, 132, 203, 115, 80, 146, 165, 145, 43, 172, 98, 192, 11, 72, 83, 28, 164, 27, 167, 175, 215, 141, 134], s: Scalar{
+    	bytes: [224, 40, 22, 65, 145, 252, 84, 43, 42, 144, 207, 111, 209, 7, 168, 82, 109, 84, 178, 221, 25, 113, 5, 105, 8, 27, 37, 5, 54, 83, 87, 13],
+    } ),
+), 
+ }
+Events:
+
+[ LOG   ] 2019-12-17 19:01:48 (../libra_client.cpp:489:init_all_script) : /tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e
+[ LOG   ] 2019-12-17 19:01:52 (../libra_client.cpp:243:compile) : compiled '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/publish.mvir', is_module = false
+[ LOG   ] 2019-12-17 19:01:52 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/publish.mv' for account index 0
+[ LOG   ] 2019-12-17 19:01:55 (../libra_client.cpp:489:init_all_script) : /tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e
+[ LOG   ] 2019-12-17 19:01:55 (../libra_client.cpp:489:init_all_script) : /tmp/75bea7a9c432fe0d94f13c6d73543ea8758940e9b622b70dbbafec5ffbf74782
+[ LOG   ] 2019-12-17 19:01:55 (../libra_client.cpp:489:init_all_script) : /tmp/f013ea4acf944fa6edafe01fae10713d13928ca5dff9e809dbcce8b12c2c45f1
+[ LOG   ] 2019-12-17 19:01:55 (../libra_client.cpp:489:init_all_script) : /tmp/ad8e9520399689822b55bc783f03951c00fa2ae9eb997d477a2ff0bdc702a568
+[ LOG   ] 2019-12-17 19:01:55 (../libra_client.cpp:489:init_all_script) : /tmp/15d3e4bea615b78c3782553df712a4f86d85280f11939e0b35756422575fc622
+[ LOG   ] 2019-12-17 19:01:55 (../libra_client.cpp:489:init_all_script) : /tmp/e90e4f077bef23b32a6694a18a1fa34244532400869e4e8c87ce66d0b6c004bd
+[ LOG   ] 2019-12-17 19:02:13 (../libra_client.cpp:243:compile) : compiled '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/mint.mvir', is_module = false
+[ LOG   ] 2019-12-17 19:02:14 (../libra_client.cpp:301:execute_script) : excuted script file '/tmp/b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e/mint.mv' for account index 1
+[ LOG   ] 2019-12-17 19:02:15 (../libra_client.cpp:323:get_committed_txn_by_acc_seq) : get committed transaction by account index 1 and sequence number 12
+[ LOG   ] 2019-12-17 19:02:15 (transfer.cpp:291:transfer) : Committed Transaction : 
+SignedTransaction { 
+ raw_txn: RawTransaction { 
+	sender: b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e, 
+	sequence_number: 12, 
+	payload: {, 
+		transaction: <unknown transaction>, 
+		args: [ 
+			{ADDRESS: 0b70a18a66b8b3a533f4520d274a414ea3c6535af258b03faa7755600cdeffe9},
+			{U64: 100000000}, 
+		]
+	}, 
+	max_gas_amount: 140000, 
+	gas_unit_price: 0, 
+	expiration_time: 1576580633s, 
+}, 
+ public_key: Ed25519PublicKey(
+    PublicKey(CompressedEdwardsY: [75, 120, 184, 132, 235, 175, 143, 50, 19, 103, 70, 24, 40, 175, 8, 236, 102, 181, 198, 4, 254, 11, 249, 119, 45, 187, 188, 80, 78, 150, 145, 72]), EdwardsPoint{
+    	X: FieldElement51([883867961919620, 2228032464473336, 1123098019536682, 1709439319894511, 1255383892052822]),
+    	Y: FieldElement51([2163750915831883, 1410711215564369, 873929672499900, 1573109023244034, 1276642066762699]),
+    	Z: FieldElement51([1, 0, 0, 0, 0]),
+    	T: FieldElement51([2002913340025382, 563350848082661, 1190348743104933, 153493412274490, 2025704987216322])
+    }),
+), 
+ signature: Ed25519Signature(
+    Signature( R: CompressedEdwardsY: [52, 187, 122, 200, 195, 187, 92, 199, 159, 53, 105, 50, 176, 123, 47, 252, 2, 167, 200, 19, 183, 203, 138, 147, 21, 21, 89, 230, 158, 217, 159, 195], s: Scalar{
+    	bytes: [157, 119, 130, 222, 176, 129, 210, 30, 125, 188, 141, 182, 206, 226, 97, 54, 140, 109, 76, 58, 246, 16, 3, 79, 194, 94, 96, 98, 134, 73, 171, 8],
+    } ),
+), 
+ }
+Events:
+ContractEvent { key: EventKey([2, 0, 0, 0, 0, 0, 0, 0, 185, 227, 38, 108, 169, 242, 129, 3, 202, 124, 155, 185, 229, 235, 109, 13, 140, 26, 157, 119, 74, 17, 179, 132, 121, 138, 60, 71, 132, 213, 65, 30]), index: 4, type: Struct(StructTag { address: b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e, module: Identifier("ViolasToken"), name: Identifier("AllInOneEvent"), type_params: [] }), event_data: "0100000000000000b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e0b70a18a66b8b3a533f4520d274a414ea3c6535af258b03faa7755600cdeffe9b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e00e1f50500000000000000000000000000000000" }
+ContractEvent { key: EventKey([2, 0, 0, 0, 0, 0, 0, 0, 11, 112, 161, 138, 102, 184, 179, 165, 51, 244, 82, 13, 39, 74, 65, 78, 163, 198, 83, 90, 242, 88, 176, 63, 170, 119, 85, 96, 12, 222, 255, 233]), index: 3, type: Struct(StructTag { address: b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e, module: Identifier("ViolasToken"), name: Identifier("AllInOneEvent"), type_params: [] }), event_data: "0100000000000000b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e0b70a18a66b8b3a533f4520d274a414ea3c6535af258b03faa7755600cdeffe9b9e3266ca9f28103ca7c9bb9e5eb6d0d8c1a9d774a11b384798a3c4784d5411e00e1f50500000000000000000000000000000000" }
+

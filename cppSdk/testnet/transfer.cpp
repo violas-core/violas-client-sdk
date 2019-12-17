@@ -7,10 +7,14 @@
 using namespace std;
 using namespace Violas;
 
+//账户数量
+const size_t ACCOUNT_NUM = 7;
+
 //6种稳定币
-const vector<string> names = {"ABCUSD", "HIJUDS", "XYZUSD", "BCDCAN", "CDESDG", "DEFHKD"};
+const vector<string> STABLE_TOKEN_NAMES = {"ABCUSD", "HIJUDS", "XYZUSD", "BCDCAN", "CDESDG", "DEFHKD"};
 
 void deploy(Violas::client_ptr client);
+void publish(Violas::client_ptr client);
 void transfer(Violas::client_ptr client);
 void transfer_libra(Violas::client_ptr client);
 
@@ -22,42 +26,66 @@ int main(int argc, char *argv[])
     try
     {
         cout << "usage: \n"
-             << "\t" << "transfer host port" << "\n"
+             << "\t"
+             << "transfer host port mnemonic"
+             << "\n"
              << endl;
 
         auto host = "52.151.2.66";
         uint16_t port = 40001;
+        string mnemonic = "mnemonic";
+        string faucet_key;
+
+        if (argc >= 2)
+            host = argv[1];
 
         if (argc >= 3)
-        {
-            host = argv[1];
             port = stol(argv[2]);
-        }
+
+        if (argc >= 4)
+            mnemonic = argv[3];
+        
+        if (argc >= 5)
+            faucet_key = argv[4];
+
+        COUT << "connecting to " << host << ":" << port << " ......"
+             << endl;
 
         auto client = Violas::Client::create(host,
                                              port,
                                              "consensus_peers.config.toml",
-                                             "temp_faucet_keys",
+                                             faucet_key,
                                              false,
                                              "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
-                                             "mnemonic.bak");
+                                             mnemonic);
 
         client->test_validator_connection();
-        COUT << "succeeded to connect validator " << host << ":" << port << endl;
 
-        COUT << "Index for functions \n"
-             << "\t1. Transfer Stable Token \n"
-             << "\t2. Transfer VToken \n"
-             << "\t3. Deploy Stable Token \n"
-             << "\t4. Quit \n"
-             << "Please input the index : ";
-        //<< endl;
+        COUT << "connected to validator with 【 " << mnemonic << " 】"
+             << endl;
 
-        size_t index;
-        cin >> index;
-
-        //while (index <= 3)
+        //
+        //  Create all accounts
+        //
+        for (uint64_t i = 0; i < ACCOUNT_NUM; i++)
         {
+            client->create_next_account(true);
+        }
+
+        size_t index = 0;
+
+        while (index < 5)
+        {
+            COUT << "Index for functions \n"
+                 << "\t1. Transfer Stable Token \n"
+                 << "\t2. Transfer VToken \n"
+                 << "\t3. Publish for a token\n"
+                 << "\t4. Deploy Stable Token \n"
+                 << "\t5. Quit \n"
+                 << "Please input the index : ";
+
+            cin >> index;
+
             switch (index)
             {
             case 1:
@@ -67,6 +95,9 @@ int main(int argc, char *argv[])
                 transfer_libra(client);
                 break;
             case 3:
+                publish(client);
+                break;
+            case 4:
                 deploy(client);
                 break;
 
@@ -90,31 +121,25 @@ int main(int argc, char *argv[])
 void deploy(Violas::client_ptr client)
 {
 
-    const uint64_t account_amount = 8;
-    for (uint64_t i = 0; i < account_amount; i++)
-    {
-        client->create_next_account(true);
-    }
-
     client->mint_coins(0, 10);
 
     auto accounts = client->get_all_accounts();
 
-    COUT << "List all available acounts" << endl;
+    //COUT << "List all available acounts" << endl;
 
     for (auto const &account : accounts)
     {
 
         client->transfer_coins_int(0, account.address, 1 * MICRO_LIBRO_COIN);
 
-        uint64_t balance = client->get_balance(account.index);
+        // uint64_t balance = client->get_balance(account.index);
 
-        cout << "\n\tIndex : " << account.index
-             << "\n\tAddress : " << account.address
-             << "\n\tSequence : " << account.sequence_number
-             << "\n\tStatus : " << account.status
-             << "\n\tToken Balance : " << balance
-             << endl;
+        // cout << "\n\tIndex : " << account.index
+        //      << "\n\tAddress : " << account.address
+        //      << "\n\tSequence : " << account.sequence_number
+        //      << "\n\tStatus : " << account.status
+        //      << "\n\tToken Balance : " << balance
+        //      << endl;
     }
 
     //6个州长发行6种稳定币
@@ -134,19 +159,45 @@ void deploy(Violas::client_ptr client)
         tokens.push_back(vstake);
     }
 
-
-    cout << "List all tokens :" << endl;
+    COUT << "List all tokens :" << endl;
     for (auto i = 0; i < tokens.size(); i++)
     {
         auto &token = tokens[i];
         cout << "\tToken " << i << "'s name is " << token->name() << ", address is " << token->address() << endl;
-
-        // account index 7 publish all tokens
-        token->publish(7);
     }
 
     cout << "Findished deploying 6 Tokens" << endl;
 }
+
+void publish(Violas::client_ptr client)
+{
+    auto accounts = client->get_all_accounts();
+
+    string token_address;
+    cout << "Please input tokenh address : ";
+    cin >> token_address;
+
+    auto token = Violas::Token::create(client, uint256_from_string(token_address), "Unkonw");
+    cout << "Current token's address : " << token->address() << endl;
+
+    cout << "List all accounts :" << endl;
+    for (auto &account : accounts)
+    {
+        cout << "\taccount  "
+             << "index : " << account.index
+             << "address : " << account.address << endl;
+    }
+
+    //
+    //  get all arguments
+    //
+    size_t account_index;
+    cout << "Please input accout index for publish : ";
+    cin >> account_index;
+
+    token->publish(account_index);
+}
+
 void transfer_libra(Violas::client_ptr client)
 {
     COUT << "Let's transfer VToken ..." << endl;
@@ -161,7 +212,6 @@ void transfer_libra(Violas::client_ptr client)
 
     auto receiver = uint256_from_string(address);
 
-    client->create_next_account(true);
     client->mint_coins(0, amount);
 
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
@@ -174,23 +224,17 @@ void transfer_libra(Violas::client_ptr client)
 
 void transfer(Violas::client_ptr client)
 {
-    const uint64_t account_amount = 8;
-    for (uint64_t i = 0; i < account_amount; i++)
-    {
-        client->create_next_account(true);
-    }
-
     auto accounts = client->get_all_accounts();
 
     vector<Violas::token_ptr> tokens;
 
-    assert(accounts.size() >= names.size() + 1);
+    assert(accounts.size() >= STABLE_TOKEN_NAMES.size() + 1);
 
-    for (size_t i = 0; i < names.size(); i++)
+    for (size_t i = 0; i < STABLE_TOKEN_NAMES.size(); i++)
     {
-        auto vstake = Violas::Token::create(client, accounts[i + 1].address, names.at(i));
+        auto token = Violas::Token::create(client, accounts[i + 1].address, STABLE_TOKEN_NAMES.at(i));
 
-        tokens.push_back(vstake);
+        tokens.push_back(token);
     }
 
     cout << "List all tokens :" << endl;

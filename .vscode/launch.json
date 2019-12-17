@@ -8,9 +8,9 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch transfer",
-            "program": "${workspaceFolder}/cppSdk/test/transfer",
+            "program": "${workspaceFolder}/cppSdk/testnet/transfer",
             "args": [],
-            "cwd": "${workspaceFolder}/cppSdk/test"
+            "cwd": "${workspaceFolder}/cppSdk/testnet"
         },
         {
             "name": "Python: violas.py",

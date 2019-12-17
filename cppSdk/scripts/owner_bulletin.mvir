@@ -1,0 +1,6 @@
+import {{sender}}.ViolasToken;
+
+main(data: bytearray) {
+    ViolasToken.owner_bulletin(move(data));
+    return;
+}

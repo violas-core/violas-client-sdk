@@ -16,7 +16,7 @@ try:
 
     accounts = client.get_all_accounts()
 
-    for a in accounts
+    for a in accounts.items()
         print("", a.index)
         
     print("Finished test job !")

@@ -62,7 +62,7 @@ extern "C"
     uint64_t libra_get_sequence_number(uint64_t raw_ptr, uint64_t index);
 
     /// Mints coins for the receiver specified.
-    void libra_mint_coins(uint64_t raw_ptr, uint64_t index, uint64_t num_coins, bool is_blocking);
+    bool libra_mint_coins(uint64_t raw_ptr, uint64_t index, uint64_t num_coins, bool is_blocking);
 
     struct _index_sequence
     {

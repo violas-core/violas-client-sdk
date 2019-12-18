@@ -304,12 +304,12 @@ pub mod x86_64 {
         index: u64,
         num_coins: u64,
         is_blocking: bool,
-    ) {
-        // convert raw ptr to object client
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+    ) -> bool {
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
+            // convert raw ptr to object client
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        client
-            .mint_coins(
+            client.mint_coins(
                 &[
                     "mintb",
                     index.to_string().as_str(),
@@ -317,7 +317,20 @@ pub mod x86_64 {
                 ],
                 is_blocking,
             )
-            .unwrap();
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!("catch panic at function (libra_compile) !"));
+            false
+        }
     }
 
     #[repr(C)]

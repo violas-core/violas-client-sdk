@@ -16,8 +16,8 @@ namespace fs = boost::filesystem;
 
 using namespace std;
 
-inline ostream &log(ostream &ost, const char *flag, const char *file, int line,
-                    const char *func)
+ostream &log(ostream &ost, const char *flag, const char *file, int line,
+             const char *func)
 {
     time_t now = time(nullptr);
 
@@ -206,7 +206,11 @@ public:
                             uint64_t num_coins,
                             bool is_blocking) override
     {
-        libra_mint_coins((uint64_t)raw_client_proxy, index, num_coins, is_blocking);
+        bool ret = libra_mint_coins((uint64_t)raw_client_proxy, index, num_coins, is_blocking);
+        if (!ret)
+        {
+            throw runtime_error(format("failed to mint coins, error : %s", get_last_error().c_str()));
+        }
     }
 
     virtual std::pair<uint64_t, uint64_t>

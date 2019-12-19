@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string_view>
 #include <assert.h>
-#include "libra_client.hpp"
+#include "violas_sdk.hpp"
 
 using namespace std;
 using namespace Violas;
@@ -202,7 +202,7 @@ void publish(Violas::client_ptr client)
     auto accounts = client->get_all_accounts();
 
     string token_address;
-    cout << "Please input tokenh address : ";
+    cout << "Please input token's address : ";
     cin >> token_address;
 
     auto token = Violas::Token::create(client, uint256_from_string(token_address), "Unkonw");
@@ -286,14 +286,14 @@ void transfer(Violas::client_ptr client)
     cout << "Please input amount of token : ";
     cin >> amount;
 
-    auto &token1 = tokens[token_index];
+    auto &token = tokens[token_index];
     auto receiver = uint256_from_string(address);
     //
     // mint coins to the receiver
     //
     auto account_index = token_index + 1;
 
-    token1->mint(account_index, receiver, amount * MICRO_LIBRO_COIN);
+    token->mint(account_index, receiver, amount * MICRO_LIBRO_COIN);
 
     auto micro_to_double = [](uint64_t amount) -> double {
         if (is_valid_balance(amount))
@@ -311,7 +311,7 @@ void transfer(Violas::client_ptr client)
 
     cout.precision(10);
 
-    auto balance = token1->get_account_balance(receiver);
+    auto balance = token->get_account_balance(receiver);
     cout << "account " << receiver << "'s balance is "
          << GREEN
          << balance_to_string(balance) << "(" << micro_to_double(balance) << ")"

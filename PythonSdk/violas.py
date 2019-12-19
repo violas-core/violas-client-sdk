@@ -1,5 +1,5 @@
 try:
-    import violas;
+    import violas_sdk;
 
     client = violas.Client("52.151.2.66", 
                             40001,  
@@ -16,7 +16,7 @@ try:
 
     accounts = client.get_all_accounts()
 
-    for a in accounts.items()
+    for a in accounts
         print("", a.index)
         
     print("Finished test job !")

@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 namespace fs = boost::filesystem;
 #endif
 
-#include "libra_client.hpp"
+#include "violas_sdk.hpp"
 #include "rust_client_proxy.hpp"
 
 using namespace std;

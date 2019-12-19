@@ -13,8 +13,8 @@ debug : clean
 	-o transfer \
 	-I../src/ \
 	-L../../rust-client-proxy/target/debug/ \
-	-lclient_proxy \
-	src/transfer.cpp ../src/libra_client.cpp
+	src/transfer.cpp ../src/libra_client.cpp \
+	-lclient_proxy -lstdc++fs\
 
 gcc : clean
 	g++ -O2 -std=c++17 -Wall \
@@ -22,7 +22,7 @@ gcc : clean
 	-I../src \
 	-L../../rust-client-proxy/target/debug/ \
 	src/transfer.cpp ../src/libra_client.cpp \
-	-lclient_proxy \
+	-lclient_proxy -lstdc++fs\
 
 clean :
 	rm -f transfer

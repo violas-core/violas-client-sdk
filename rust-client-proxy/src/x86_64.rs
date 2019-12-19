@@ -140,6 +140,17 @@ pub mod x86_64 {
         }
     }
 
+    #[no_mangle]
+    pub extern "C" fn libra_create_next_address(
+        raw_ptr: u64,
+        sync_with_validator: bool,
+    ) -> bool {
+        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+        let (address, _) = client.wallet.new_address().unwrap();
+
+        true
+    }
     #[repr(C)]
     //#[derive(Copy, Clone)]
     pub struct AccountAndIndex {

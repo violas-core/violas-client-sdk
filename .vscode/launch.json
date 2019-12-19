@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch transfer",
             "program": "${workspaceFolder}/cppSdk/testnet/transfer",
-            "args": ["13.68.141.242", "40001", "testnet", "faucet_keys"],
+            "args": ["13.68.141.242", "40001", "governor1"],
             "cwd": "${workspaceFolder}/cppSdk/testnet"
         },
         {

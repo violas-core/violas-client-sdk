@@ -24,6 +24,12 @@ pub(crate) fn get_account_blob
 pub fn get_account_blob
 ```
 
+#### change MAX_GAS_AMOUNT at libra/client/src/client_proxy.rs
+
+```Rust
+const MAX_GAS_AMOUNT: u64 = 280_000;
+```
+
 if fail to compile with error "log::__private_api_log(...) -- expected 4 parameters" due to rust lib log update from 0.4.8 to 0.4.10 
 
 change the slog-stdlog code from  

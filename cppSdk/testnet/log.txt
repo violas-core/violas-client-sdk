@@ -1,42 +1,11 @@
-[ LOG   ] 2019-12-18 18:28:30 (../src/libra_client.cpp:106:ClientImp) : 
+[ LOG   ] 2019-12-19 15:03:37 (../src/libra_client.cpp:106:ClientImp) : 
 create violas client with 
-	host = 13.68.141.242
+	host = 18.220.66.235
 	port = 40001
 	validator_set_file = consensus_peers.config.toml
 	faucet_account_file = 
 	sync_on_wallet_recovery = 0
 	faucet_server = faucet.testnet.libra.org
 	mnemonic_file = governor1
-[ LOG   ] 2019-12-18 18:28:31 (../src/libra_client.cpp:139:test_validator_connection) : 
+[ LOG   ] 2019-12-19 15:03:38 (../src/libra_client.cpp:139:test_validator_connection) : 
 succeeded to test validator connection
-[ LOG   ] 2019-12-18 18:29:53 (../src/libra_client.cpp:493:init_all_script) : /tmp/61b20f55aaca069764e4047c297510ae16c875f68b808c77dadec1bc456a0f80
-[ LOG   ] 2019-12-18 18:29:53 (../src/libra_client.cpp:247:compile) : compiled '/tmp/61b20f55aaca069764e4047c297510ae16c875f68b808c77dadec1bc456a0f80/token.mvir', is_module = true
-[ LOG   ] 2019-12-18 18:29:56 (../src/libra_client.cpp:279:publish_module) : published module /tmp/61b20f55aaca069764e4047c297510ae16c875f68b808c77dadec1bc456a0f80/token.mv
-[ LOG   ] 2019-12-18 18:29:56 (../src/libra_client.cpp:247:compile) : compiled '/tmp/61b20f55aaca069764e4047c297510ae16c875f68b808c77dadec1bc456a0f80/publish.mvir', is_module = false
-[ LOG   ] 2019-12-18 18:29:58 (../src/libra_client.cpp:305:execute_script) : excuted script file '/tmp/61b20f55aaca069764e4047c297510ae16c875f68b808c77dadec1bc456a0f80/publish.mv' for account index 1
-[ LOG   ] 2019-12-18 18:29:58 (../src/libra_client.cpp:493:init_all_script) : /tmp/2fd66feaa372cd093710e14746ed50312922258e7d0db0f86b5f8395541a45fc
-[ LOG   ] 2019-12-18 18:29:58 (../src/libra_client.cpp:247:compile) : compiled '/tmp/2fd66feaa372cd093710e14746ed50312922258e7d0db0f86b5f8395541a45fc/token.mvir', is_module = true
-[ LOG   ] 2019-12-18 18:29:59 (../src/libra_client.cpp:279:publish_module) : published module /tmp/2fd66feaa372cd093710e14746ed50312922258e7d0db0f86b5f8395541a45fc/token.mv
-[ LOG   ] 2019-12-18 18:30:00 (../src/libra_client.cpp:247:compile) : compiled '/tmp/2fd66feaa372cd093710e14746ed50312922258e7d0db0f86b5f8395541a45fc/publish.mvir', is_module = false
-[ LOG   ] 2019-12-18 18:30:01 (../src/libra_client.cpp:305:execute_script) : excuted script file '/tmp/2fd66feaa372cd093710e14746ed50312922258e7d0db0f86b5f8395541a45fc/publish.mv' for account index 2
-[ LOG   ] 2019-12-18 18:30:01 (../src/libra_client.cpp:493:init_all_script) : /tmp/c8b7bdd9c2382e93bf5c4a2cd215fb50893dd979e126a32de2b05f305008a645
-[ LOG   ] 2019-12-18 18:30:01 (../src/libra_client.cpp:247:compile) : compiled '/tmp/c8b7bdd9c2382e93bf5c4a2cd215fb50893dd979e126a32de2b05f305008a645/token.mvir', is_module = true
-[ LOG   ] 2019-12-18 18:30:02 (../src/libra_client.cpp:279:publish_module) : published module /tmp/c8b7bdd9c2382e93bf5c4a2cd215fb50893dd979e126a32de2b05f305008a645/token.mv
-[ LOG   ] 2019-12-18 18:30:03 (../src/libra_client.cpp:247:compile) : compiled '/tmp/c8b7bdd9c2382e93bf5c4a2cd215fb50893dd979e126a32de2b05f305008a645/publish.mvir', is_module = false
-[ LOG   ] 2019-12-18 18:30:04 (../src/libra_client.cpp:305:execute_script) : excuted script file '/tmp/c8b7bdd9c2382e93bf5c4a2cd215fb50893dd979e126a32de2b05f305008a645/publish.mv' for account index 3
-[ LOG   ] 2019-12-18 18:30:04 (../src/libra_client.cpp:493:init_all_script) : /tmp/131762fbf52ffcb99bf89b4ceff2533c8aef086e1567d91bcbb46240d7b186b5
-[ LOG   ] 2019-12-18 18:30:04 (../src/libra_client.cpp:247:compile) : compiled '/tmp/131762fbf52ffcb99bf89b4ceff2533c8aef086e1567d91bcbb46240d7b186b5/token.mvir', is_module = true
-[ LOG   ] 2019-12-18 18:30:07 (../src/libra_client.cpp:279:publish_module) : published module /tmp/131762fbf52ffcb99bf89b4ceff2533c8aef086e1567d91bcbb46240d7b186b5/token.mv
-[ LOG   ] 2019-12-18 18:30:07 (../src/libra_client.cpp:247:compile) : compiled '/tmp/131762fbf52ffcb99bf89b4ceff2533c8aef086e1567d91bcbb46240d7b186b5/publish.mvir', is_module = false
-[ LOG   ] 2019-12-18 18:30:09 (../src/libra_client.cpp:305:execute_script) : excuted script file '/tmp/131762fbf52ffcb99bf89b4ceff2533c8aef086e1567d91bcbb46240d7b186b5/publish.mv' for account index 4
-[ LOG   ] 2019-12-18 18:30:09 (../src/libra_client.cpp:493:init_all_script) : /tmp/e3db680a5ca002cda8fc1095f2911fb9432d28675a624c3ccb107cdaeba5c842
-[ LOG   ] 2019-12-18 18:30:10 (../src/libra_client.cpp:247:compile) : compiled '/tmp/e3db680a5ca002cda8fc1095f2911fb9432d28675a624c3ccb107cdaeba5c842/token.mvir', is_module = true
-[ LOG   ] 2019-12-18 18:30:12 (../src/libra_client.cpp:279:publish_module) : published module /tmp/e3db680a5ca002cda8fc1095f2911fb9432d28675a624c3ccb107cdaeba5c842/token.mv
-[ LOG   ] 2019-12-18 18:30:12 (../src/libra_client.cpp:247:compile) : compiled '/tmp/e3db680a5ca002cda8fc1095f2911fb9432d28675a624c3ccb107cdaeba5c842/publish.mvir', is_module = false
-[ LOG   ] 2019-12-18 18:30:14 (../src/libra_client.cpp:305:execute_script) : excuted script file '/tmp/e3db680a5ca002cda8fc1095f2911fb9432d28675a624c3ccb107cdaeba5c842/publish.mv' for account index 5
-[ LOG   ] 2019-12-18 18:30:14 (../src/libra_client.cpp:493:init_all_script) : /tmp/07102f78de91452c79c2a0cf9d75a049ae1017adb049c32c57d2b265de446107
-[ LOG   ] 2019-12-18 18:30:14 (../src/libra_client.cpp:247:compile) : compiled '/tmp/07102f78de91452c79c2a0cf9d75a049ae1017adb049c32c57d2b265de446107/token.mvir', is_module = true
-[ LOG   ] 2019-12-18 18:30:16 (../src/libra_client.cpp:279:publish_module) : published module /tmp/07102f78de91452c79c2a0cf9d75a049ae1017adb049c32c57d2b265de446107/token.mv
-[ LOG   ] 2019-12-18 18:30:17 (../src/libra_client.cpp:247:compile) : compiled '/tmp/07102f78de91452c79c2a0cf9d75a049ae1017adb049c32c57d2b265de446107/publish.mvir', is_module = false
-[ LOG   ] 2019-12-18 18:30:19 (../src/libra_client.cpp:305:execute_script) : excuted script file '/tmp/07102f78de91452c79c2a0cf9d75a049ae1017adb049c32c57d2b265de446107/publish.mv' for account index 6
-t index 6

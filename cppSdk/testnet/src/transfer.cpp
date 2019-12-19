@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 
 void deploy(Violas::client_ptr client)
 {
-    //client->mint_coins(0, 10);
+    // client->mint_coins(0, 10);
 
     auto accounts = client->get_all_accounts();
 
@@ -240,7 +240,7 @@ void transfer_libra(Violas::client_ptr client)
 
     auto receiver = uint256_from_string(address);
 
-    client->mint_coins(0, amount);
+    //client->mint\\\_coins(0, amount);
 
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
     COUT << "Transferring " << amount << " cions ..." << endl;

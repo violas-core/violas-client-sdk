@@ -13,6 +13,7 @@ const size_t ACCOUNT_NUM = 7;
 //6种稳定币
 const vector<string> STABLE_TOKEN_NAMES = {"ABCUSD", "HIJUDS", "XYZUSD", "BCDCAN", "CDESDG", "DEFHKD"};
 
+void mint(Violas::client_ptr client);
 void deploy(Violas::client_ptr client);
 void publish(Violas::client_ptr client);
 void transfer(Violas::client_ptr client);
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
                                              "consensus_peers.config.toml",
                                              faucet_key,
                                              false,
-                                             "faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
+                                             "", //libra testnet use this url to get test libra coin
                                              mnemonic);
 
         client->test_validator_connection();
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
             COUT << "Index for functions \n"
                  << RED << "\t【 " << mnemonic << " 】" << RESET << "\n"
                  << GREEN
+                 << (faucet_key.empty() ? "" : "\t0. Mint VToken to account 0 \n")
                  << "\t1. Transfer Stable Token \n"
                  << "\t2. Transfer VToken \n"
                  << "\t3. Publish for a token\n"
@@ -117,10 +119,14 @@ int main(int argc, char *argv[])
             {
                 cin.clear();
                 cin.ignore();
+                continue;
             }
 
             switch (index)
             {
+            case 0:
+                mint(client);
+                break;
             case 1:
                 transfer(client);
                 break;
@@ -133,7 +139,6 @@ int main(int argc, char *argv[])
             case 4:
                 deploy(client);
                 break;
-
             default:
                 break;
             }
@@ -150,11 +155,23 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+void mint(Violas::client_ptr client)
+{
+    cout << "Minting VToken to account 0 \n"
+         << "Please input the amount :";
+
+    uint64_t amount;
+    cin >> amount;
+
+    cout << "Minting " << amount << " VToken ..." << endl;
+
+    client->mint_coins(0, amount);
+
+    cout << "Account 0's balance is " << client->get_balance(0) << endl;
+}
 
 void deploy(Violas::client_ptr client)
 {
-    // client->mint_coins(0, 10);
-
     auto accounts = client->get_all_accounts();
 
     uint64_t balance = client->get_balance(1);
@@ -240,14 +257,20 @@ void transfer_libra(Violas::client_ptr client)
 
     auto receiver = uint256_from_string(address);
 
-    //client->mint\\\_coins(0, amount);
-
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
     COUT << "Transferring " << amount << " cions ..." << endl;
 
-    client->transfer_coins_int(0, receiver, amount * MICRO_LIBRO_COIN);
+    auto [accout_index, sequence]  = client->transfer_coins_int(0, receiver, amount * MICRO_LIBRO_COIN);
 
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
+
+    auto [txn, events] = client->get_committed_txn_by_acc_seq(accout_index, sequence);
+
+    cout << "txn :" << endl
+         << txn << endl
+         << "events :" << endl
+         << events;
+
 }
 
 void transfer(Violas::client_ptr client)

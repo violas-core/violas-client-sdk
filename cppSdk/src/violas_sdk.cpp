@@ -552,14 +552,20 @@ BOOST_PYTHON_MODULE(violas)
         .def_readwrite("first", &std::pair<ulong, uint256>::first)
         .def_readwrite("second", &std::pair<ulong, uint256>::second);
 
+    class_<std::array<unsigned char, 32ul>>("uint256");
+
+    def("uint256_to_string", uint256_to_string);
+    def("uint256_from_string", uint256_from_string);
+
     class_<Client::Account>("Account")
         .add_property("index", &Client::Account::index)
         .add_property("address", &Client::Account::address)
         .add_property("sequence_number", &Client::Account::sequence_number)
         .add_property("status", &Client::Account::status);
 
-    class_<std::vector<Client::Account>>("Accounts")
-        .def(vector_indexing_suite<std::vector<Client::Account>>());
+    using Accounts = std::vector<Client::Account>;
+    class_<Accounts>("Accounts")
+        .def(vector_indexing_suite<Accounts>());
 
     class_<ClientImp>("Client", init<string, uint16_t, string, string, bool, string, string>())
         .def("test_validator_connection", &ClientImp::test_validator_connection)

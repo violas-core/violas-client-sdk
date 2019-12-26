@@ -217,9 +217,9 @@ public:
     transfer_coins_int(uint64_t sender_account_ref_id,
                        uint256 receiver_address,
                        uint64_t num_coins,
-                       uint64_t gas_unit_price,
-                       uint64_t max_gas_amount,
-                       bool is_blocking) override
+                       uint64_t gas_unit_price = 0,
+                       uint64_t max_gas_amount =0 ,
+                       bool is_blocking = true) override
     {
         _index_sequence index_seq;
         bool ret = libra_transfer_coins_int(
@@ -544,6 +544,8 @@ std::shared_ptr<Token> Token::create(client_ptr client,
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 using namespace boost::python;
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(ClientImp_transfer_overloads, ClientImp::transfer_coins_int, 3, 6)
+
 BOOST_PYTHON_MODULE(violas)
 {
     using namespace Violas;
@@ -553,6 +555,7 @@ BOOST_PYTHON_MODULE(violas)
         .def_readwrite("second", &std::pair<ulong, uint256>::second);
 
     class_<std::array<unsigned char, 32ul>>("uint256");
+    class_<std::pair<ulong, ulong>>("UlongPair");
 
     def("uint256_to_string", uint256_to_string);
     def("uint256_from_string", uint256_from_string);
@@ -567,10 +570,15 @@ BOOST_PYTHON_MODULE(violas)
     class_<Accounts>("Accounts")
         .def(vector_indexing_suite<Accounts>());
 
-    class_<ClientImp>("Client", init<string, uint16_t, string, string, bool, string, string>())
+    auto client_obj = class_<ClientImp, std::shared_ptr<ClientImp>>("Client", init<string, uint16_t, string, string, bool, string, string>())
         .def("test_validator_connection", &ClientImp::test_validator_connection)
         .def("create_next_account", &ClientImp::create_next_account)
-        .def("get_all_accounts", &ClientImp::get_all_accounts);
+        .def("get_all_accounts", &ClientImp::get_all_accounts)
+        .def("get_balance", (double (ClientImp::*)(uint64_t index))&ClientImp::get_balance)
+        .def("get_sequence_number", &ClientImp::get_sequence_number)
+        .def("mint_coins", &ClientImp::mint_coins)
+        .def("transfer", &ClientImp::transfer_coins_int, ClientImp_transfer_overloads());
+    
 
     // class_<Token>("Token", init<string, uint16_t>)
     //     .def("name", &Token::name)

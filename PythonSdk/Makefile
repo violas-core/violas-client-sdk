@@ -5,7 +5,7 @@ python :
 	-I/usr/include/python3.7m -lboost_python3-py37 \
 	-L../rust-client-proxy/target/debug/ \
 	-I../cppSdk/src \
-	-l:libclient_proxy.a -lstdc++fs
+	-lclient_proxy -lstdc++fs
 		
 release : 
 	clang++ -O3 -std=c++17 -fPIC -shared -Wall -Werror -DPYTHON \

@@ -1,7 +1,8 @@
 try:
-    import violas
+    import violas;
+    from violas import *;
 
-    client = violas.Client("13.68.141.242",
+    client = Client("13.68.141.242",
                            40001,
                            "consensus_peers.config.toml",
                            "faucet_keys",
@@ -21,7 +22,15 @@ try:
               "address : %s, "
               "sequence_number : %d, "
               "status : %d" %
-              (a.index, violas.uint256_to_string(a.address), a.sequence_number, a.status))
+              (a.index, uint256_to_string(a.address), a.sequence_number, a.status))
+
+    print("account 0's balance is %f" % client.get_balance(0))
+    
+    MICRO_LIBRA_COIN = 1000000
+    
+    client.transfer(0, accounts[1].address , 1 * MICRO_LIBRA_COIN, True)
+
+    print("account 1's balance is %f" % client.get_balance(1))
 
     print("Finished test job !")
 

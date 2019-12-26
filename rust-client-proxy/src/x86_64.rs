@@ -14,45 +14,25 @@ pub mod x86_64 {
     use std::{collections::BTreeMap, convert::TryFrom, io::Write, result::Result, *};
     use tempdir::TempDir;
     use transaction_builder::get_transaction_name;
-    //const DEBUG: bool = true;
     thread_local! {
         static LAST_ERROR: RefCell<String> = RefCell::new(String::new());
     }
 
-    // struct LibraClient {
-    //     pub client: ClientProxy,
-    //     last_error: Error,
-    // }
-
-    // impl LibraClient {
-    //     fn set_last_error(&mut self, err: Error) {
-    //         self.last_error = err;
-    //     }
-
-    //     fn get_last_error(&self) -> String {
-    //         format!("{:?}", self.last_error)
-    //     }
-    // }
-
     #[allow(dead_code)]
     fn set_last_error(err: Error) {
-        // unsafe {
-        //     LAST_ERROR = format!("{:?}", err);
-        // }
         LAST_ERROR.with(|prev| {
             *prev.borrow_mut() = format!("{:?}", err);
         });
     }
     #[no_mangle]
     pub extern "C" fn libra_get_last_error() -> *const c_char {
-        //unsafe { CString::new(LAST_ERROR.clone()).unwrap().into_raw() }
         LAST_ERROR.with(|prev| {
             let err = prev.borrow_mut();
             CString::new(err.clone()).unwrap().into_raw()
         })
     }
     ///
-    ///
+    /// free rust string
     ///
     #[no_mangle]
     pub extern "C" fn libra_free_string(s: *mut c_char) {
@@ -64,7 +44,7 @@ pub mod x86_64 {
         };
     }
     //
-    //
+    //  create libra client proxy
     //
     #[no_mangle]
     pub extern "C" fn libra_create_client_proxy(
@@ -117,7 +97,9 @@ pub mod x86_64 {
 
         raw_ptr
     }
+    ///
     /// Destory the raw ClientProxy pointer
+    ///
     #[no_mangle]
     pub extern "C" fn libra_destory_client_proxy(raw_ptr: u64) {
         if raw_ptr != 0 {
@@ -129,10 +111,7 @@ pub mod x86_64 {
     #[no_mangle]
     pub extern "C" fn libra_test_validator_connection(raw_ptr: u64) -> bool {
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-        //
         let ret = client.test_validator_connection();
-
-        //println!("test_validator_connection enters ...");
         //return the boolean result
         match ret {
             Ok(_) => true,
@@ -141,18 +120,15 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_create_next_address(
-        raw_ptr: u64,
-        sync_with_validator: bool,
-    ) -> bool {
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+    pub extern "C" fn libra_create_next_address(_raw_ptr: u64, _sync_with_validator: bool) -> bool {
+        // let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        let (address, _) = client.wallet.new_address().unwrap();
+        // let (address, _) = client.wallet.new_address().unwrap();
 
         true
     }
+
     #[repr(C)]
-    //#[derive(Copy, Clone)]
     pub struct AccountAndIndex {
         pub address: [c_uchar; 32],
         pub index: u64,
@@ -279,22 +255,43 @@ pub mod x86_64 {
         result: &mut f64,
     ) -> bool {
         if raw_ptr == 0 || account_index_or_addr.is_null() {
+            set_last_error(format_err!(
+                "raw ptr is null, or account index or address is null"
+            ));
             return false;
         }
-        // convert raw ptr to object client
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-        let index_or_addr = unsafe { CStr::from_ptr(account_index_or_addr).to_str().unwrap() };
 
-        let balance = client
-            .get_balance(&["b", index_or_addr])
-            .unwrap_or_else(|err| {
-                println!("failed to get balance, {}", err);
-                String::from("0")
-            });
+        let ret = panic::catch_unwind(|| -> Result<f64, Error> {
+            // convert raw ptr to object client
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let index_or_addr = unsafe { CStr::from_ptr(account_index_or_addr).to_str().unwrap() };
+            let balance = client
+                .get_balance(&["b", index_or_addr])
+                .unwrap_or_else(|err| {
+                    println!("failed to get balance, {}", err);
+                    String::from("0")
+                });
+            let value = balance.parse::<f64>().unwrap();
+            Ok(value)
+        });
 
-        *result = balance.parse::<f64>().unwrap();
-
-        true
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(value) => {
+                    *result = value;
+                    true
+                }
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'libra_get_balance' !'"
+            ));
+            false
+        }
     }
 
     #[no_mangle]
@@ -362,35 +359,48 @@ pub mod x86_64 {
         is_blocking: bool,
         result: &mut IndexAndSeq,
     ) -> bool {
-        // convert raw ptr to object client
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let ret = panic::catch_unwind(
+            || -> Result<client::client_proxy::IndexAndSequence, Error> {
+                // convert raw ptr to object client
+                let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+                let receiver_address = AccountAddress::new(*receiver_addr);
+                client.transfer_coins_int(
+                    sender_account_ref_id,
+                    &receiver_address,
+                    micro_coins,
+                    match gas_unit_price {
+                        0 => None,
+                        _ => Some(gas_unit_price),
+                    },
+                    match max_gas_amount {
+                        0 => None,
+                        _ => Some(max_gas_amount),
+                    },
+                    is_blocking,
+                )
+            },
+        );
 
-        let receiver_address = AccountAddress::new(*receiver_addr);
-        let ret = client
-            .transfer_coins_int(
-                sender_account_ref_id,
-                &receiver_address,
-                micro_coins,
-                match gas_unit_price {
-                    0 => None,
-                    _ => Some(gas_unit_price),
-                },
-                match max_gas_amount {
-                    0 => None,
-                    _ => Some(max_gas_amount),
-                },
-                is_blocking,
-            )
-            .unwrap();
-        // save the result
-        result.index = match ret.account_index {
-            AccountEntry::Index(i) => i as u64,
-            _AccountAddress => 0,
-        };
-        result.sequence_number = ret.sequence_number;
-
-        // println!("libra_transfer_coins_int entered");
-        true
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(value) => {
+                    // save the result
+                    result.index = match value.account_index {
+                        AccountEntry::Index(i) => i as u64,
+                        _AccountAddress => 0,
+                    };
+                    result.sequence_number = value.sequence_number;
+                    true
+                }
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!("catch panic at function (libra_compile) !"));
+            false
+        }
     }
 
     #[no_mangle]
@@ -516,18 +526,28 @@ pub mod x86_64 {
         account_index: u64,
         module_file: *const c_char,
     ) -> bool {
-        // convert raw ptr to object client
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-        let module = unsafe { CStr::from_ptr(module_file).to_str().unwrap() };
-        let index = account_index.to_string();
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
+            // convert raw ptr to object client
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let module = unsafe { CStr::from_ptr(module_file).to_str().unwrap() };
+            let index = account_index.to_string();
 
-        let ret = client.publish_module(&["publish", index.as_str(), module]);
-        match ret {
-            Ok(_) => true,
-            Err(err) => {
-                set_last_error(err);
-                false
+            client.publish_module(&["publish", index.as_str(), module])
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
             }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'libra_publish_module' !"
+            ));
+            false
         }
     }
 
@@ -544,27 +564,38 @@ pub mod x86_64 {
         script_file: *const c_char,
         script_args: &ScriptArgs,
     ) -> bool {
-        // convert raw ptr to object client
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-        let index = account_index.to_string();
-        let script = unsafe { CStr::from_ptr(script_file).to_str().unwrap() };
-        let mut args = vec!["execute", index.as_str(), script];
-        let s = unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
+            // convert raw ptr to object client
 
-        for i in 0..s.len() {
-            let arg = unsafe { CStr::from_ptr(s[i]).to_str().unwrap() };
-            args.push(arg);
-        }
-        //
-        //  execute script
-        //
-        let ret = client.execute_script(&args); //&["execute", index.as_str(), script]
-        match ret {
-            Ok(_) => true,
-            Err(_err) => {
-                //set_last_error(err);
-                false
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let index = account_index.to_string();
+            let script = unsafe { CStr::from_ptr(script_file).to_str().unwrap() };
+            let mut args = vec!["execute", index.as_str(), script];
+            let s = unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
+
+            for i in 0..s.len() {
+                let arg = unsafe { CStr::from_ptr(s[i]).to_str().unwrap() };
+                args.push(arg);
             }
+            //
+            //  execute script
+            //
+            client.execute_script(&args) //&["execute", index.as_str(), script]
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'libra_execute_script' !"
+            ));
+            false
         }
     }
 
@@ -768,21 +799,22 @@ pub mod x86_64 {
             bail!("Account hasn't published the module")
         });
 
-        let mut result = false;
         *balance = u64::max_value(); //set invalid balance;
 
         if ret.is_ok() {
             match ret.unwrap() {
                 Ok(value) => {
                     *balance = value;
+                    true
                 }
-                Err(err) => set_last_error(err),
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
             }
-            result = true;
         } else {
             set_last_error(format_err!("panic at libra_get_account_resource()"));
+            false
         }
-
-        result
     }
 }

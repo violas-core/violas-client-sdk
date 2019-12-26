@@ -266,10 +266,10 @@ void transfer_libra(Violas::client_ptr client)
 
     auto [txn, events] = client->get_committed_txn_by_acc_seq(accout_index, sequence);
 
-    cout << "txn :" << endl
-         << txn << endl
-         << "events :" << endl
-         << events;
+    // cout << "txn :" << endl
+    //      << txn << endl
+    //      << "events :" << endl
+    //      << events;
 
 }
 

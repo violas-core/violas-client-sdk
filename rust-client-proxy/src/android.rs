@@ -134,7 +134,7 @@ pub mod android {
         _: JClass,
         raw_ptr: jlong,
     ) {
-        if (raw_ptr != 0) {
+        if raw_ptr != 0 {
             let _proxy = Box::from_raw(raw_ptr as *mut ClientProxy);
         }
     }

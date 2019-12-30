@@ -10,7 +10,7 @@ pub mod ios;
 #[cfg(target_os = "wasm")]
 pub mod wasm;
 
-#[cfg(target_arch = "x86_64")]
+//#[cfg(target_arch = "x86_64")]
 pub mod x86_64;
 
 pub(crate) mod compiler_proxy;

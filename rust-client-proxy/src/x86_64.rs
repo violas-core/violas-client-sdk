@@ -1,4 +1,4 @@
-#[cfg(target_arch = "x86_64")]
+//#[cfg(target_arch = "x86_64")]
 #[allow(non_snake_case)]
 pub mod x86_64 {
     use crate::{compiler_proxy, violas_account};

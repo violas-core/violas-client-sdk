@@ -24,13 +24,14 @@ pub(crate) fn get_account_blob
 pub fn get_account_blob
 ```
 
-#### change MAX_GAS_AMOUNT at libra/client/src/client_proxy.rs
+#### change MAX_GAS_AMOUNT at file libra/client/src/client_proxy.rs
 
 ```Rust
 const MAX_GAS_AMOUNT: u64 = 280_000;
 ```
 
-#### change max_iterations from 5000 to 10 at function wait_for_transaction
+#### change max_iterations from 5000 to 10 at file libra/client/src/client_proxy.rs
+
 ```Rust
  pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
         let mut max_iterations = 10;

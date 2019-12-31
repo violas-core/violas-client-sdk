@@ -181,7 +181,7 @@ public:
 
         bool ret = libra_get_balance((uint64_t)raw_client_proxy, to_string(index).c_str(), &balance);
         if (!ret)
-            throw runtime_error("failed to get balance ");
+            throw runtime_error(format("failed to get balance, error : %s", get_last_error().c_str()));
 
         return balance;
     }
@@ -192,7 +192,7 @@ public:
 
         bool ret = libra_get_balance((uint64_t)raw_client_proxy, uint256_to_string(address).c_str(), &balance);
         if (!ret)
-            throw runtime_error("failed to get balance ");
+            throw runtime_error(format("failed to get balance, error : %s", get_last_error().c_str()));
 
         return balance;
     }
@@ -218,7 +218,7 @@ public:
                        uint256 receiver_address,
                        uint64_t num_coins,
                        uint64_t gas_unit_price = 0,
-                       uint64_t max_gas_amount =0 ,
+                       uint64_t max_gas_amount = 0,
                        bool is_blocking = true) override
     {
         _index_sequence index_seq;
@@ -227,7 +227,7 @@ public:
             receiver_address.data(), num_coins, gas_unit_price, max_gas_amount,
             is_blocking, &index_seq);
         if (!ret)
-            throw runtime_error("failed to transfer coins");
+            throw runtime_error(format("failed to transfer coins, error : %s", get_last_error().c_str()));
 
         return make_pair(index_seq.index, index_seq.sequence);
     }
@@ -244,6 +244,7 @@ public:
                                        source_file.c_str(),
                                        get_last_error().c_str()));
         }
+
         CLOG << "compiled '" << source_file << "', "
              << "is_module = " << (is_module ? "true" : "false") << endl;
     }
@@ -261,6 +262,7 @@ public:
                                        source_file_with_path.c_str(),
                                        get_last_error().c_str()));
         }
+
         CLOG << "compiled '" << source_file_with_path << "', "
              << "is_module = " << (is_module ? "true" : "false") << endl;
     }
@@ -298,9 +300,13 @@ public:
                                         script_file.c_str(), &args);
         if (!ret)
             throw runtime_error(
-                format("failed to execute script file '%s' for account index %d",
-                       script_file.c_str(), account_index) +
-                EXCEPTION_AT);
+                format("failed to execute script file '%s' for account index %d, ",
+                       "error : %s, "
+                       "at %s",
+                       script_file.c_str(),
+                       account_index,
+                       get_last_error().c_str(),
+                       EXCEPTION_AT.c_str()));
 
         CLOG << format("excuted script file '%s' for account index %d",
                        script_file.c_str(), account_index)
@@ -571,14 +577,13 @@ BOOST_PYTHON_MODULE(violas)
         .def(vector_indexing_suite<Accounts>());
 
     auto client_obj = class_<ClientImp, std::shared_ptr<ClientImp>>("Client", init<string, uint16_t, string, string, bool, string, string>())
-        .def("test_validator_connection", &ClientImp::test_validator_connection)
-        .def("create_next_account", &ClientImp::create_next_account)
-        .def("get_all_accounts", &ClientImp::get_all_accounts)
-        .def("get_balance", (double (ClientImp::*)(uint64_t index))&ClientImp::get_balance)
-        .def("get_sequence_number", &ClientImp::get_sequence_number)
-        .def("mint_coins", &ClientImp::mint_coins)
-        .def("transfer", &ClientImp::transfer_coins_int, ClientImp_transfer_overloads());
-    
+                          .def("test_validator_connection", &ClientImp::test_validator_connection)
+                          .def("create_next_account", &ClientImp::create_next_account)
+                          .def("get_all_accounts", &ClientImp::get_all_accounts)
+                          .def("get_balance", (double (ClientImp::*)(uint64_t index)) & ClientImp::get_balance)
+                          .def("get_sequence_number", &ClientImp::get_sequence_number)
+                          .def("mint_coins", &ClientImp::mint_coins)
+                          .def("transfer", &ClientImp::transfer_coins_int, ClientImp_transfer_overloads());
 
     // class_<Token>("Token", init<string, uint16_t>)
     //     .def("name", &Token::name)

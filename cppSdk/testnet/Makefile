@@ -35,7 +35,7 @@ android : clean
 	-L./ \
 	-l:libc++fs.a -l:libclient_proxy.a -llog 
 	
-	strip arm_transfer
+	strip transfer
 
 gcc : clean
 	g++ -O2 -std=c++17 -Wall \

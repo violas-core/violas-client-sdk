@@ -28,14 +28,14 @@ release : clean
 
 android : clean
 	$(CXX) -O3 -std=c++17 -stdlib=libc++ -Wall -Werror \
-	-o arm_transfer \
+	-o transfer \
 	-I../src/ \
 	src/transfer.cpp ../src/violas_sdk.cpp \
 	-L../../rust-client-proxy/target/aarch64-linux-android/release/ \
 	-L./ \
 	-l:libc++fs.a -l:libclient_proxy.a -llog 
 	
-	$(STRIP) arm_transfer
+	strip arm_transfer
 
 gcc : clean
 	g++ -O2 -std=c++17 -Wall \

@@ -28,5 +28,5 @@ release :
 	strip violas.so
 
 clean :
-	rm -f violas.so
+	rm -f violas.so 
 	rm -rf __pycache__

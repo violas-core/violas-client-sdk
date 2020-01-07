@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception &e)
     {
-        std::cerr << e.what() << '\n';
+        std::cerr << "catch an " << typeid(e).name() << " excpetion, '" << e.what() << "'\n";
     }
 
     clog.rdbuf(mylog);
@@ -260,7 +260,7 @@ void transfer_libra(Violas::client_ptr client)
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
     COUT << "Transferring " << amount << " cions ..." << endl;
 
-    auto [accout_index, sequence]  = client->transfer_coins_int(0, receiver, amount * MICRO_LIBRO_COIN);
+    auto [accout_index, sequence] = client->transfer_coins_int(0, receiver, amount * MICRO_LIBRO_COIN);
 
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
 
@@ -270,7 +270,6 @@ void transfer_libra(Violas::client_ptr client)
     //      << txn << endl
     //      << "events :" << endl
     //      << events;
-
 }
 
 void transfer(Violas::client_ptr client)

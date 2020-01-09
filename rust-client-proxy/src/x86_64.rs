@@ -398,7 +398,9 @@ pub mod x86_64 {
                 }
             }
         } else {
-            set_last_error(format_err!("catch panic at function (libra_compile) !"));
+            set_last_error(format_err!(
+                "catch panic at function 'libra_transfer_coins_int' !"
+            ));
             false
         }
     }

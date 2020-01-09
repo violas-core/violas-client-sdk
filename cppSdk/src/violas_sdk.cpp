@@ -300,7 +300,7 @@ public:
                                         script_file.c_str(), &args);
         if (!ret)
             throw runtime_error(
-                format("failed to execute script file '%s' for account index %d, ",
+                format("failed to execute script file '%s' for account index %d, "
                        "error : %s, "
                        "at %s",
                        script_file.c_str(),
@@ -576,18 +576,29 @@ BOOST_PYTHON_MODULE(violas)
     class_<Accounts>("Accounts")
         .def(vector_indexing_suite<Accounts>());
 
-    auto client_obj = class_<ClientImp, std::shared_ptr<ClientImp>>("Client", init<string, uint16_t, string, string, bool, string, string>())
-                          .def("test_validator_connection", &ClientImp::test_validator_connection)
-                          .def("create_next_account", &ClientImp::create_next_account)
-                          .def("get_all_accounts", &ClientImp::get_all_accounts)
-                          .def("get_balance", (double (ClientImp::*)(uint64_t index)) & ClientImp::get_balance)
-                          .def("get_sequence_number", &ClientImp::get_sequence_number)
-                          .def("mint_coins", &ClientImp::mint_coins)
-                          .def("transfer", &ClientImp::transfer_coins_int, ClientImp_transfer_overloads());
+    class_<ClientImp, std::shared_ptr<ClientImp>>("Client", init<string, uint16_t, string, string, bool, string, string>())
+        .def("test_validator_connection", &ClientImp::test_validator_connection)
+        .def("create_next_account", &ClientImp::create_next_account)
+        .def("get_all_accounts", &ClientImp::get_all_accounts)
+        .def("get_balance", (double (ClientImp::*)(uint64_t index)) & ClientImp::get_balance)
+        .def("get_sequence_number", &ClientImp::get_sequence_number)
+        .def("mint_coins", &ClientImp::mint_coins)
+        .def("transfer", &ClientImp::transfer_coins_int, ClientImp_transfer_overloads());
 
-    // class_<Token>("Token", init<string, uint16_t>)
-    //     .def("name", &Token::name)
-    //     .def("address", &Token::address);
+    uint64_t (TokenImp::*get_account_balance1)(uint64_t) = &TokenImp::get_account_balance;
+    uint64_t (TokenImp::*get_account_balance2)(uint256) = &TokenImp::get_account_balance;
+
+    class_<TokenImp, std::shared_ptr<TokenImp>>("Token", init<client_ptr, uint256, string, string>())
+        .def("name", &Token::name)
+        .def("address", &Token::address)
+        .def("deploy", &Token::deploy)
+        .def("mint", &Token::mint)
+        .def("publish", &Token::publish)
+        .def("transfer", &Token::transfer)
+        .def("get_account_balance", get_account_balance1)
+        .def("get_account_balance", get_account_balance2);
+
+    implicitly_convertible<std::shared_ptr<ClientImp>, std::shared_ptr<Client>>();
 }
 
 #endif

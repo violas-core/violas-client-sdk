@@ -28,11 +28,29 @@ try:
     
     MICRO_LIBRA_COIN = 1000000
     
-    client.transfer(0, accounts[1].address , 1 * MICRO_LIBRA_COIN, True)
+    client.transfer(0, accounts[1].address , int(0.1 * MICRO_LIBRA_COIN), True)
+    client.transfer(0, accounts[2].address , int(0.1 * MICRO_LIBRA_COIN), True)
 
     print("account 1's balance is %f" % client.get_balance(1))
+
+    token = Token(client, accounts[1].address, "TEST", "../cppSdk/scripts")
+    print("Token name is %s" % token.name())
+
+    token.deploy( 1 )
+
+    token.publish( 1 )
+
+    token.mint( 1, accounts[1].address, 1 * MICRO_LIBRA_COIN)
+
+    balance = token.get_account_balance(1)
+    print("account 1's balance is %d" % balance)
+
+    token.publish( 2 )
+    
+    token.transfer(1, accounts[2].address, 1000)
+    print("account 1's balance is %d" % token.get_account_balance(2))
 
     print("Finished test job !")
 
 except BaseException as e:
-    print(e)
+    print("catch an execption : %s" % e)

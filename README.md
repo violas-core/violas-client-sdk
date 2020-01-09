@@ -34,7 +34,7 @@ const MAX_GAS_AMOUNT: u64 = 280_000;
 
 ```Rust
  pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
-        let mut max_iterations = 10;
+        let mut max_iterations = 100;
         ...
  }
 ```

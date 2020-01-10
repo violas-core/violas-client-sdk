@@ -576,6 +576,8 @@ BOOST_PYTHON_MODULE(violas)
     class_<Accounts>("Accounts")
         .def(vector_indexing_suite<Accounts>());
 
+    void (ClientImp::*compile1)(uint64_t, const string &, bool) = &ClientImp::compile;
+
     class_<ClientImp, std::shared_ptr<ClientImp>>("Client", init<string, uint16_t, string, string, bool, string, string>())
         .def("test_validator_connection", &ClientImp::test_validator_connection)
         .def("create_next_account", &ClientImp::create_next_account)
@@ -583,18 +585,23 @@ BOOST_PYTHON_MODULE(violas)
         .def("get_balance", (double (ClientImp::*)(uint64_t index)) & ClientImp::get_balance)
         .def("get_sequence_number", &ClientImp::get_sequence_number)
         .def("mint_coins", &ClientImp::mint_coins)
-        .def("transfer", &ClientImp::transfer_coins_int, ClientImp_transfer_overloads());
+        .def("transfer", &ClientImp::transfer_coins_int, ClientImp_transfer_overloads())
+        .def("compile", compile1)
+        .def("publish_module", &ClientImp::publish_module)
+        .def("execute_script", &ClientImp::execute_script)
+        .def("get_committed_txn_by_acc_seq", &ClientImp::get_committed_txn_by_acc_seq)
+        .def("get_txn_by_range", &ClientImp::get_txn_by_range);
 
     uint64_t (TokenImp::*get_account_balance1)(uint64_t) = &TokenImp::get_account_balance;
     uint64_t (TokenImp::*get_account_balance2)(uint256) = &TokenImp::get_account_balance;
 
     class_<TokenImp, std::shared_ptr<TokenImp>>("Token", init<client_ptr, uint256, string, string>())
-        .def("name", &Token::name)
-        .def("address", &Token::address)
-        .def("deploy", &Token::deploy)
-        .def("mint", &Token::mint)
-        .def("publish", &Token::publish)
-        .def("transfer", &Token::transfer)
+        .def("name", &TokenImp::name)
+        .def("address", &TokenImp::address)
+        .def("deploy", &TokenImp::deploy)
+        .def("mint", &TokenImp::mint)
+        .def("publish", &TokenImp::publish)
+        .def("transfer", &TokenImp::transfer)
         .def("get_account_balance", get_account_balance1)
         .def("get_account_balance", get_account_balance2);
 

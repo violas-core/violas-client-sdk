@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string_view>
 #include <assert.h>
+#include <cxxabi.h>
 #include "violas_sdk.hpp"
 
 using namespace std;
@@ -25,6 +26,13 @@ const std::string YELLOW("\033[1;33m");
 const std::string CYAN("\033[0;36m");
 const std::string MAGENTA("\033[0;35m");
 const std::string RESET("\033[0m");
+
+const char *demangle(const char *mangled_name)
+{
+    int status;
+
+    return abi::__cxa_demangle(mangled_name, 0, 0, &status);
+}
 
 int main(int argc, char *argv[])
 {
@@ -149,6 +157,12 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "catch an " << typeid(e).name() << " excpetion, '" << e.what() << "'\n";
+    }
+    catch (...)
+    {
+        std::cout << "caught a unknonw exception with type "
+                  << demangle(abi::__cxa_current_exception_type()->name())
+                  << std::endl;
     }
 
     clog.rdbuf(mylog);

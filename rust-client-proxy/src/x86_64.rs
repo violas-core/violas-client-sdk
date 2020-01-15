@@ -50,7 +50,7 @@ pub mod x86_64 {
     pub extern "C" fn libra_create_client_proxy(
         c_host: *const c_char,
         c_port: u16,
-        c_validator_set_file: *const c_char,
+        _c_validator_set_file: *const c_char,
         c_faucet_account_file: *const c_char,
         c_sync_on_wallet_recovery: bool,
         c_faucet_server: *const c_char,
@@ -59,8 +59,8 @@ pub mod x86_64 {
         let ret = panic::catch_unwind(|| {
             let host = unsafe { CStr::from_ptr(c_host).to_str().unwrap() };
             let port = c_port as u16;
-            let validator_set_file =
-                unsafe { CStr::from_ptr(c_validator_set_file).to_str().unwrap() };
+            //let validator_set_file =
+            //    unsafe { CStr::from_ptr(c_validator_set_file).to_str().unwrap() };
             let faucet_account_file =
                 unsafe { CStr::from_ptr(c_faucet_account_file).to_str().unwrap() };
             let sync_on_wallet_recovery = c_sync_on_wallet_recovery as bool;
@@ -74,11 +74,11 @@ pub mod x86_64 {
             ClientProxy::new(
                 host,
                 port,
-                validator_set_file,
                 faucet_account_file,
                 sync_on_wallet_recovery,
                 Some(faucet_server),
                 Some(mnemonic_file),
+                None,
             )
             .unwrap()
         })

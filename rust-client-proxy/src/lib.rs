@@ -52,7 +52,6 @@ mod tests {
 pub fn new_client_proxy() -> Result<ClientProxy, Box<dyn Error>> {
     let host = "localhost";
     let port: u16 = 8000;
-    let validator_set_file = "../../libra/scripts/cli/consensus_peers.config.toml";
     let faucet_account_file = "";
     let sync_on_wallet_recovery = false;
     let faucet_server = None;
@@ -62,11 +61,11 @@ pub fn new_client_proxy() -> Result<ClientProxy, Box<dyn Error>> {
     let client = ClientProxy::new(
         host,
         port,
-        validator_set_file,
         faucet_account_file,
         sync_on_wallet_recovery,
         faucet_server,
         mnemonic_file,
+        None,
     )?;
 
     Ok(client)

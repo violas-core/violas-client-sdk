@@ -155,11 +155,11 @@ bool test_violas_client()
     for (auto const &account : accounts)
     {
         COUT << "\n\tIndex : " << account.index
-            << "\n\tAddress : " << account.address
-            << "\n\tSequence : " << account.sequence_number
-            << "\n\tStatus : " << account.status
-            << "\n\tToken Balance : " << client->get_balance(account.index)
-            << endl;
+             << "\n\tAddress : " << account.address
+             << "\n\tSequence : " << account.sequence_number
+             << "\n\tStatus : " << account.status
+             << "\n\tToken Balance : " << client->get_balance(account.index)
+             << endl;
     }
 
     uint64_t chairman = 0;
@@ -187,8 +187,8 @@ bool test_violas_client()
     //                                         州长索引   SSO用户1        SSO用户2        minted稳定币数量   用户1        用户2         transferrd稳定币数量
     auto test_mint_stable_coion = [&](uint64_t governor, uint64_t sso1, uint64_t sso2, uint64_t vstake, uint64_t u1, uint64_t u2, uint64_t transerred_vstake) {
         COUT << "\n\n"
-            << format("州长(%d)为SSO(%d)和SSO(%d)铸造(%d)个稳定币(%d), 每个SSO转帐给用户(%d)和(%d)稳定币(%d)个", governor, sso1, sso2, vstake, governor, u1, u2, transerred_vstake)
-            << endl;
+             << format("州长(%d)为SSO(%d)和SSO(%d)铸造(%d)个稳定币(%d), 每个SSO转帐给用户(%d)和(%d)稳定币(%d)个", governor, sso1, sso2, vstake, governor, u1, u2, transerred_vstake)
+             << endl;
         //
         //   all scripts
         //
@@ -261,8 +261,8 @@ bool test_violas_client()
     test_mint_stable_coion(2, 3, 4, 2000, 5, 6, 200);
 
     COUT << "\n\n"
-        << "All balances of all accounts"
-        << endl;
+         << "All balances of all accounts"
+         << endl;
 
     auto balance_to_string = [](uint64_t value) -> string {
         if (is_valid_balance(value))
@@ -274,9 +274,9 @@ bool test_violas_client()
     for (auto &account : accounts)
     {
         COUT << "Account " << account.index << "'s balances ------ "
-            << "Token : " << client->get_balance(account.index) << ", "
-            << "VStake-1 : " << balance_to_string(get_violas_balance(account.index, accounts[1].address)) << ", "
-            << "VStake-2 : " << balance_to_string(get_violas_balance(account.index, accounts[2].address)) << endl;
+             << "Token : " << client->get_balance(account.index) << ", "
+             << "VStake-1 : " << balance_to_string(get_violas_balance(account.index, accounts[1].address)) << ", "
+             << "VStake-2 : " << balance_to_string(get_violas_balance(account.index, accounts[2].address)) << endl;
     }
 
     return true;
@@ -289,13 +289,13 @@ bool test_violas_token()
     cout << "running test vstake ...\n"
          << endl;
 
-    auto host = "52.151.2.66"; //"18.220.66.235";
+    auto host = "13.68.141.242"; //"18.220.66.235";
     uint16_t port = 40001;
 
     auto client = Client::create(host,
                                  port,
                                  "consensus_peers.config.toml",
-                                 "temp_faucet_keys",
+                                 "faucet_keys",
                                  false,
                                  "", //"faucet.testnet.libra.org", //libra testnet use this url to get test libra coin
                                  "mnemonic");
@@ -447,8 +447,8 @@ bool test_violas_token()
     auto all_txn_events = client->get_txn_by_range(100, 10, true);
     for (auto [txn, events] : all_txn_events)
     {
-        //cout << txn << endl;
-        //cout << events << endl;
+        cout << txn << endl;
+        cout << events << endl;
     }
 #endif
 

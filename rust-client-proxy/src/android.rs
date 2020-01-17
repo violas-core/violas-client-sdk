@@ -98,11 +98,11 @@ pub mod android {
             ClientProxy::new(
                 &host,
                 port,
-                &validator_set_file,
                 &faucet_account_file,
                 sync_on_wallet_recovery,
                 faucet_server,
                 mnemonic_file,
+                None,
             )
             .unwrap()
         })

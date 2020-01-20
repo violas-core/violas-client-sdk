@@ -31,17 +31,7 @@ class MainActivity : AppCompatActivity() {
         fab.setOnClickListener { view ->
 
             try {
-                //var sdcard = getExternalStorageDirectory()
-                var fileDir = getExternalFilesDir(null)
-
-                var client = Client(
-                    "125.39.5.57",
-                    40001.toUShort(),
-                    fileDir.toString() + "/mint.key",
-                    false,
-                    "",
-                    "mnenonic"
-                )
+                run_violas_sdk()
 
                 Snackbar.make(view, "Create client successfully ", Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show()
@@ -79,5 +69,22 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    fun run_violas_sdk()
+    {
+        //var sdcard = getExternalStorageDirectory()
+        var fileDir = getExternalFilesDir(null)
+
+        var client = Client(
+            "125.39.5.57",
+            40001.toUShort(),
+            fileDir.toString() + "/mint.key",
+            false,
+            "",
+            fileDir.toString() + "/mnenonic"
+        )
+
+        client.test_validator_connection()
     }
 }

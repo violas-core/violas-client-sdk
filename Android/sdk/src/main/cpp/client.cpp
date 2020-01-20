@@ -22,7 +22,7 @@ std::string jstringToString(JNIEnv *env, jstring str) {
     return t;
 }
 
-const std::string CLS_JNIEXCEPTION = "cn/wisenergy/pi/workflow/JNIException";
+const std::string CLS_JNIEXCEPTION = "java/lang/Exception";
 
 void ThrowJNIException(JNIEnv *env, const std::string &errorMsg) {
     jclass e_cls = env->FindClass(CLS_JNIEXCEPTION.c_str());
@@ -49,11 +49,8 @@ JNIEXPORT jlong JNICALL CLASS_METHOD(createNativeClient_0002dWAKwML8)
          jboolean syncWithWallet,
          jstring faucetServer,
          jstring mnemonic) {
-//    auto faucet = jstringToString(env, faucetKey);
-//
-//    ifstream ifs(faucet);
-//
-//    string key(istream_iterator<char>(ifs), istream_iterator<char>());
+
+    jlong nativeObj = 0;
 
     try {
         auto client = Violas::Client::create(jstringToString(env, host),
@@ -64,14 +61,31 @@ JNIEXPORT jlong JNICALL CLASS_METHOD(createNativeClient_0002dWAKwML8)
                                              jstringToString(env, faucetServer),
                                              jstringToString(env, mnemonic));
 
-        //Violas::client_ptr cli(client.release());
+        nativeObj = (jlong) new Violas::client_ptr(client);
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());
     }
 
 
-    return 0;
+    return nativeObj;
 }
 
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    native_test_validator_connection
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_native_1test_1validator_1connection
+        (JNIEnv *env, jobject, jlong nativeObj) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        client->test_validator_connection();
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
 }
+
+} // the end of extern "C"

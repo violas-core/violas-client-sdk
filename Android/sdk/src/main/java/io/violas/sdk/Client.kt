@@ -2,7 +2,7 @@ package io.violas.sdk
 
 class Client {
 
-    var nativeClient : Long = 0
+    var nativeClient: Long = 0
 
     constructor(
         host: String,
@@ -12,19 +12,13 @@ class Client {
         faucetServer: String,
         mnemonicFile: String
     ) {
-        nativeClient = createNativeClient(host, port, faucetKey, syncOnWallet, faucetServer, mnemonicFile)
+        nativeClient =
+            createNativeClient(host, port, faucetKey, syncOnWallet, faucetServer, mnemonicFile)
     }
 
-    external fun stringFromJNI(): String
-
-    external fun createNativeClient(
-        host: String,
-        port: UShort,
-        faucetKey: String,
-        syncOnWallet: Boolean,
-        faucetServer: String,
-        mnemonicFile: String
-    ): Long
+    public fun test_validator_connection(): Unit{
+        native_test_validator_connection(nativeClient)
+    }
 
     companion object {
 
@@ -33,4 +27,18 @@ class Client {
             System.loadLibrary("violas-sdk-lib")
         }
     }
+
+    //
+    //  native fun from violas-sdk-lib.so
+    //
+    private external fun createNativeClient(
+        host: String,
+        port: UShort,
+        faucetKey: String,
+        syncOnWallet: Boolean,
+        faucetServer: String,
+        mnemonicFile: String
+    ): Long
+
+    private external fun native_test_validator_connection(nativeClient: Long): Unit
 }

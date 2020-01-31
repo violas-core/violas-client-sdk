@@ -21,8 +21,7 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        client.cpp
-        ~/Projects/work/ViolasClientSdk/cppSdk/src/violas_sdk.cpp)
+        client.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -38,9 +37,13 @@ find_library( # Sets the name of the path variable.
         log)
 
 include_directories("../../../../../cppSdk/src/")
+include_directories(${CMAKE_SOURCE_DIR}/../../../../../cppSdk/src)
 
 add_library(c++fs STATIC IMPORTED)
 set_property(TARGET c++fs PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../cppSdk/lib/libc++fs-arm64v8a.a)
+
+add_library(cppSdk STATIC IMPORTED)
+set_property(TARGET cppSdk PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../cppSdk/lib/libcppSdk-arm64v8a.a)
 
 add_library(client_proxy STATIC IMPORTED)
 set_property(TARGET client_proxy PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../rust-client-proxy/target/aarch64-linux-android/release/libclient_proxy.a)
@@ -55,5 +58,6 @@ target_link_libraries( # Specifies the target library.
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib}
+        cppSdk
         c++fs
         client_proxy)

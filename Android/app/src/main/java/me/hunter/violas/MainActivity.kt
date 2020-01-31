@@ -1,6 +1,8 @@
 package me.hunter.violas
 
 import android.os.Bundle
+import android.os.Environment
+import android.os.Environment.getExternalStorageDirectory
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.findNavController
@@ -13,6 +15,7 @@ import com.google.android.material.navigation.NavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import android.view.Menu
+import io.violas.sdk.Client
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,8 +29,21 @@ class MainActivity : AppCompatActivity() {
 
         val fab: FloatingActionButton = findViewById(R.id.fab)
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
+
+            try {
+                run_violas_sdk()
+
+                Snackbar.make(view, "Create client successfully ", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show()
+            }
+            catch (e : Exception)
+            {
+                Snackbar.make(view, "failed with " + e.message, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show()
+            }
+
+
+
         }
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
@@ -53,5 +69,22 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    fun run_violas_sdk()
+    {
+        //var sdcard = getExternalStorageDirectory()
+        var fileDir = getExternalFilesDir(null)
+
+        var client = Client(
+            "125.39.5.57",
+            40001.toUShort(),
+            fileDir.toString() + "/mint.key",
+            false,
+            "",
+            fileDir.toString() + "/mnenonic"
+        )
+
+        client.test_validator_connection()
     }
 }

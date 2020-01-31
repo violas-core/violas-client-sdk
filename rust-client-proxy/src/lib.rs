@@ -21,7 +21,7 @@ pub(crate) mod violas_account;
 //
 
 //use client::client_proxy::*;
-use client::client_proxy::ClientProxy;
+use cli::client_proxy::ClientProxy;
 //use client::{client_proxy::ClientProxy, commands::*};
 use std::error::Error;
 use std::*;

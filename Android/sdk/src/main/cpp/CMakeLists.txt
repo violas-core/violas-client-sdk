@@ -37,6 +37,8 @@ find_library( # Sets the name of the path variable.
         # you want CMake to locate.
         log)
 
+include_directories("../../../../../cppSdk/src/")
+
 add_library(c++fs STATIC IMPORTED)
 set_property(TARGET c++fs PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../cppSdk/lib/libc++fs-arm64v8a.a)
 

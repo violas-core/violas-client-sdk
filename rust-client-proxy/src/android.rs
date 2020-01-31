@@ -6,7 +6,7 @@ pub mod android {
     //use std::os::raw::c_char;
     use std::*;
 
-    use client::client_proxy::ClientProxy;
+    use cli::client_proxy::ClientProxy;
     use jni::objects::{JClass, JString};
     use jni::sys::*;
     use jni::JNIEnv;

@@ -3,8 +3,8 @@
 pub mod x86_64 {
     use crate::{compiler_proxy, violas_account};
     use anyhow::{bail, format_err, Error};
-    use client::client_proxy::{AccountEntry, ClientProxy};
-    use client::AccountStatus;
+    use cli::client_proxy::{AccountEntry, ClientProxy};
+    use cli::AccountStatus;
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress, account_config::core_code_address,
     }; //ADDRESS_LENGTH access_path::AccessPath,
@@ -360,7 +360,7 @@ pub mod x86_64 {
         result: &mut IndexAndSeq,
     ) -> bool {
         let ret = panic::catch_unwind(
-            || -> Result<client::client_proxy::IndexAndSequence, Error> {
+            || -> Result<cli::client_proxy::IndexAndSequence, Error> {
                 // convert raw ptr to object client
                 let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
                 let receiver_address = AccountAddress::new(*receiver_addr);

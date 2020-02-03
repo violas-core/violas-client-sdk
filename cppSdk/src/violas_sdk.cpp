@@ -101,7 +101,7 @@ public:
             faucet_account_file.data(), sync_on_wallet_recovery,
             faucet_server.data(), mnemonic_file.data());
         if (raw_client_proxy == nullptr)
-            throw runtime_error("failed to create native rust client proxy");
+            throw runtime_error(format("failed to create native rust client proxy, error : %s", get_last_error().c_str()));
 
         CLOG << "\ncreate violas client with "
              << "\n\thost = " << host

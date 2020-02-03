@@ -56,7 +56,7 @@ pub mod x86_64 {
         c_faucet_server: *const c_char,
         c_mnemonic_file: *const c_char,
     ) -> u64 {
-        let ret = panic::catch_unwind(|| {
+        let ret = panic::catch_unwind(|| -> Result<ClientProxy, Error> {
             let host = unsafe { CStr::from_ptr(c_host).to_str().unwrap() };
             let port = c_port as u16;
             //let validator_set_file =
@@ -80,22 +80,33 @@ pub mod x86_64 {
                 Some(mnemonic_file),
                 None,
             )
-            .unwrap()
-        })
-        .ok();
+        });
 
         //
         //  Check the result and then return a raw pointer
         //
-        let raw_ptr = match ret {
-            Some(value) => Box::into_raw(Box::new(value)) as u64,
-            None => {
-                set_last_error(format_err!("failed to new client proxy "));
-                0
-            }
-        };
+        // let raw_ptr = match ret.is_ok() {
+        //     Some(value) => Box::into_raw(Box::new(value)) as u64,
+        //     None => {
+        //         set_last_error(format_err!("failed to new client proxy "));
+        //         0
+        //     }
+        // };
 
-        raw_ptr
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(value) => Box::into_raw(Box::new(value)) as u64,
+                Err(err) => {
+                    set_last_error(err);
+                    0
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'libra_create_client_proxy' !'"
+            ));
+            0
+        }
     }
     ///
     /// Destory the raw ClientProxy pointer
@@ -359,27 +370,25 @@ pub mod x86_64 {
         is_blocking: bool,
         result: &mut IndexAndSeq,
     ) -> bool {
-        let ret = panic::catch_unwind(
-            || -> Result<cli::client_proxy::IndexAndSequence, Error> {
-                // convert raw ptr to object client
-                let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-                let receiver_address = AccountAddress::new(*receiver_addr);
-                client.transfer_coins_int(
-                    sender_account_ref_id,
-                    &receiver_address,
-                    micro_coins,
-                    match gas_unit_price {
-                        0 => None,
-                        _ => Some(gas_unit_price),
-                    },
-                    match max_gas_amount {
-                        0 => None,
-                        _ => Some(max_gas_amount),
-                    },
-                    is_blocking,
-                )
-            },
-        );
+        let ret = panic::catch_unwind(|| -> Result<cli::client_proxy::IndexAndSequence, Error> {
+            // convert raw ptr to object client
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let receiver_address = AccountAddress::new(*receiver_addr);
+            client.transfer_coins_int(
+                sender_account_ref_id,
+                &receiver_address,
+                micro_coins,
+                match gas_unit_price {
+                    0 => None,
+                    _ => Some(gas_unit_price),
+                },
+                match max_gas_amount {
+                    0 => None,
+                    _ => Some(max_gas_amount),
+                },
+                is_blocking,
+            )
+        });
 
         if ret.is_ok() {
             match ret.unwrap() {

@@ -66,5 +66,6 @@
         "variant": "cpp",
         "bit": "cpp"
     },
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "cmake.configureOnOpen": false
 }

@@ -390,7 +390,7 @@ public:
             (uint64_t)raw_client_proxy, addr.c_str(), path_addr.c_str(), &result);
         if (!ret)
             throw runtime_error(
-                format("failed to get get resource for account address %d ", addr.c_str()) + EXCEPTION_AT);
+                format("failed to get get resource for account address %s ", addr.c_str()) + EXCEPTION_AT);
 
         return result;
     }

@@ -67,5 +67,6 @@
         "bit": "cpp"
     },
     "git.ignoreLimitWarning": true,
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "python.pythonPath": "python3"
 }

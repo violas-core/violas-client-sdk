@@ -820,8 +820,8 @@ pub mod x86_64 {
                 }
                 Err(err) => {
                     set_last_error(err);
-                    false
-                }
+                    true
+                }                
             }
         } else {
             set_last_error(format_err!("panic at libra_get_account_resource()"));

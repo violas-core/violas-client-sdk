@@ -16,8 +16,12 @@ class Client {
             createNativeClient(host, port, faucetKey, syncOnWallet, faucetServer, mnemonicFile)
     }
 
-    public fun test_validator_connection(): Unit{
+    fun test_validator_connection(): Unit{
         native_test_validator_connection(nativeClient)
+    }
+
+    fun createNextAccount() : Pair<UInt, ByteArray> {
+        return nativeCreateNextAccount(nativeClient)
     }
 
     companion object {
@@ -41,4 +45,6 @@ class Client {
     ): Long
 
     private external fun native_test_validator_connection(nativeClient: Long): Unit
+
+    private external fun nativeCreateNextAccount(nativeClient: Long) : Pair<UInt, ByteArray>
 }

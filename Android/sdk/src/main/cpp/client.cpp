@@ -88,5 +88,22 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_Client_native_1test_1validator_1connec
     }
 }
 
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativeCreateNextAccount
+ * Signature: ()Lkotlin/Pair;
+ */
+JNIEXPORT jobject JNICALL Java_io_violas_sdk_Client_nativeCreateNextAccount
+        (JNIEnv * env, jobject, jlong nativeObj)
+{
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        auto account_info = client->create_next_account(true);
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
 } // the end of extern "C"
 

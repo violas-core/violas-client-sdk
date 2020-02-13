@@ -3,6 +3,7 @@ package me.hunter.violas
 import android.os.Bundle
 import android.os.Environment
 import android.os.Environment.getExternalStorageDirectory
+import android.util.Log
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.findNavController
@@ -86,5 +87,15 @@ class MainActivity : AppCompatActivity() {
         )
 
         client.test_validator_connection()
+
+        var account0 = client.createNextAccount()
+
+        var account1 = client.createNextAccount()
+
+        for ( account in client.getAllAccounts() )
+        {
+            Log.v("Violas", "index=" + account.index)
+        }
+
     }
 }

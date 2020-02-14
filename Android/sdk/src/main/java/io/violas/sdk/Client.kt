@@ -1,6 +1,15 @@
 package io.violas.sdk
 
 class Client {
+    companion object {
+
+        // Used to load the 'native-lib' library on application startup.
+        init {
+            System.loadLibrary("violas-sdk-lib")
+        }
+    }
+
+    val MICRO_LIBRO_COIN: ULong = 1000000.toULong()
 
     var nativeClient: Long = 0
 
@@ -45,27 +54,55 @@ class Client {
         return nativeGetAllAccounts(nativeClient);
     }
 
-    fun getBalance( index : ULong) : Double
-    {
+    fun getBalance(index: ULong): Double {
         return nativeGetBalance(nativeClient, index)
     }
 
-    fun getBalance(address : ByteArray) : Double
-    {
+    fun getBalance(address: ByteArray): Double {
         return nativeGetBalance(nativeClient, address)
     }
 
-    fun mint(index: ULong, amount: ULong) : ULong
-    {
+    fun mint(index: ULong, amount: ULong): Unit {
         return nativeMint(nativeClient, index, amount, true)
     }
-    companion object {
 
-        // Used to load the 'native-lib' library on application startup.
-        init {
-            System.loadLibrary("violas-sdk-lib")
-        }
+    fun transfer(
+        accountIndex: ULong,
+        receiver: ByteArray,
+        amount: ULong,
+        gaxUnitPrice: ULong = 0.toULong(),
+        maxGasAccount: ULong = 0.toULong(),
+        isBlocking: Boolean = true
+    ): Unit {
+        return nativeTransfer(
+            nativeClient,
+            accountIndex,
+            receiver,
+            amount,
+            gaxUnitPrice,
+            maxGasAccount,
+            isBlocking
+        )
     }
+
+    fun Compile(
+        nativeClient: Long,
+        accountIndex: ULong,
+        scriptFile: String,
+        isModule: Boolean
+    ): Unit {
+        return nativeCompile(nativeClient, accountIndex, scriptFile, isModule)
+    }
+
+    fun Compile(
+        nativeClient: Long,
+        address: ByteArray,
+        scriptFile: String,
+        isModule: Boolean
+    ): Unit {
+        return nativeCompile(nativeClient, address, scriptFile, isModule)
+    }
+
 
     //
     //  native fun from violas-sdk-lib.so
@@ -89,5 +126,34 @@ class Client {
 
     private external fun nativeGetBalance(nativeClient: Long, address: ByteArray): Double
 
-    private external fun nativeMint(nativeClient: Long, index : ULong, amount : ULong, is_blocking : Boolean) : ULong
+    private external fun nativeMint(
+        nativeClient: Long,
+        accountIndex: ULong,
+        amount: ULong,
+        is_blocking: Boolean
+    ): Unit
+
+    private external fun nativeTransfer(
+        nativeClient: Long,
+        accountIndex: ULong,
+        receiver: ByteArray,
+        amount: ULong,
+        gaxUnitPrice: ULong,
+        maxGasAccount: ULong,
+        block: Boolean
+    ): Unit
+
+    private external fun nativeCompile(
+        nativeClient: Long,
+        accountIndex: ULong,
+        scriptFile: String,
+        isModule: Boolean
+    ): Unit
+
+    private external fun nativeCompile(
+        nativeClient: Long,
+        address: ByteArray,
+        scriptFile: String,
+        isModule: Boolean
+    ): Unit
 }

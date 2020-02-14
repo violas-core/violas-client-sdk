@@ -11,7 +11,7 @@
 
 using namespace std;
 
-std::string jstringToString(JNIEnv *env, jstring str) {
+std::string to_string(JNIEnv *env, jstring str) {
 
     string t;
     const char *chr = env->GetStringUTFChars(str, 0);
@@ -21,6 +21,7 @@ std::string jstringToString(JNIEnv *env, jstring str) {
 
     return t;
 }
+
 
 const std::string CLS_JNIEXCEPTION = "java/lang/Exception";
 
@@ -32,6 +33,20 @@ void ThrowJNIException(JNIEnv *env, const std::string &errorMsg) {
     }
 
     env->ThrowNew(e_cls, errorMsg.c_str());
+}
+
+Violas::uint256 to_address(JNIEnv *env, jbyteArray _address) {
+    Violas::uint256 address;
+
+    jbyte *buffer = env->GetByteArrayElements(_address, 0);
+    size_t length = env->GetArrayLength(_address);
+
+    if (length != address.size())
+        ThrowJNIException(env, "the size of address is not 32.");
+
+    copy(buffer, buffer + length, begin(address));
+
+    return address;
 }
 
 extern "C"
@@ -53,13 +68,13 @@ JNIEXPORT jlong JNICALL CLASS_METHOD(createNativeClient_0002dWAKwML8)
     jlong nativeObj = 0;
 
     try {
-        auto client = Violas::Client::create(jstringToString(env, host),
+        auto client = Violas::Client::create(to_string(env, host),
                                              (unsigned short) port,
                                              "",
-                                             jstringToString(env, faucetKey),
+                                             to_string(env, faucetKey),
                                              syncWithWallet,
-                                             jstringToString(env, faucetServer),
-                                             jstringToString(env, mnemonic));
+                                             to_string(env, faucetServer),
+                                             to_string(env, mnemonic));
 
         nativeObj = (jlong) new Violas::client_ptr(client);
     }
@@ -136,11 +151,6 @@ JNIEXPORT jobject JNICALL CLASS_METHOD(nativeGetAllAccounts)
 
         auto accounts = client->get_all_accounts();
 
-//    jclass arrayListClass = env->FindClass("kotlin/Array");  //env->FindClass("javafx/util/Pair");
-//    env->GetMethodID(arrayListClass, "<init>", "()V");
-//    jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
-//                                                 "(Ljava/lang/Object;Ljava/lang/Object;)V");
-
         jclass accountClass = env->FindClass("io/violas/sdk/Client$Account");
         jmethodID init = env->GetMethodID(accountClass, "<init>", "()V");
         jmethodID constructAccount = env->GetMethodID(accountClass, "<init>", "(J[BJJ)V");
@@ -175,13 +185,14 @@ JNIEXPORT jobject JNICALL CLASS_METHOD(nativeGetAllAccounts)
  * Method:    nativeGetBalance_0002d5AcIvR4
  * Signature: (JJ)D
  */
-JNIEXPORT jdouble JNICALL Java_io_violas_sdk_Client_nativeGetBalance_0002d5AcIvR4
-        (JNIEnv * env, jobject obj, jlong, jlong)
-{
+JNIEXPORT jdouble JNICALL CLASS_METHOD(nativeGetBalance_0002d5AcIvR4)
+        (JNIEnv *env, jobject obj, jlong nativeObj, jlong index) {
     uint64_t balance = 0;
 
     try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
+        balance = client->get_balance((uint64_t) index);
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());
@@ -196,12 +207,22 @@ JNIEXPORT jdouble JNICALL Java_io_violas_sdk_Client_nativeGetBalance_0002d5AcIvR
  * Signature: (J[B)D
  */
 JNIEXPORT jdouble JNICALL Java_io_violas_sdk_Client_nativeGetBalance
-        (JNIEnv * env, jobject obj, jlong, jbyteArray)
-{
+        (JNIEnv *env, jobject obj, jlong nativeObj, jbyteArray _address) {
     uint64_t balance = 0;
 
     try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+        Violas::uint256 address;
 
+        jbyte *buffer = env->GetByteArrayElements(_address, 0);
+        size_t length = env->GetArrayLength(_address);
+
+        if (length != address.size())
+            ThrowJNIException(env, "the size of address is not 32.");
+
+        copy(buffer, buffer + length, begin(address));
+
+        balance = client->get_balance(address);
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());
@@ -213,13 +234,88 @@ JNIEXPORT jdouble JNICALL Java_io_violas_sdk_Client_nativeGetBalance
 /*
  * Class:     io_violas_sdk_Client
  * Method:    nativeMint_0002dqLd8ryo
- * Signature: (JJJZ)J
+ * Signature: (JJJZ)V
  */
-JNIEXPORT jlong JNICALL Java_io_violas_sdk_Client_nativeMint_0002dqLd8ryo
-        (JNIEnv * env, jobject obj, jlong, jlong, jlong, jboolean)
-{
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeMint_0002dqLd8ryo
+        (JNIEnv *env, jobject obj, jlong nativeObj, jlong index, jlong amount, jboolean block) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
+        client->mint_coins(index, amount, block);
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
 }
 
+
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativeTransfer_0002d3iaSxE4
+ * Signature: (JJ[BJJJZ)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeTransfer_0002d3iaSxE4
+        (JNIEnv *env, jobject obj, jlong nativeObj, jlong accountIndex, jbyteArray receiver,
+         jlong amount,
+         jlong gas_unit_price, jlong max_gas_amount, jboolean is_blocking) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+//        Violas::uint256 address;
+//
+//        jbyte *buffer = env->GetByteArrayElements(receiver, 0);
+//        size_t length = env->GetArrayLength(receiver);
+//
+//        if (length != address.size())
+//            ThrowJNIException(env, "the size of address is not 32.");
+//
+//        copy(buffer, buffer + length, begin(address));
+
+        client->transfer_coins_int(accountIndex, to_address(env, receiver),
+                                   amount, gas_unit_price, max_gas_amount,
+                                   is_blocking);
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
+
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativeCompile_0002d7OnNVsw
+ * Signature: (JJLjava/lang/String;Z)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeCompile_0002d7OnNVsw
+        (JNIEnv * env, jobject, jlong nativeObj, jlong accountIndex, jstring scriptFile, jboolean is_module) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        client->compile(accountIndex,
+                        to_string(env, scriptFile),
+                        is_module);
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
+
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativeCompile
+ * Signature: (J[BLjava/lang/String;Z)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeCompile
+        (JNIEnv *env, jobject obj, jlong nativeObj, jbyteArray address, jstring scriptFile,
+         jboolean is_module) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        client->compile(to_address(env, address),
+                        to_string(env, scriptFile),
+                        is_module);
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
 } // the end of extern "C"
 

@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity() {
         var client = Client(
             "125.39.5.57",
             40001.toUShort(),
-            fileDir.toString() + "/mint.key",
+            fileDir.toString() + "/mint_tianjin.key",
             false,
             "",
             fileDir.toString() + "/mnenonic"
@@ -97,5 +97,22 @@ class MainActivity : AppCompatActivity() {
             Log.v("Violas", "index=" + account.index)
         }
 
+        client.mint(0.toULong(), 100.toULong())
+
+        var balance = client.getBalance(0.toULong())
+
+        Log.v("Violas", "the account 0's balance = " + balance)
+
+        client.mint(1.toULong(), 50.toULong())
+
+        balance = client.getBalance(account1.second)
+
+        Log.v("Violas", "the account 0's balance = " + balance)
+
+        client.transfer(0.toULong(), account1.second, 1.toULong() * client.MICRO_LIBRO_COIN)
+
+        balance = client.getBalance(account1.second)
+
+        Log.v("Violas", "the account 0's balance = " + balance)
     }
 }

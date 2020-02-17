@@ -36,13 +36,10 @@ class MainActivity : AppCompatActivity() {
 
                 Snackbar.make(view, "Create client successfully ", Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show()
-            }
-            catch (e : Exception)
-            {
+            } catch (e: Exception) {
                 Snackbar.make(view, "failed with " + e.message, Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show()
             }
-
 
 
         }
@@ -72,15 +69,16 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
-    fun run_violas_sdk()
-    {
+    fun run_violas_sdk() {
         //var sdcard = getExternalStorageDirectory()
         var fileDir = getExternalFilesDir(null)
+        var cacheDir = getExternalCacheDir()
+        Log.v("Violas", "the cache dir = " + cacheDir)
 
         var client = Client(
-            "125.39.5.57",
+            "18.220.66.235",
             40001.toUShort(),
-            fileDir.toString() + "/mint_tianjin.key",
+            fileDir.toString() + "/mint_test.key",
             false,
             "",
             fileDir.toString() + "/mnenonic"
@@ -92,8 +90,7 @@ class MainActivity : AppCompatActivity() {
 
         var account1 = client.createNextAccount()
 
-        for ( account in client.getAllAccounts() )
-        {
+        for (account in client.getAllAccounts()) {
             Log.v("Violas", "index=" + account.index)
         }
 
@@ -114,5 +111,12 @@ class MainActivity : AppCompatActivity() {
         balance = client.getBalance(account1.second)
 
         Log.v("Violas", "the account 0's balance = " + balance)
+
+        client.compile(
+            0.toULong(),
+            fileDir.toString() + "/scripts/token.mvir",
+            true,
+            cacheDir.toString()
+        )
     }
 }

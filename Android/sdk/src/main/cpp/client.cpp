@@ -4,12 +4,14 @@
 #include <jni.h>
 #include <string>
 #include <fstream>
+#include <filesystem>
 #include <violas_sdk.hpp>
 #include "client.h"
 
 #define CLASS_METHOD(x) Java_io_violas_sdk_Client_##x
 
 using namespace std;
+namespace fs = filesystem;
 
 std::string to_string(JNIEnv *env, jstring str) {
 
@@ -281,17 +283,18 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeTransfer_0002d3iaSxE4
 
 /*
  * Class:     io_violas_sdk_Client
- * Method:    nativeCompile_0002d7OnNVsw
- * Signature: (JJLjava/lang/String;Z)V
+ * Method:    nativeCompile_0002dAlou_RY
+ * Signature: (JJLjava/lang/String;ZLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeCompile_0002d7OnNVsw
-        (JNIEnv * env, jobject, jlong nativeObj, jlong accountIndex, jstring scriptFile, jboolean is_module) {
+JNIEXPORT void JNICALL CLASS_METHOD(nativeCompile_0002dAlou_1RY)
+        (JNIEnv *env, jobject, jlong nativeObj,
+         jlong accountIndex, jstring scriptFile, jboolean is_module, jstring temp_dir) {
     try {
         Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
         client->compile(accountIndex,
                         to_string(env, scriptFile),
-                        is_module);
+                        is_module, to_string(env, temp_dir));
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());
@@ -301,17 +304,18 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeCompile_0002d7OnNVsw
 /*
  * Class:     io_violas_sdk_Client
  * Method:    nativeCompile
- * Signature: (J[BLjava/lang/String;Z)V
+ * Signature: (J[BLjava/lang/String;ZLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeCompile
-        (JNIEnv *env, jobject obj, jlong nativeObj, jbyteArray address, jstring scriptFile,
-         jboolean is_module) {
+        (JNIEnv *env, jobject obj, jlong nativeObj,
+         jbyteArray address, jstring scriptFile,
+         jboolean is_module, jstring tempDir) {
     try {
         Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
         client->compile(to_address(env, address),
                         to_string(env, scriptFile),
-                        is_module);
+                        is_module, to_string(env, tempDir));
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());

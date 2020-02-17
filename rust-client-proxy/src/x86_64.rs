@@ -11,7 +11,7 @@ pub mod x86_64 {
     use std::cell::RefCell;
     use std::ffi::{CStr, CString};
     use std::os::raw::{c_char, c_uchar};
-    use std::{collections::BTreeMap, convert::TryFrom, io::Write, result::Result, *};
+    use std::{collections::BTreeMap, convert::TryFrom, io::Write, path::Path, result::Result, *};
     use tempdir::TempDir;
     use transaction_builder::get_transaction_name;
     thread_local! {
@@ -412,7 +412,7 @@ pub mod x86_64 {
             ));
             false
         }
-    }
+    }   
 
     #[no_mangle]
     pub extern "C" fn libra_compile(
@@ -420,6 +420,7 @@ pub mod x86_64 {
         account_index_or_addr: *const c_char,
         script_path: *const c_char,
         is_module: bool,
+        _temp_path: *const c_char,
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             // convert raw ptr to object client
@@ -428,43 +429,57 @@ pub mod x86_64 {
                 CStr::from_ptr(account_index_or_addr).to_str().unwrap()
             })?;
             let file_path = unsafe { CStr::from_ptr(script_path).to_str().unwrap().to_string() };
+            let temp_path = unsafe { CStr::from_ptr(_temp_path).to_str().unwrap().to_string() };
             // replace sender tag with local address
-            let temp_dir = TempDir::new("")?; //env::temp_dir();
-            let tmp_source_path = temp_dir.path().join("temp.mvir");
-            let mut tmp_source_file = fs::File::create(tmp_source_path.clone())?;
-            let mut code = fs::read_to_string(file_path.clone())?;
-            code = code.replace("{{sender}}", &format!("0x{}", address));
-            writeln!(tmp_source_file, "{}", code)?;
-            //
-            // handle dependencies
-            //
-            let deps_path = handle_dependencies(
-                client,
-                address.to_string(),
-                tmp_source_path.clone(),
-                is_module,
-            )?;
-            //
-            // compile the source code
-            //
-            let args = compiler_proxy::Args {
-                module_input: is_module,
-                address: Some(address.to_string()), //
-                no_stdlib: false,
-                no_verify: false,
-                source_path: tmp_source_path.clone(),
-                list_dependencies: false,
-                deps_path: deps_path, //Option(String::from_str(dependencies_path.to_str())),
-                output_source_maps: false,
+
+            let compile = |temp_dir: &Path| -> Result<(), Error> {
+                let temp_source_path = temp_dir.join("temp.mvir");
+                let mut temp_source_file = fs::File::create(temp_source_path.clone())?;
+                let mut code = fs::read_to_string(file_path.clone())?;
+                code = code.replace("{{sender}}", &format!("0x{}", address));
+                writeln!(temp_source_file, "{}", code)?;
+
+                //
+                // handle dependencies
+                //
+                let deps_path = handle_dependencies(
+                    client,
+                    address.to_string(),
+                    temp_source_path.clone(),
+                    is_module,
+                )?;
+                //
+                // compile the source code
+                //
+                let args = compiler_proxy::Args {
+                    module_input: is_module,
+                    address: Some(address.to_string()), //
+                    no_stdlib: false,
+                    no_verify: false,
+                    source_path: temp_source_path.clone(),
+                    list_dependencies: false,
+                    deps_path: deps_path, //Option(String::from_str(dependencies_path.to_str())),
+                    output_source_maps: false,
+                };
+                compiler_proxy::compile(args)?;
+
+                let output_path = path::PathBuf::from(file_path);
+                fs::copy(
+                    temp_source_path.with_extension("mv"),
+                    output_path.with_extension("mv"),
+                )?;
+
+                Ok(())
             };
-            compiler_proxy::compile(args)?;
 
-            let output_path = path::PathBuf::from(file_path);
-            fs::copy(
-                tmp_source_path.with_extension("mv"),
-                output_path.with_extension("mv"),
-            )?;
-
+            if temp_path == "" {
+                let tempDir = TempDir::new("")?;
+                compile(tempDir.path())?;
+            } else {
+                let tempDir = Path::new(&temp_path);
+                compile(tempDir)?;
+            };
+            
             Ok(())
         });
 
@@ -821,7 +836,7 @@ pub mod x86_64 {
                 Err(err) => {
                     set_last_error(err);
                     true
-                }                
+                }
             }
         } else {
             set_last_error(format_err!("panic at libra_get_account_resource()"));

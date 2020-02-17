@@ -85,22 +85,22 @@ class Client {
         )
     }
 
-    fun Compile(
-        nativeClient: Long,
+    fun compile(
         accountIndex: ULong,
         scriptFile: String,
-        isModule: Boolean
+        isModule: Boolean,
+        tempDir: String = ""
     ): Unit {
-        return nativeCompile(nativeClient, accountIndex, scriptFile, isModule)
+        return nativeCompile(nativeClient, accountIndex, scriptFile, isModule, tempDir)
     }
 
-    fun Compile(
-        nativeClient: Long,
+    fun compile(
         address: ByteArray,
         scriptFile: String,
-        isModule: Boolean
+        isModule: Boolean,
+        tempDir: String = ""
     ): Unit {
-        return nativeCompile(nativeClient, address, scriptFile, isModule)
+        return nativeCompile(nativeClient, address, scriptFile, isModule, tempDir)
     }
 
 
@@ -147,13 +147,15 @@ class Client {
         nativeClient: Long,
         accountIndex: ULong,
         scriptFile: String,
-        isModule: Boolean
+        isModule: Boolean,
+        tempDir: String
     ): Unit
 
     private external fun nativeCompile(
         nativeClient: Long,
         address: ByteArray,
         scriptFile: String,
-        isModule: Boolean
+        isModule: Boolean,
+        tempDir: String
     ): Unit
 }

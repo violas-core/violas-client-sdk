@@ -56,7 +56,7 @@ extern "C"
     void libra_free_all_accounts_buf(Accounts accounts);
 
     /// Get the latest sequence number from validator for the account specified.
-    bool libra_get_balance(uint64_t raw_ptr, const char* account_index_or_addr, double *result);
+    bool libra_get_balance(uint64_t raw_ptr, const char *account_index_or_addr, double *result);
 
     /// Get the latest sequence number from validator for the account specified.
     uint64_t libra_get_sequence_number(uint64_t raw_ptr, uint64_t index);
@@ -80,7 +80,8 @@ extern "C"
         bool is_blocking,
         _index_sequence *result);
 
-    bool libra_compile(uint64_t raw_ptr, const char *account_index_or_addr, const char *script_file_path, bool is_module);
+    bool libra_compile(uint64_t raw_ptr, const char *account_index_or_addr, const char *script_file_path, bool is_module,
+                       const char *temp_dir);
 
     bool libra_publish_module(uint64_t raw_ptr, uint64_t account_index, const char *module_file);
 

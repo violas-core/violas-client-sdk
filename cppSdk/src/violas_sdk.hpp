@@ -5,10 +5,12 @@
 #include <array>
 #include <vector>
 #include <iostream>
+
 //
 //  log
 //
-std::ostream &log(std::ostream &ost, const char *flag, const char *file, int line, const char *func);
+std::ostream &
+log(std::ostream &ost, const char *flag, const char *file, int line, const char *func);
 
 #define COUT log(cout, "[ INFO  ] ", __FILE__, __LINE__, __func__)
 #define CLOG log(clog, "[ LOG   ] ", __FILE__, __LINE__, __func__)
@@ -32,9 +34,11 @@ namespace Violas
 using uint256 = std::array<uint8_t, 32>;
 
 std::ostream &operator<<(std::ostream &os, const uint256 &value);
+
 std::ostream &operator>>(std::ostream &os, const uint256 &value);
 
 std::string uint256_to_string(const uint256 &address);
+
 uint256 uint256_from_string(const std::string &str_addr);
 
 const uint64_t MICRO_LIBRO_COIN = 1000000;
@@ -68,7 +72,10 @@ public:
         uint64_t sequence_number;
         int64_t status;
 
-        bool operator==(const Account &r) const { return index == r.index && address == r.address; }
+        bool operator==(const Account &r) const
+        {
+            return index == r.index && address == r.address;
+        }
     };
 
     virtual std::vector<Account> get_all_accounts() = 0;
@@ -92,25 +99,39 @@ public:
                        uint64_t max_gas_amount = 0,    // set the max gas account or 0
                        bool is_blocking = true) = 0;   // true for sync, fasle for async
 
-    virtual void compile(uint64_t account_index, const std::string &source_file, bool is_module = false) = 0;
-    virtual void compile(uint256 account_address, const std::string &source_file, bool is_module = false) = 0;
+    virtual void
+    compile(uint64_t account_index,
+            const std::string &source_file,
+            bool is_module = false,
+            const std::string &temp_dir = "") = 0;
+
+    virtual void
+    compile(uint256 account_address,
+            const std::string &source_file,
+            bool is_module = false,
+            const std::string &temp_dir = "") = 0;
 
     virtual void publish_module(uint64_t account_index, const std::string &module_file) = 0;
 
-    virtual void execute_script(uint64_t account_index, const std::string &script_file, const std::vector<std::string> &script_args) = 0;
+    virtual void execute_script(uint64_t account_index, const std::string &script_file,
+                                const std::vector<std::string> &script_args) = 0;
 
     virtual std::pair<std::string, std::string>
     get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
 
     virtual std::vector<std::pair<std::string, std::string>>
     get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) = 0;
+
     //
     //  get unsigned int 64 resource of a account
     //  account_index : the index of account
     //  res_path : the path of resouce, usually the format is address.module.struct
     //
-    virtual uint64_t get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) = 0;
-    virtual uint64_t get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr) = 0;
+    virtual uint64_t
+    get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) = 0;
+
+    virtual uint64_t
+    get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr) = 0;
 };
 
 using client_ptr = std::shared_ptr<Client>;
@@ -135,9 +156,11 @@ public:
 
     virtual void mint(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
 
-    virtual void transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
+    virtual void
+    transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
 
     virtual uint64_t get_account_balance(uint64_t index) = 0;
+
     virtual uint64_t get_account_balance(uint256 addr) = 0;
 };
 

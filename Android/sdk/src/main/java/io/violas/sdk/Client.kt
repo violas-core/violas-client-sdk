@@ -1,5 +1,7 @@
 package io.violas.sdk
 
+import android.util.Log
+
 class Client {
     companion object {
 

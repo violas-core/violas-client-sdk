@@ -6,12 +6,13 @@ pub mod x86_64 {
     use cli::client_proxy::{AccountEntry, ClientProxy};
     use cli::AccountStatus;
     use libra_types::{
-        access_path::AccessPath, account_address::AccountAddress, account_config::core_code_address,
+        access_path::AccessPath, account_address::AccountAddress,
+        account_config::core_code_address, account_state::AccountState,
     }; //ADDRESS_LENGTH access_path::AccessPath,
     use std::cell::RefCell;
     use std::ffi::{CStr, CString};
     use std::os::raw::{c_char, c_uchar};
-    use std::{collections::BTreeMap, convert::TryFrom, io::Write, path::Path, result::Result, *};
+    use std::{convert::TryFrom, io::Write, path::Path, result::Result, *};
     use tempdir::TempDir;
     use transaction_builder::get_transaction_name;
     thread_local! {
@@ -412,7 +413,7 @@ pub mod x86_64 {
             ));
             false
         }
-    }   
+    }
 
     #[no_mangle]
     pub extern "C" fn libra_compile(
@@ -479,7 +480,6 @@ pub mod x86_64 {
                 let tempDir = Path::new(&temp_path);
                 compile(tempDir)?;
             };
-            
             Ok(())
         });
 
@@ -529,8 +529,9 @@ pub mod x86_64 {
         for path in paths {
             if path.address != core_code_address() {
                 if let (Some(blob), _) = client.client.get_account_blob(path.address)? {
-                    let map = BTreeMap::<Vec<u8>, Vec<u8>>::try_from(&blob)?;
-                    if let Some(code) = map.get(&path.path) {
+                    let account_state = AccountState::try_from(&blob)?;
+
+                    if let Some(code) = account_state.get(&path.path) {
                         dependencies.push(code.clone());
                     }
                 }
@@ -808,7 +809,7 @@ pub mod x86_64 {
             })?;
 
             if let (Some(blob), _) = client.client.get_account_blob(address)? {
-                let map = BTreeMap::<Vec<u8>, Vec<u8>>::try_from(&blob)?;
+                let account_state = AccountState::try_from(&blob)?;
                 // debugging
                 // for (movie, review) in &map {
                 //     println!("{:?}: \"{:?}\"", movie, review);
@@ -817,7 +818,7 @@ pub mod x86_64 {
                     unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
                 let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
-                let ar = violas_account::ViolasAccountResource::make_from(&addr, &map)?;
+                let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
 
                 return Ok(ar.balance);
             }

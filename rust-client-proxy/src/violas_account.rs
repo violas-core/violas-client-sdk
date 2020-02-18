@@ -4,14 +4,14 @@ use libra_types::{
     access_path::{AccessPath, Accesses},
     account_address::AccountAddress,
     //account_config,
-    //account_state_blob::AccountStateBlob,
+    account_state::AccountState,
     //byte_array::ByteArray,
     //event::EventHandle,
     identifier::{IdentStr, Identifier},
     language_storage::StructTag,
 };
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, result}; //convert::TryInto,
+use std::{result}; //convert::TryInto,
 
 lazy_static! {
     //static ref COIN_MODULE_NAME: Identifier = Identifier::new("DToken").unwrap();
@@ -67,10 +67,10 @@ impl ViolasAccountResource {
     /// Given an account map (typically from storage) retrieves the Account resource associated.
     pub fn make_from(
         path_addr: &AccountAddress,
-        account_map: &BTreeMap<Vec<u8>, Vec<u8>>,
+        account_state: &AccountState,
     ) -> result::Result<Self, Error> {
         let ap = account_resource_path(path_addr);
-        match account_map.get(&ap) {
+        match account_state.get(&ap) {
             Some(bytes) => lcs::from_bytes(bytes).map_err(Into::into),
             None => bail!("No data for {:?}", ap),
         }

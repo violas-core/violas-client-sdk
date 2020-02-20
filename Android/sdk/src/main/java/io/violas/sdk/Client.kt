@@ -13,7 +13,7 @@ class Client {
 
     val MICRO_LIBRO_COIN: ULong = 1000000.toULong()
 
-    var nativeClient: Long = 0
+    private var nativeClient: Long = 0
 
     constructor(
         host: String,
@@ -64,6 +64,9 @@ class Client {
         return nativeGetBalance(nativeClient, address)
     }
 
+    fun getSequenceNumber(accountIndex: ULong) : ULong {
+        return nativeGetSequenceNumber(nativeClient, accountIndex)
+    }
     fun mint(index: ULong, amount: ULong): Unit {
         return nativeMint(nativeClient, index, amount, true)
     }
@@ -105,6 +108,33 @@ class Client {
         return nativeCompile(nativeClient, address, scriptFile, isModule, tempDir)
     }
 
+    /// publish a module to Violas blockchain
+    fun publishModule(accountIndex: ULong, moduleFile: String): Unit {
+        return nativePublishModule(nativeClient, accountIndex, moduleFile)
+    }
+
+    /// execute a script on Violas blockchain
+    fun executeScript(accountIndex: ULong, scriptFile: String, args: Array<String>): Unit {
+        return nativeExecuteScript(nativeClient, accountIndex, scriptFile, args)
+    }
+
+    /// get committed transaction and event with JSON format by account and sequence number
+    fun getCommittedTxnsByAccSeq(
+        accountIndex: ULong,
+        sequence: ULong
+    ): Pair<String, String> {
+        return nativeGetCommittedTxnsByAccSeq(nativeClient, accountIndex, sequence)
+    }
+
+    /// get commited transactions by range
+    fun getCommitedTxnbyRange(
+        start_version: ULong,
+        limit: ULong,
+        fetchEvent: Boolean
+    ): Array<Pair<String, String>> {
+        return nativeGetCommitedTxnbyRange(nativeClient, start_version, limit, fetchEvent)
+    }
+
 
     //
     //  native fun from violas-sdk-lib.so
@@ -127,6 +157,8 @@ class Client {
     private external fun nativeGetBalance(nativeClient: Long, index: ULong): Double
 
     private external fun nativeGetBalance(nativeClient: Long, address: ByteArray): Double
+
+    private external fun nativeGetSequenceNumber(nativeClient: Long, accountIndex: ULong) : ULong
 
     private external fun nativeMint(
         nativeClient: Long,
@@ -160,4 +192,34 @@ class Client {
         isModule: Boolean,
         tempDir: String
     ): Unit
+
+    /// publish a module to Violas blockchain
+    private external fun nativePublishModule(
+        nativeClient: Long,
+        accountIndex: ULong,
+        moduleFile: String
+    ): Unit
+
+    /// execute a script on Violas blockchain
+    private external fun nativeExecuteScript(
+        nativeClient: Long,
+        accountIndex: ULong,
+        scriptFile: String,
+        args: Array<String>
+    ): Unit
+
+    /// get committed transaction and event with JSON format by account and sequence number
+    private external fun nativeGetCommittedTxnsByAccSeq(
+        nativeClient: Long,
+        accountIndex: ULong,
+        sequence: ULong
+    ): Pair<String, String>
+
+    /// get commited transactions by range
+    private external fun nativeGetCommitedTxnbyRange(
+        nativeClient: Long,
+        start_version: ULong,
+        limit: ULong,
+        fetchEvent: Boolean
+    ): Array<Pair<String, String>>
 }

@@ -41,7 +41,6 @@ class MainActivity : AppCompatActivity() {
                     .setAction("Action", null).show()
             }
 
-
         }
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
@@ -73,12 +72,14 @@ class MainActivity : AppCompatActivity() {
         //var sdcard = getExternalStorageDirectory()
         var fileDir = getExternalFilesDir(null)
         var cacheDir = getExternalCacheDir()
+        val scripts_path = fileDir.toString() + "/scripts/"
+
         Log.v("Violas", "the cache dir = " + cacheDir)
 
         var client = Client(
-            "18.220.66.235",
+            "125.39.5.57",
             40001.toUShort(),
-            fileDir.toString() + "/mint_test.key",
+            fileDir.toString() + "/mint_tianjin.key",
             false,
             "",
             fileDir.toString() + "/mnenonic"
@@ -114,9 +115,34 @@ class MainActivity : AppCompatActivity() {
 
         client.compile(
             0.toULong(),
-            fileDir.toString() + "/scripts/token.mvir",
+            scripts_path + "token.mvir",
             true,
             cacheDir.toString()
         )
+
+        client.publishModule(0.toULong(), scripts_path + "token.mv")
+
+        client.compile(
+            0.toULong(),
+            scripts_path + "publish.mvir",
+            false,
+            cacheDir.toString()
+        )
+
+        client.executeScript(0.toULong(), scripts_path+"publish.mv", emptyArray<String>())
+
+        client.compile(
+            1.toULong(),
+            scripts_path + "publish.mvir",
+            false,
+            cacheDir.toString()
+        )
+
+        client.executeScript(1.toULong(), scripts_path+"publish.mv", emptyArray<String>())
+
+        var sequence = client.getSequenceNumber(1.toULong())
+
+        var txn_event = client.getCommittedTxnsByAccSeq(1.toULong(), sequence -1.toULong())
+        Log.v("Violas", "the account 0's balance = " + txn_event.first + txn_event.second)
     }
 }

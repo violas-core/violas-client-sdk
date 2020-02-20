@@ -24,6 +24,22 @@ std::string to_string(JNIEnv *env, jstring str) {
     return t;
 }
 
+std::vector<string> to_string_array(JNIEnv *env, jobjectArray stringArray) {
+    vector<string> str_vector;
+
+    int stringCount = env->GetArrayLength(stringArray);
+
+    for (int i = 0; i < stringCount; i++) {
+        jstring str = (jstring) (env->GetObjectArrayElement(stringArray, i));
+        const char *rawString = env->GetStringUTFChars(str, 0);
+
+        str_vector.push_back(rawString);
+
+        env->ReleaseStringUTFChars(str, rawString);
+    }
+
+    return str_vector;
+}
 
 const std::string CLS_JNIEXCEPTION = "java/lang/Exception";
 
@@ -235,6 +251,23 @@ JNIEXPORT jdouble JNICALL Java_io_violas_sdk_Client_nativeGetBalance
 
 /*
  * Class:     io_violas_sdk_Client
+ * Method:    nativeGetSequenceNumber_0002d5AcIvR4
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_io_violas_sdk_Client_nativeGetSequenceNumber_0002d5AcIvR4
+        (JNIEnv * env, jobject, jlong nativeObj, jlong account_index)
+{
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        return  client->get_sequence_number(account_index);
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
+/*
+ * Class:     io_violas_sdk_Client
  * Method:    nativeMint_0002dqLd8ryo
  * Signature: (JJJZ)V
  */
@@ -307,7 +340,8 @@ JNIEXPORT void JNICALL CLASS_METHOD(nativeCompile_0002dAlou_1RY)
  * Signature: (J[BLjava/lang/String;ZLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeCompile
-        (JNIEnv *env, jobject obj, jlong nativeObj,
+        (JNIEnv *env, jobject obj,
+         jlong nativeObj,
          jbyteArray address, jstring scriptFile,
          jboolean is_module, jstring tempDir) {
     try {
@@ -316,6 +350,113 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeCompile
         client->compile(to_address(env, address),
                         to_string(env, scriptFile),
                         is_module, to_string(env, tempDir));
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
+
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativePublishModule_0002dApdV9Xc
+ * Signature: (JJLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativePublishModule_0002dApdV9Xc
+        (JNIEnv *env, jobject obj,
+         jlong nativeObj, jlong account_index, jstring module_file) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        client->publish_module(account_index,
+                               to_string(env, module_file));
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
+
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativeExecuteScript_0002dP7_O3DU
+ * Signature: (JJLjava/lang/String;[Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_nativeExecuteScript_0002dP7_1O3DU
+        (JNIEnv *env, jobject, jlong nativeObj, jlong account_index, jstring script_file_name,
+         jobjectArray args) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        client->execute_script(account_index,
+                               to_string(env, script_file_name),
+                               to_string_array(env, args));
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
+
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativeGetCommittedTxnsByAccSeq_0002dKhFxhuQ
+ * Signature: (JJJ)Lkotlin/Pair;
+ */
+JNIEXPORT jobject JNICALL Java_io_violas_sdk_Client_nativeGetCommittedTxnsByAccSeq_0002dKhFxhuQ
+        (JNIEnv *env, jobject, jlong nativeObj, jlong account_index, jlong sequence_number) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        auto [txn,event] = client->get_committed_txn_by_acc_seq(account_index, sequence_number);
+
+        jclass pairClass = env->FindClass("kotlin/Pair");  //env->FindClass("javafx/util/Pair");
+        jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
+                                                     "(Ljava/lang/Object;Ljava/lang/Object;)V");
+
+        // Create a new pair object
+        jobject pair = env->NewObject(pairClass, pairConstructor,
+                env->NewStringUTF(txn.c_str()),
+                env->NewStringUTF(event.c_str()));
+
+        return pair;
+    }
+    catch (exception &e) {
+        ThrowJNIException(env, e.what());
+    }
+}
+
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    nativeGetCommitedTxnbyRange_0002dqLd8ryo
+ * Signature: (JJJZ)[Lkotlin/Pair;
+ */
+JNIEXPORT jobjectArray JNICALL Java_io_violas_sdk_Client_nativeGetCommitedTxnbyRange_0002dqLd8ryo
+        (JNIEnv *env, jobject, jlong nativeObj, jlong start_version, jlong limit,
+         jboolean fetch_event) {
+    try {
+        Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
+
+        auto txn_events = client->get_txn_by_range(start_version,
+                                 limit,
+                                 fetch_event);
+
+        jmethodID constructAccount = env->GetMethodID(accountClass, "<init>", "(J[BJJ)V");
+        jobject defaultAccount = env->NewObject(accountClass, init);
+
+        jobjectArray objAccounts = env->NewObjectArray(accounts.size(), accountClass,
+                                                       defaultAccount);
+
+        for (int i = 0; i < accounts.size(); ++i) {
+
+            size_t length = accounts[i].address.size();
+            jbyteArray address = env->NewByteArray(length);
+            env->SetByteArrayRegion(address, 0, length, ((jbyte *) accounts[i].address.data()));
+
+            jobject account = env->NewObject(accountClass, constructAccount,
+                                             accounts[i].index,
+                                             address,
+                                             accounts[i].sequence_number,
+                                             accounts[i].status);
+            env->SetObjectArrayElement(objAccounts, i, account);
+        }
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());

@@ -127,7 +127,7 @@ class Client {
     }
 
     /// get commited transactions by range
-    fun getCommitedTxnbyRange(
+    fun getCommitedTxnByRange(
         start_version: ULong,
         limit: ULong,
         fetchEvent: Boolean

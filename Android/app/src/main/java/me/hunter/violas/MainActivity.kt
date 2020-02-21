@@ -77,9 +77,9 @@ class MainActivity : AppCompatActivity() {
         Log.v("Violas", "the cache dir = " + cacheDir)
 
         var client = Client(
-            "125.39.5.57",
+            "18.220.66.235",
             40001.toUShort(),
-            fileDir.toString() + "/mint_tianjin.key",
+            fileDir.toString() + "/mint_test.key",
             false,
             "",
             fileDir.toString() + "/mnenonic"
@@ -131,18 +131,15 @@ class MainActivity : AppCompatActivity() {
 
         client.executeScript(0.toULong(), scripts_path+"publish.mv", emptyArray<String>())
 
-        client.compile(
-            1.toULong(),
-            scripts_path + "publish.mvir",
-            false,
-            cacheDir.toString()
-        )
-
         client.executeScript(1.toULong(), scripts_path+"publish.mv", emptyArray<String>())
 
         var sequence = client.getSequenceNumber(1.toULong())
 
-        var txn_event = client.getCommittedTxnsByAccSeq(1.toULong(), sequence -1.toULong())
-        Log.v("Violas", "the account 0's balance = " + txn_event.first + txn_event.second)
-    }
-}
+        var (txn, event) = client.getCommittedTxnsByAccSeq(1.toULong(), sequence -1.toULong())
+        Log.v("Violas", "the account 0's balance = " + txn + event)
+
+        var txnEvents = client.getCommitedTxnByRange(100.toULong(), 100.toULong(), true)
+        for (  (txn, event) in txnEvents ){
+            Log.v("Violas", "the account 0's balance = " + txn + event)
+        }
+    }}

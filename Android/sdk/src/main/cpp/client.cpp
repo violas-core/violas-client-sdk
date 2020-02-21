@@ -255,12 +255,11 @@ JNIEXPORT jdouble JNICALL Java_io_violas_sdk_Client_nativeGetBalance
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_io_violas_sdk_Client_nativeGetSequenceNumber_0002d5AcIvR4
-        (JNIEnv * env, jobject, jlong nativeObj, jlong account_index)
-{
+        (JNIEnv *env, jobject, jlong nativeObj, jlong account_index) {
     try {
         Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
-        return  client->get_sequence_number(account_index);
+        return client->get_sequence_number(account_index);
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());
@@ -405,7 +404,7 @@ JNIEXPORT jobject JNICALL Java_io_violas_sdk_Client_nativeGetCommittedTxnsByAccS
     try {
         Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
-        auto [txn,event] = client->get_committed_txn_by_acc_seq(account_index, sequence_number);
+        auto[txn, event] = client->get_committed_txn_by_acc_seq(account_index, sequence_number);
 
         jclass pairClass = env->FindClass("kotlin/Pair");  //env->FindClass("javafx/util/Pair");
         jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
@@ -413,8 +412,8 @@ JNIEXPORT jobject JNICALL Java_io_violas_sdk_Client_nativeGetCommittedTxnsByAccS
 
         // Create a new pair object
         jobject pair = env->NewObject(pairClass, pairConstructor,
-                env->NewStringUTF(txn.c_str()),
-                env->NewStringUTF(event.c_str()));
+                                      env->NewStringUTF(txn.c_str()),
+                                      env->NewStringUTF(event.c_str()));
 
         return pair;
     }
@@ -434,29 +433,31 @@ JNIEXPORT jobjectArray JNICALL Java_io_violas_sdk_Client_nativeGetCommitedTxnbyR
     try {
         Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
-        auto txn_events = client->get_txn_by_range(start_version,
-                                 limit,
-                                 fetch_event);
+        auto txn_events = client->get_txn_by_range(start_version, limit,
+                                                   fetch_event);
 
-        jmethodID constructAccount = env->GetMethodID(accountClass, "<init>", "(J[BJJ)V");
-        jobject defaultAccount = env->NewObject(accountClass, init);
+        jclass pairClass = env->FindClass("kotlin/Pair");  //env->FindClass("javafx/util/Pair");
+        jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
+                                                     "(Ljava/lang/Object;Ljava/lang/Object;)V");
 
-        jobjectArray objAccounts = env->NewObjectArray(accounts.size(), accountClass,
-                                                       defaultAccount);
+        jobject defaultAccount = env->NewObject(pairClass, pairConstructor,
+                                                env->NewStringUTF(""),
+                                                env->NewStringUTF(""));
 
-        for (int i = 0; i < accounts.size(); ++i) {
+        jobjectArray obj_txn_events = env->NewObjectArray(txn_events.size(), pairClass,
+                                                          defaultAccount);
 
-            size_t length = accounts[i].address.size();
-            jbyteArray address = env->NewByteArray(length);
-            env->SetByteArrayRegion(address, 0, length, ((jbyte *) accounts[i].address.data()));
+        for (size_t i = 0; i < txn_events.size(); ++i) {
+            auto[txn, event] = txn_events[i];
 
-            jobject account = env->NewObject(accountClass, constructAccount,
-                                             accounts[i].index,
-                                             address,
-                                             accounts[i].sequence_number,
-                                             accounts[i].status);
-            env->SetObjectArrayElement(objAccounts, i, account);
+            jobject jobj_txn_event = env->NewObject(pairClass, pairConstructor,
+                                             env->NewStringUTF(txn.c_str()),
+                                             env->NewStringUTF(event.c_str()));
+
+            env->SetObjectArrayElement(obj_txn_events, i, jobj_txn_event);
         }
+
+        return obj_txn_events;
     }
     catch (exception &e) {
         ThrowJNIException(env, e.what());

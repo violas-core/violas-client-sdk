@@ -6,28 +6,39 @@ import android.util.Pair;
 import java.lang.reflect.Array;
 
 public class Client {
+    static {
+        System.loadLibrary("violas-sdk-lib");
+    }
+
     private long nativeClient;
 
-    Client(String host, Short port, String mintKey, boolean syncOnWallet, String faucetServer, String mnomenicFile) {
+    public static long MICRO_LIBRO_COIN = 1000000;
+
+    public Client(String host,
+                  Short port,
+                  String mintKey,
+                  boolean syncOnWallet,
+                  String faucetServer,
+                  String mnomenicFile) {
         nativeClient = createNativeClient(host, port, mintKey, syncOnWallet, faucetServer, mnomenicFile);
     }
 
-    void test_validator_connection() {
+    public void test_validator_connection() {
         native_test_validator_connection(nativeClient);
     }
 
-    Pair<Long, Byte[]> createNextAccount() {
-        return  nativeCreateNextAccount(nativeClient);
+    public Pair<Long, byte[]> createNextAccount() {
+        return nativeCreateNextAccount(nativeClient);
     }
 
-    class Account {
-        long index;
-        Byte[] address;
-        long sequenceNumber;
-        long status;
+    static public class Account {
+        public long index;
+        public byte[] address;
+        public long sequenceNumber;
+        public long status;
 
-        Account(long _index, Byte[] _address, long _sequenceNum, long _status) {
-
+        public Account(long _index, byte[] _address, long _sequenceNum, long _status
+        ) {
             index = _index;
             address = _address;
             sequenceNumber = _sequenceNum;
@@ -35,36 +46,36 @@ public class Client {
         }
     }
 
-    Account[] getAllAccounts() {
+    public Account[] getAllAccounts() {
         return nativeGetAllAccounts(nativeClient);
     }
 
-    Double getBalance(long index) {
+    public double getBalance(long index) {
         return nativeGetBalance(nativeClient, index);
     }
 
-    Double getBalance(Byte[] address) {
+    public double getBalance(byte[] address) {
         return nativeGetBalance(nativeClient, address);
     }
 
-    long getSequenceNumber(long accountIndex) {
+    public long getSequenceNumber(long accountIndex) {
         return nativeGetSequenceNumber(nativeClient, accountIndex);
     }
 
-    void mint(long index, long amount) {
+    public void mint(long index, long amount) {
         nativeMint(nativeClient, index, amount, true);
     }
 
-    void transfer(
+    public void transfer(
             long accountIndex,
-            Byte[] receiver,
+            byte[] receiver,
             long amount) {
-        transfer(accountIndex, receiver, amount, (long)0, (long)0, true);
+        transfer(accountIndex, receiver, amount, (long) 0, (long) 0, true);
     }
 
-    void transfer(
+    public void transfer(
             long accountIndex,
-            Byte[] receiver,
+            byte[] receiver,
             long amount,
             long gaxUnitPrice,
             long maxGasAccount,
@@ -80,7 +91,7 @@ public class Client {
                 isBlocking);
     }
 
-    void compile(
+    public void compile(
             long accountIndex,
             String scriptFile,
             Boolean isModule,
@@ -89,8 +100,8 @@ public class Client {
         nativeCompile(nativeClient, accountIndex, scriptFile, isModule, tempDir);
     }
 
-    void compile(
-            Byte[] address,
+    public void compile(
+            byte[] address,
             String scriptFile,
             Boolean isModule,
             String tempDir
@@ -99,17 +110,17 @@ public class Client {
     }
 
     /// publish a module to Violas blockchain
-    void publishModule(long accountIndex, String moduleFile) {
+    public void publishModule(long accountIndex, String moduleFile) {
         nativePublishModule(nativeClient, accountIndex, moduleFile);
     }
 
     /// execute a script on Violas blockchain
-    void executeScript(long accountIndex, String scriptFile, String[] args) {
+    public void executeScript(long accountIndex, String scriptFile, String[] args) {
         nativeExecuteScript(nativeClient, accountIndex, scriptFile, args);
     }
 
     /// get committed transaction and event with JSON format by account and sequence number
-    Pair<String, String> getCommittedTxnsByAccSeq(
+    public Pair<String, String> getCommittedTxnsByAccSeq(
             long accountIndex,
             long sequence
     ) {
@@ -117,7 +128,7 @@ public class Client {
     }
 
     /// get commited transactions by range
-    Pair<String, String>[] getCommitedTxnByRange(
+    public Pair<String, String>[] getCommitedTxnByRange(
             long start_version,
             long limit,
             Boolean fetchEvent
@@ -130,22 +141,22 @@ public class Client {
     //
     private native long createNativeClient(
             String host,
-            Short port,
+            short port,
             String faucetKey,
-            Boolean syncOnWallet,
+            boolean syncOnWallet,
             String faucetServer,
             String mnemonicFile
     );
 
     private native void native_test_validator_connection(long nativeClient);
 
-    private native Pair<Long, Byte[]> nativeCreateNextAccount(long nativeClient);
+    private native Pair<Long, byte[]> nativeCreateNextAccount(long nativeClient);
 
     private native Account[] nativeGetAllAccounts(long nativeClient);
 
-    private native Double nativeGetBalance(long nativeClient, long index);
+    private native double nativeGetBalance(long nativeClient, long index);
 
-    private native Double nativeGetBalance(long nativeClient, Byte[] address);
+    private native double nativeGetBalance(long nativeClient, byte[] address);
 
     private native long nativeGetSequenceNumber(long nativeClient, long accountIndex);
 
@@ -153,35 +164,34 @@ public class Client {
             long nativeClient,
             long accountIndex,
             long amount,
-            Boolean is_blocking
+            boolean is_blocking
     );
 
     private native void nativeTransfer(
             long nativeClient,
             long accountIndex,
-            Byte[] receiver,
+            byte[] receiver,
             long amount,
             long gaxUnitPrice,
             long maxGasAccount,
-            Boolean is_blocking
+            boolean is_blocking
     );
 
     private native void nativeCompile(
             long nativeClient,
             long accountIndex,
             String scriptFile,
-            Boolean isModule,
+            boolean isModule,
             String tempDir
     );
 
     private native void nativeCompile(
             long nativeClient,
-            Byte[] address,
+            byte[] address,
             String scriptFile,
-            Boolean isModule,
+            boolean isModule,
             String tempDir
     );
-
     /// publish a module to Violas blockchain
     private native void nativePublishModule(
             long nativeClient,
@@ -209,6 +219,6 @@ public class Client {
             long nativeClient,
             long start_version,
             long limit,
-            Boolean fetchEvent
+            boolean fetchEvent
     );
 }

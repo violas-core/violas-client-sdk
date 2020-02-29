@@ -16,7 +16,8 @@ import com.google.android.material.navigation.NavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import android.view.Menu
-import io.violas.sdk.Client
+//import io.violas.sdk.Client
+import io.violas.sdk.java.Client
 
 class MainActivity : AppCompatActivity() {
 
@@ -77,9 +78,9 @@ class MainActivity : AppCompatActivity() {
         Log.v("Violas", "the cache dir = " + cacheDir)
 
         var client = Client(
-            "18.220.66.235",
-            40001.toUShort(),
-            fileDir.toString() + "/mint_test.key",
+            "125.39.5.57", //"18.220.66.235",
+            40001.toShort(),
+            fileDir.toString() + "/mint_tianjin.key",
             false,
             "",
             fileDir.toString() + "/mnenonic"
@@ -95,51 +96,52 @@ class MainActivity : AppCompatActivity() {
             Log.v("Violas", "index=" + account.index)
         }
 
-        client.mint(0.toULong(), 100.toULong())
+        client.mint(0.toLong(), 100.toLong())
 
-        var balance = client.getBalance(0.toULong())
+        var balance = client.getBalance(0.toLong())
 
         Log.v("Violas", "the account 0's balance = " + balance)
 
-        client.mint(1.toULong(), 50.toULong())
+        client.mint(1.toLong(), 50.toLong())
 
         balance = client.getBalance(account1.second)
 
         Log.v("Violas", "the account 0's balance = " + balance)
 
-        client.transfer(0.toULong(), account1.second, 1.toULong() * client.MICRO_LIBRO_COIN)
+        client.transfer(0.toLong(), account1.second, 1.toLong() * Client.MICRO_LIBRO_COIN)
 
         balance = client.getBalance(account1.second)
 
         Log.v("Violas", "the account 0's balance = " + balance)
 
         client.compile(
-            0.toULong(),
+            0.toLong(),
             scripts_path + "token.mvir",
             true,
             cacheDir.toString()
         )
 
-        client.publishModule(0.toULong(), scripts_path + "token.mv")
+        client.publishModule(0.toLong(), scripts_path + "token.mv")
 
         client.compile(
-            0.toULong(),
+            0.toLong(),
             scripts_path + "publish.mvir",
             false,
             cacheDir.toString()
         )
 
-        client.executeScript(0.toULong(), scripts_path+"publish.mv", emptyArray<String>())
+        client.executeScript(0.toLong(), scripts_path+"publish.mv", emptyArray<String>())
 
-        client.executeScript(1.toULong(), scripts_path+"publish.mv", emptyArray<String>())
+        client.executeScript(1.toLong(), scripts_path+"publish.mv", emptyArray<String>())
 
-        var sequence = client.getSequenceNumber(1.toULong())
+        var sequence = client.getSequenceNumber(1.toLong())
 
-        var (txn, event) = client.getCommittedTxnsByAccSeq(1.toULong(), sequence -1.toULong())
-        Log.v("Violas", "the account 0's balance = " + txn + event)
+        //var (txn, event) = client.getCommittedTxnsByAccSeq(1.toLong(), sequence - 1.toLong())
+        var txn_event = client.getCommittedTxnsByAccSeq(1.toLong(), sequence - 1.toLong())
+        Log.v("Violas", "the account 0's balance = " + txn_event.first + txn_event.second)
 
-        var txnEvents = client.getCommitedTxnByRange(100.toULong(), 100.toULong(), true)
-        for (  (txn, event) in txnEvents ){
-            Log.v("Violas", "the account 0's balance = " + txn + event)
+        var txnEvents = client.getCommitedTxnByRange(100.toLong(), 100.toLong(), true)
+        for (  txn_event in txnEvents ){
+            Log.v("Violas", "the account 0's balance = " + txn_event.first + txn_event.second)
         }
     }}

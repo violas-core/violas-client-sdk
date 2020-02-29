@@ -21,7 +21,9 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        client.cpp)
+        client.cpp
+        io_violas_sdk_Client.cpp
+        io_violas_sdk_java_Client.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

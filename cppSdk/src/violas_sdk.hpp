@@ -142,7 +142,8 @@ public:
     static std::shared_ptr<Token> create(client_ptr client,
                                          uint256 governor_addr,
                                          const std::string &name,
-                                         const std::string &script_files_path = "../scripts");
+                                         const std::string &script_files_path = "../scripts",
+                                         const std::string &temp_path = "");
 
     virtual ~Token() {}
 

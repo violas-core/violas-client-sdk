@@ -23,6 +23,9 @@ public class Client {
         nativeClient = createNativeClient(host, port, mintKey, syncOnWallet, faucetServer, mnomenicFile);
     }
 
+    public long getNativeClient() {
+        return nativeClient;
+    }
     public void test_validator_connection() {
         native_test_validator_connection(nativeClient);
     }

@@ -7,7 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <violas_sdk.hpp>
-#include "client.h"
+#include "jni_violas_sdk.h"
 #include "io_violas_sdk_Client.h"
 
 #define CLASS_METHOD(x) Java_io_violas_sdk_java_Client_##x

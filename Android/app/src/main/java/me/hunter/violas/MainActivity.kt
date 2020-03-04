@@ -18,6 +18,7 @@ import androidx.appcompat.widget.Toolbar
 import android.view.Menu
 //import io.violas.sdk.Client
 import io.violas.sdk.java.Client
+import io.violas.sdk.java.Token
 
 class MainActivity : AppCompatActivity() {
 
@@ -78,9 +79,9 @@ class MainActivity : AppCompatActivity() {
         Log.v("Violas", "the cache dir = " + cacheDir)
 
         var client = Client(
-            "125.39.5.57", //"18.220.66.235",
+            "18.220.66.235", //"125.39.5.57",
             40001.toShort(),
-            fileDir.toString() + "/mint_tianjin.key",
+            fileDir.toString() + "/mint_test.key",
             false,
             "",
             fileDir.toString() + "/mnenonic"
@@ -144,4 +145,18 @@ class MainActivity : AppCompatActivity() {
         for (  txn_event in txnEvents ){
             Log.v("Violas", "the account 0's balance = " + txn_event.first + txn_event.second)
         }
+
+        var token = Token(client, account1.second, "Token1", scripts_path.toString(), cacheDir.toString());
+
+        token.deploy(1.toLong())
+
+        token.publish(1.toLong())
+
+        token.publish(0.toLong())
+
+        token.mint(1.toLong(), account0.second, 1000)
+
+        var token_balance = token.getBalance(0.toLong())
+
+        Log.v("Violas", "the balance of Stable Coin of account 0  = " + token_balance)
     }}

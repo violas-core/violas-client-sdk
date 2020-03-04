@@ -2,7 +2,7 @@
 // Created by hunter on 20-2-26.
 //
 #include <jni.h>
-#include "client.h"
+#include "jni_violas_sdk.h"
 
 #define CLASS_METHOD(x) Java_io_violas_sdk_Client_##x
 

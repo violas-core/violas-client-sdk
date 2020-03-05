@@ -49,7 +49,7 @@ add_library(cppSdk STATIC IMPORTED)
 set_property(TARGET cppSdk PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../cppSdk/lib/libcppSdk-arm64v8a.a)
 
 add_library(client_proxy STATIC IMPORTED)
-set_property(TARGET client_proxy PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../rust-client-proxy/target/aarch64-linux-android/debug/libclient_proxy.a)
+set_property(TARGET client_proxy PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../rust-client-proxy/target/aarch64-linux-android/release/libclient_proxy.a)
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this

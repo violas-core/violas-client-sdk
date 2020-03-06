@@ -2,10 +2,15 @@
 // Created by hunter on 20-3-2.
 //
 #include <jni.h>
+#include <android/log.h>
+#include <android/asset_manager_jni.h>
 #include "jni_violas_sdk.h"
 
 extern "C" {
 
+void init_all_script(JNIEnv* env, jobject obj, jobject assetManager) {
+	AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
+}
 /*
  * Class:     io_violas_sdk_java_Token
  * Method:    nativeCreateToken
@@ -44,8 +49,8 @@ JNIEXPORT jbyteArray JNICALL Java_io_violas_sdk_java_Token_nativeAddress
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativeDeploy
-		(JNIEnv * env, jobject obj, jlong native_token, jlong account_index) {
-	Jni_Token_Wrapper::jni_deploy( env, obj, native_token, account_index);
+		(JNIEnv *env, jobject obj, jlong native_token, jlong account_index) {
+	Jni_Token_Wrapper::jni_deploy(env, obj, native_token, account_index);
 }
 
 /*
@@ -54,8 +59,8 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativeDeploy
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativePublish
-		(JNIEnv * env, jobject obj, jlong native_token, jlong account_index) {
-	Jni_Token_Wrapper::jni_publish( env, obj, native_token, account_index);
+		(JNIEnv *env, jobject obj, jlong native_token, jlong account_index) {
+	Jni_Token_Wrapper::jni_publish(env, obj, native_token, account_index);
 }
 
 /*
@@ -64,8 +69,10 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativePublish
  * Signature: (JJ[BJ)V
  */
 JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativeMint
-		(JNIEnv * env, jobject obj, jlong native_token, jlong account_index, jbyteArray receiver_address, jlong amount_micro_coins) {
-	Jni_Token_Wrapper::jni_mint( env, obj, native_token, account_index, receiver_address, amount_micro_coins);
+		(JNIEnv *env, jobject obj, jlong native_token, jlong account_index,
+		 jbyteArray receiver_address, jlong amount_micro_coins) {
+	Jni_Token_Wrapper::jni_mint(env, obj, native_token, account_index, receiver_address,
+	                            amount_micro_coins);
 }
 
 /*
@@ -74,8 +81,10 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativeMint
  * Signature: (JJ[BJ)V
  */
 JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativeTransfer
-		(JNIEnv *env, jobject obj, jlong native_token, jlong account_index, jbyteArray receiver_address, jlong amount_micro_coins) {
-	Jni_Token_Wrapper::jni_mint( env, obj, native_token, account_index, receiver_address, amount_micro_coins);
+		(JNIEnv *env, jobject obj, jlong native_token, jlong account_index,
+		 jbyteArray receiver_address, jlong amount_micro_coins) {
+	Jni_Token_Wrapper::jni_mint(env, obj, native_token, account_index, receiver_address,
+	                            amount_micro_coins);
 }
 
 /*
@@ -84,7 +93,7 @@ JNIEXPORT void JNICALL Java_io_violas_sdk_java_Token_nativeTransfer
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_io_violas_sdk_java_Token_nativeGetBalance__JJ
-		(JNIEnv * env, jobject obj, jlong native_token, jlong account_index) {
+		(JNIEnv *env, jobject obj, jlong native_token, jlong account_index) {
 	return Jni_Token_Wrapper::jni_get_balance(env, obj, native_token, account_index);
 }
 
@@ -94,7 +103,7 @@ JNIEXPORT jlong JNICALL Java_io_violas_sdk_java_Token_nativeGetBalance__JJ
  * Signature: (J[B)J
  */
 JNIEXPORT jlong JNICALL Java_io_violas_sdk_java_Token_nativeGetBalance__J_3B
-		(JNIEnv * env, jobject obj, jlong native_token, jbyteArray address) {
+		(JNIEnv *env, jobject obj, jlong native_token, jbyteArray address) {
 	return Jni_Token_Wrapper::jni_get_balance(env, obj, native_token, address);
 }
 

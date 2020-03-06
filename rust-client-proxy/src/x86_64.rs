@@ -7,7 +7,7 @@ pub mod x86_64 {
     use cli::AccountStatus;
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress,
-        account_config::core_code_address, 
+        account_config::CORE_CODE_ADDRESS, 
         account_state::AccountState,
     }; //ADDRESS_LENGTH access_path::AccessPath,
     use std::cell::RefCell;
@@ -528,7 +528,7 @@ pub mod x86_64 {
         let paths: Vec<AccessPath> = serde_json::from_str(code.as_str())?;
         let mut dependencies = vec![];
         for path in paths {
-            if path.address != core_code_address() {
+            if path.address != CORE_CODE_ADDRESS {
                 if let (Some(blob), _) = client.client.get_account_blob(path.address)? {
                     let account_state = AccountState::try_from(&blob)?;
 

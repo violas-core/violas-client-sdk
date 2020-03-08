@@ -1,4 +1,6 @@
 package io.violas.sdk.java;
+import android.content.res.AssetManager;
+
 import io.violas.sdk.java.Client;
 
 public class Token {
@@ -6,6 +8,10 @@ public class Token {
 
     public Token(Client client, byte[] publisherAddress, String tokenName, String scriptFilesPath, String tempPath){
         nativeToken = nativeCreateToken(client.getNativeClient(), publisherAddress, tokenName, scriptFilesPath, tempPath);
+    }
+
+    public Token(Client client, byte[] publisherAddress, String tokenName, AssetManager assetManager, String tempPath){
+        nativeToken = nativeCreateToken1(client.getNativeClient(), publisherAddress, tokenName, assetManager, tempPath);
     }
 
     public String name() {
@@ -41,6 +47,8 @@ public class Token {
     }
 
     private native long nativeCreateToken(long client, byte[] publisherAddress, String tokenName, String scriptFilesPath, String tempPath);
+    private native long nativeCreateToken1(long client, byte[] publisherAddress, String tokenName, AssetManager assetManager, String tempPath);
+
     private native String nativeName(long nativeToken);
     private native byte[] nativeAddress(long nativeToken);
     private native void nativeDeploy(long nativeToken, long accountIndex);

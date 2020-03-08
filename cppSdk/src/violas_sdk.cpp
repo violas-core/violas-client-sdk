@@ -3,6 +3,7 @@
 //#include <chrono>
 #include <cassert>
 #include <sstream>
+#include <functional>
 
 #if __cplusplus >= 201703L
 #include <filesystem>
@@ -442,13 +443,17 @@ public:
              uint256 governor_addr,
              const std::string &name,
              const std::string &script_files_path,
-             const std::string &temp_path)
+             const std::string &temp_path,
+             function<void(const std::string &)> init_all_script_fun = nullptr)
         : m_libra_client(client),
           m_name(name),
           m_governor_addr(governor_addr),
           m_temp_path(temp_path)
     {
-        init_all_script(script_files_path);
+        if(init_all_script_fun)
+            init_all_script_fun(script_files_path);
+        else
+            init_all_script(script_files_path);
     }
 
     virtual ~TokenImp() {}

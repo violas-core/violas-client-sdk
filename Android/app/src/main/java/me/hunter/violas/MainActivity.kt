@@ -146,7 +146,8 @@ class MainActivity : AppCompatActivity() {
             Log.v("Violas", "the account 0's balance = " + txn_event.first + txn_event.second)
         }
 
-        var token = Token(client, account1.second, "Token1", scripts_path.toString(), cacheDir.toString());
+        var token = Token(client, account1.second, "Token1", assets, cacheDir.toString());
+        token = Token(client, account1.second, "Token1", scripts_path.toString(), cacheDir.toString());
 
         token.deploy(1.toLong())
 

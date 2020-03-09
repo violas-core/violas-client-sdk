@@ -442,19 +442,35 @@ public:
     TokenImp(client_ptr client,
              uint256 governor_addr,
              const std::string &name,
-             const std::string &script_files_path,
-             const std::string &temp_path,
-             function<void(const std::string &)> init_all_script_fun = nullptr)
+             const std::string &script_files_path)
         : m_libra_client(client),
           m_name(name),
-          m_governor_addr(governor_addr),
-          m_temp_path(temp_path)
+          m_governor_addr(governor_addr)
     {
-        if(init_all_script_fun)
-            init_all_script_fun(script_files_path);
-        else
-            init_all_script(script_files_path);
+         init_all_script(script_files_path);
     }
+
+	TokenImp(client_ptr client,
+	         uint256 governor_addr,
+	         const std::string &name,
+	         function<void(const std::string &)> init_all_script_fun,
+	         const std::string &temp_path)
+			: m_libra_client(client),
+			  m_name(name),
+			  m_governor_addr(governor_addr),
+			  m_temp_path(temp_path)
+	{
+        string governor = uint256_to_string(m_governor_addr);
+
+        m_temp_script_path = m_temp_path / uint256_to_string(m_governor_addr);
+
+        fs::remove_all(m_temp_script_path);
+
+        fs::create_directory(m_temp_script_path);
+        CLOG << m_temp_script_path.string() << endl;
+
+        init_all_script_fun(m_temp_script_path);
+	}
 
     virtual ~TokenImp() {}
 
@@ -581,10 +597,18 @@ private:
 std::shared_ptr<Token> Token::create(client_ptr client,
                                      uint256 governor_addr,
                                      const std::string &name,
-                                     const std::string &script_files_path,
+                                     const std::string &script_files_path)
+{
+    return make_shared<TokenImp>(client, governor_addr, name, script_files_path);
+}
+
+std::shared_ptr<Token> Token::create(client_ptr client,
+                                     uint256 governor_addr,
+                                     const std::string &name,
+                                     function<void(const std::string &)> init_all_script_fun,
                                      const std::string &temp_path)
 {
-    return make_shared<TokenImp>(client, governor_addr, name, script_files_path, temp_path);
+    return make_shared<TokenImp>(client, governor_addr, name, init_all_script_fun, temp_path);
 }
 
 } // namespace Violas

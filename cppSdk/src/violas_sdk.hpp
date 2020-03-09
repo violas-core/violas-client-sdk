@@ -139,11 +139,18 @@ using client_ptr = std::shared_ptr<Client>;
 class Token
 {
 public:
-    static std::shared_ptr<Token> create(client_ptr client,
-                                         uint256 governor_addr,
-                                         const std::string &name,
-                                         const std::string &script_files_path = "../scripts",
-                                         const std::string &temp_path = "");
+    static std::shared_ptr<Token>
+    create(client_ptr client,
+           uint256 governor_addr,
+           const std::string &name,
+           const std::string &script_files_path = "../scripts");
+
+    static std::shared_ptr<Token>
+    create(client_ptr client,
+                  uint256 governor_addr,
+                  const std::string &name,
+                  std::function<void(const std::string &)> init_all_script_fun = nullptr,
+                  const std::string &temp_path = "");
 
     virtual ~Token() {}
 

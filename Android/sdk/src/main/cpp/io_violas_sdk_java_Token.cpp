@@ -3,6 +3,7 @@
 //
 #include <jni.h>
 #include <vector>
+#include <fstream>
 #include <android/log.h>
 #include <android/asset_manager_jni.h>
 #include <android/asset_manager.h>
@@ -10,14 +11,16 @@
 
 extern "C" {
 
-void init_all_script(JNIEnv *env, jobject obj, jobject assetManager) {
+void init_all_script(JNIEnv *env, jobject obj, jobject assetManager, const std::string & script_path ) {
 	AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
 	AAssetDir *top_dir = AAssetManager_openDir(mgr, ""); //open the top-level directory
 
 	if (!top_dir)
 		return;
 
-	std::vector<uint8_t> buffer;
+	using namespace std;
+
+	vector<char> buffer;
 
 	for (const char *file_name = AAssetDir_getNextFileName(top_dir);
 	     file_name != nullptr;
@@ -29,6 +32,7 @@ void init_all_script(JNIEnv *env, jobject obj, jobject assetManager) {
 		buffer.resize(length);
 		AAsset_read(file, buffer.data(), length);
 
+		std::ofstream(script_path+"/" + file_name).write(buffer.data(), buffer.size());
 		AAsset_close(file);
 	}
 
@@ -41,11 +45,18 @@ void init_all_script(JNIEnv *env, jobject obj, jobject assetManager) {
  * Signature: (J[BLjava/lang/String;Landroid/content/res/AssetManager;Ljava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_io_violas_sdk_java_Token_nativeCreateToken1
-		(JNIEnv *env, jobject obj, jlong, jbyteArray, jstring, jobject assetMgr, jstring) {
+		(JNIEnv *env, jobject obj,
+				jlong native_client,
+				jbyteArray publisher_address,
+				jstring token_name,
+				jobject assetMgr,
+				jstring temp_path) {
 
-	init_all_script(env, obj, assetMgr);
+	auto fun = [=] (const std::string &script_path) {
+		init_all_script(env, obj, assetMgr, script_path );
+	};
 
-	return 0;
+	return Jni_Token_Wrapper::jni_create_totken(env, obj, native_client, publisher_address, token_name, fun, temp_path) ;
 }
 /*
  * Class:     io_violas_sdk_java_Token

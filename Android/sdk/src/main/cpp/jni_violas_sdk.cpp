@@ -391,7 +391,32 @@ namespace Jni_Token_Wrapper {
 			auto token = Violas::Token::create(client,
 			                                   to_address(env, publisher_address),
 			                                   to_string(env, token_name),
-			                                   to_string(env, script_files_path),
+			                                   to_string(env, script_files_path)
+			                                   );
+
+			native_token = (jlong) new Violas::token_ptr(token);
+		}
+		catch (exception &e) {
+			ThrowJNIException(env, e.what());
+		}
+
+		return native_token;
+	}
+
+	uint64_t jni_create_totken(JNIEnv *env, jobject obj,
+	                           jlong native_client, jbyteArray publisher_address,
+	                           jstring token_name,
+	                           function<void(const std::string &)> const & init_all_script_fun,
+	                           jstring temp_path) {
+		jlong native_token = 0;
+
+		try {
+			Violas::client_ptr client = *((Violas::client_ptr *) native_client);
+
+			auto token = Violas::Token::create(client,
+			                                   to_address(env, publisher_address),
+			                                   to_string(env, token_name),
+			                                   init_all_script_fun,
 			                                   to_string(env, temp_path));
 
 			native_token = (jlong) new Violas::token_ptr(token);

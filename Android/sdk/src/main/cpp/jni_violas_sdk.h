@@ -5,6 +5,8 @@
 #ifndef VIOLAS_JNI_VIOLAS_SDK_H
 #define VIOLAS_JNI_VIOLAS_SDK_H
 
+#include <functional>
+
 jlong createNativeClient(JNIEnv *env, jobject,
                          jstring host,
                          jshort port,
@@ -98,6 +100,14 @@ namespace Jni_Token_Wrapper {
 	uint64_t jni_create_totken(JNIEnv *env, jobject,
 	                           jlong native_client, jbyteArray publisher_address,
 	                           jstring token_name, jstring script_files_path, jstring temp_path);
+
+	uint64_t jni_create_totken(JNIEnv *env,
+	                           jobject obj,
+	                           jlong native_client,
+	                           jbyteArray publisher_address,
+	                           jstring token_name,
+	                           std::function<void(const std::string &)> const &init_all_script_fun,
+	                           jstring temp_path);
 
 	jstring jni_name(JNIEnv *env, jobject,
 	                 long naitve_token);

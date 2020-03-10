@@ -578,7 +578,7 @@ protected:
         auto mvir(fs::path(script_file_name) += ".mvir");
 
         if (!fs::exists(mv))
-            m_libra_client->compile(m_governor_addr, mvir.c_str(), is_module, m_temp_path);
+            m_libra_client->compile(m_governor_addr, mvir.c_str(), is_module, m_temp_path.string());
     }
 
 private:

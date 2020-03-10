@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <iostream>
+#include <functional>
 
 //
 //  log
@@ -149,8 +150,8 @@ public:
     create(client_ptr client,
                   uint256 governor_addr,
                   const std::string &name,
-                  std::function<void(const std::string &)> init_all_script_fun = nullptr,
-                  const std::string &temp_path = "");
+                  std::function<void(const std::string &)> init_all_script_fun,
+                  const std::string &temp_path);
 
     virtual ~Token() {}
 

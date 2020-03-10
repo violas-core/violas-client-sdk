@@ -6,9 +6,9 @@ import io.violas.sdk.java.Client;
 public class Token {
     private long nativeToken;
 
-    public Token(Client client, byte[] publisherAddress, String tokenName, String scriptFilesPath, String tempPath){
-        nativeToken = nativeCreateToken(client.getNativeClient(), publisherAddress, tokenName, scriptFilesPath, tempPath);
-    }
+//    public Token(Client client, byte[] publisherAddress, String tokenName, String scriptFilesPath, String tempPath){
+//        nativeToken = nativeCreateToken(client.getNativeClient(), publisherAddress, tokenName, scriptFilesPath, tempPath);
+//    }
 
     public Token(Client client, byte[] publisherAddress, String tokenName, AssetManager assetManager, String tempPath){
         nativeToken = nativeCreateToken1(client.getNativeClient(), publisherAddress, tokenName, assetManager, tempPath);
@@ -46,7 +46,7 @@ public class Token {
         return nativeGetBalance(nativeToken, address);
     }
 
-    private native long nativeCreateToken(long client, byte[] publisherAddress, String tokenName, String scriptFilesPath, String tempPath);
+    //private native long nativeCreateToken(long client, byte[] publisherAddress, String tokenName, String scriptFilesPath, String tempPath);
     private native long nativeCreateToken1(long client, byte[] publisherAddress, String tokenName, AssetManager assetManager, String tempPath);
 
     private native String nativeName(long nativeToken);

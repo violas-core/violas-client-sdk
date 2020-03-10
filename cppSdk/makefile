@@ -4,7 +4,7 @@ libcppSdk : violas_sdk.o
 	ar -crv lib/libcppSdk.a violas_sdk.o
 
 violas_sdk.o :
-	$(CXX) -g -std=c++17 \
+	$(CXX) -o2 -std=c++17 \
 	-c src/violas_sdk.cpp \
 	-o violas_sdk.o
 

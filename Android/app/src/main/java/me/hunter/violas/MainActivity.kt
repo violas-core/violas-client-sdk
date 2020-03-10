@@ -147,7 +147,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         var token = Token(client, account1.second, "Token1", assets, cacheDir.toString());
-        //token = Token(client, account1.second, "Token1", scripts_path.toString(), cacheDir.toString());
 
         token.deploy(1.toLong())
 

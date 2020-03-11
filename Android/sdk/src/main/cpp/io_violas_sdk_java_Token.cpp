@@ -7,7 +7,7 @@
 #include <android/log.h>
 #include <android/asset_manager_jni.h>
 #include <android/asset_manager.h>
-#include "jni_violas_sdk.h"
+#include <jni_violas_sdk.h>
 
 extern "C" {
 

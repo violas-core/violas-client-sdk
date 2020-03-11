@@ -469,7 +469,7 @@ public:
         fs::create_directory(m_temp_script_path);
         CLOG << m_temp_script_path.string() << endl;
 
-        init_all_script_fun(m_temp_script_path);
+        init_all_script_fun(m_temp_script_path.string());
 	}
 
     virtual ~TokenImp() {}
@@ -542,7 +542,7 @@ public:
     }
 
 protected:
-    void init_all_script(const std::string &script_files_path)
+    void init_all_script(const string &script_files_path)
     {
         string governor = uint256_to_string(m_governor_addr);
 
@@ -556,7 +556,7 @@ protected:
         fs::create_directory(m_temp_script_path);
         CLOG << m_temp_script_path.string() << endl;
 
-        for (auto &file : fs::directory_iterator(script_files_path))
+        for (auto &file : fs::directory_iterator(fs::path(script_files_path)))
         {
             if (file.path().extension() == ".mvir")
             {

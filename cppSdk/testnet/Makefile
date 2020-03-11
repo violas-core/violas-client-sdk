@@ -45,5 +45,13 @@ gcc : clean
 	src/transfer.cpp ../src/violas_sdk.cpp \
 	-lclient_proxy -lstdc++fs\
 
+test_violas : clean
+	g++ -O2 -std=c++17 -Wall \
+	-o test_violas \
+	-I../src \
+	-L../../rust-client-proxy/target/debug/ \
+	src/test_violas.cpp ../src/violas_sdk.cpp \
+	-lclient_proxy -lstdc++fs
+
 clean :
-	rm -f transfer log.txt
+	rm -f transfer test_violas log.txt

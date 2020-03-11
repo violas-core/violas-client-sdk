@@ -1,0 +1,8 @@
+import {{sender}}.ViolasToken;
+
+main(flag: u64) {
+
+    ViolasToken.cancel_order(move(flag));
+
+    return;
+}

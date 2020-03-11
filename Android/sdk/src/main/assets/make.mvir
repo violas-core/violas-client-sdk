@@ -1,0 +1,8 @@
+import {{sender}}.ViolasToken;
+
+main(amount: u64, price: u64, flag: u64) {
+
+    ViolasToken.make_order(move(amount), move(price), move(flag));
+
+    return;
+}

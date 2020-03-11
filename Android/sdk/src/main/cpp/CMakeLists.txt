@@ -21,7 +21,7 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        jni_violas_sdk.cpp
+        # jni_violas_sdk.cpp
         io_violas_sdk_Client.cpp
         io_violas_sdk_java_Client.cpp
         io_violas_sdk_java_Token.cpp)

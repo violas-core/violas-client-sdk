@@ -68,5 +68,6 @@
     },
     "git.ignoreLimitWarning": true,
     "cmake.configureOnOpen": false,
-    "python.pythonPath": "python3"
+    "python.pythonPath": "python3",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

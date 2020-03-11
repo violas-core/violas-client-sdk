@@ -8,10 +8,13 @@ violas_sdk.o :
 	-c src/violas_sdk.cpp \
 	-o violas_sdk.o
 
-android : libcppSdk-arm64v8a.a
+jni_violas_sdk.o :
+	$(CXX) -o2 -std=c++17 \
+	-c src/jni_violas_sdk.cpp \
+	-o jni_violas_sdk.o
 
-libcppSdk-arm64v8a.a : violas_sdk.o
-	$(AR) -crv lib/libcppSdk-arm64v8a.a violas_sdk.o
+android : violas_sdk.o jni_violas_sdk.o
+	$(AR) -crv lib/libcppSdk-arm64v8a.a violas_sdk.o jni_violas_sdk.o
 
 clean :
 	rm -f lib/libcppSdk.a lib/libcppSdk-arm64v8a.a violas_sdk.o

@@ -11,7 +11,11 @@
 using namespace std;
 namespace fs = filesystem;
 
-const char *PAIR_CLASS_NAME = "android/util/Pair";
+#ifdef ANDROID
+	const char *PAIR_CLASS_NAME = "android/util/Pair";
+#else
+	const char *PAIR_CLASS_NAME = "javafx/util/Pair";
+#endif
 
 static std::string to_string(JNIEnv *env, jstring str) {
 
@@ -114,9 +118,8 @@ jobject create_next_account(JNIEnv *env, jobject, jlong nativeObj) {
 		Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
 
 		auto account_info = client->create_next_account(true);
-
-		//jclass pairClass = env->FindClass("kotlin/Pair");
-		jclass pairClass = env->FindClass("android/util/Pair");
+		
+		jclass pairClass = env->FindClass(PAIR_CLASS_NAME);
 		jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
 		                                             "(Ljava/lang/Object;Ljava/lang/Object;)V");
 
@@ -124,7 +127,7 @@ jobject create_next_account(JNIEnv *env, jobject, jlong nativeObj) {
 		jbyteArray address = env->NewByteArray(length);
 		env->SetByteArrayRegion(address, 0, length, ((jbyte *) account_info.second.data()));
 
-		jclass longClass = env->FindClass("java/lang/Long");  //kotlin/ULong
+		jclass longClass = env->FindClass("java/lang/Long"); 
 		jmethodID longConstruct = env->GetMethodID(longClass, "<init>", "(J)V");
 		jobject index = env->NewObject(longClass, longConstruct, account_info.first);
 
@@ -155,7 +158,7 @@ jobjectArray client_get_all_accounts(JNIEnv *env, jobject obj, jlong nativeObj) 
 		jobjectArray objAccounts = env->NewObjectArray(accounts.size(), accountClass,
 		                                               defaultAccount);
 
-		for (int i = 0; i < accounts.size(); ++i) {
+		for (size_t i = 0; i < accounts.size(); ++i) {
 
 			size_t length = accounts[i].address.size();
 			jbyteArray address = env->NewByteArray(length);

@@ -69,5 +69,11 @@
     "git.ignoreLimitWarning": true,
     "cmake.configureOnOpen": false,
     "python.pythonPath": "python3",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
+    }
 }

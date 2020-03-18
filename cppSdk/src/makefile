@@ -1,5 +1,5 @@
 #all flags
-CXXFLAGS= -Wall -Werror -std=c++17
+CXXFLAGS= -Wall -Werror -std=c++17 -fPIC
 LDFLAGS=
 LIBS= -lc++std-fs
 BIN= ../lib
@@ -42,7 +42,7 @@ $(JAVA_TARGET) : $(ANDROID_OBJS)
 android : CXXFLAGS+= -DANDROID
 android : $(ANDROID_TARGET)
 
-java : CXXFLAGS+= -I/usr/lib/jvm/java-11-openjdk-amd64/include -I/usr/lib/jvm/java-11-openjdk-amd64/include/linux/
+java : CXXFLAGS+= -g -I/usr/lib/jvm/java-11-openjdk-amd64/include -I/usr/lib/jvm/java-11-openjdk-amd64/include/linux/
 java : $(JAVA_TARGET)
 
 #for build with debug

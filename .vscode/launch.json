@@ -5,6 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Java Launch jni",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": " /usr/bin/java",
+            "args": ["--module-path", "/usr/share/openjfx/lib/", "--add-modules=javafx.base", "-cp", "../bin/violas.jar", "Demo.java"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/Java/test",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",

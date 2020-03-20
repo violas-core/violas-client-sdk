@@ -5,7 +5,7 @@ import java.lang.reflect.Array;
 
 public class Client {
     static {
-        System.loadLibrary("violas-sdk-lib");
+        System.loadLibrary("violas_sdk_jni");
     }
 
     private long nativeClient;

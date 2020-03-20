@@ -549,7 +549,7 @@ protected:
         if (m_temp_path.empty())
             m_temp_path = fs::temp_directory_path(); // /tmp/xxxxx
 
-        m_temp_script_path = m_temp_path / uint256_to_string(m_governor_addr);
+        m_temp_script_path = m_temp_path / fs::path(governor);
 
         fs::remove_all(m_temp_script_path);
 

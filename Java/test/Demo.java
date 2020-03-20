@@ -15,7 +15,8 @@ public class Demo {
     } 
 
     static void runViolasSdk() {
-
+        String scripts_path = "../../cppSdk/scripts/";
+        
         Client client = new Client(
                 "18.220.66.235", //"125.39.5.57",
                 (short)40001,
@@ -37,7 +38,7 @@ public class Demo {
             System.out.println("index=" + account.index);
         }
         System.out.println("getAllAccounts ...");
-
+        /*    
         client.mint((long)0, (long)100);
 
         double balance = client.getBalance(0);
@@ -56,8 +57,7 @@ public class Demo {
 
         System.out.println("the account 0's balance = " + balance);
         
-        String scripts_path = "../../cppSdk/scripts/";
-
+       
         
         client.compile(
                 0,
@@ -78,7 +78,7 @@ public class Demo {
         client.executeScript(1, scripts_path+"publish.mv", new String[0]);
 
         long sequence = client.getSequenceNumber(1);
-
+        
         //var (txn, event) = client.getCommittedTxnsByAccSeq(1.toLong(), sequence - 1.toLong());
         Pair<String, String> txn_event = client.getCommittedTxnsByAccSeq(1, sequence - 1);
         System.out.println("the account 0's balance = " + txn_event.getKey() + txn_event.getValue());
@@ -87,10 +87,11 @@ public class Demo {
         for ( Pair<String, String> x : txnEvents ){
             System.out.println("the account 0's balance = " + x.getKey() + x.getValue());
         }
+        */
         //
         //  test Token class
         //
-        Token token = new Token(client, account1.getValue(), "Token1", scripts_path,"");
+        Token token = new Token(client, account1.getValue(), "Token1", scripts_path, "");
 
         token.deploy(1);
 

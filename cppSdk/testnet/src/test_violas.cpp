@@ -8,7 +8,8 @@ void run_test_case(
     const string &host,
     uint16_t port,
     const string &mnemonic_file,
-    const string &mint_key_file);
+    const string &mint_key_file,
+    const string &script_files_path);
 
 int main(int argc, char *argv[])
 {
@@ -19,11 +20,12 @@ int main(int argc, char *argv[])
     {
         if (argc <= 4)
         {
-            cout << "usage : test_violas host port mnemonic_file mint_key_file";
+            cout << "usage : test_violas host port mnemonic_file mint_key_file script_files_path";
             return -1;
         }
 
-        run_test_case(argv[1], stol(argv[2]), argv[3], argv[4]);
+        run_test_case(argv[1], stol(argv[2]), argv[3], argv[4],
+                      argc <= 4 ? "../scripts" : argv[5]);
     }
     catch (const std::exception &e)
     {
@@ -39,7 +41,8 @@ void run_test_case(
     const string &host,
     uint16_t port,
     const string &mnemonic_file,
-    const string &mint_key_file)
+    const string &mint_key_file,
+    const string &script_files_path)
 {
     auto client = Violas::Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
 
@@ -56,7 +59,7 @@ void run_test_case(
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(0) << endl;
 
-    auto token = Violas::Token::create(client, accounts[1].address, "token1", "../scripts");
+    auto token = Violas::Token::create(client, accounts[1].address, "token1", script_files_path);
     token->deploy(1);
     cout << "account 1 deployed token successfully ." << endl;
 

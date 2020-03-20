@@ -1,5 +1,7 @@
 Violas SDK for Java on Linux / macOS
 
+to compile the Java/scr/jni the clang++ is neccessary, the libviolas-sdk-jni.so compiled by g++ will run error with core dump
+
 Dependences 
     sudo apt install openjfx
 

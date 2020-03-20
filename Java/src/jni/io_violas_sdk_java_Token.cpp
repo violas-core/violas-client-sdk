@@ -1,5 +1,8 @@
 #include "io_violas_sdk_java_Token.h"
 #include <jni_violas_sdk.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 #define CLASS_METHOD(x) Java_io_violas_sdk_java_Token_##x
 

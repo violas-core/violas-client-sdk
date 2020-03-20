@@ -38,7 +38,7 @@ public class Demo {
             System.out.println("index=" + account.index);
         }
         System.out.println("getAllAccounts ...");
-        /*    
+            
         client.mint((long)0, (long)100);
 
         double balance = client.getBalance(0);
@@ -87,7 +87,7 @@ public class Demo {
         for ( Pair<String, String> x : txnEvents ){
             System.out.println("the account 0's balance = " + x.getKey() + x.getValue());
         }
-        */
+        
         //
         //  test Token class
         //

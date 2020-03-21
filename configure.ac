@@ -19,9 +19,9 @@ AM_PROG_AR
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lboost_filesystem':
-AC_CHECK_LIB([boost_filesystem], [main])
+#AC_CHECK_LIB([boost_filesystem], [main])
 # FIXME: Replace `main' with a function in `-lboost_system':
-AC_CHECK_LIB([boost_system], [main])
+#AC_CHECK_LIB([boost_system], [main])
 # FIXME: Replace `main' with a function in `-lclient_proxy':
 AC_CHECK_LIB([client_proxy], [main])
 # FIXME: Replace `main' with a function in `-lcppSdk':

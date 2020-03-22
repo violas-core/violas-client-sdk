@@ -1,4 +1,4 @@
-import io.violas.sdk.java.*;
+import io.violas.sdk.*;
 import javafx.util.Pair;
 
 public class Demo {

@@ -149,7 +149,7 @@ jobjectArray client_get_all_accounts(JNIEnv *env, jobject obj, jlong nativeObj) 
 
 		auto accounts = client->get_all_accounts();
 
-		jclass accountClass = env->FindClass("io/violas/sdk/java/Client$Account");
+		jclass accountClass = env->FindClass("io/violas/sdk/Client$Account");
 		jmethodID init = env->GetMethodID(accountClass, "<init>", "()V");
 		jmethodID constructAccount = env->GetMethodID(accountClass, "<init>",
 		                                              "(J[BJJ)V");  //"(J[BJJ)V"

@@ -72,3 +72,7 @@ log::__private_api_log(format_args!("{}", lazy), level, &(target, info.module(),
 	grpcio with version 0.4.7 can be compiled successfully, but grpcio with version 0.5.0-alpha.5 cannot be compiled successfully.
 
 ```
+# Build all cpp code
+```
+1. sudo apt install libtool automake autoconf gcc-8 libstdc++-dev clang-9
+```

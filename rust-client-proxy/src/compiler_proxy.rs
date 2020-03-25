@@ -21,7 +21,7 @@ use std::{
     path::{Path, PathBuf},
     *,
 };
-use stdlib::{ stdlib_modules, /*StdLibOptions*/ };
+use stdlib::{ stdlib_modules, StdLibOptions::Staged};
 //use structopt::StructOpt;
 use anyhow::{bail, Error};
 use vm::file_format::CompiledModule;
@@ -132,7 +132,7 @@ pub fn compile(args: Args) -> Result<(), Error> {
         } else if args.no_stdlib {
             vec![]
         } else {            
-            stdlib_modules().to_vec()    //(StdLibOptions::Staged
+            stdlib_modules(Staged).to_vec()    
         }
     };
 

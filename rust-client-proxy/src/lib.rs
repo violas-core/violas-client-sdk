@@ -15,6 +15,7 @@ pub mod x86_64;
 
 pub(crate) mod compiler_proxy;
 pub(crate) mod violas_account;
+pub(crate) mod move_builder;
 
 //
 // test code

@@ -30,7 +30,7 @@ stdlib = { path = "/home/hunter/libra/language/stdlib", version = "0.1.0" }
 vm = { path = "/home/hunter/libra/language/vm", version = "0.1.0" }
 transaction-builder = { path = "/home/hunter/libra/language/transaction-builder", version = "0.1.0" }
 lcs = { path = "/home/hunter/libra/common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
-
+move-lang = { path = "/home/hunter/libra/language/move-lang" }
 
 
 #failure = "0.1.3"

@@ -21,6 +21,12 @@ public class Client {
         nativeClient = createNativeClient(host, port, mintKey, syncOnWallet, faucetServer, mnomenicFile);
     }
 
+    //@Override
+    protected void finalize() {
+        // TODO Auto-generated method stub
+        //super.finalize();
+    }
+
     public long getNativeClient() {
         return nativeClient;
     }

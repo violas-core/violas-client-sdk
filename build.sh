@@ -1,3 +1,4 @@
-mkdir build;mkdir build/debug; mkdir build/release;
-cd build/debug; ../../configure CXX=clang++ CXXFLAGS="-g" --prefix=$PWD
+mkdir -p build/debug;
+mkdir -p build/release;
+cd build/debug; ../../configure CXX=clang++ CXXFLAGS="-g -DDEBUG" --prefix=$PWD
 cd ../release; ../../configure CXX=clang++ CXXFLAGS="-O2" --prefix=$PWD --enable-silent-rules

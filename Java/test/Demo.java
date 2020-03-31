@@ -23,7 +23,7 @@ public class Demo {
                 "/tmp/e0b97af9fc5232794154e202b4cb8b85/mint.key", //"../../cppSdk/testnet/mint_test.key",
                 false,
                 "",
-                "mnenonic"
+                "mnemonic"
         );
 
         client.test_validator_connection();
@@ -57,6 +57,15 @@ public class Demo {
 
         System.out.println("the account 1's balance = " + balance);
         
+        //var (txn, event) = client.getCommittedTxnsByAccSeq(1.toLong(), sequence - 1.toLong());
+        Pair<String, String> txn_event = client.getCommittedTxnsByAccSeq(1, sequence - 1);
+        System.out.println("the account 0's balance = " + txn_event.getKey() + txn_event.getValue());
+
+        Pair<String, String>[] txnEvents = client.getCommitedTxnByRange(100, 10, true);
+        for ( Pair<String, String> x : txnEvents ){
+            System.out.println("the account 0's balance = " + x.getKey() + x.getValue());
+        }
+
         client.close();
 
         return;
@@ -84,14 +93,7 @@ public class Demo {
 
         long sequence = client.getSequenceNumber(1);
         
-        //var (txn, event) = client.getCommittedTxnsByAccSeq(1.toLong(), sequence - 1.toLong());
-        Pair<String, String> txn_event = client.getCommittedTxnsByAccSeq(1, sequence - 1);
-        System.out.println("the account 0's balance = " + txn_event.getKey() + txn_event.getValue());
-
-        Pair<String, String>[] txnEvents = client.getCommitedTxnByRange(100, 100, true);
-        for ( Pair<String, String> x : txnEvents ){
-            System.out.println("the account 0's balance = " + x.getKey() + x.getValue());
-        }
+        
         
         //
         //  test Token class

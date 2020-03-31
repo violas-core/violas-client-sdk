@@ -198,7 +198,6 @@ pub mod x86_64 {
     pub extern "C" fn libra_get_all_accounts(raw_ptr: u64) -> Accounts {
         //
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-        
         let mut accounts: Vec<Account> = Vec::new();
 
         for (i, ref acc) in client.accounts.iter().enumerate() {
@@ -639,13 +638,9 @@ pub mod x86_64 {
 
                     match txn_view {
                         Some(txn_view) => {
-                            //println!("Committed transaction: {:#?}", txn_view);
-                            //txn = txn_view.transaction.to_string();
-                            //event = txn_view.events;
-                            //txn = String::new();
-                            //event = String::();
+                            txn = format!("Committed transaction: {:#?}", txn_view);
                         }
-                        None => println!("Transaction not available"),
+                        None => {}
                     };
 
                     Ok((txn, events))

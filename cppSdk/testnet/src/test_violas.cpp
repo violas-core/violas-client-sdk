@@ -86,7 +86,7 @@ void run_test_case(
     // balacne = token->get_account_balance(accounts[0].address);
     // cout << "account 0's token balance is " << balacne << endl;
 
-    auto [txn, event] = client->get_committed_txn_by_acc_seq(1, client->get_sequence_number(1) - 1);
+    auto [txn, event] = client->get_committed_txn_by_acc_seq(0, client->get_sequence_number(0) - 1);
     cout << "txn = " << txn << endl
          << "event = " << event << endl;
 

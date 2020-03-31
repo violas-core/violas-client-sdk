@@ -39,18 +39,6 @@ const MAX_GAS_AMOUNT: u64 = 280_000;
  }
 ```
 
-
-if fail to compile with error "log::__private_api_log(...) -- expected 4 parameters" due to rust lib log update from 0.4.8 to 0.4.10 
-
-change the slog-stdlog code from  
-```
-log::__private_api_log(format_args!("{}", lazy), level, &(target, info.module(), info.file(), info.line()));
-```
-
-```
-log::__private_api_log(format_args!("{}", lazy), level, &(target, info.module(), info.file(), info.line()), None);
-```
-
 2. open ViolasClientSdk/rust-client-proxy/cargo.toml, replace all reference for 'Libra' with correct path.
 
 3. run "cargo build"

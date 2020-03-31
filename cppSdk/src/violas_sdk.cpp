@@ -122,8 +122,7 @@ public:
     virtual ~ClientImp()
     {
         libra_destory_client_proxy((uint64_t)raw_client_proxy);
-
-        // CLOG << "entered" << endl;
+        raw_client_proxy = 0;
     }
 
     string get_last_error()
@@ -447,19 +446,19 @@ public:
           m_name(name),
           m_governor_addr(governor_addr)
     {
-         init_all_script(script_files_path);
+        init_all_script(script_files_path);
     }
 
-	TokenImp(client_ptr client,
-	         uint256 governor_addr,
-	         const std::string &name,
-	         function<void(const std::string &)> init_all_script_fun,
-	         const std::string &temp_path)
-			: m_libra_client(client),
-			  m_name(name),
-			  m_governor_addr(governor_addr),
-			  m_temp_path(temp_path)
-	{
+    TokenImp(client_ptr client,
+             uint256 governor_addr,
+             const std::string &name,
+             function<void(const std::string &)> init_all_script_fun,
+             const std::string &temp_path)
+        : m_libra_client(client),
+          m_name(name),
+          m_governor_addr(governor_addr),
+          m_temp_path(temp_path)
+    {
         string governor = uint256_to_string(m_governor_addr);
 
         m_temp_script_path = m_temp_path / uint256_to_string(m_governor_addr);
@@ -470,7 +469,7 @@ public:
         CLOG << m_temp_script_path.string() << endl;
 
         init_all_script_fun(m_temp_script_path.string());
-	}
+    }
 
     virtual ~TokenImp() {}
 

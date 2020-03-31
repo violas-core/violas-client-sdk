@@ -10,26 +10,32 @@ public class Client {
 
     private long nativeClient;
 
-    public static long MICRO_LIBRO_COIN = 1000000;
+    public static long MICRO_LIBRA_COIN = 1000000;
 
-    public Client(String host,
-                  Short port,
-                  String mintKey,
-                  boolean syncOnWallet,
-                  String faucetServer,
-                  String mnomenicFile) {
+    public Client(String host, Short port, String mintKey, boolean syncOnWallet, String faucetServer,
+            String mnomenicFile) {
         nativeClient = createNativeClient(host, port, mintKey, syncOnWallet, faucetServer, mnomenicFile);
     }
 
-    //@Override
+    public void close() {
+        if (nativeClient != 0)
+            destroyNativeClient(nativeClient);
+
+        nativeClient = 0;
+    }
+
+    // @Override
     protected void finalize() {
         // TODO Auto-generated method stub
-        //super.finalize();
+        close();
+
+        System.out.println("-----------------------finalize was called!----------------------------");
     }
 
     public long getNativeClient() {
         return nativeClient;
     }
+
     public void test_validator_connection() {
         native_test_validator_connection(nativeClient);
     }
@@ -43,16 +49,15 @@ public class Client {
         public byte[] address;
         public long sequenceNumber;
         public long status;
-        
+
         public Account() {
-            index =0;
+            index = 0;
             address = new byte[0];
             sequenceNumber = 0;
             status = 0;
         }
-        
-        public Account(long _index, byte[] _address, long _sequenceNum, long _status
-        ) {
+
+        public Account(long _index, byte[] _address, long _sequenceNum, long _status) {
             index = _index;
             address = _address;
             sequenceNumber = _sequenceNum;
@@ -80,46 +85,20 @@ public class Client {
         nativeMint(nativeClient, index, amount, true);
     }
 
-    public void transfer(
-            long accountIndex,
-            byte[] receiver,
-            long amount) {
+    public void transfer(long accountIndex, byte[] receiver, long amount) {
         transfer(accountIndex, receiver, amount, (long) 0, (long) 0, true);
     }
 
-    public void transfer(
-            long accountIndex,
-            byte[] receiver,
-            long amount,
-            long gaxUnitPrice,
-            long maxGasAccount,
-            Boolean isBlocking
-    ) {
-        nativeTransfer(
-                nativeClient,
-                accountIndex,
-                receiver,
-                amount,
-                gaxUnitPrice,
-                maxGasAccount,
-                isBlocking);
+    public void transfer(long accountIndex, byte[] receiver, long amount, long gaxUnitPrice, long maxGasAccount,
+            Boolean isBlocking) {
+        nativeTransfer(nativeClient, accountIndex, receiver, amount, gaxUnitPrice, maxGasAccount, isBlocking);
     }
 
-    public void compile(
-            long accountIndex,
-            String scriptFile,
-            Boolean isModule,
-            String tempDir
-    ) {
+    public void compile(long accountIndex, String scriptFile, Boolean isModule, String tempDir) {
         nativeCompile(nativeClient, accountIndex, scriptFile, isModule, tempDir);
     }
 
-    public void compile(
-            byte[] address,
-            String scriptFile,
-            Boolean isModule,
-            String tempDir
-    ) {
+    public void compile(byte[] address, String scriptFile, Boolean isModule, String tempDir) {
         nativeCompile(nativeClient, address, scriptFile, isModule, tempDir);
     }
 
@@ -133,34 +112,24 @@ public class Client {
         nativeExecuteScript(nativeClient, accountIndex, scriptFile, args);
     }
 
-    /// get committed transaction and event with JSON format by account and sequence number
-    public Pair<String, String> getCommittedTxnsByAccSeq(
-            long accountIndex,
-            long sequence
-    ) {
+    /// get committed transaction and event with JSON format by account and sequence
+    /// number
+    public Pair<String, String> getCommittedTxnsByAccSeq(long accountIndex, long sequence) {
         return nativeGetCommittedTxnsByAccSeq(nativeClient, accountIndex, sequence);
     }
 
     /// get commited transactions by range
-    public Pair<String, String>[] getCommitedTxnByRange(
-            long start_version,
-            long limit,
-            Boolean fetchEvent
-    ) {
+    public Pair<String, String>[] getCommitedTxnByRange(long start_version, long limit, Boolean fetchEvent) {
         return nativeGetCommitedTxnbyRange(nativeClient, start_version, limit, fetchEvent);
     }
 
     //
-    //  native fun from violas-sdk-lib.so
+    // native fun from violas-sdk-lib.so
     //
-    private native long createNativeClient(
-            String host,
-            short port,
-            String faucetKey,
-            boolean syncOnWallet,
-            String faucetServer,
-            String mnemonicFile
-    );
+    private native long createNativeClient(String host, short port, String faucetKey, boolean syncOnWallet,
+            String faucetServer, String mnemonicFile);
+
+    private native void destroyNativeClient(long nativeClient);
 
     private native void native_test_validator_connection(long nativeClient);
 
@@ -174,65 +143,29 @@ public class Client {
 
     private native long nativeGetSequenceNumber(long nativeClient, long accountIndex);
 
-    private native void nativeMint(
-            long nativeClient,
-            long accountIndex,
-            long amount,
-            boolean is_blocking
-    );
+    private native void nativeMint(long nativeClient, long accountIndex, long amount, boolean is_blocking);
 
-    private native void nativeTransfer(
-            long nativeClient,
-            long accountIndex,
-            byte[] receiver,
-            long amount,
-            long gaxUnitPrice,
-            long maxGasAccount,
-            boolean is_blocking
-    );
+    private native void nativeTransfer(long nativeClient, long accountIndex, byte[] receiver, long amount,
+            long gaxUnitPrice, long maxGasAccount, boolean is_blocking);
 
-    private native void nativeCompile(
-            long nativeClient,
-            long accountIndex,
-            String scriptFile,
-            boolean isModule,
-            String tempDir
-    );
+    private native void nativeCompile(long nativeClient, long accountIndex, String scriptFile, boolean isModule,
+            String tempDir);
 
-    private native void nativeCompile(
-            long nativeClient,
-            byte[] address,
-            String scriptFile,
-            boolean isModule,
-            String tempDir
-    );
+    private native void nativeCompile(long nativeClient, byte[] address, String scriptFile, boolean isModule,
+            String tempDir);
+
     /// publish a module to Violas blockchain
-    private native void nativePublishModule(
-            long nativeClient,
-            long accountIndex,
-            String moduleFileName
-    );
+    private native void nativePublishModule(long nativeClient, long accountIndex, String moduleFileName);
 
     /// execute a script on Violas blockchain
-    private native void nativeExecuteScript(
-            long nativeClient,
-            long accountIndex,
-            String scriptFile,
-            String[] args
-    );
+    private native void nativeExecuteScript(long nativeClient, long accountIndex, String scriptFile, String[] args);
 
-    /// get committed transaction and event with JSON format by account and sequence number
-    private native Pair<String, String> nativeGetCommittedTxnsByAccSeq(
-            long nativeClient,
-            long accountIndex,
-            long sequence
-    );
+    /// get committed transaction and event with JSON format by account and sequence
+    /// number
+    private native Pair<String, String> nativeGetCommittedTxnsByAccSeq(long nativeClient, long accountIndex,
+            long sequence);
 
     /// get commited transactions by range
-    private native Pair<String, String>[] nativeGetCommitedTxnbyRange(
-            long nativeClient,
-            long start_version,
-            long limit,
-            boolean fetchEvent
-    );
+    private native Pair<String, String>[] nativeGetCommitedTxnbyRange(long nativeClient, long start_version, long limit,
+            boolean fetchEvent);
 }

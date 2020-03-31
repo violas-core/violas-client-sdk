@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
         }
 
         run_test_case(argv[1], stol(argv[2]), argv[3], argv[4],
-                      argc <= 4 ? "../scripts" : argv[5]);
+                      argc <= 5 ? "../scripts" : argv[5]);
     }
     catch (const std::exception &e)
     {
@@ -44,7 +44,9 @@ void run_test_case(
     const string &mint_key_file,
     const string &script_files_path)
 {
-    auto client = Violas::Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
+    using namespace Violas;
+
+    auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -57,29 +59,42 @@ void run_test_case(
     client->mint_coins(0, 10);
     client->mint_coins(1, 10);
     cout << "account 0' balance is " << client->get_balance(0) << endl
-         << "account 1' balance is " << client->get_balance(0) << endl;
+         << "account 1' balance is " << client->get_balance(1) << endl;
 
-    auto token = Violas::Token::create(client, accounts[1].address, "token1", script_files_path);
-    token->deploy(1);
-    cout << "account 1 deployed token successfully ." << endl;
+    cout << "Transfer 1 libra coin from account 0 to account 1 ..." << endl;
+    client->transfer_coins_int(0, accounts[1].address, 1 * MICRO_LIBRO_COIN);
+    cout << "account 0' balance is " << client->get_balance(0) << endl
+         << "account 1' balance is " << client->get_balance(1) << endl;
 
-    token->publish(1);
-    token->publish(0);
-    cout << "all accounts published the token ." << endl;
+    // auto token = Token::create(client, accounts[1].address, "token1", script_files_path);
+    // token->deploy(1);
+    // cout << "account 1 deployed token successfully ." << endl;
 
-    token->mint(1, accounts[1].address, 1000);
-    cout << "mint 1000 coin for account 1 ." << endl;
+    // token->publish(1);
+    // token->publish(0);
+    // cout << "all accounts published the token ." << endl;
 
-    token->transfer(1, accounts[0].address, 800);
-    cout << "transfer 1000 coins from account 1 to account 0 ." << endl;
+    // token->mint(1, accounts[1].address, 1000);
+    // cout << "mint 1000 coin for account 1 ." << endl;
+
+    // token->transfer(1, accounts[0].address, 800);
+    // cout << "transfer 1000 coins from account 1 to account 0 ." << endl;
+
+    // auto balacne = token->get_account_balance(accounts[1].address);
+    // cout << "account 1's token balance is " << balacne << endl;
+
+    // balacne = token->get_account_balance(accounts[0].address);
+    // cout << "account 0's token balance is " << balacne << endl;
 
     auto [txn, event] = client->get_committed_txn_by_acc_seq(1, client->get_sequence_number(1) - 1);
     cout << "txn = " << txn << endl
          << "event = " << event << endl;
 
-    auto balacne = token->get_account_balance(accounts[1].address);
-    cout << "account 1's token balance is " << balacne << endl;
-
-    balacne = token->get_account_balance(accounts[0].address);
-    cout << "account 0's token balance is " << balacne << endl;
+    cout << "get txn by range ..." << endl;
+    auto txn_events = client->get_txn_by_range(100, 10, true);
+    for (const auto & [txn, envent] : txn_events)
+    {
+        cout << "txn = " << txn << endl
+             << "event = " << event << endl;
+    }
 }

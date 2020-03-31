@@ -17,6 +17,14 @@ JNIEXPORT jlong JNICALL Java_io_violas_sdk_Client_createNativeClient
 
 /*
  * Class:     io_violas_sdk_Client
+ * Method:    destroyNativeClient
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_destroyNativeClient
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     io_violas_sdk_Client
  * Method:    native_test_validator_connection
  * Signature: (J)V
  */

@@ -50,24 +50,3 @@ mod tests {
     }
 }
 
-pub fn new_client_proxy() -> Result<ClientProxy, Box<dyn Error>> {
-    let host = "localhost";
-    let port: u16 = 8000;
-    let faucet_account_file = "";
-    let sync_on_wallet_recovery = false;
-    let faucet_server = None;
-    let mnemonic_file = None;
-
-    // new a Client Proxy
-    let client = ClientProxy::new(
-        host,
-        port,
-        faucet_account_file,
-        sync_on_wallet_recovery,
-        faucet_server,
-        mnemonic_file,
-        None,
-    )?;
-
-    Ok(client)
-}

@@ -18,9 +18,9 @@ public class Demo {
         String scripts_path = "../../cppSdk/scripts/";
         
         Client client = new Client(
-                "18.220.66.235", //"125.39.5.57",
-                (short)40001,
-                "../../cppSdk/testnet/mint_test.key",
+                "localhost", //"18.220.66.235", //"125.39.5.57",
+                (short)40769,
+                "/tmp/e0b97af9fc5232794154e202b4cb8b85/mint.key", //"../../cppSdk/testnet/mint_test.key",
                 false,
                 "",
                 "mnenonic"
@@ -51,14 +51,19 @@ public class Demo {
 
         System.out.println("the account 0's balance = " + balance);
 
-        client.transfer(0, account1.getValue(), 1 * Client.MICRO_LIBRO_COIN);
+        client.transfer(0, account1.getValue(), 1 * Client.MICRO_LIBRA_COIN);
 
         balance = client.getBalance(account1.getValue());
 
-        System.out.println("the account 0's balance = " + balance);
+        System.out.println("the account 1's balance = " + balance);
         
-       
-        
+        client.close();
+
+        return;
+        /*
+        //
+        // compile file token.mvir and generate file token.mv 
+        //
         client.compile(
                 0,
                 scripts_path + "token.mvir",
@@ -104,5 +109,6 @@ public class Demo {
         long token_balance = token.getBalance(0);
 
         System.out.println("the balance of Stable Coin of account 0  = " + token_balance);
+        */
     }
 } 

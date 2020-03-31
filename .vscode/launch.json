@@ -3,7 +3,17 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [
+    "configurations": [               
+
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch testnet",
+            "program": "${workspaceFolder}/build/debug/bin/testnet",
+            "args": ["localhost", "35425", "governor", "/tmp/e55f14a4ff1f4d1498c89389c78c93fb/mint.key"],
+            "cwd": "${workspaceFolder}/cppSdk/testnet"
+        },
+
         {
             "name": "Java Launch jni",
             "type": "cppdbg",

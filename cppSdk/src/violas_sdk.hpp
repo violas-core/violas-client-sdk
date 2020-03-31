@@ -32,7 +32,7 @@ namespace Violas
 ///
 /// uint256
 ///
-using uint256 = std::array<uint8_t, 32>;
+using uint256 = std::array<uint8_t, 16>;
 
 std::ostream &operator<<(std::ostream &os, const uint256 &value);
 

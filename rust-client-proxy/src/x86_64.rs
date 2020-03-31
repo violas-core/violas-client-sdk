@@ -7,8 +7,7 @@ pub mod x86_64 {
     use cli::AccountStatus;
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress,
-        account_config::CORE_CODE_ADDRESS, 
-        account_state::AccountState,
+        account_config::CORE_CODE_ADDRESS, account_state::AccountState,
     }; //ADDRESS_LENGTH access_path::AccessPath,
     use std::cell::RefCell;
     use std::ffi::{CStr, CString};
@@ -16,6 +15,9 @@ pub mod x86_64 {
     use std::{convert::TryFrom, io::Write, path::Path, result::Result, *};
     use tempdir::TempDir;
     use transaction_builder::get_transaction_name;
+
+    pub const LENGTH: usize = 16;
+
     thread_local! {
         static LAST_ERROR: RefCell<String> = RefCell::new(String::new());
     }
@@ -70,12 +72,14 @@ pub mod x86_64 {
                 unsafe { CStr::from_ptr(c_faucet_server).to_str().unwrap().to_owned() };
             let mnemonic_file =
                 unsafe { CStr::from_ptr(c_mnemonic_file).to_str().unwrap().to_owned() };
+            let url = format!("http://{}:{}", host, port);
+            println!("{}", url);
+
             //
             // new Client Proxy
             //
             ClientProxy::new(
-                host,
-                port,
+                url.as_str(),
                 faucet_account_file,
                 sync_on_wallet_recovery,
                 Some(faucet_server),
@@ -143,7 +147,7 @@ pub mod x86_64 {
 
     #[repr(C)]
     pub struct AccountAndIndex {
-        pub address: [c_uchar; 32],
+        pub address: [c_uchar; LENGTH],
         pub index: u64,
     }
 
@@ -166,7 +170,7 @@ pub mod x86_64 {
 
         let mut account = AccountAndIndex {
             index: accountAndIndex.index as u64,
-            address: [0; 32],
+            address: [0; LENGTH],
         };
 
         account
@@ -178,7 +182,7 @@ pub mod x86_64 {
 
     #[repr(C)]
     pub struct Account {
-        pub address: [c_uchar; 32],
+        pub address: [c_uchar; LENGTH],
         pub index: u64,
         pub sequence_number: u64,
         pub status: i64,
@@ -194,34 +198,12 @@ pub mod x86_64 {
     pub extern "C" fn libra_get_all_accounts(raw_ptr: u64) -> Accounts {
         //
         let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-
-        // if client.accounts.is_empty() {
-        //     println!("No user accounts");
-        // } else {
-        //     for (ref index, ref account) in client.accounts.iter().enumerate() {
-        //         println!(
-        //             "User account index: {}, address: {}, sequence number: {}, status: {:?}",
-        //             index,
-        //             hex::encode(&account.address),
-        //             account.sequence_number,
-        //             account.status,
-        //         );
-        //     }
-        // }
-
-        // if let Some(faucet_account) = &client.faucet_account {
-        //     println!(
-        //         "Faucet account address: {}, sequence_number: {}, status: {:?}",
-        //         hex::encode(&faucet_account.address),
-        //         faucet_account.sequence_number,
-        //         faucet_account.status,
-        //     );
-        // }
+        
         let mut accounts: Vec<Account> = Vec::new();
 
         for (i, ref acc) in client.accounts.iter().enumerate() {
             let mut accout = Account {
-                address: [0; 32],
+                address: [0; LENGTH],
                 index: i as u64,
                 sequence_number: acc.sequence_number,
                 status: match &acc.status {
@@ -365,7 +347,7 @@ pub mod x86_64 {
     pub extern "C" fn libra_transfer_coins_int(
         raw_ptr: u64,
         sender_account_ref_id: usize,
-        receiver_addr: &[u8; 32],
+        receiver_addr: &[u8; 16],
         micro_coins: u64,
         gas_unit_price: u64,
         max_gas_amount: u64,
@@ -376,9 +358,12 @@ pub mod x86_64 {
             // convert raw ptr to object client
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let receiver_address = AccountAddress::new(*receiver_addr);
+            let receiver_auth_key_prefix: Vec<u8> = vec![];
+
             client.transfer_coins_int(
                 sender_account_ref_id,
                 &receiver_address,
+                receiver_auth_key_prefix,
                 micro_coins,
                 match gas_unit_price {
                     0 => None,
@@ -427,7 +412,7 @@ pub mod x86_64 {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             // convert raw ptr to object client
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let address = client.get_account_address_from_parameter(unsafe {
+            let (address, _) = client.get_account_address_from_parameter(unsafe {
                 CStr::from_ptr(account_index_or_addr).to_str().unwrap()
             })?;
             let file_path = unsafe { CStr::from_ptr(script_path).to_str().unwrap().to_string() };
@@ -529,7 +514,7 @@ pub mod x86_64 {
         let mut dependencies = vec![];
         for path in paths {
             if path.address != CORE_CODE_ADDRESS {
-                if let (Some(blob), _) = client.client.get_account_blob(path.address)? {
+                if let Some(blob) = client.client.get_account_blob(path.address)? {
                     let account_state = AccountState::try_from(&blob)?;
 
                     if let Some(code) = account_state.get(&path.path) {
@@ -648,22 +633,22 @@ pub mod x86_64 {
                 sequence_num.to_string().as_str(),
                 "true",
             ]) {
-                Ok(txn_and_events) => {
-                    match txn_and_events {
-                        Some((comm_txn, events)) => {
-                            let txn =
-                                format!("{}", comm_txn.format_for_client(get_transaction_name));
-                            let mut all_events = String::new();
-                            if let Some(events_inner) = &events {
-                                for event in events_inner {
-                                    all_events += format!("{}\n", event).as_str();
-                                }
-                            }
+                Ok(txn_view) => {
+                    let mut txn = String::new();
+                    let mut events = String::new();
 
-                            return Ok((txn, all_events));
+                    match txn_view {
+                        Some(txn_view) => {
+                            //println!("Committed transaction: {:#?}", txn_view);
+                            //txn = txn_view.transaction.to_string();
+                            //event = txn_view.events;
+                            //txn = String::new();
+                            //event = String::();
                         }
-                        None => bail!("Transaction not available"),
+                        None => println!("Transaction not available"),
                     };
+
+                    Ok((txn, events))
                 }
                 Err(e) => bail!(
                     "Error getting committed transaction by account and sequence number, {}",
@@ -725,34 +710,34 @@ pub mod x86_64 {
             {
                 Ok(comm_txns_and_events) => {
                     let mut vec_txn_events: Vec<txn_events> = vec![];
-                    for (txn, opt_events) in comm_txns_and_events {
+                    for txn_opt_events in comm_txns_and_events {
                         // println!(
                         //     "Transaction at version {}: {}",
                         //     txn.format_for_client(get_transaction_name)
                         // );
-                        let txn_format = txn.format_for_client(get_transaction_name);
-                        let mut all_events = String::new();
+                        // let txn_format = txn.format_for_client(get_transaction_name);
+                        // let mut all_events = String::new();
 
-                        if let Some(events) = opt_events {
-                            if events.is_empty() {
-                                println!("No events returned");
-                            } else {
-                                for event in events {
-                                    //println!("{}", event);
-                                    all_events += format!("{}\n", event).as_str();
-                                }
-                            }
-                        }
+                        // if let Some(events) = opt_events {
+                        //     if events.is_empty() {
+                        //         println!("No events returned");
+                        //     } else {
+                        //         for event in events {
+                        //             //println!("{}", event);
+                        //             all_events += format!("{}\n", event).as_str();
+                        //         }
+                        //     }
+                        // }
 
-                        let output = txn_events {
-                            transaction: CString::new(txn_format)
-                                .expect("new transaction detail")
-                                .into_raw(),
-                            events: CString::new(all_events)
-                                .expect("new transaction detail")
-                                .into_raw(),
-                        };
-                        vec_txn_events.push(output);
+                        // let output = txn_events {
+                        //     transaction: CString::new(txn_format)
+                        //         .expect("new transaction detail")
+                        //         .into_raw(),
+                        //     events: CString::new(all_events)
+                        //         .expect("new transaction detail")
+                        //         .into_raw(),
+                        // };
+                        //vec_txn_events.push(output);
                     }
                     unsafe {
                         (*out_all_txn_events).data = vec_txn_events.as_mut_ptr();
@@ -805,11 +790,11 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<u64, Error> {
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let address = client.get_account_address_from_parameter(unsafe {
+            let (address, _) = client.get_account_address_from_parameter(unsafe {
                 CStr::from_ptr(account_index_or_addr).to_str().unwrap()
             })?;
 
-            if let (Some(blob), _) = client.client.get_account_blob(address)? {
+            if let (Some(blob)) = client.client.get_account_blob(address)? {
                 let account_state = AccountState::try_from(&blob)?;
                 // debugging
                 // for (movie, review) in &map {
@@ -819,9 +804,10 @@ pub mod x86_64 {
                     unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
                 let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
-                let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
+                // let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
 
-                return Ok(ar.balance);
+                // return Ok(ar.balance);
+                return Ok(0);
             }
 
             bail!("Account hasn't published the module")

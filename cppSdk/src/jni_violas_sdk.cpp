@@ -102,6 +102,15 @@ jlong createNativeClient(JNIEnv *env, jobject,
 	return nativeObj;
 }
 
+//
+// function:    destroy native vlient
+// 
+void JNICALL destroy_native_client(JNIEnv *env, jobject, jlong nativeObj)
+{
+	auto native_client = (Violas::client_ptr *) nativeObj;
+	delete native_client;
+}
+
 void test_validator_connection(JNIEnv *env, jobject, jlong nativeObj) {
 	try {
 		Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);

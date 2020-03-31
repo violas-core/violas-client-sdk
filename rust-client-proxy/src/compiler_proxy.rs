@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use bytecode_verifier::{
-    verifier::{verify_module_dependencies, VerifiedProgram},
+    verifier::{verify_module_dependencies, VerifiedScript},
     VerifiedModule,
 };
 use compiler::{util, Compiler};
@@ -92,13 +92,15 @@ pub fn compile(args: Args) -> Result<(), Error> {
         );
     }
 
+    let file_name = source_path.as_os_str().to_str().unwrap();
+
     if args.list_dependencies {
         let source = fs::read_to_string(args.source_path.clone())?;
         let dependency_list: Vec<AccessPath> = if args.module_input {
-            let module = parse_module(&source).expect("Unable to parse module");
+            let module = parse_module(file_name, &source).expect("Unable to parse module");
             module.get_external_deps()
         } else {
-            let script = parse_script(&source).expect("Unable to parse module");
+            let script = parse_script(file_name, &source).expect("Unable to parse module");
             script.get_external_deps()
         }
         .into_iter()
@@ -144,11 +146,11 @@ pub fn compile(args: Args) -> Result<(), Error> {
             extra_deps: deps,
             ..Compiler::default()
         };
-        let (compiled_program, source_map, dependencies) =
-            compiler.into_compiled_program_and_source_maps_deps(&source)?;
+        let (compiled_program, source_map) =
+            compiler.into_compiled_script_and_source_map(file_name, &source)?;
 
         let compiled_program = if !args.no_verify {
-            let verified_program = VerifiedProgram::new(compiled_program, &dependencies)
+            let verified_program = VerifiedScript::new(compiled_program)
                 .expect("Failed to verify program");
             verified_program.into_inner()
         } else {
@@ -166,7 +168,6 @@ pub fn compile(args: Args) -> Result<(), Error> {
 
         let mut script = vec![];
         compiled_program
-            .script
             .serialize(&mut script)
             .expect("Unable to serialize script");
         let payload = Script::new(script, vec![]);

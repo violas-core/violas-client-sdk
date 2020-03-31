@@ -28,6 +28,16 @@ JNICALL CLASS_METHOD(createNativeClient)(JNIEnv *env,
 	                          mnemonic_file);
 }
 
+/*
+ * Class:     io_violas_sdk_Client
+ * Method:    destroyNativeClient
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Client_destroyNativeClient
+  (JNIEnv * env, jobject obj, jlong native_client)
+  {
+	  destroy_native_client(env, obj, native_client);
+  }
 
 /*
  * Class:     io_violas_sdk_java_Client

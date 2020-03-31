@@ -28,10 +28,12 @@ extern "C"
     void libra_destory_client_proxy(uint64_t raw_ptr);
 
     bool libra_test_validator_connection(uint64_t raw_ptr);
+    
+    const size_t ADDRESS_LENGTH = 16;
 
     struct Address
     {
-        uint8_t address[32];
+        uint8_t address[ADDRESS_LENGTH];
         uint64_t index;
     };
 
@@ -39,7 +41,7 @@ extern "C"
 
     struct _Account
     {
-        uint8_t address[32];
+        uint8_t address[ADDRESS_LENGTH];
         uint64_t index;
         uint64_t sequence_number;
         int64_t status;

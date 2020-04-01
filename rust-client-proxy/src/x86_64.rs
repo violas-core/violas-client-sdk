@@ -330,7 +330,7 @@ pub mod x86_64 {
                 }
             }
         } else {
-            set_last_error(format_err!("catch panic at function (libra_compile) !"));
+            set_last_error(format_err!("catch panic at function (libra_mint_coins) !"));
             false
         }
     }
@@ -634,7 +634,7 @@ pub mod x86_64 {
             ]) {
                 Ok(txn_view) => {
                     let mut txn = String::new();
-                    let mut events = String::new();
+                    let events = String::new();
 
                     match txn_view {
                         Some(txn_view) => {
@@ -705,34 +705,19 @@ pub mod x86_64 {
             {
                 Ok(comm_txns_and_events) => {
                     let mut vec_txn_events: Vec<txn_events> = vec![];
-                    for txn_opt_events in comm_txns_and_events {
-                        // println!(
-                        //     "Transaction at version {}: {}",
-                        //     txn.format_for_client(get_transaction_name)
-                        // );
-                        // let txn_format = txn.format_for_client(get_transaction_name);
-                        // let mut all_events = String::new();
+                    for txn_view in comm_txns_and_events {
+                        let txn_format = format!("{:#?}", txn_view);
+                        let all_events = format!("{:#?}", txn_view.events);
 
-                        // if let Some(events) = opt_events {
-                        //     if events.is_empty() {
-                        //         println!("No events returned");
-                        //     } else {
-                        //         for event in events {
-                        //             //println!("{}", event);
-                        //             all_events += format!("{}\n", event).as_str();
-                        //         }
-                        //     }
-                        // }
-
-                        // let output = txn_events {
-                        //     transaction: CString::new(txn_format)
-                        //         .expect("new transaction detail")
-                        //         .into_raw(),
-                        //     events: CString::new(all_events)
-                        //         .expect("new transaction detail")
-                        //         .into_raw(),
-                        // };
-                        //vec_txn_events.push(output);
+                        let output = txn_events {
+                            transaction: CString::new(txn_format)
+                                .expect("new transaction detail")
+                                .into_raw(),
+                            events: CString::new(all_events)
+                                .expect("new transaction detail")
+                                .into_raw(),
+                        };
+                        vec_txn_events.push(output);
                     }
                     unsafe {
                         (*out_all_txn_events).data = vec_txn_events.as_mut_ptr();

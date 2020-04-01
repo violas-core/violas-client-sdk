@@ -10,8 +10,8 @@
             "request": "launch",
             "name": "Launch testnet",
             "program": "${workspaceFolder}/build/debug/bin/testnet",
-            "args": ["localhost", "40327", "governor", "/tmp/6b421c4739fbdb9fb574aab6c1e53240/mint.key"],
-            "cwd": "${workspaceFolder}/cppSdk/testnet"
+            "args": ["localhost", "33237", "governor", "/tmp/e9bfb446c0b66b2a50c7b2139d5e0f73/mint.key"],
+            "cwd": "${workspaceFolder}/build/debug"
         },
 
         {

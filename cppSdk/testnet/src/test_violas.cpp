@@ -55,6 +55,12 @@ void run_test_case(
     client->create_next_account(true);
 
     auto accounts = client->get_all_accounts();
+    for (const auto &account : accounts)
+    {
+        cout << "Account index : " << account.index
+             << ", address : " << account.address
+             << endl;
+    }
 
     client->mint_coins(0, 10);
     client->mint_coins(1, 10);
@@ -65,6 +71,9 @@ void run_test_case(
     client->transfer_coins_int(0, accounts[1].address, 1 * MICRO_LIBRO_COIN);
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(1) << endl;
+
+    transform_mv_to_json("/home/hunter/libra/target/token.mv", "token.json");
+    client->publish_module(0, "token.json");
 
     // auto token = Token::create(client, accounts[1].address, "token1", script_files_path);
     // token->deploy(1);
@@ -92,9 +101,9 @@ void run_test_case(
 
     cout << "get txn by range ..." << endl;
     auto txn_events = client->get_txn_by_range(100, 10, true);
-    for (const auto & [txn, envent] : txn_events)
+    for (const auto &[t, e] : txn_events)
     {
-        cout << "txn = " << txn << endl
-             << "event = " << event << endl;
+        // cout << "txn = " << t << endl
+        //      << "event = " << e << endl;
     }
 }

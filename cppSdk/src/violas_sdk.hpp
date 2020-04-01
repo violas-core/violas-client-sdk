@@ -42,6 +42,9 @@ std::string uint256_to_string(const uint256 &address);
 
 uint256 uint256_from_string(const std::string &str_addr);
 
+void transform_mv_to_json(const std::string &mv_file_name,
+                          const std::string &json_file_name);
+
 const uint64_t MICRO_LIBRO_COIN = 1000000;
 
 bool is_valid_balance(uint64_t value);
@@ -148,10 +151,10 @@ public:
 
     static std::shared_ptr<Token>
     create(client_ptr client,
-                  uint256 governor_addr,
-                  const std::string &name,
-                  std::function<void(const std::string &)> init_all_script_fun,
-                  const std::string &temp_path);
+           uint256 governor_addr,
+           const std::string &name,
+           std::function<void(const std::string &)> init_all_script_fun,
+           const std::string &temp_path);
 
     virtual ~Token() {}
 

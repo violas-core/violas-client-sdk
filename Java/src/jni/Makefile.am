@@ -6,5 +6,5 @@ libviolas_sdk_jni_la_CXXFLAGS = -std=c++17 \
                                 -I/usr/lib/jvm/java-11-openjdk-amd64/include \
                                 -I/usr/lib/jvm/java-11-openjdk-amd64/include/linux/
 libviolas_sdk_jni_la_LDFLAGS = -L../../../cppSdk/src/.libs -L$(top_srcdir)/rust-client-proxy/target/debug
-libviolas_sdk_jni_la_LIBADD = -l:libjniSdk.a -l:libclient_proxy.a -lstdc++fs
+libviolas_sdk_jni_la_LIBADD = -l:libjniSdk.a -lclient_proxy -lstdc++fs
 

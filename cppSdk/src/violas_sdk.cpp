@@ -2,7 +2,9 @@
 #include <iomanip>
 //#include <chrono>
 #include <cassert>
+#include <fstream>
 #include <sstream>
+#include <iterator>
 #include <functional>
 
 #if __cplusplus >= 201703L
@@ -84,6 +86,28 @@ bool is_valid_balance(uint64_t value)
     const uint64_t max_uint64 = 0xFFFFFFFFFFFFFFFF;
 #endif
     return value != max_uint64;
+}
+
+void transform_mv_to_json(const std::string &mv_file_name,
+                          const std::string &json_file_name)
+{
+    ifstream mv(mv_file_name);
+    ofstream ofs(json_file_name);
+
+    //
+    //  generate the format likes {"code" : […], "args" : []}
+    //
+    ofs << R"({"code" : [)";
+
+    transform(
+        istreambuf_iterator<char>(mv),
+        istreambuf_iterator<char>(),
+        ostream_iterator<string>(ofs),
+        [](uint8_t num) -> auto {
+            return to_string(num) + ",";
+        });
+
+    ofs.seekp(-1, ios_base::cur) << R"(], "args" : []})";
 }
 
 class ClientImp : virtual public Client

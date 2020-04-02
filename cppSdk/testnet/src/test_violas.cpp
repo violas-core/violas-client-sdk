@@ -72,8 +72,10 @@ void run_test_case(
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(1) << endl;
 
-    transform_mv_to_json("/home/hunter/libra/target/token.mv", "token.json");
-    client->publish_module(0, "token.json");
+    transform_mv_to_json("../../cppSdk/scripts/output/transaction_0_module_ViolasToken.mv",
+                         "token.json",
+                         accounts[1].address);
+    client->publish_module(1, "token.json");
 
     // auto token = Token::create(client, accounts[1].address, "token1", script_files_path);
     // token->deploy(1);
@@ -95,7 +97,7 @@ void run_test_case(
     // balacne = token->get_account_balance(accounts[0].address);
     // cout << "account 0's token balance is " << balacne << endl;
 
-    auto [txn, event] = client->get_committed_txn_by_acc_seq(0, client->get_sequence_number(0) - 1);
+    auto [txn, event] = client->get_committed_txn_by_acc_seq(1, client->get_sequence_number(1) - 1);
     cout << "txn = " << txn << endl
          << "event = " << event << endl;
 

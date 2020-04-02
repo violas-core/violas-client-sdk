@@ -89,10 +89,26 @@ bool is_valid_balance(uint64_t value)
 }
 
 void transform_mv_to_json(const std::string &mv_file_name,
-                          const std::string &json_file_name)
+                          const std::string &json_file_name,
+                          const uint256 &address)
 {
-    ifstream mv(mv_file_name);
+    ifstream mv(mv_file_name, ios::binary);
     ofstream ofs(json_file_name);
+    const uint8_t addr[] = {0x72, 0x57, 0xc2, 0x41, 0x7e, 0x4d, 0x10, 0x38, 0xe1, 0x81, 0x7c, 0x8f, 0x28, 0x3a, 0xce, 0x2e};
+
+    if (!mv.is_open())
+        throw runtime_error(format("file %s is not exist", mv_file_name.c_str()));
+
+    mv.seekg(0, mv.end);
+    int length = mv.tellg();
+    vector<uint8_t> buffer(length);
+
+    mv.seekg(0, mv.beg);
+    mv.read((char *)buffer.data(), buffer.size());
+
+    auto pos = search(begin(buffer), end(buffer), addr, end(addr));
+    if (pos != end(buffer))
+        copy((char *)address.data(), (char *)end(address), pos);
 
     //
     //  generate the format likes {"code" : […], "args" : []}
@@ -100,8 +116,7 @@ void transform_mv_to_json(const std::string &mv_file_name,
     ofs << R"({"code" : [)";
 
     transform(
-        istreambuf_iterator<char>(mv),
-        istreambuf_iterator<char>(),
+        begin(buffer), end(buffer),
         ostream_iterator<string>(ofs),
         [](uint8_t num) -> auto {
             return to_string(num) + ",";

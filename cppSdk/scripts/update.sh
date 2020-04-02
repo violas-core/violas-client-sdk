@@ -1,1 +1,1 @@
-cp ../../../exchange-matchengine/violas_move/*.mvir ./
+cp ../../../exchange-matchengine/violas_move/*.move ./

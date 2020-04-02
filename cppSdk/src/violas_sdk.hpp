@@ -33,6 +33,7 @@ namespace Violas
 /// uint256
 ///
 using uint256 = std::array<uint8_t, 16>;
+//using Address = std::array<uint8_t, 16>;
 
 std::ostream &operator<<(std::ostream &os, const uint256 &value);
 
@@ -43,7 +44,8 @@ std::string uint256_to_string(const uint256 &address);
 uint256 uint256_from_string(const std::string &str_addr);
 
 void transform_mv_to_json(const std::string &mv_file_name,
-                          const std::string &json_file_name);
+                          const std::string &json_file_name,
+                          const uint256 &address);
 
 const uint64_t MICRO_LIBRO_COIN = 1000000;
 

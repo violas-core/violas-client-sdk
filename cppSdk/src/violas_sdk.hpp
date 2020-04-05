@@ -47,6 +47,10 @@ void transform_mv_to_json(const std::string &mv_file_name,
                           const std::string &json_file_name,
                           const uint256 &address);
 
+void replace_mv_with_addr(const std::string &mv_file_name,
+                          const std::string &new_file_name,
+                          const uint256 &address);
+
 const uint64_t MICRO_LIBRO_COIN = 1000000;
 
 bool is_valid_balance(uint64_t value);

@@ -125,6 +125,32 @@ void transform_mv_to_json(const std::string &mv_file_name,
     ofs.seekp(-1, ios_base::cur) << R"(], "args" : []})";
 }
 
+void replace_mv_with_addr(const std::string &mv_file_name,
+                          const std::string &new_file_name,
+                          const uint256 &address)
+
+{
+    ifstream mv(mv_file_name, ios::binary);
+    ofstream ofs(new_file_name);
+    const uint8_t addr[] = {0x72, 0x57, 0xc2, 0x41, 0x7e, 0x4d, 0x10, 0x38, 0xe1, 0x81, 0x7c, 0x8f, 0x28, 0x3a, 0xce, 0x2e};
+
+    if (!mv.is_open())
+        throw runtime_error(format("file %s is not exist", mv_file_name.c_str()));
+
+    mv.seekg(0, mv.end);
+    int length = mv.tellg();
+    vector<uint8_t> buffer(length);
+
+    mv.seekg(0, mv.beg);
+    mv.read((char *)buffer.data(), buffer.size());
+
+    auto pos = search(begin(buffer), end(buffer), addr, end(addr));
+    if (pos != end(buffer))
+        copy((char *)address.data(), (char *)end(address), pos);
+
+    copy(begin(buffer), end(buffer), ostreambuf_iterator<char>(ofs));
+}
+
 class ClientImp : virtual public Client
 {
 protected:

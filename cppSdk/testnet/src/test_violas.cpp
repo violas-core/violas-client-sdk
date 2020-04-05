@@ -53,6 +53,7 @@ void run_test_case(
 
     client->create_next_account(true);
     client->create_next_account(true);
+    client->create_next_account(true);
 
     auto accounts = client->get_all_accounts();
     for (const auto &account : accounts)
@@ -64,6 +65,7 @@ void run_test_case(
 
     client->mint_coins(0, 10);
     client->mint_coins(1, 10);
+    client->mint_coins(2, 1);
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(1) << endl;
 
@@ -72,10 +74,34 @@ void run_test_case(
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(1) << endl;
 
-    transform_mv_to_json("../../cppSdk/scripts/output/transaction_0_module_ViolasToken.mv",
-                         "token.json",
-                         accounts[1].address);
-    client->publish_module(1, "token.json");
+    auto print_txn = [client](uint64_t account_index) {
+        auto seq_num = client->get_sequence_number(account_index) - 1;
+        auto [txn, event] = client->get_committed_txn_by_acc_seq(account_index, seq_num);
+        cout << "txn = " << txn << endl;
+    };
+
+    int account_index = 0;
+    replace_mv_with_addr("../../cppSdk/scripts/token.mv",
+                         "token.mv",
+                         accounts[account_index].address);
+    client->publish_module(account_index, "token.mv");
+    print_txn(account_index);
+
+    replace_mv_with_addr("../../cppSdk/scripts/publish.mv",
+                         "publish.mv",
+                         accounts[account_index].address);
+    client->execute_script(account_index, "publish.mv", vector<string>({"b\"414243\""}));
+    print_txn(account_index);
+
+    account_index = 0;
+    replace_mv_with_addr("../../cppSdk/scripts/create_token.mv",
+                         "create_token.mv",
+                         accounts[account_index].address);
+    client->execute_script(account_index, "create_token.mv", vector<string>({uint256_to_string(accounts[1].address), "b\"00\""}));
+    print_txn(account_index);
+
+    client->execute_script(1, "publish.mv", vector<string>({"0", uint256_to_string(accounts[1].address), "10", "b\"00\""}));
+    print_txn(account_index);
 
     // auto token = Token::create(client, accounts[1].address, "token1", script_files_path);
     // token->deploy(1);
@@ -96,10 +122,6 @@ void run_test_case(
 
     // balacne = token->get_account_balance(accounts[0].address);
     // cout << "account 0's token balance is " << balacne << endl;
-
-    auto [txn, event] = client->get_committed_txn_by_acc_seq(1, client->get_sequence_number(1) - 1);
-    cout << "txn = " << txn << endl
-         << "event = " << event << endl;
 
     cout << "get txn by range ..." << endl;
     auto txn_events = client->get_txn_by_range(100, 10, true);

@@ -784,10 +784,9 @@ pub mod x86_64 {
                     unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
                 let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
-                // let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
+                let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
 
-                // return Ok(ar.balance);
-                return Ok(0);
+                return Ok(ar.tokens[0].balance);
             }
 
             bail!("Account hasn't published the module")

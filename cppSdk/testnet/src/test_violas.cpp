@@ -51,9 +51,10 @@ void run_test_case(
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
 
-    client->create_next_account(true);
-    client->create_next_account(true);
-    client->create_next_account(true);
+    auto s = client->create_next_account(true);
+    auto o1 = client->create_next_account(true);
+    auto u1 = client->create_next_account(true);
+    auto u2 = client->create_next_account(true);
 
     auto accounts = client->get_all_accounts();
     for (const auto &account : accounts)
@@ -65,7 +66,8 @@ void run_test_case(
 
     client->mint_coins(0, 10);
     client->mint_coins(1, 10);
-    client->mint_coins(2, 1);
+    client->mint_coins(2, 10);
+    client->mint_coins(3, 10);
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(1) << endl;
 
@@ -90,18 +92,40 @@ void run_test_case(
     replace_mv_with_addr("../../cppSdk/scripts/publish.mv",
                          "publish.mv",
                          accounts[account_index].address);
-    client->execute_script(account_index, "publish.mv", vector<string>({"b\"414243\""}));
+
+    client->execute_script(0, "publish.mv", vector<string>({"b\"00\""}));
     print_txn(account_index);
 
-    account_index = 0;
     replace_mv_with_addr("../../cppSdk/scripts/create_token.mv",
                          "create_token.mv",
                          accounts[account_index].address);
     client->execute_script(account_index, "create_token.mv", vector<string>({uint256_to_string(accounts[1].address), "b\"00\""}));
     print_txn(account_index);
 
-    client->execute_script(1, "publish.mv", vector<string>({"0", uint256_to_string(accounts[1].address), "10", "b\"00\""}));
+    for_each(begin(accounts)+1, end(accounts), [=](const auto &account) {
+        client->execute_script(account.index, "publish.mv", vector<string>({"b\"414243\""}));
+        print_txn(account_index);
+    });
+
+    replace_mv_with_addr("../../cppSdk/scripts/mint.mv",
+                         "mint.mv",
+                         accounts[account_index].address);
+    client->execute_script(1, "mint.mv",
+                           vector<string>({"0", uint256_to_string(accounts[2].address), "10", "b\"00\""}));
     print_txn(account_index);
+
+    auto balance = client->get_account_resource_uint64(2, accounts[0].address);
+    cout << "the balance of token1 of account 2 is " << balance << endl;
+
+    replace_mv_with_addr("../../cppSdk/scripts/transfer.mv",
+                         "transfer.mv",
+                         accounts[account_index].address);
+    client->execute_script(2, 
+                            "transfer.mv", 
+                            vector<string>({"0", uint256_to_string(accounts[3].address), "1", "b\"00\""}));
+
+    balance = client->get_account_resource_uint64(3, accounts[0].address);
+    cout << "the balance of token1 of account 3 is " << balance << endl;
 
     // auto token = Token::create(client, accounts[1].address, "token1", script_files_path);
     // token->deploy(1);

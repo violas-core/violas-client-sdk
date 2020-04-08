@@ -28,16 +28,16 @@ extern "C"
     void libra_destory_client_proxy(uint64_t raw_ptr);
 
     bool libra_test_validator_connection(uint64_t raw_ptr);
-    
+
     const size_t ADDRESS_LENGTH = 16;
 
-    struct Address
+    struct Libra_Address
     {
         uint8_t address[ADDRESS_LENGTH];
         uint64_t index;
     };
 
-    Address libra_create_next_account(uint64_t raw_ptr, bool sync_with_validator);
+    Libra_Address libra_create_next_account(uint64_t raw_ptr, bool sync_with_validator);
 
     struct _Account
     {
@@ -125,7 +125,11 @@ extern "C"
 
     void libra_free_all_txn_events(AllTxnEvents *all_txn_events);
 
-    bool libra_get_account_resource(uint64_t raw_ptr, const char *account_index_or_addr, const char *account_path_addr, uint64_t *balance);
+    bool libra_get_account_resource(uint64_t raw_ptr,
+                                    const char *account_index_or_addr,
+                                    const char *account_path_addr,
+                                    uint64_t token_index,
+                                    uint64_t *balance);
 
 #ifdef __cplusplus
 }

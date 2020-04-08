@@ -22,10 +22,10 @@ pub(crate) mod move_builder;
 //
 
 //use client::client_proxy::*;
-use cli::client_proxy::ClientProxy;
+//use cli::client_proxy::ClientProxy;
 //use client::{client_proxy::ClientProxy, commands::*};
-use std::error::Error;
-use std::*;
+//use std::error::Error;
+//use std::*;
 
 #[cfg(test)]
 mod tests {

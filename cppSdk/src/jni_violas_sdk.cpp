@@ -502,9 +502,9 @@ namespace Jni_Token_Wrapper {
 		try {
 			Violas::token_ptr token = *((Violas::token_ptr *) native_token);
 
-			token->mint(account_index,
-			            to_address(env, receiver_address),
-			            amount_micro_coins);
+			// token->mint(account_index,
+			//             to_address(env, receiver_address),
+			//             amount_micro_coins);
 		}
 		catch (exception &e) {
 			ThrowJNIException(env, e.what());
@@ -517,9 +517,9 @@ namespace Jni_Token_Wrapper {
 		try {
 			Violas::token_ptr token = *((Violas::token_ptr *) native_token);
 
-			token->transfer(account_index,
-			                to_address(env, receiver_address),
-			                amount_micro_coins);
+			// token->transfer(account_index,
+			//                 to_address(env, receiver_address),
+			//                 amount_micro_coins);
 		}
 		catch (exception &e) {
 			ThrowJNIException(env, e.what());
@@ -531,7 +531,7 @@ namespace Jni_Token_Wrapper {
 		try {
 			Violas::token_ptr token = *((Violas::token_ptr *) native_token);
 
-			return (jlong) token->get_account_balance(account_index);
+			return 0 ; //(jlong) token->get_account_balance(account_index);
 		}
 		catch (exception &e) {
 			ThrowJNIException(env, e.what());
@@ -545,7 +545,7 @@ namespace Jni_Token_Wrapper {
 		try {
 			Violas::token_ptr token = *((Violas::token_ptr *) native_token);
 
-			return (jlong) token->get_account_balance(to_address(env, address));
+			return 0; //(jlong) token->get_account_balance(to_address(env, address));
 		}
 		catch (exception &e) {
 			ThrowJNIException(env, e.what());

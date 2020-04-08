@@ -10,7 +10,7 @@
             "request": "launch",
             "name": "Launch testnet",
             "program": "${workspaceFolder}/build/debug/bin/testnet",
-            "args": ["localhost", "40281", "governor", "/tmp/cd49e0bc028f0526fdd8450319af5fde/mint.key"],
+            "args": ["125.39.5.57", "50001", "governor", "mint_tianjin.key"],
             "cwd": "${workspaceFolder}/build/debug"
         },
 

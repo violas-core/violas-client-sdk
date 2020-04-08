@@ -329,30 +329,30 @@ void transfer(Violas::client_ptr client)
     //
     auto account_index = token_index + 1;
 
-    token->mint(account_index, receiver, amount * MICRO_LIBRO_COIN);
+    // token->mint(account_index, receiver, amount * MICRO_LIBRO_COIN);
 
-    auto micro_to_double = [](uint64_t amount) -> double {
-        if (is_valid_balance(amount))
-            return (double)amount / MICRO_LIBRO_COIN;
-        else
-            return 0;
-    };
+    // auto micro_to_double = [](uint64_t amount) -> double {
+    //     if (is_valid_balance(amount))
+    //         return (double)amount / MICRO_LIBRO_COIN;
+    //     else
+    //         return 0;
+    // };
 
-    auto balance_to_string = [](uint64_t value) -> string {
-        if (is_valid_balance(value))
-            return to_string(value);
-        else
-            return "N/A";
-    };
+    // auto balance_to_string = [](uint64_t value) -> string {
+    //     if (is_valid_balance(value))
+    //         return to_string(value);
+    //     else
+    //         return "N/A";
+    // };
 
-    cout.precision(10);
+    // cout.precision(10);
 
-    auto balance = token->get_account_balance(receiver);
-    cout << "account " << receiver << "'s balance is "
-         << GREEN
-         << balance_to_string(balance) << "(" << micro_to_double(balance) << ")"
-         << RESET
-         << endl;
+    // auto balance = token->get_account_balance(receiver);
+    // cout << "account " << receiver << "'s balance is "
+    //      << GREEN
+    //      << balance_to_string(balance) << "(" << micro_to_double(balance) << ")"
+    //      << RESET
+    //      << endl;
 
     auto [txn, events] = client->get_committed_txn_by_acc_seq(account_index, client->get_sequence_number(account_index) - 1);
 

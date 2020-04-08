@@ -33,7 +33,7 @@ namespace Violas
 /// uint256
 ///
 using uint256 = std::array<uint8_t, 16>;
-//using Address = std::array<uint8_t, 16>;
+using Address = std::array<uint8_t, 16>;
 
 std::ostream &operator<<(std::ostream &os, const uint256 &value);
 
@@ -50,6 +50,8 @@ void transform_mv_to_json(const std::string &mv_file_name,
 void replace_mv_with_addr(const std::string &mv_file_name,
                           const std::string &new_file_name,
                           const uint256 &address);
+
+std::string tx_vec_data(const std::string & data);
 
 const uint64_t MICRO_LIBRO_COIN = 1000000;
 
@@ -138,10 +140,10 @@ public:
     //  res_path : the path of resouce, usually the format is address.module.struct
     //
     virtual uint64_t
-    get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) = 0;
+    get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr, uint64_t token_index) = 0;
 
     virtual uint64_t
-    get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr) = 0;
+    get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr, uint64_t token_index) = 0;
 };
 
 using client_ptr = std::shared_ptr<Client>;
@@ -166,20 +168,29 @@ public:
 
     virtual std::string name() = 0;
 
-    virtual uint256 address() = 0;
+    virtual Address address() = 0;
 
     virtual void deploy(uint64_t account_index) = 0;
 
-    virtual void publish(uint64_t account_index) = 0;
+    virtual void publish(uint64_t account_index, const std::string &user_data = "publish") = 0;
 
-    virtual void mint(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
+    virtual void create_token(uint64_t account_index, Address owner, const std::string &token_data = "token") = 0;
 
-    virtual void
-    transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) = 0;
+    virtual void mint(uint64_t account_index,
+                      uint64_t token_index,
+                      Address receiver,
+                      uint64_t amount_micro_coin,
+                      const std::string &data = "mint") = 0;
 
-    virtual uint64_t get_account_balance(uint64_t index) = 0;
+    virtual void transfer(uint64_t account_index,
+                          uint64_t token_index,
+                          Address receiver,
+                          uint64_t amount_micro_coin,
+                          const std::string &data = "transfer") = 0;
 
-    virtual uint64_t get_account_balance(uint256 addr) = 0;
+    virtual uint64_t get_account_balance(uint64_t account_index, uint64_t token_index) = 0;
+
+    virtual uint64_t get_account_balance(Address account_address, uint64_t token_index) = 0;
 };
 
 using token_ptr = std::shared_ptr<Token>;

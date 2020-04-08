@@ -78,6 +78,21 @@ uint256 uint256_from_string(const std::string &str)
     return addr;
 }
 
+std::string tx_vec_data(const std::string &data)
+{
+    ostringstream oss;
+    oss << "b\"";
+
+    for (auto v : data)
+    {
+        oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+    }
+
+    oss << "\"";
+
+    return oss.str();
+}
+
 bool is_valid_balance(uint64_t value)
 {
 #if __cplusplus >= 201703L
@@ -211,8 +226,8 @@ public:
     virtual std::pair<size_t, uint256>
     create_next_account(bool sync_with_validator) override
     {
-        Address account = libra_create_next_account((uint64_t)raw_client_proxy,
-                                                    sync_with_validator);
+        Libra_Address account = libra_create_next_account((uint64_t)raw_client_proxy,
+                                                          sync_with_validator);
 
         uint256 address;
         copy(begin(account.address), end(account.address), begin(address));
@@ -452,15 +467,16 @@ public:
         return vec_txn_events;
     }
 
-    virtual uint64_t
-    get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr) override
+    virtual uint64_t get_account_resource_uint64(uint64_t account_index,
+                                                 const uint256 &res_path_addr,
+                                                 uint64_t token_index) override
     {
         uint64_t result = 0;
         string path_addr = "0x" + uint256_to_string(res_path_addr);
 
         bool ret = libra_get_account_resource(
             (uint64_t)raw_client_proxy, to_string(account_index).c_str(),
-            path_addr.c_str(), &result);
+            path_addr.c_str(), token_index, &result);
         if (!ret)
             throw runtime_error(
                 format("failed to get get resource for account index %d ", account_index) +
@@ -470,14 +486,15 @@ public:
     }
 
     virtual uint64_t get_account_resource_uint64(const uint256 &account_addr,
-                                                 const uint256 &res_path_addr) override
+                                                 const uint256 &res_path_addr,
+                                                 uint64_t token_index) override
     {
         uint64_t result = 0;
         string path_addr = "0x" + uint256_to_string(res_path_addr);
         auto addr = uint256_to_string(account_addr);
 
         bool ret = libra_get_account_resource(
-            (uint64_t)raw_client_proxy, addr.c_str(), path_addr.c_str(), &result);
+            (uint64_t)raw_client_proxy, addr.c_str(), path_addr.c_str(), token_index, &result);
         if (!ret)
             throw runtime_error(
                 format("failed to get get resource for account address %s ", addr.c_str()) +
@@ -509,7 +526,7 @@ public:
              const std::string &script_files_path)
         : m_libra_client(client),
           m_name(name),
-          m_governor_addr(governor_addr)
+          m_supervisor(governor_addr)
     {
         init_all_script(script_files_path);
     }
@@ -521,12 +538,12 @@ public:
              const std::string &temp_path)
         : m_libra_client(client),
           m_name(name),
-          m_governor_addr(governor_addr),
+          m_supervisor(governor_addr),
           m_temp_path(temp_path)
     {
-        string governor = uint256_to_string(m_governor_addr);
+        string governor = uint256_to_string(m_supervisor);
 
-        m_temp_script_path = m_temp_path / uint256_to_string(m_governor_addr);
+        m_temp_script_path = m_temp_path / uint256_to_string(m_supervisor);
 
         fs::remove_all(m_temp_script_path);
 
@@ -540,12 +557,12 @@ public:
 
     virtual std::string name() override { return m_name; }
 
-    virtual uint256 address() override { return m_governor_addr; }
+    virtual uint256 address() override { return m_supervisor; }
 
     virtual void deploy(uint64_t account_index) override
     {
         // make sure the account-index has the deploying permission
-        // assert(m_libra_client->get_all_accounts()[account_index].address == m_governor_addr);
+        // assert(m_libra_client->get_all_accounts()[account_index].address == m_supervisor);
 
         auto script_file_name = m_temp_script_path / token_module;
 
@@ -554,61 +571,83 @@ public:
         m_libra_client->publish_module(account_index, (script_file_name += ".mv").c_str());
     }
 
-    virtual void mint(uint64_t account_index, uint256 address, uint64_t amount) override
-    {
-        // make sure the account-index has the minting permission
-        assert(m_libra_client->get_all_accounts()[account_index].address == m_governor_addr);
-
-        auto script_file_name = m_temp_script_path / mint_script;
-
-        try_compile(script_file_name);
-
-        auto args = vector<string>{uint256_to_string(address), to_string(amount)};
-
-        m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
-    }
-
-    virtual void publish(uint64_t account_index) override
+    virtual void publish(uint64_t account_index, const std::string &user_data) override
     {
         auto script_file_name = m_temp_script_path / publish_script;
 
         try_compile(script_file_name);
 
         m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(),
-                                       vector<string>{});
+                                       vector<string>{tx_vec_data(user_data)});
     }
 
-    virtual void
-    transfer(uint64_t account_index, uint256 address, uint64_t amount_micro_coin) override
+    virtual void create_token(uint64_t account_index, Address owner, const std::string &token_data = "token") override
     {
-        auto script_file_name = m_temp_script_path / publish_script;
+        auto script_file_name = m_temp_script_path / create_token_script;
+
+        m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(),
+                                       vector<string>{uint256_to_string(owner), tx_vec_data(token_data)});
+    }
+
+    virtual void mint(uint64_t account_index,
+                      uint64_t token_index,
+                      Address receiver,
+                      uint64_t amount_micro_coin,
+                      const std::string &data) override
+    {
+        // make sure the account-index has the minting permission
+        //assert(m_libra_client->get_all_accounts()[account_index].address == m_supervisor);
+
+        auto script_file_name = m_temp_script_path / mint_script;
 
         try_compile(script_file_name);
 
-        auto args =
-            vector<string>{uint256_to_string(address), to_string(amount_micro_coin)};
+        auto args = vector<string>{to_string(token_index),
+                                   uint256_to_string(receiver),
+                                   to_string(amount_micro_coin),
+                                   tx_vec_data(data)};
 
         m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
     }
 
-    virtual uint64_t get_account_balance(uint64_t account_index) override
+    virtual void transfer(uint64_t account_index,
+                          uint64_t token_index,
+                          Address receiver,
+                          uint64_t amount_micro_coin,
+                          const std::string &data) override
+    {
+        auto script_file_name = m_temp_script_path / transfer_script;
+
+        try_compile(script_file_name);
+
+        auto args = vector<string>{to_string(token_index),
+                                   uint256_to_string(receiver),
+                                   to_string(amount_micro_coin),
+                                   tx_vec_data(data)};
+
+        m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
+    }
+
+    virtual uint64_t get_account_balance(uint64_t account_index, uint64_t token_index) override
     {
         uint64_t balance = m_libra_client->get_account_resource_uint64(account_index,
-                                                                       m_governor_addr);
+                                                                       m_supervisor,
+                                                                       token_index);
         return balance;
     }
 
-    virtual uint64_t get_account_balance(uint256 account_addr) override
+    virtual uint64_t get_account_balance(Address account_address, uint64_t token_index) override
     {
-        uint64_t balance = m_libra_client->get_account_resource_uint64(account_addr,
-                                                                       m_governor_addr);
+        uint64_t balance = m_libra_client->get_account_resource_uint64(account_address,
+                                                                       m_supervisor,
+                                                                       token_index);
         return balance;
     }
 
 protected:
     void init_all_script(const string &script_files_path)
     {
-        string governor = uint256_to_string(m_governor_addr);
+        string governor = uint256_to_string(m_supervisor);
 
         if (m_temp_path.empty())
             m_temp_path = fs::temp_directory_path(); // /tmp/xxxxx
@@ -622,38 +661,41 @@ protected:
 
         for (auto &file : fs::directory_iterator(fs::path(script_files_path)))
         {
-            if (file.path().extension() == ".mvir")
+            if (file.path().extension() == ".mv")
             {
                 auto new_file = m_temp_script_path / file.path().filename().string();
 
 #if __cplusplus >= 201703L
-                auto option = fs::copy_options::overwrite_existing;
+                //auto option = fs::copy_options::overwrite_existing;
 #else
-                auto option = fs::copy_option::overwrite_if_exists;
+                //auto option = fs::copy_option::overwrite_if_exists;
 #endif
-                fs::copy_file(file.path().string(), new_file, option);
+                //fs::copy_file(file.path().string(), new_file, option);
+
+                replace_mv_with_addr(file.path().string(), new_file, m_supervisor);
             }
         }
     }
 
     void try_compile(fs::path script_file_name, bool is_module = false)
     {
-        auto mv(fs::path(script_file_name) += ".mv");
-        auto mvir(fs::path(script_file_name) += ".mvir");
+        //auto mv(fs::path(script_file_name) += ".mv");
+        //auto mvir(fs::path(script_file_name) += ".mvir");
 
-        if (!fs::exists(mv))
-            m_libra_client->compile(m_governor_addr, mvir.c_str(), is_module, m_temp_path.string());
+        //if (!fs::exists(mv))
+        //    m_libra_client->compile(m_supervisor, mvir.c_str(), is_module, m_temp_path.string());
     }
 
 private:
     client_ptr m_libra_client;
     string m_name;
-    uint256 m_governor_addr;
+    Address m_supervisor;
     string m_module;
     fs::path m_temp_path;
     fs::path m_temp_script_path;
     const string token_module = "token";
     const string publish_script = "publish";
+    const string create_token_script = "create_token";
     const string mint_script = "mint";
     const string transfer_script = "transfer";
 };

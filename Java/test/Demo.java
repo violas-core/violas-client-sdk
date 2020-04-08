@@ -60,11 +60,11 @@ public class Demo {
         long sequence = client.getSequenceNumber(1);
         
         Pair<String, String> txn_event = client.getCommittedTxnsByAccSeq(1, sequence - 1);
-        System.out.println("the account 0's balance = " + txn_event.getKey() + txn_event.getValue());
+        System.out.println(String.format("the transcation = %s \n, the event = %s", txn_event.getKey(), txn_event.getValue()));
 
         Pair<String, String>[] txnEvents = client.getCommitedTxnByRange(100, 10, true);
-        for ( Pair<String, String> x : txnEvents ){
-            System.out.println("the account 0's balance = " + x.getKey() + x.getValue());
+        for ( Pair<String, String> x : txnEvents ){            
+            System.out.println(String.format("the transcation = %s \n, the event = %s", x.getKey(), x.getValue()));
         }        
         
         //

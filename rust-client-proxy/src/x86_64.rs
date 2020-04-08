@@ -14,7 +14,7 @@ pub mod x86_64 {
     use std::os::raw::{c_char, c_uchar};
     use std::{convert::TryFrom, io::Write, path::Path, result::Result, *};
     use tempdir::TempDir;
-    use transaction_builder::get_transaction_name;
+    //use transaction_builder::get_transaction_name;
 
     pub const LENGTH: usize = 16;
 
@@ -766,6 +766,7 @@ pub mod x86_64 {
         raw_ptr: u64,
         account_index_or_addr: *const c_char,
         c_account_path_addr: *const c_char,
+        token_index : u64,
         balance: &mut u64,
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<u64, Error> {
@@ -774,7 +775,7 @@ pub mod x86_64 {
                 CStr::from_ptr(account_index_or_addr).to_str().unwrap()
             })?;
 
-            if let (Some(blob)) = client.client.get_account_blob(address)? {
+            if let Some(blob) = client.client.get_account_blob(address)? {
                 let account_state = AccountState::try_from(&blob)?;
                 // debugging
                 // for (movie, review) in &map {
@@ -785,8 +786,13 @@ pub mod x86_64 {
                 let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
                 let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
+                
+                let index : usize = token_index as usize;
+                if index >= ar.tokens.len() {
+                    bail!(format!("token index {} is more than token length {}", index, ar.tokens.len()));
+                }                    
 
-                return Ok(ar.tokens[0].balance);
+                return Ok(ar.tokens[index].balance);
             }
 
             bail!("Account hasn't published the module")

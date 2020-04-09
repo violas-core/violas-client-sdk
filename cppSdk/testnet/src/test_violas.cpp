@@ -204,32 +204,34 @@ void run_test_token(const string &host,
     auto token = Token::create(client, accounts[supervisor].address, "token1", script_files_path);
 
     token->deploy(supervisor);
-    print_txn(0);
-    cout << "account 1 deployed token successfully ." << endl;
+    //print_txn(0);
+    cout << "account "<< supervisor <<" deployed token successfully ." << endl;
 
     token->publish(supervisor);
-    print_txn(0);
-    cout << "supervisor deployed the Violas Token Module successfuly." << endl;
+    //print_txn(0);
+    cout << "supervisor published Violas Token Module successfuly." << endl;
 
     token->create_token(supervisor, accounts[owner1].address, "Token A");
-    print_txn(0);
-    cout << "create token A successfully." << endl;
+    //print_txn(0);
+    cout << "created token A successfully." << endl;
 
     token->create_token(supervisor, accounts[owner2].address, "Token B");
-    print_txn(0);
-    cout << "create token B successfully." << endl;
+    //print_txn(0);
+    cout << "created token B successfully." << endl;
 
     for (size_t i = 1; i < accounts.size(); i++)
     {
         token->publish((uint64_t)i);
-        print_txn(0);
+        //print_txn(0);
     }
+    cout << "all accounts publish token module successfully." << endl;
+
     //
     // 6. Oa调用mint给U1铸Ta币种的100块钱
     //
     token->mint(owner1, 0, accounts[user1].address, 100);
-    print_txn(owner1);
-    cout << "" << endl;
+    //print_txn(owner1);
+    cout << "owner1 mint 100 cions to user1 ." << endl;
 
     auto balance = token->get_account_balance(user1, 0);
     cout << "the balance of token A of user 1 is " << balance << endl;
@@ -238,7 +240,7 @@ void run_test_token(const string &host,
     // 7. Ob调用mint给U2铸Tb币种的100块钱
     //
     token->mint(owner2, 1, accounts[user2].address, 100);
-    print_txn(owner2);
+    //print_txn(owner2);
     cout << "Owner2 mint 100 coins to user2" << endl;
 
     balance = token->get_account_balance(user2, 1);
@@ -246,12 +248,19 @@ void run_test_token(const string &host,
     assert(balance = 100);
 
     token->transfer(user1, 0, accounts[user2].address, 50);
-    print_txn(owner1);
+    //print_txn(owner1);
     balance = token->get_account_balance(user2, 0);
+    cout << "User 1 transferred 50 token A to user 2" << endl;
     assert(balance == 50);
 
     token->transfer(user2, 1, accounts[user1].address, 50);
-    print_txn(owner2);
+    //print_txn(owner2);
     balance = token->get_account_balance(user1, 1);
+    cout << "User 2 transferred 50 token B to user 1" << endl;
     assert(balance == 50);
+
+    cout << "User 1's token A : " << token->get_account_balance(user1, 0) << "\n"
+         << "User 1's token B : " << token->get_account_balance(user1, 1) << "\n"
+         << "User 2's token A : " << token->get_account_balance(user2, 0) << "\n"
+         << "User 2's token B : " << token->get_account_balance(user2, 1) << endl;
 }

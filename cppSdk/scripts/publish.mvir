@@ -1,6 +1,0 @@
-import {{sender}}.ViolasToken;
-
-main() {
-    ViolasToken.publish();
-    return;
-}

@@ -29,34 +29,47 @@ std::string format(const std::string &format, Args... args)
 
 namespace Violas
 {
-///
-/// uint256
-///
-using uint256 = std::array<uint8_t, 16>;
-using Address = std::array<uint8_t, 16>;
 
-std::ostream &operator<<(std::ostream &os, const uint256 &value);
-
-std::ostream &operator>>(std::ostream &os, const uint256 &value);
-
-std::string uint256_to_string(const uint256 &address);
-
-uint256 uint256_from_string(const std::string &str_addr);
-
-void transform_mv_to_json(const std::string &mv_file_name,
-                          const std::string &json_file_name,
-                          const uint256 &address);
-
-void replace_mv_with_addr(const std::string &mv_file_name,
-                          const std::string &new_file_name,
-                          const uint256 &address);
-
-std::string tx_vec_data(const std::string & data);
+std::string tx_vec_data(const std::string &data);
 
 const uint64_t MICRO_LIBRO_COIN = 1000000;
 
 bool is_valid_balance(uint64_t value);
+//
+//  Address
+//
+class Address
+{
+public:
+    Address()
+    {
+        m_data = {0};
+    }
+    Address(const uint8_t *data, uint64_t len);
 
+    std::string to_string() const;
+    static Address from_string(const std::string &hex_addr);
+
+    friend std::ostream &operator<<(std::ostream &os, const Address &address);
+    friend std::istream &operator>>(std::istream &is, Address &address);
+    bool operator==(const Address &right) const;
+
+    const auto &data() const { return m_data; };
+
+    static const uint64_t length = 16;
+
+private:
+    std::array<uint8_t, length> m_data;
+};
+
+// replace mv with addr
+void replace_mv_with_addr(const std::string &mv_file_name,
+                          const std::string &new_file_name,
+                          const Address &address);
+
+//
+//  interface Client
+//
 class Client
 {
 public:
@@ -75,12 +88,13 @@ public:
 
     /// Create a new account
     /// return the index and address of account
-    virtual std::pair<size_t, uint256> create_next_account(bool sync_with_validator) = 0;
+    virtual std::pair<size_t, Address>
+    create_next_account(bool sync_with_validator) = 0;
 
     struct Account
     {
         uint64_t index;
-        uint256 address;
+        Address address;
         uint64_t sequence_number;
         int64_t status;
 
@@ -94,7 +108,7 @@ public:
 
     virtual double get_balance(uint64_t index) = 0;
 
-    virtual double get_balance(uint256 address) = 0;
+    virtual double get_balance(const Address &address) = 0;
 
     virtual uint64_t get_sequence_number(uint64_t index) = 0;
 
@@ -105,7 +119,7 @@ public:
     //  return : account's index and sequence number
     virtual std::pair<uint64_t, uint64_t>
     transfer_coins_int(uint64_t sender_account_ref_id, // the reference id of account
-                       uint256 receiver_address,       // the address of receiver
+                       Address receiver_address,       // the address of receiver
                        uint64_t micro_coins,           // a millionth of a coin
                        uint64_t gas_unit_price = 0,    // set gas unit price or 0
                        uint64_t max_gas_amount = 0,    // set the max gas account or 0
@@ -118,7 +132,7 @@ public:
             const std::string &temp_dir = "") = 0;
 
     virtual void
-    compile(uint256 account_address,
+    compile(Address account_address,
             const std::string &source_file,
             bool is_module = false,
             const std::string &temp_dir = "") = 0;
@@ -140,26 +154,28 @@ public:
     //  res_path : the path of resouce, usually the format is address.module.struct
     //
     virtual uint64_t
-    get_account_resource_uint64(uint64_t account_index, const uint256 &res_path_addr, uint64_t token_index) = 0;
+    get_account_resource_uint64(uint64_t account_index, const Address &res_path_addr, uint64_t token_index) = 0;
 
     virtual uint64_t
-    get_account_resource_uint64(const uint256 &account_addr, const uint256 &res_path_addr, uint64_t token_index) = 0;
+    get_account_resource_uint64(const Address &account_addr, const Address &res_path_addr, uint64_t token_index) = 0;
 };
 
 using client_ptr = std::shared_ptr<Client>;
-
+//
+//  Interface Token
+//
 class Token
 {
 public:
     static std::shared_ptr<Token>
     create(client_ptr client,
-           uint256 governor_addr,
+           Address governor_addr,
            const std::string &name,
            const std::string &script_files_path = "../scripts");
 
     static std::shared_ptr<Token>
     create(client_ptr client,
-           uint256 governor_addr,
+           Address governor_addr,
            const std::string &name,
            std::function<void(const std::string &)> init_all_script_fun,
            const std::string &temp_path);

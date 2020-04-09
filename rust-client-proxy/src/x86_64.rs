@@ -638,7 +638,7 @@ pub mod x86_64 {
 
                     match txn_view {
                         Some(txn_view) => {
-                            txn = format!("Committed transaction: {:#?}", txn_view);
+                            txn = format!("{:#?}", txn_view);
                         }
                         None => {}
                     };

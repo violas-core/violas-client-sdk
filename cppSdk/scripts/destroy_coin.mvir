@@ -1,6 +1,0 @@
-import {{sender}}.ViolasToken;
-
-main(amount: u64) {
-    ViolasToken.destroy_coin(move(amount));
-    return;
-}

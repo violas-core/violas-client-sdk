@@ -38,8 +38,11 @@ ostream &log(ostream &ost, const char *flag, const char *file, int line,
 
 namespace Violas
 {
+template<size_t N>
+using bytes = array<uint8_t, N>;
 
-ostream &operator<<(ostream &os, const uint256 &value)
+template<size_t N>
+ostream &operator<<(ostream &os, const bytes<N> &value)
 {
     for (auto v : value)
     {
@@ -51,19 +54,13 @@ ostream &operator<<(ostream &os, const uint256 &value)
     return os;
 }
 
-std::ostream &operator>>(std::ostream &os, const uint256 &value) { return os; }
+template<size_t N>
+std::ostream &operator>>(std::ostream &os, const bytes<N> &value) { return os; }
 
-std::string uint256_to_string(const uint256 &address)
+template<size_t N>
+bytes<N> bytes_from_string(const std::string &str)
 {
-    ostringstream oss;
-    oss << address;
-
-    return oss.str();
-}
-
-uint256 uint256_from_string(const std::string &str)
-{
-    uint256 addr;
+    bytes<N> addr;
     auto iter = begin(addr);
 
     for (size_t i = 0; i < str.size() && i < 64; i += 2)
@@ -105,7 +102,7 @@ bool is_valid_balance(uint64_t value)
 
 void transform_mv_to_json(const std::string &mv_file_name,
                           const std::string &json_file_name,
-                          const uint256 &address)
+                          const bytes<16> &address)
 {
     ifstream mv(mv_file_name, ios::binary);
     ofstream ofs(json_file_name);
@@ -142,8 +139,7 @@ void transform_mv_to_json(const std::string &mv_file_name,
 
 void replace_mv_with_addr(const std::string &mv_file_name,
                           const std::string &new_file_name,
-                          const uint256 &address)
-
+                          const Address &address)
 {
     ifstream mv(mv_file_name, ios::binary);
     ofstream ofs(new_file_name);
@@ -161,11 +157,60 @@ void replace_mv_with_addr(const std::string &mv_file_name,
 
     auto pos = search(begin(buffer), end(buffer), addr, end(addr));
     if (pos != end(buffer))
-        copy((char *)address.data(), (char *)end(address), pos);
+    {   
+        auto data = address.data(); 
+        copy(begin(data), end(data), pos);
+    }
 
     copy(begin(buffer), end(buffer), ostreambuf_iterator<char>(ofs));
 }
 
+Address::Address(const uint8_t* data, uint64_t len)
+{   
+    if (len > length)
+        len = length;
+    
+    copy(data, data+len, m_data.data());
+}
+
+std::string Address::to_string() const
+{
+    ostringstream oss;
+    oss << m_data;
+
+    return oss.str();
+}
+
+Address Address::from_string(const std::string & hex_addr)
+{
+    Address address;
+    auto data = bytes_from_string<length>(hex_addr);
+    
+    copy(begin(data), end(data), begin(address.m_data));
+
+    return address;
+}
+
+std::ostream &operator<<(std::ostream &os, const Address & address)
+{
+    os << address.m_data;
+
+    return os;
+}
+
+// std::istream &operator>>(std::istream &is, Address & address)
+// {
+//     return is;
+// }
+
+bool Address::operator==(const Address & right) const
+{
+    return m_data == right.m_data;
+}
+//
+//  ClientImp
+//  the implimentation of interface Clinet
+//
 class ClientImp : virtual public Client
 {
 protected:
@@ -223,16 +268,13 @@ public:
         CLOG << "\nsucceeded to test validator connection" << endl;
     }
 
-    virtual std::pair<size_t, uint256>
+    virtual std::pair<size_t, Address>
     create_next_account(bool sync_with_validator) override
     {
         Libra_Address account = libra_create_next_account((uint64_t)raw_client_proxy,
                                                           sync_with_validator);
 
-        uint256 address;
-        copy(begin(account.address), end(account.address), begin(address));
-
-        return make_pair<>(account.index, address);
+        return make_pair<>(account.index, Address(account.address, ADDRESS_LENGTH));
     }
 
     virtual std::vector<Account> get_all_accounts() override
@@ -245,8 +287,8 @@ public:
         {
             Account a;
             const auto &_a = all_accounts.data[i];
-
-            copy(begin(_a.address), end(_a.address), begin(a.address));
+            
+            a.address = Address(_a.address, ADDRESS_LENGTH);
             a.index = _a.index;
             a.sequence_number = _a.sequence_number;
             a.status = _a.status;
@@ -272,12 +314,12 @@ public:
         return balance;
     }
 
-    virtual double get_balance(uint256 address) override
+    virtual double get_balance(const Address & address) override
     {
         double balance = 0.f;
 
         bool ret = libra_get_balance((uint64_t)raw_client_proxy,
-                                     uint256_to_string(address).c_str(), &balance);
+                                     address.to_string().c_str(), &balance);
         if (!ret)
             throw runtime_error(
                 format("failed to get balance, error : %s", get_last_error().c_str()));
@@ -304,7 +346,7 @@ public:
 
     virtual std::pair<uint64_t, uint64_t>
     transfer_coins_int(uint64_t sender_account_ref_id,
-                       uint256 receiver_address,
+                       Address receiver,
                        uint64_t num_coins,
                        uint64_t gas_unit_price = 0,
                        uint64_t max_gas_amount = 0,
@@ -313,7 +355,8 @@ public:
         _index_sequence index_seq;
         bool ret = libra_transfer_coins_int(
             (uint64_t)raw_client_proxy, sender_account_ref_id,
-            receiver_address.data(), num_coins, gas_unit_price, max_gas_amount,
+            (uint8_t*)receiver.data().data(), 
+            num_coins, gas_unit_price, max_gas_amount,
             is_blocking, &index_seq);
         if (!ret)
             throw runtime_error(
@@ -322,12 +365,12 @@ public:
         return make_pair(index_seq.index, index_seq.sequence);
     }
 
-    virtual void compile(uint256 account_address,
+    virtual void compile(Address account_address,
                          const std::string &source_file,
                          bool is_module,
                          const std::string &temp_dir) override
     {
-        auto addr = uint256_to_string(account_address);
+        auto addr = account_address.to_string();
         bool ret = libra_compile((uint64_t)raw_client_proxy, addr.c_str(),
                                  source_file.c_str(), is_module, temp_dir.c_str());
         if (!ret)
@@ -468,11 +511,11 @@ public:
     }
 
     virtual uint64_t get_account_resource_uint64(uint64_t account_index,
-                                                 const uint256 &res_path_addr,
+                                                 const Address &res_path_addr,
                                                  uint64_t token_index) override
     {
         uint64_t result = 0;
-        string path_addr = "0x" + uint256_to_string(res_path_addr);
+        string path_addr = "0x" + res_path_addr.to_string();
 
         bool ret = libra_get_account_resource(
             (uint64_t)raw_client_proxy, to_string(account_index).c_str(),
@@ -485,13 +528,13 @@ public:
         return result;
     }
 
-    virtual uint64_t get_account_resource_uint64(const uint256 &account_addr,
-                                                 const uint256 &res_path_addr,
+    virtual uint64_t get_account_resource_uint64(const Address &account_addr,
+                                                 const Address &res_path_addr,
                                                  uint64_t token_index) override
     {
         uint64_t result = 0;
-        string path_addr = "0x" + uint256_to_string(res_path_addr);
-        auto addr = uint256_to_string(account_addr);
+        string path_addr = "0x" + res_path_addr.to_string();
+        auto addr = account_addr.to_string();
 
         bool ret = libra_get_account_resource(
             (uint64_t)raw_client_proxy, addr.c_str(), path_addr.c_str(), token_index, &result);
@@ -521,7 +564,7 @@ class TokenImp : public Token
 {
 public:
     TokenImp(client_ptr client,
-             uint256 governor_addr,
+             Address governor_addr,
              const std::string &name,
              const std::string &script_files_path)
         : m_libra_client(client),
@@ -532,7 +575,7 @@ public:
     }
 
     TokenImp(client_ptr client,
-             uint256 governor_addr,
+             Address governor_addr,
              const std::string &name,
              function<void(const std::string &)> init_all_script_fun,
              const std::string &temp_path)
@@ -541,9 +584,9 @@ public:
           m_supervisor(governor_addr),
           m_temp_path(temp_path)
     {
-        string governor = uint256_to_string(m_supervisor);
+        string governor = m_supervisor.to_string();
 
-        m_temp_script_path = m_temp_path / uint256_to_string(m_supervisor);
+        m_temp_script_path = m_temp_path / m_supervisor.to_string();
 
         fs::remove_all(m_temp_script_path);
 
@@ -557,7 +600,7 @@ public:
 
     virtual std::string name() override { return m_name; }
 
-    virtual uint256 address() override { return m_supervisor; }
+    virtual Address address() override { return m_supervisor; }
 
     virtual void deploy(uint64_t account_index) override
     {
@@ -586,7 +629,7 @@ public:
         auto script_file_name = m_temp_script_path / create_token_script;
 
         m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(),
-                                       vector<string>{uint256_to_string(owner), tx_vec_data(token_data)});
+                                       vector<string>{owner.to_string(), tx_vec_data(token_data)});
     }
 
     virtual void mint(uint64_t account_index,
@@ -603,7 +646,7 @@ public:
         try_compile(script_file_name);
 
         auto args = vector<string>{to_string(token_index),
-                                   uint256_to_string(receiver),
+                                   receiver.to_string(),
                                    to_string(amount_micro_coin),
                                    tx_vec_data(data)};
 
@@ -621,7 +664,7 @@ public:
         try_compile(script_file_name);
 
         auto args = vector<string>{to_string(token_index),
-                                   uint256_to_string(receiver),
+                                   receiver.to_string(),
                                    to_string(amount_micro_coin),
                                    tx_vec_data(data)};
 
@@ -647,7 +690,7 @@ public:
 protected:
     void init_all_script(const string &script_files_path)
     {
-        string governor = uint256_to_string(m_supervisor);
+        string governor = m_supervisor.to_string();
 
         if (m_temp_path.empty())
             m_temp_path = fs::temp_directory_path(); // /tmp/xxxxx
@@ -701,7 +744,7 @@ private:
 };
 
 std::shared_ptr<Token> Token::create(client_ptr client,
-                                     uint256 governor_addr,
+                                     Address governor_addr,
                                      const std::string &name,
                                      const std::string &script_files_path)
 {
@@ -709,7 +752,7 @@ std::shared_ptr<Token> Token::create(client_ptr client,
 }
 
 std::shared_ptr<Token> Token::create(client_ptr client,
-                                     uint256 governor_addr,
+                                     Address governor_addr,
                                      const std::string &name,
                                      function<void(const std::string &)> init_all_script_fun,
                                      const std::string &temp_path)

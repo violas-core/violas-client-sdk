@@ -236,7 +236,7 @@ void publish(Violas::client_ptr client)
     cout << "Please input token's address : ";
     cin >> token_address;
 
-    auto token = Violas::Token::create(client, uint256_from_string(token_address), "Unkonw");
+    auto token = Violas::Token::create(client, Address::from_string(token_address), "Unkonw");
     cout << "Current token's address : " << token->address() << endl;
 
     cout << "List all accounts :" << endl;
@@ -269,7 +269,7 @@ void transfer_libra(Violas::client_ptr client)
     cout << "\tPlease input amount of token : ";
     cin >> amount;
 
-    auto receiver = uint256_from_string(address);
+    auto receiver = Address::from_string(address);
 
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
     COUT << "Transferring " << amount << " cions ..." << endl;
@@ -323,7 +323,7 @@ void transfer(Violas::client_ptr client)
     cin >> amount;
 
     auto &token = tokens[token_index];
-    auto receiver = uint256_from_string(address);
+    auto receiver = Address::from_string(address);
     //
     // mint coins to the receiver
     //

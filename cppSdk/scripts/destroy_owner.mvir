@@ -1,8 +1,0 @@
-import {{sender}}.ViolasToken;
-
-main() {
-
-    ViolasToken.destroy_owner();
-
-    return;
-}

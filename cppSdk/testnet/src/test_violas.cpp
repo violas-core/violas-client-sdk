@@ -106,7 +106,7 @@ void run_test_case(
     replace_mv_with_addr("../../cppSdk/scripts/create_token.mv",
                          "create_token.mv",
                          accounts[account_index].address);
-    client->execute_script(account_index, "create_token.mv", vector<string>({uint256_to_string(accounts[1].address), "b\"00\""}));
+    client->execute_script(account_index, "create_token.mv", vector<string>({accounts[1].address.to_string(), "b\"00\""}));
     print_txn(account_index);
 
     for_each(begin(accounts) + 1, end(accounts), [=](const auto &account) {
@@ -118,7 +118,7 @@ void run_test_case(
                          "mint.mv",
                          accounts[account_index].address);
     client->execute_script(1, "mint.mv",
-                           vector<string>({"0", uint256_to_string(accounts[2].address), "10", "b\"00\""}));
+                           vector<string>({"0", accounts[2].address.to_string(), "10", "b\"00\""}));
     print_txn(account_index);
 
     auto balance = client->get_account_resource_uint64(2, accounts[0].address, 0);
@@ -129,7 +129,7 @@ void run_test_case(
                          accounts[account_index].address);
     client->execute_script(2,
                            "transfer.mv",
-                           vector<string>({"0", uint256_to_string(accounts[3].address), "1", "b\"00\""}));
+                           vector<string>({"0", accounts[3].address.to_string(), "1", "b\"00\""}));
 
     balance = client->get_account_resource_uint64(3, accounts[0].address, 0);
     cout << "the balance of token1 of account 3 is " << balance << endl;

@@ -1,8 +1,0 @@
-import {{sender}}.ViolasToken;
-
-main(maker: address, amount: u64, price: u64, flag: u64) {
-
-    ViolasToken.take_order(move(maker), move(amount), move(price), move(flag));
-
-    return;
-}

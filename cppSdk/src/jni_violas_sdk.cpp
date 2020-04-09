@@ -57,18 +57,18 @@ static void ThrowJNIException(JNIEnv *env, const std::string &errorMsg) {
 	env->ThrowNew(e_cls, errorMsg.c_str());
 }
 
-static Violas::uint256 to_address(JNIEnv *env, jbyteArray _address) {
-	Violas::uint256 address;
+static Violas::Address to_address(JNIEnv *env, jbyteArray _address) {
+	
 
 	jbyte *buffer = env->GetByteArrayElements(_address, 0);
 	size_t length = env->GetArrayLength(_address);
 
-	if (length != address.size())
-		ThrowJNIException(env, "the size of address is not 32.");
+	if (length != Violas::Address::length)
+		ThrowJNIException(env, "the size of address is not 16.");
 
-	copy(buffer, buffer + length, begin(address));
+	//copy(buffer, buffer + length, begin(address));
 
-	return address;
+	return Violas::Address((uint8_t*)buffer, length);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,9 +132,10 @@ jobject create_next_account(JNIEnv *env, jobject, jlong nativeObj) {
 		jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
 		                                             "(Ljava/lang/Object;Ljava/lang/Object;)V");
 
-		size_t length = account_info.second.size();
+		auto data = account_info.second.data();
+		size_t length = data.size();
 		jbyteArray address = env->NewByteArray(length);
-		env->SetByteArrayRegion(address, 0, length, ((jbyte *) account_info.second.data()));
+		env->SetByteArrayRegion(address, 0, length, ((jbyte *) data.data()));
 
 		jclass longClass = env->FindClass("java/lang/Long"); 
 		jmethodID longConstruct = env->GetMethodID(longClass, "<init>", "(J)V");
@@ -168,10 +169,11 @@ jobjectArray client_get_all_accounts(JNIEnv *env, jobject obj, jlong nativeObj) 
 		                                               defaultAccount);
 
 		for (size_t i = 0; i < accounts.size(); ++i) {
-
-			size_t length = accounts[i].address.size();
+			
+			auto data = accounts[i].address.data();
+			size_t length = data.size();
 			jbyteArray address = env->NewByteArray(length);
-			env->SetByteArrayRegion(address, 0, length, ((jbyte *) accounts[i].address.data()));
+			env->SetByteArrayRegion(address, 0, length, ((jbyte *) data.data()));
 
 			jobject account = env->NewObject(accountClass, constructAccount,
 			                                 accounts[i].index,
@@ -210,17 +212,17 @@ jdouble client_get_balance(JNIEnv *env, jobject obj, jlong nativeObj, jbyteArray
 
 	try {
 		Violas::client_ptr client = *((Violas::client_ptr *) nativeObj);
-		Violas::uint256 address;
+		//Violas::Address address;
 
 		jbyte *buffer = env->GetByteArrayElements(_address, 0);
 		size_t length = env->GetArrayLength(_address);
 
-		if (length != address.size())
+		if (length != Violas::Address::length)
 			ThrowJNIException(env, "the size of address is not 32.");
 
-		copy(buffer, buffer + length, begin(address));
+		//copy(buffer, buffer + length, begin(address));
 
-		balance = client->get_balance(address);
+		balance = client->get_balance(Violas::Address((uint8_t*)buffer, length));
 	}
 	catch (exception &e) {
 		ThrowJNIException(env, e.what());
@@ -459,7 +461,7 @@ namespace Jni_Token_Wrapper {
 		try {
 			Violas::token_ptr token = *((Violas::token_ptr *) native_token);
 
-			auto address = token->address();
+			auto address = token->address().data();
 
 			size_t length = address.size();
 			jbyteArray jaddress = env->NewByteArray(length);

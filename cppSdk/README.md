@@ -23,8 +23,8 @@ using namespace Libra;
 ``` 
 
 # How to use both Violas SDK and Libra SDK
-1. keep in mind that Violas SDK and Libra SDK must be called in different cpp file of a project, see example files test_libra.cpp and test_violas.cpp in path testnet/src, check Makefile.am and learn how to build these files together and generate binary testnet  
-2. compiling and link
+1. keep in mind that Violas SDK and Libra SDK must be called in different cpp file of one project, see example files test_libra.cpp and test_violas.cpp in path testnet/src, check Makefile.am and learn how to build these files together and generate binary testnet  
+2. compiling and linking
 ```
 -lviolas_sdk -llibra_sdk -LViolasClientSdk/build/release/lib
 ```

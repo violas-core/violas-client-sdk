@@ -1,5 +1,4 @@
-// Copyright (c) The Libra Core Contributors
-// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) The Palliums
 
 use bytecode_verifier::{
     verifier::{verify_module_dependencies, VerifiedScript},
@@ -10,7 +9,7 @@ use ir_to_bytecode::parser::{parse_module, parse_script};
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    transaction::{Module, Script},
+    //transaction::{Module, Script},
     vm_error::VMStatus,
 };
 //use serde_json;
@@ -146,20 +145,21 @@ pub fn compile(args: Args) -> Result<(), Error> {
             extra_deps: deps,
             ..Compiler::default()
         };
-        let (compiled_program, source_map) =
-            compiler.into_compiled_script_and_source_map(file_name, &source)?;
+        let (compiled_script, source_map) = compiler
+            .into_compiled_script_and_source_map(file_name, &source)
+            .expect("Failed to compile script");
 
-        let compiled_program = if !args.no_verify {
-            let verified_program = VerifiedScript::new(compiled_program)
-                .expect("Failed to verify program");
-            verified_program.into_inner()
+        let compiled_script = if !args.no_verify {
+            let verified_script =
+                VerifiedScript::new(compiled_script).expect("Failed to verify script");
+            verified_script.into_inner()
         } else {
-            compiled_program
+            compiled_script
         };
 
         if args.output_source_maps {
             let source_map_bytes = serde_json::to_vec(&source_map)
-                .expect("Unable to serialize source maps for program");
+                .expect("Unable to serialize source maps for script");
             write_output(
                 &source_path.with_extension(source_map_extension),
                 &source_map_bytes,
@@ -167,12 +167,10 @@ pub fn compile(args: Args) -> Result<(), Error> {
         }
 
         let mut script = vec![];
-        compiled_program
+        compiled_script
             .serialize(&mut script)
             .expect("Unable to serialize script");
-        let payload = Script::new(script, vec![]);
-        let payload_bytes = serde_json::to_vec(&payload).expect("Unable to serialize program");
-        write_output(&source_path.with_extension(mv_extension), &payload_bytes);
+        write_output(&source_path.with_extension(mv_extension), &script);
     } else {
         let (compiled_module, source_map) =
             util::do_compile_module(&args.source_path, address, &deps);
@@ -185,7 +183,7 @@ pub fn compile(args: Args) -> Result<(), Error> {
 
         if args.output_source_maps {
             let source_map_bytes = serde_json::to_vec(&source_map)
-                .expect("Unable to serialize source maps for program");
+                .expect("Unable to serialize source maps for module");
             write_output(
                 &source_path.with_extension(source_map_extension),
                 &source_map_bytes,
@@ -196,9 +194,7 @@ pub fn compile(args: Args) -> Result<(), Error> {
         compiled_module
             .serialize(&mut module)
             .expect("Unable to serialize module");
-        let payload = Module::new(module);
-        let payload_bytes = serde_json::to_vec(&payload).expect("Unable to serialize program");
-        write_output(&source_path.with_extension(mv_extension), &payload_bytes);
+        write_output(&source_path.with_extension(mv_extension), &module);
     }
 
     Ok(())

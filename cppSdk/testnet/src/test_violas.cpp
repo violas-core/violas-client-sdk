@@ -2,15 +2,22 @@
 #include <fstream>
 #include <violas_sdk.hpp>
 #include <cassert>
+#include "terminal.h"
 
 using namespace std;
 
-void run_test_case(
+void run_test_client(
     const string &host,
     uint16_t port,
     const string &mnemonic_file,
     const string &mint_key_file,
     const string &script_files_path);
+
+void run_test_libra(
+    const string &host,
+    uint16_t port,
+    const string &mnemonic_file,
+    const string &mint_key_file);
 
 void run_test_token(const string &host,
                     uint16_t port,
@@ -32,6 +39,8 @@ int main(int argc, char *argv[])
 
         // run_test_case(argv[1], stol(argv[2]), argv[3], argv[4],
         //               argc <= 5 ? "../scripts" : argv[5]);
+        run_test_libra(argv[1], stol(argv[2]), argv[3], argv[4]);
+
         run_test_token(argv[1], stol(argv[2]), argv[3], argv[4]);
     }
     catch (const std::exception &e)
@@ -44,7 +53,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void run_test_case(
+void run_test_client(
     const string &host,
     uint16_t port,
     const string &mnemonic_file,
@@ -165,6 +174,8 @@ void run_test_token(const string &host,
                     const string &mint_key_file)
 {
     using namespace Violas;
+    
+    cout << color::RED << "running test for violas sdk ..."  << color::RESET << endl;
 
     auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
 

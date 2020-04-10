@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <cxxabi.h>
 #include "violas_sdk.hpp"
+#include "terminal.h"
 
 using namespace std;
 using namespace Violas;
@@ -19,13 +20,6 @@ void deploy(Violas::client_ptr client);
 void publish(Violas::client_ptr client);
 void transfer(Violas::client_ptr client);
 void transfer_libra(Violas::client_ptr client);
-
-const std::string RED("\033[0;31m");
-const std::string GREEN("\033[1;32m");
-const std::string YELLOW("\033[1;33m");
-const std::string CYAN("\033[0;36m");
-const std::string MAGENTA("\033[0;35m");
-const std::string RESET("\033[0m");
 
 const char *demangle(const char *mangled_name)
 {
@@ -43,7 +37,7 @@ int main(int argc, char *argv[])
     {
         cout << "usage: \n"
              << "\t"
-             << GREEN << "transfer host port mnemonic [faucet]" << RESET
+             << color::GREEN << "transfer host port mnemonic [faucet]" << color::RESET
              << "\n"
              << endl;
 
@@ -78,7 +72,7 @@ int main(int argc, char *argv[])
         client->test_validator_connection();
 
         COUT << "connected to validator with "
-             << RED << "【 " << mnemonic << " 】" << RESET
+             << color::RED << "【 " << mnemonic << " 】" << color::RESET
              << endl;
 
         //
@@ -110,15 +104,15 @@ int main(int argc, char *argv[])
         while (index < 5)
         {
             COUT << "Index for functions \n"
-                 << RED << "\t【 " << mnemonic << " 】" << RESET << "\n"
-                 << GREEN
+                 << color::RED << "\t【 " << mnemonic << " 】" << color::RESET << "\n"
+                 << color::GREEN
                  << (faucet_key.empty() ? "" : "\t0. Mint VToken to account 0 \n")
                  << "\t1. Transfer Stable Token \n"
                  << "\t2. Transfer VToken \n"
                  << "\t3. Publish for a token\n"
                  << "\t4. Deploy Stable Token \n"
                  << "\t5. Quit \n"
-                 << RESET
+                 << color::RESET
                  << "Please input the index : ";
 
             cin >> index;

@@ -24,26 +24,29 @@ pub(crate) fn get_account_blob
 pub fn get_account_blob
 ```
 
-#### change MAX_GAS_AMOUNT at file libra/client/src/client_proxy.rs
-
-```Rust
-const MAX_GAS_AMOUNT: u64 = 280_000;
-```
-
 #### change max_iterations from 5000 to 10 at file libra/client/src/client_proxy.rs
 
 ```Rust
  pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
-        let mut max_iterations = 100;
+        let mut max_iterations = 1000;
         ...
  }
 ```
 
 2. open ViolasClientSdk/rust-client-proxy/cargo.toml, replace all reference for 'Libra' with correct path.
 
-3. run "cargo build"
+3. run "cargo build --release"
 
-   ​
+4. in path ViolasClientSdk
+
+```
+./autogen.sh
+./build_setup.sh
+cd build/release
+make install-strip
+```
+5. all executeable files are in path build/release/bin,
+   all lib files are in path build/release/lib
 
 # Compiling Violas Client on Windows 
 

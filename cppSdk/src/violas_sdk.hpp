@@ -1,6 +1,10 @@
 #ifndef LIBRA_CLIENT
 #define LIBRA_CLIENT
 
+#ifndef LIB_NAME
+    #define LIB_NAME Violas
+#endif
+
 #include <memory>
 #include <array>
 #include <vector>
@@ -27,7 +31,7 @@ std::string format(const std::string &format, Args... args)
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-namespace Violas
+namespace LIB_NAME
 {
 
 std::string tx_vec_data(const std::string &data);

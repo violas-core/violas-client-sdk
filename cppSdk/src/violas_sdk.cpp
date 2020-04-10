@@ -36,7 +36,7 @@ ostream &log(ostream &ost, const char *flag, const char *file, int line,
 #define EXCEPTION_AT \
     format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
 
-namespace Violas
+namespace LIB_NAME
 {
 template<size_t N>
 using bytes = array<uint8_t, N>;

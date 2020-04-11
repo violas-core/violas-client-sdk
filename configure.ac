@@ -46,8 +46,20 @@ AC_TYPE_UINT8_T
 
 # Checks for library functions.
 
+# check if debug is enable and set condition DEBUG with it
+AC_ARG_ENABLE([debug],
+    [ --enable-debug Turn on debugging],
+    [case "${enableval}" in
+        yes) debug=true ;;
+        no) debug=false ;;
+        *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+    esac],
+    [debug=false])
+AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
+AM_SILENT_RULES([yes])
 LT_INIT
 
 AC_CONFIG_FILES([Makefile

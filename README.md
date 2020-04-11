@@ -6,7 +6,10 @@ SDK support the follwing programming language
 2. Swift for IOS
 3. C++ for Linux, MacOS and Windows.
 
-
+## dependencies
+```
+sudo apt install libtool automake autoconf gcc-8 libstdc++-dev clang-9
+```
 
 ## Build
 
@@ -62,8 +65,4 @@ make install-strip
 6. 	Run "cargo build"
 	grpcio with version 0.4.7 can be compiled successfully, but grpcio with version 0.5.0-alpha.5 cannot be compiled successfully.
 
-```
-# Build all cpp code
-```
-1. sudo apt install libtool automake autoconf gcc-8 libstdc++-dev clang-9
 ```

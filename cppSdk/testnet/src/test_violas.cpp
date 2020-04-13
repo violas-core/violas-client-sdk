@@ -261,13 +261,13 @@ void run_test_token(const string &host,
     token->transfer(user1, 0, accounts[user2].address, 50);
     //print_txn(owner1);
     balance = token->get_account_balance(user2, 0);
-    cout << "User 1 transferred 50 token A to user 2" << endl;
+    cout << "User 1 transferred 50 token A to user 2, the balance of Token A fo user 2 is " << balance << endl;
     assert(balance == 50);
 
     token->transfer(user2, 1, accounts[user1].address, 50);
     //print_txn(owner2);
     balance = token->get_account_balance(user1, 1);
-    cout << "User 2 transferred 50 token B to user 1" << endl;
+    cout << "User 2 transferred 50 token B to user 1, the balance of Token B of user 1 is " << balance << endl;
     assert(balance == 50);
 
     cout << "User 1's token A : " << token->get_account_balance(user1, 0) << "\n"

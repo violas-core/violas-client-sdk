@@ -913,4 +913,54 @@ pub mod x86_64 {
             false
         }
     }
+
+    ///  Allow executing arbitrary script in the network.
+    #[no_mangle]
+    pub fn libra_enable_custom_script(raw_ptr: u64) -> bool {
+        let result = panic::catch_unwind(|| -> Result<(), Error> {
+            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+            proxy.enable_custom_script(&["enable_custom_script"], true)
+        });
+
+        if result.is_ok() {
+            match result.unwrap() {
+                Ok(()) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+            ));
+            false
+        }
+    }
+
+    ///   Only allow executing predefined script in the move standard library in the network.
+    #[no_mangle]
+    pub fn libra_disable_custom_script(raw_ptr: u64) -> bool {
+        let result = panic::catch_unwind(|| -> Result<(), Error> {
+            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+
+            proxy.disable_custom_script(&["disble_custom_script"], true)
+        });
+
+        if result.is_ok() {
+            match result.unwrap() {
+                Ok(()) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+            ));
+            false
+        }
+    }
 }

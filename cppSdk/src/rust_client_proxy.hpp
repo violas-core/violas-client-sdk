@@ -61,7 +61,7 @@ extern "C"
     bool libra_get_balance(uint64_t raw_ptr, const char *account_index_or_addr, double *result);
 
     /// Get the latest sequence number from validator for the account specified.
-    uint64_t libra_get_sequence_number(uint64_t raw_ptr, uint64_t index);
+    bool libra_get_sequence_number(uint64_t raw_ptr, const uint8_t address[], uint64_t & sequence_num );
 
     /// Mints coins for the receiver specified.
     bool libra_mint_coins(uint64_t raw_ptr, uint64_t index, uint64_t num_coins, bool is_blocking);
@@ -99,7 +99,7 @@ extern "C"
     //  get committed transaction and events info
     //  note that :  you must call 'libra_free_string' for argumets 'out_txn' and 'events' after calling 'libra_get_committed_txn_by_acc_seq'
     //
-    bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, uint64_t account_index, uint64_t sequence_num, char **out_txn, char **events);
+    bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, const uint8_t address[], uint64_t sequence_num, char **out_txn, char **events);
 
     struct TxnEvents
     {

@@ -44,12 +44,12 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch transfer",
-            "program": "${workspaceFolder}/cppSdk/testnet/transfer",
+            "program": "${workspaceFolder}/build/debug/bin/transfer",
             "args": [
-                "125.39.5.57",
-                "40001",
-                "governor",
-                "/home/hunter/Downloads/mint_tianjin.key"
+                "18.220.66.235",
+                "50001",
+                "chairman",
+                "/home/hunter/Downloads/mint_test.key"
             ],
             "cwd": "${workspaceFolder}/cppSdk/testnet"
         },

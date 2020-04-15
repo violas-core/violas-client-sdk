@@ -28,6 +28,8 @@ const char *demangle(const char *mangled_name)
     return abi::__cxa_demangle(mangled_name, 0, 0, &status);
 }
 
+void transfer_token(string host, short port, string mnemonic_file, string mint_key_file);
+
 int main(int argc, char *argv[])
 {
     ofstream file("log.txt");
@@ -57,6 +59,10 @@ int main(int argc, char *argv[])
 
         if (argc >= 5)
             faucet_key = argv[4];
+
+        transfer_token(host, port, mnemonic, faucet_key);
+
+        return 0;
 
         COUT << "connecting to " << host << ":" << port << " ......"
              << endl;
@@ -354,4 +360,126 @@ void transfer(Violas::client_ptr client)
          << txn << endl
          << "Events:\n"
          << events << endl;
+}
+
+void transfer_token(string host, short port, string mnemonic_file, string mint_key_file)
+{
+    using namespace Violas;
+    
+    cout << color::RED << "running test for violas sdk ..."  << color::RESET << endl;
+
+    auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
+
+    client->test_validator_connection();
+    cout << "succeed to test validator connection ." << endl;
+
+    auto s = client->create_next_account(true);
+    auto o1 = client->create_next_account(true);
+    auto o2 = client->create_next_account(true);
+    auto u1 = client->create_next_account(true);
+    auto u2 = client->create_next_account(true);
+
+    auto accounts = client->get_all_accounts();
+    for (const auto &account : accounts)
+    {
+        client->mint_coins(account.index, 1);
+
+        cout << "Account index : " << account.index
+             << ", address : " << account.address
+             << ", balane : " << client->get_balance(account.index)
+             << endl;
+    }
+
+    auto print_txn = [client](uint64_t account_index) {
+        auto seq_num = client->get_sequence_number(account_index) - 1;
+        auto [txn, event] = client->get_committed_txn_by_acc_seq(account_index, seq_num);
+        cout << "txn = " << txn << endl;
+    };
+
+    uint64_t supervisor = 0,
+             owner1 = 1,
+             owner2 = 2,
+             user1 = 3,
+             user2 = 4;
+
+    string script_files_path = "../../cppSdk/scripts";
+    auto token = Token::create(client, accounts[supervisor].address, "token1", script_files_path);
+
+    token->deploy(supervisor);
+    //print_txn(0);
+    cout << "account "<< supervisor <<" deployed token successfully ." << endl;
+
+    token->publish(supervisor);
+    //print_txn(0);
+    cout << "supervisor published Violas Token Module successfuly." << endl;
+
+    //token->create_token(supervisor, accounts[owner1].address, "Token A");
+    //print_txn(0);
+    cout << "created token A successfully." << endl;
+
+    //token->create_token(supervisor, accounts[owner2].address, "Token B");
+    //print_txn(0);
+    cout << "created token B successfully." << endl;
+
+    for (size_t i = 1; i < accounts.size(); i++)
+    {
+        token->publish((uint64_t)i);
+        //print_txn(0);
+    }
+    cout << "all accounts publish token module successfully." << endl;
+
+    //
+    // 6. Oa调用mint给U1铸Ta币种的100块钱
+    //
+    token->mint(owner1, 0, accounts[user1].address, 100);
+    //print_txn(owner1);
+    cout << "owner1 mint 100 cions to user1 ." << endl;
+
+    auto balance = token->get_account_balance(user1, 0);
+    cout << "the balance of token A of user 1 is " << balance << endl;
+
+    //
+    // 7. Ob调用mint给U2铸Tb币种的100块钱
+    //
+    token->mint(owner2, 1, accounts[user2].address, 100);
+    //print_txn(owner2);
+    cout << "Owner2 mint 100 coins to user2" << endl;
+
+    balance = token->get_account_balance(user2, 1);
+    cout << "the balance of token B of user 1 is " << balance << endl;
+
+
+    token->transfer(user1, 0, accounts[user2].address, 50);
+    //print_txn(owner1);
+    balance = token->get_account_balance(user2, 0);
+    cout << "User 1 transferred 50 token A to user 2, the balance of Token A fo user 2 is " << balance << endl;
+
+    token->transfer(user2, 1, accounts[user1].address, 50);
+    //print_txn(owner2);
+    balance = token->get_account_balance(user1, 1);
+    cout << "User 2 transferred 50 token B to user 1, the balance of Token B of user 1 is " << balance << endl;
+
+
+    cout << "User 1's token A : " << token->get_account_balance(user1, 0) << "\n"
+         << "User 1's token B : " << token->get_account_balance(user1, 1) << "\n"
+         << "User 2's token A : " << token->get_account_balance(user2, 0) << "\n"
+         << "User 2's token B : " << token->get_account_balance(user2, 1) << endl;
+
+    string input;
+    cout << "Please input an address of receiver : ";
+    cin >> input;
+    cout << endl << input << endl;
+
+    auto receiver = Address::from_string(input); //7f4644ae2b51b65bd3c9d414aa853407
+    cout << "receiver address is " << receiver << endl;
+
+    token->mint(owner1, 0, receiver, 1000000);
+    print_txn(owner1);
+    balance = token->get_account_balance(receiver, 0);
+    cout << "the balance of token A receiver is " << balance << endl;
+
+    token->mint(owner2, 1, receiver, 2000000);
+    print_txn(owner2);
+    balance = token->get_account_balance(receiver, 1);
+    cout << "the balance of token B of receiver is " << balance << endl;
 }

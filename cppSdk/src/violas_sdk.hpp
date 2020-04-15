@@ -2,7 +2,7 @@
 #define LIBRA_CLIENT
 
 #ifndef LIB_NAME
-    #define LIB_NAME Violas
+#define LIB_NAME Violas
 #endif
 
 #include <memory>
@@ -115,6 +115,7 @@ public:
     virtual double get_balance(const Address &address) = 0;
 
     virtual uint64_t get_sequence_number(uint64_t index) = 0;
+    virtual uint64_t get_sequence_number(const Address &address) = 0;
 
     virtual void mint_coins(uint64_t index, uint64_t num_coins, bool is_blocking = true) = 0;
 
@@ -148,6 +149,9 @@ public:
 
     virtual std::pair<std::string, std::string>
     get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
+
+    virtual std::pair<std::string, std::string>
+    get_committed_txn_by_acc_seq(Address address, uint64_t sequence_num) = 0;
 
     virtual std::vector<std::pair<std::string, std::string>>
     get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) = 0;
@@ -215,6 +219,6 @@ public:
 
 using token_ptr = std::shared_ptr<Token>;
 
-} // namespace Violas
+} // namespace LIB_NAME
 
 #endif

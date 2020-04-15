@@ -1,9 +1,10 @@
 #include <ctime>
 #include <iomanip>
 //#include <chrono>
-#include <cassert>
+//#include <cassert>
 #include <fstream>
 #include <sstream>
+#include <vector>
 #include <iterator>
 #include <functional>
 
@@ -38,10 +39,10 @@ ostream &log(ostream &ost, const char *flag, const char *file, int line,
 
 namespace LIB_NAME
 {
-template<size_t N>
+template <size_t N>
 using bytes = array<uint8_t, N>;
 
-template<size_t N>
+template <size_t N>
 ostream &operator<<(ostream &os, const bytes<N> &value)
 {
     for (auto v : value)
@@ -54,10 +55,10 @@ ostream &operator<<(ostream &os, const bytes<N> &value)
     return os;
 }
 
-template<size_t N>
+template <size_t N>
 std::ostream &operator>>(std::ostream &os, const bytes<N> &value) { return os; }
 
-template<size_t N>
+template <size_t N>
 bytes<N> bytes_from_string(const std::string &str)
 {
     bytes<N> addr;
@@ -157,20 +158,20 @@ void replace_mv_with_addr(const std::string &mv_file_name,
 
     auto pos = search(begin(buffer), end(buffer), addr, end(addr));
     if (pos != end(buffer))
-    {   
-        auto data = address.data(); 
+    {
+        auto data = address.data();
         copy(begin(data), end(data), pos);
     }
 
     copy(begin(buffer), end(buffer), ostreambuf_iterator<char>(ofs));
 }
 
-Address::Address(const uint8_t* data, uint64_t len)
-{   
+Address::Address(const uint8_t *data, uint64_t len)
+{
     if (len > length)
         len = length;
-    
-    copy(data, data+len, m_data.data());
+
+    copy(data, data + len, m_data.data());
 }
 
 std::string Address::to_string() const
@@ -181,17 +182,17 @@ std::string Address::to_string() const
     return oss.str();
 }
 
-Address Address::from_string(const std::string & hex_addr)
+Address Address::from_string(const std::string &hex_addr)
 {
     Address address;
     auto data = bytes_from_string<length>(hex_addr);
-    
+
     copy(begin(data), end(data), begin(address.m_data));
 
     return address;
 }
 
-std::ostream &operator<<(std::ostream &os, const Address & address)
+std::ostream &operator<<(std::ostream &os, const Address &address)
 {
     os << address.m_data;
 
@@ -203,7 +204,7 @@ std::ostream &operator<<(std::ostream &os, const Address & address)
 //     return is;
 // }
 
-bool Address::operator==(const Address & right) const
+bool Address::operator==(const Address &right) const
 {
     return m_data == right.m_data;
 }
@@ -215,6 +216,8 @@ class ClientImp : virtual public Client
 {
 protected:
     void *raw_client_proxy = nullptr;
+
+    vector<pair<uint64_t, Address>> m_accounts;
 
 public:
     ClientImp(const std::string &host,
@@ -271,10 +274,14 @@ public:
     virtual std::pair<size_t, Address>
     create_next_account(bool sync_with_validator) override
     {
-        Libra_Address account = libra_create_next_account((uint64_t)raw_client_proxy,
-                                                          sync_with_validator);
+        Libra_Address libra_account = libra_create_next_account((uint64_t)raw_client_proxy,
+                                                                sync_with_validator);
 
-        return make_pair<>(account.index, Address(account.address, ADDRESS_LENGTH));
+        auto account = make_pair<>(libra_account.index, Address(libra_account.address, ADDRESS_LENGTH));
+
+        m_accounts.push_back(account);
+
+        return account;
     }
 
     virtual std::vector<Account> get_all_accounts() override
@@ -287,7 +294,7 @@ public:
         {
             Account a;
             const auto &_a = all_accounts.data[i];
-            
+
             a.address = Address(_a.address, ADDRESS_LENGTH);
             a.index = _a.index;
             a.sequence_number = _a.sequence_number;
@@ -314,7 +321,7 @@ public:
         return balance;
     }
 
-    virtual double get_balance(const Address & address) override
+    virtual double get_balance(const Address &address) override
     {
         double balance = 0.f;
 
@@ -327,9 +334,25 @@ public:
         return balance;
     }
 
-    virtual uint64_t get_sequence_number(uint64_t index) override
+    virtual uint64_t get_sequence_number(uint64_t account_index) override
     {
-        return libra_get_sequence_number((uint64_t)raw_client_proxy, index);
+        auto [index, address] = m_accounts.at(account_index);
+
+        return get_sequence_number(address);
+    }
+
+    virtual uint64_t get_sequence_number(const Address &address) override
+    {
+        uint64_t sequence_num = 0;
+
+        bool ret = libra_get_sequence_number((uint64_t)raw_client_proxy,
+                                             address.data().data(),
+                                             sequence_num);
+        if (!ret)
+            throw runtime_error(
+                format("failed to get sequence number, error : %s", get_last_error().c_str()));
+
+        return sequence_num;
     }
 
     virtual void mint_coins(uint64_t index,
@@ -355,7 +378,7 @@ public:
         _index_sequence index_seq;
         bool ret = libra_transfer_coins_int(
             (uint64_t)raw_client_proxy, sender_account_ref_id,
-            (uint8_t*)receiver.data().data(), 
+            (uint8_t *)receiver.data().data(),
             num_coins, gas_unit_price, max_gas_amount,
             is_blocking, &index_seq);
         if (!ret)
@@ -456,21 +479,31 @@ public:
     get_committed_txn_by_acc_seq(uint64_t account_index,
                                  uint64_t sequence_num) override
     {
+        const auto & address = m_accounts.at(account_index).second;
+
+        return get_committed_txn_by_acc_seq(address, sequence_num);
+    }
+
+    virtual std::pair<std::string, std::string>
+    get_committed_txn_by_acc_seq(Address address, uint64_t sequence_num) override
+    {
         char *out_txn = nullptr, *events = nullptr;
 
         bool ret = libra_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy,
-                                                      account_index, sequence_num,
+                                                      address.data().data(),
+                                                      sequence_num,
                                                       &out_txn, &events);
         if (!ret)
             throw runtime_error(format("failed to get committed transaction by "
                                        "account index %d and sequence number %d, "
                                        "error : %s",
-                                       account_index, sequence_num,
+                                       address.to_string().c_str(),
+                                       sequence_num,
                                        get_last_error().c_str()) +
                                 EXCEPTION_AT);
 
         CLOG << format("get committed transaction by account index %d and sequence number %d",
-                       account_index, sequence_num)
+                       address.to_string().c_str(), sequence_num)
              << endl;
 
         auto txn_events = make_pair<string, string>(out_txn, events);
@@ -760,7 +793,7 @@ std::shared_ptr<Token> Token::create(client_ptr client,
     return make_shared<TokenImp>(client, governor_addr, name, init_all_script_fun, temp_path);
 }
 
-} // namespace Violas
+} // namespace LIB_NAME
 
 #ifdef PYTHON
 #include <boost/python.hpp>

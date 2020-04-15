@@ -15,7 +15,7 @@ void run_test_libra(
     const string &mint_key_file)
 {
     using namespace Libra;
-    
+
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
 
     auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
@@ -48,11 +48,18 @@ void run_test_libra(
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(1) << endl;
 
-    auto print_txn = [client](uint64_t account_index) {
-        auto seq_num = client->get_sequence_number(account_index) - 1;
-        auto [txn, event] = client->get_committed_txn_by_acc_seq(account_index, seq_num);
+    auto print_txn = [client](Address address) {
+        auto seq_num = client->get_sequence_number(address) - 1;
+        auto [txn, event] = client->get_committed_txn_by_acc_seq(address, seq_num);
         cout << "txn = " << txn << endl;
     };
 
-    print_txn(0);
+    replace_mv_with_addr("../../cppSdk/scripts/violas.mv",
+                         "violas.mv",
+                         accounts[0].address);
+                                        
+    const auto faucet = Address::from_string("0000000000000000000000000A550C18");
+    client->publish_module(0, "violas.mv");
+
+    print_txn(faucet);
 }

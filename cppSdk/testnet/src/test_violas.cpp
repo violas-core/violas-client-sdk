@@ -273,5 +273,5 @@ void run_test_token(const string &host,
     cout << "User 1's token A : " << token->get_account_balance(user1, 0) << "\n"
          << "User 1's token B : " << token->get_account_balance(user1, 1) << "\n"
          << "User 2's token A : " << token->get_account_balance(user2, 0) << "\n"
-         << "User 2's token B : " << token->get_account_balance(user2, 1) << endl;
+         << "User 2's token B : " << token->get_account_balance(user2, 1) << endl;   
 }

@@ -7,7 +7,7 @@ pub mod x86_64 {
     use cli::AccountStatus;
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress,
-        account_config::CORE_CODE_ADDRESS, account_state::AccountState,
+        account_config::CORE_CODE_ADDRESS, account_state::AccountState, transaction::*,
     }; //ADDRESS_LENGTH access_path::AccessPath,
     use std::cell::RefCell;
     use std::ffi::{CStr, CString};
@@ -289,15 +289,42 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_get_sequence_number(raw_ptr: u64, index: u64) -> u64 {
-        // convert raw ptr to object client
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+    pub extern "C" fn libra_get_sequence_number(
+        raw_ptr: u64,
+        address: &[c_uchar; LENGTH],
+        result: &mut u64,
+    ) -> bool {
+        let ret = panic::catch_unwind(|| -> Result<u64, Error> {
+            // convert raw ptr to object client
+            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-        let sequence_num = client
-            .get_sequence_number(&["sequence", index.to_string().as_str()])
-            .unwrap();
+            let account_state = proxy
+                .client
+                .get_account_state(AccountAddress::new(*address), true)?;
+            if let Some(view) = account_state.0 {
+                Ok(view.sequence_number)
+            } else {
+                bail!("No account exists at {:?}", address);
+            }
+        });
 
-        sequence_num
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(seq_num) => {
+                    *result = seq_num;
+                    true
+                }
+                Err(e) => {
+                    set_last_error(e);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'libra_get_sequence_number' !"
+            ));
+            false
+        }
     }
 
     #[no_mangle]
@@ -544,7 +571,8 @@ pub mod x86_64 {
             let module = unsafe { CStr::from_ptr(module_file).to_str().unwrap() };
             let index = account_index.to_string();
 
-            client.publish_module(&["publish", index.as_str(), module])
+            //client.publish_module(&["publish", index.as_str(), module])
+            client.publish_module_with_faucet_account(&["publish", index.as_str(), module])
         });
 
         if ret.is_ok() {
@@ -617,21 +645,19 @@ pub mod x86_64 {
     #[no_mangle]
     pub extern "C" fn libra_get_committed_txn_by_acc_seq(
         raw_ptr: u64,
-        account_index: u64,
+        address: &[c_uchar; LENGTH],
         sequence_num: u64,
         out_transaction: *mut *mut c_char,
         out_event: *mut *mut c_char,
     ) -> bool {
         //
         let result = panic::catch_unwind(|| -> Result<(String, String), Error> {
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-            match client.get_committed_txn_by_acc_seq(&[
-                "txn_acc_seq",
-                account_index.to_string().as_str(),
-                sequence_num.to_string().as_str(),
-                "true",
-            ]) {
+            match proxy
+                .client
+                .get_txn_by_acc_seq(AccountAddress::new(*address), sequence_num, true)
+            {
                 Ok(txn_view) => {
                     let mut txn = String::new();
                     let events = String::new();
@@ -766,7 +792,7 @@ pub mod x86_64 {
         raw_ptr: u64,
         account_index_or_addr: *const c_char,
         c_account_path_addr: *const c_char,
-        token_index : u64,
+        token_index: u64,
         balance: &mut u64,
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<u64, Error> {
@@ -786,11 +812,15 @@ pub mod x86_64 {
                 let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
                 let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
-                
-                let index : usize = token_index as usize;
+
+                let index: usize = token_index as usize;
                 if index >= ar.tokens.len() {
-                    bail!(format!("token index {} is more than token length {}", index, ar.tokens.len()));
-                }                    
+                    bail!(format!(
+                        "token index {} is more than token length {}",
+                        index,
+                        ar.tokens.len()
+                    ));
+                }
 
                 return Ok(ar.tokens[index].balance);
             }
@@ -813,6 +843,73 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!("panic at libra_get_account_resource()"));
+            false
+        }
+    }
+
+    // association transaction with local faucet account
+    // Publish move module with faucet account
+    // #[no_mangle]
+    // pub fn publish_module_with_faucet_account(&mut self, space_delim_strings: &[&str]) -> Result<()>
+    // {
+    //     ensure!(self.faucet_account.is_some(), "No faucet account loaded");
+    //     let sender = self.faucet_account.as_ref().unwrap();
+    //     let sender_address = sender.address;
+    //     let module_bytes = fs::read(space_delim_strings[2])?;
+    //     let program  = TransactionPayload::Module(Module::new(module_bytes));
+
+    //     let txn = self.create_txn_to_submit(program, sender, None, None)?;
+    //     let mut sender_mut = self.faucet_account.as_mut().unwrap();
+    //     let resp = self.client.submit_transaction(Some(&mut sender_mut), txn);
+    //     self.wait_for_transaction(
+    //         sender_address,
+    //         self.faucet_account.as_ref().unwrap().sequence_number,
+    //     );
+
+    //     resp
+    // }
+
+    /// association transaction with local faucet account
+    #[no_mangle]
+    pub fn publish_module_with_faucet_account(
+        raw_ptr: u64,
+        module_file_name: *const c_char,
+    ) -> bool {
+        let result = panic::catch_unwind(|| -> Result<(), Error> {
+            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
+
+            if proxy.faucet_account.is_some() {
+                bail!("No faucet account loaded");
+            }
+            let sender = proxy.faucet_account.as_ref().unwrap();
+            let sender_address = sender.address;
+            let module_bytes = fs::read(module)?;
+            let program = TransactionPayload::Module(Module::new(module_bytes));
+
+            let txn = proxy.create_txn_to_submit(program, sender, None, None)?;
+            let mut sender_mut = proxy.faucet_account.as_mut().unwrap();
+            let resp = proxy.client.submit_transaction(Some(&mut sender_mut), txn);
+            proxy.wait_for_transaction(
+                sender_address,
+                proxy.faucet_account.as_ref().unwrap().sequence_number,
+            );
+
+            resp
+        });
+
+        if result.is_ok() {
+            match result.unwrap() {
+                Ok(()) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+            ));
             false
         }
     }

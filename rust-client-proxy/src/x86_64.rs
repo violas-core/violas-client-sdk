@@ -571,8 +571,7 @@ pub mod x86_64 {
             let module = unsafe { CStr::from_ptr(module_file).to_str().unwrap() };
             let index = account_index.to_string();
 
-            //client.publish_module(&["publish", index.as_str(), module])
-            client.publish_module_with_faucet_account(&["publish", index.as_str(), module])
+            client.publish_module(&["publish", index.as_str(), module])
         });
 
         if ret.is_ok() {
@@ -586,6 +585,51 @@ pub mod x86_64 {
         } else {
             set_last_error(format_err!(
                 "catch panic at function 'libra_publish_module' !"
+            ));
+            false
+        }
+    }
+
+    /// association transaction with local faucet account
+    #[no_mangle]
+    pub fn libra_publish_module_with_faucet_account(
+        raw_ptr: u64,
+        module_file_name: *const c_char,
+    ) -> bool {
+        let result = panic::catch_unwind(|| -> Result<(), Error> {
+            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
+
+            if proxy.faucet_account.is_none() {
+                bail!("No faucet account loaded");
+            }
+            let sender = proxy.faucet_account.as_ref().unwrap();
+            let sender_address = sender.address;
+            let module_bytes = fs::read(module)?;
+            let program = TransactionPayload::Module(Module::new(module_bytes));
+
+            let txn = proxy.create_txn_to_submit(program, sender, None, None)?;
+            let mut sender_mut = proxy.faucet_account.as_mut().unwrap();
+            let resp = proxy.client.submit_transaction(Some(&mut sender_mut), txn);
+            proxy.wait_for_transaction(
+                sender_address,
+                proxy.faucet_account.as_ref().unwrap().sequence_number,
+            );
+
+            resp
+        });
+
+        if result.is_ok() {
+            match result.unwrap() {
+                Ok(()) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "panic at function (libra_get_committed_txn_by_acc_seq) !"
             ));
             false
         }
@@ -847,45 +891,32 @@ pub mod x86_64 {
         }
     }
 
-    // association transaction with local faucet account
-    // Publish move module with faucet account
-    // #[no_mangle]
-    // pub fn publish_module_with_faucet_account(&mut self, space_delim_strings: &[&str]) -> Result<()>
-    // {
-    //     ensure!(self.faucet_account.is_some(), "No faucet account loaded");
-    //     let sender = self.faucet_account.as_ref().unwrap();
-    //     let sender_address = sender.address;
-    //     let module_bytes = fs::read(space_delim_strings[2])?;
-    //     let program  = TransactionPayload::Module(Module::new(module_bytes));
-
-    //     let txn = self.create_txn_to_submit(program, sender, None, None)?;
-    //     let mut sender_mut = self.faucet_account.as_mut().unwrap();
-    //     let resp = self.client.submit_transaction(Some(&mut sender_mut), txn);
-    //     self.wait_for_transaction(
-    //         sender_address,
-    //         self.faucet_account.as_ref().unwrap().sequence_number,
-    //     );
-
-    //     resp
-    // }
-
     /// association transaction with local faucet account
     #[no_mangle]
-    pub fn publish_module_with_faucet_account(
+    pub fn libra_execute_script_with_faucet_account(
         raw_ptr: u64,
-        module_file_name: *const c_char,
+        script_file_name: *const c_char,
+        script_args: &ScriptArgs,
     ) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
             let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
+            let script = unsafe { CStr::from_ptr(script_file_name).to_str().unwrap() };
+            let args1 =
+                unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
 
-            if proxy.faucet_account.is_some() {
+            if proxy.faucet_account.is_none() {
                 bail!("No faucet account loaded");
             }
             let sender = proxy.faucet_account.as_ref().unwrap();
             let sender_address = sender.address;
-            let module_bytes = fs::read(module)?;
-            let program = TransactionPayload::Module(Module::new(module_bytes));
+            let script_bytes = fs::read(script)?;
+
+            let args = args1
+                .iter()
+                .map(|arg| unsafe { CStr::from_ptr(*arg).to_str().unwrap() })
+                .filter_map(|arg| parse_as_transaction_argument(arg).ok())
+                .collect();
+            let program = TransactionPayload::Script(Script::new(script_bytes, vec![], args));
 
             let txn = proxy.create_txn_to_submit(program, sender, None, None)?;
             let mut sender_mut = proxy.faucet_account.as_mut().unwrap();

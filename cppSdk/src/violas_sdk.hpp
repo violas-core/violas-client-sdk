@@ -144,8 +144,14 @@ public:
 
     virtual void publish_module(uint64_t account_index, const std::string &module_file) = 0;
 
+    virtual void publish_module_with_faucet_account(const std::string &module_file) = 0;
+
     virtual void execute_script(uint64_t account_index, const std::string &script_file,
                                 const std::vector<std::string> &script_args) = 0;
+
+    /// execute script with faucet account
+    virtual void execute_script_with_faucet_account(const std::string &script_file,
+                                                    const std::vector<std::string> &script_args) = 0;
 
     virtual std::pair<std::string, std::string>
     get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
@@ -200,21 +206,21 @@ public:
 
     virtual void create_token(uint64_t account_index, Address owner, const std::string &token_data = "token") = 0;
 
-    virtual void mint(uint64_t account_index,
-                      uint64_t token_index,
+    virtual void mint(uint64_t token_index,
+                      uint64_t account_index,
                       Address receiver,
                       uint64_t amount_micro_coin,
                       const std::string &data = "mint") = 0;
 
-    virtual void transfer(uint64_t account_index,
-                          uint64_t token_index,
+    virtual void transfer(uint64_t token_index,
+                          uint64_t account_index,
                           Address receiver,
                           uint64_t amount_micro_coin,
                           const std::string &data = "transfer") = 0;
 
-    virtual uint64_t get_account_balance(uint64_t account_index, uint64_t token_index) = 0;
+    virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index ) = 0;
 
-    virtual uint64_t get_account_balance(Address account_address, uint64_t token_index) = 0;
+    virtual uint64_t get_account_balance(uint64_t token_index, Address account_address) = 0;
 };
 
 using token_ptr = std::shared_ptr<Token>;

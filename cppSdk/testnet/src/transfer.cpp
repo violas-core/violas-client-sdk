@@ -475,11 +475,11 @@ void transfer_token(string host, short port, string mnemonic_file, string mint_k
 
     token->mint(owner1, 0, receiver, 1000000);
     print_txn(owner1);
-    balance = token->get_account_balance(receiver, 0);
+    balance = token->get_account_balance(0, receiver);
     cout << "the balance of token A receiver is " << balance << endl;
 
     token->mint(owner2, 1, receiver, 2000000);
     print_txn(owner2);
-    balance = token->get_account_balance(receiver, 1);
+    balance = token->get_account_balance(1, receiver);
     cout << "the balance of token B of receiver is " << balance << endl;
 }

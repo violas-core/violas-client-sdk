@@ -71,10 +71,17 @@ extern "C"
  * Method:    nativeMint
  * Signature: (JJ[BJ)V
  */
-    JNIEXPORT void JNICALL CLASS_METHOD(nativeMint)(JNIEnv *env, jobject obj, jlong native_token, jlong account_index,
-                                                                    jbyteArray receiver_address, jlong amount_micro_coins)
+    JNIEXPORT void JNICALL CLASS_METHOD(nativeMint)(JNIEnv *env, jobject obj,
+                                                    jlong native_token,
+                                                    jlong token_index,
+                                                    jlong account_index,
+                                                    jbyteArray receiver_address, jlong amount_micro_coins)
     {
-        Jni_Token_Wrapper::jni_mint(env, obj, native_token, account_index, receiver_address,
+        Jni_Token_Wrapper::jni_mint(env, obj,
+                                    native_token,
+                                    token_index,
+                                    account_index,
+                                    receiver_address,
                                     amount_micro_coins);
     }
 
@@ -83,10 +90,18 @@ extern "C"
  * Method:    nativeTransfer
  * Signature: (JJ[BJ)V
  */
-    JNIEXPORT void JNICALL CLASS_METHOD(nativeTransfer)(JNIEnv *env, jobject obj, jlong native_token, jlong account_index,
-                                                                        jbyteArray receiver_address, jlong amount_micro_coins)
+    JNIEXPORT void JNICALL CLASS_METHOD(nativeTransfer)(JNIEnv *env, jobject obj,
+                                                        jlong native_token,
+                                                        jlong token_index,
+                                                        jlong account_index,
+                                                        jbyteArray receiver_address,
+                                                        jlong amount_micro_coins)
     {
-        Jni_Token_Wrapper::jni_mint(env, obj, native_token, account_index, receiver_address,
+        Jni_Token_Wrapper::jni_mint(env, obj,
+                                    native_token,
+                                    token_index,
+                                    account_index,
+                                    receiver_address,
                                     amount_micro_coins);
     }
 
@@ -95,9 +110,12 @@ extern "C"
  * Method:    nativeGetBalance
  * Signature: (JJ)J
  */
-    JNIEXPORT jlong JNICALL CLASS_METHOD(nativeGetBalance__JJ)(JNIEnv *env, jobject obj, jlong native_token, jlong account_index)
+    JNIEXPORT jlong JNICALL CLASS_METHOD(nativeGetBalance__JJ)(JNIEnv *env, jobject obj,
+                                                               jlong native_token,
+                                                               jlong token_index,
+                                                               jlong account_index)
     {
-        return Jni_Token_Wrapper::jni_get_balance(env, obj, native_token, account_index);
+        return Jni_Token_Wrapper::jni_get_balance(env, obj, native_token, token_index, account_index);
     }
 
     /*
@@ -105,9 +123,15 @@ extern "C"
  * Method:    nativeGetBalance
  * Signature: (J[B)J
  */
-    JNIEXPORT jlong JNICALL CLASS_METHOD(nativeGetBalance__J_3B)(JNIEnv *env, jobject obj, jlong native_token, jbyteArray address)
+    JNIEXPORT jlong JNICALL CLASS_METHOD(nativeGetBalance__J_3B)(JNIEnv *env, jobject obj,
+                                                                 jlong native_token,
+                                                                 jlong token_index,
+                                                                 jbyteArray address)
     {
-        return Jni_Token_Wrapper::jni_get_balance(env, obj, native_token, address);
+        return Jni_Token_Wrapper::jni_get_balance(env, obj,
+                                                  native_token,
+                                                  token_index,
+                                                  address);
     }
 
 #ifdef __cplusplus

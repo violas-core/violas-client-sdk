@@ -174,8 +174,8 @@ void run_test_token(const string &host,
                     const string &mint_key_file)
 {
     using namespace Violas;
-    
-    cout << color::RED << "running test for violas sdk ..."  << color::RESET << endl;
+
+    cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
 
     auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
 
@@ -216,17 +216,17 @@ void run_test_token(const string &host,
 
     token->deploy(supervisor);
     //print_txn(0);
-    cout << "account "<< supervisor <<" deployed token successfully ." << endl;
+    cout << "account " << supervisor << " deployed token successfully ." << endl;
 
     token->publish(supervisor);
     //print_txn(0);
     cout << "supervisor published Violas Token Module successfuly." << endl;
 
-    token->create_token(supervisor, accounts[owner1].address, "Token A");
+    //token->create_token(supervisor, accounts[owner1].address, "Token A");
     //print_txn(0);
     cout << "created token A successfully." << endl;
 
-    token->create_token(supervisor, accounts[owner2].address, "Token B");
+    //token->create_token(supervisor, accounts[owner2].address, "Token B");
     //print_txn(0);
     cout << "created token B successfully." << endl;
 
@@ -240,38 +240,41 @@ void run_test_token(const string &host,
     //
     // 6. Oa调用mint给U1铸Ta币种的100块钱
     //
-    token->mint(owner1, 0, accounts[user1].address, 100);
+    token->mint(0, owner1, accounts[user1].address, 100);
     //print_txn(owner1);
     cout << "owner1 mint 100 cions to user1 ." << endl;
 
-    auto balance = token->get_account_balance(user1, 0);
+    auto balance = token->get_account_balance(0, user1);
     cout << "the balance of token A of user 1 is " << balance << endl;
-    assert(balance = 100);
+
     //
     // 7. Ob调用mint给U2铸Tb币种的100块钱
     //
-    token->mint(owner2, 1, accounts[user2].address, 100);
+    token->mint(1, owner2, accounts[user2].address, 100);
     //print_txn(owner2);
     cout << "Owner2 mint 100 coins to user2" << endl;
 
-    balance = token->get_account_balance(user2, 1);
+    balance = token->get_account_balance(1, user2);
     cout << "the balance of token B of user 1 is " << balance << endl;
-    assert(balance = 100);
 
-    token->transfer(user1, 0, accounts[user2].address, 50);
+    token->transfer(0, user1, accounts[user2].address, 50);
     //print_txn(owner1);
-    balance = token->get_account_balance(user2, 0);
+    balance = token->get_account_balance(0, user2);
     cout << "User 1 transferred 50 token A to user 2, the balance of Token A fo user 2 is " << balance << endl;
-    assert(balance == 50);
 
-    token->transfer(user2, 1, accounts[user1].address, 50);
+    token->transfer(1, user2, accounts[user1].address, 50);
     //print_txn(owner2);
-    balance = token->get_account_balance(user1, 1);
+    balance = token->get_account_balance(1, user1);
     cout << "User 2 transferred 50 token B to user 1, the balance of Token B of user 1 is " << balance << endl;
-    assert(balance == 50);
 
-    cout << "User 1's token A : " << token->get_account_balance(user1, 0) << "\n"
-         << "User 1's token B : " << token->get_account_balance(user1, 1) << "\n"
-         << "User 2's token A : " << token->get_account_balance(user2, 0) << "\n"
-         << "User 2's token B : " << token->get_account_balance(user2, 1) << endl;   
+    cout << "User 1's token A : " << token->get_account_balance(0, user1) << "\n"
+         << "User 1's token B : " << token->get_account_balance(1, user1) << "\n"
+         << "User 2's token A : " << token->get_account_balance(0, user2) << "\n"
+         << "User 2's token B : " << token->get_account_balance(1, user2) << endl;
+
+    //for the new mnemonic file, the follwing asserts will be true
+    assert(token->get_account_balance(0, user1) == 50);
+    assert(token->get_account_balance(1, user1) == 50);
+    assert(token->get_account_balance(0, user2) == 50);
+    assert(token->get_account_balance(1, user2) == 50);
 }

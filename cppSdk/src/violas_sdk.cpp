@@ -443,6 +443,20 @@ public:
         CLOG << "published module " << module_file << endl;
     }
 
+    virtual void publish_module_with_faucet_account(const std::string &module_file) override
+    {
+        bool ret = libra_publish_module_with_faucet_account((uint64_t)raw_client_proxy,
+                                                            module_file.c_str());
+        if (!ret)
+        {
+            auto error = format("failed to publish module file '%s' with faucet account, error : %s",
+                                module_file.c_str(), get_last_error().c_str());
+            throw runtime_error(error);
+        }
+
+        CLOG << "published module '" << module_file << "' with faucet account" << endl;
+    }
+
     virtual void
     execute_script(uint64_t account_index, const std::string &script_file,
                    const std::vector<std::string> &script_args) override
@@ -475,11 +489,41 @@ public:
              << endl;
     }
 
+    /// execute script with faucet account
+    virtual void execute_script_with_faucet_account(const std::string &script_file,
+                                                    const std::vector<std::string> &script_args) override
+    {
+        ScriptArgs args;
+
+        vector<const char *> args_array;
+        for (auto &arg : script_args)
+        {
+            args_array.push_back(arg.c_str());
+        }
+
+        args.len = script_args.size();
+        args.data = args_array.data();
+
+        bool ret = libra_execute_script_with_faucet_account((uint64_t)raw_client_proxy,
+                                                            script_file.c_str(),
+                                                            &args);
+        if (!ret)
+            throw runtime_error(
+                format("failed to execute script file '%s' for account faucet, "
+                       "error : %s, "
+                       "at %s",
+                       script_file.c_str(),
+                       get_last_error().c_str(),
+                       EXCEPTION_AT.c_str()));
+
+        CLOG << format("excuted script file '%s' for account faucet", script_file.c_str())
+             << endl;
+    }
     virtual std::pair<std::string, std::string>
     get_committed_txn_by_acc_seq(uint64_t account_index,
                                  uint64_t sequence_num) override
     {
-        const auto & address = m_accounts.at(account_index).second;
+        const auto &address = m_accounts.at(account_index).second;
 
         return get_committed_txn_by_acc_seq(address, sequence_num);
     }
@@ -665,8 +709,8 @@ public:
                                        vector<string>{owner.to_string(), tx_vec_data(token_data)});
     }
 
-    virtual void mint(uint64_t account_index,
-                      uint64_t token_index,
+    virtual void mint(uint64_t token_index,
+                      uint64_t account_index,
                       Address receiver,
                       uint64_t amount_micro_coin,
                       const std::string &data) override
@@ -686,8 +730,8 @@ public:
         m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
     }
 
-    virtual void transfer(uint64_t account_index,
-                          uint64_t token_index,
+    virtual void transfer(uint64_t token_index,
+                          uint64_t account_index,
                           Address receiver,
                           uint64_t amount_micro_coin,
                           const std::string &data) override
@@ -704,7 +748,7 @@ public:
         m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
     }
 
-    virtual uint64_t get_account_balance(uint64_t account_index, uint64_t token_index) override
+    virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index ) override
     {
         uint64_t balance = m_libra_client->get_account_resource_uint64(account_index,
                                                                        m_supervisor,
@@ -712,7 +756,7 @@ public:
         return balance;
     }
 
-    virtual uint64_t get_account_balance(Address account_address, uint64_t token_index) override
+    virtual uint64_t get_account_balance(uint64_t token_index, Address account_address) override
     {
         uint64_t balance = m_libra_client->get_account_resource_uint64(account_address,
                                                                        m_supervisor,

@@ -10,7 +10,7 @@
             "request": "launch",
             "name": "Launch testnet",
             "program": "${workspaceFolder}/build/debug/bin/testnet",
-            "args": ["localhost", "33909", "governor", "/tmp/f6328819538092dda8757069335f6d47/mint.key"],
+            "args": ["localhost", "36817", "governor", "/tmp/8a03b1bf30f48a37520b67d620ff6a14/mint.key"],
             "cwd": "${workspaceFolder}/build/debug"
         },
 
@@ -48,10 +48,10 @@
             "args": [
                 "18.220.66.235",
                 "50001",
-                "chairman",
+                "../../cppSdk/testnet/chairman",
                 "/home/hunter/Downloads/mint_test.key"
             ],
-            "cwd": "${workspaceFolder}/cppSdk/testnet"
+            "cwd": "${workspaceFolder}/build/debug"
         },
         {
             "name": "Python: violas.py",

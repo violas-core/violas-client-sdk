@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
         // run_test_case(argv[1], stol(argv[2]), argv[3], argv[4],
         //               argc <= 5 ? "../scripts" : argv[5]);
-        run_test_libra(argv[1], stol(argv[2]), argv[3], argv[4]);
+        //run_test_libra(argv[1], stol(argv[2]), argv[3], argv[4]);
 
         run_test_token(argv[1], stol(argv[2]), argv[3], argv[4]);
     }
@@ -215,19 +215,19 @@ void run_test_token(const string &host,
     auto token = Token::create(client, accounts[supervisor].address, "token1", script_files_path);
 
     token->deploy(supervisor);
-    //print_txn(0);
+    print_txn(0);
     cout << "account " << supervisor << " deployed token successfully ." << endl;
 
     token->publish(supervisor);
-    //print_txn(0);
+    print_txn(0);
     cout << "supervisor published Violas Token Module successfuly." << endl;
 
-    //token->create_token(supervisor, accounts[owner1].address, "Token A");
-    //print_txn(0);
+    token->create_token(supervisor, accounts[owner1].address, "Token A");
+    print_txn(0);
     cout << "created token A successfully." << endl;
 
-    //token->create_token(supervisor, accounts[owner2].address, "Token B");
-    //print_txn(0);
+    token->create_token(supervisor, accounts[owner2].address, "Token B");
+    print_txn(0);
     cout << "created token B successfully." << endl;
 
     for (size_t i = 1; i < accounts.size(); i++)
@@ -241,7 +241,7 @@ void run_test_token(const string &host,
     // 6. Oa调用mint给U1铸Ta币种的100块钱
     //
     token->mint(0, owner1, accounts[user1].address, 100);
-    //print_txn(owner1);
+    print_txn(owner1);
     cout << "owner1 mint 100 cions to user1 ." << endl;
 
     auto balance = token->get_account_balance(0, user1);
@@ -251,7 +251,7 @@ void run_test_token(const string &host,
     // 7. Ob调用mint给U2铸Tb币种的100块钱
     //
     token->mint(1, owner2, accounts[user2].address, 100);
-    //print_txn(owner2);
+    print_txn(owner2);
     cout << "Owner2 mint 100 coins to user2" << endl;
 
     balance = token->get_account_balance(1, user2);

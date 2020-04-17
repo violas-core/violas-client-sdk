@@ -637,13 +637,13 @@ std::shared_ptr<Client> Client::create(const std::string &host,
                                   faucet_server, mnemonic_file);
 }
 
-class TokenImp : public Token
+class TokenManagerImp : public TokenManager
 {
 public:
-    TokenImp(client_ptr client,
-             Address governor_addr,
-             const std::string &name,
-             const std::string &script_files_path)
+    TokenManagerImp(client_ptr client,
+                    Address governor_addr,
+                    const std::string &name,
+                    const std::string &script_files_path)
         : m_libra_client(client),
           m_name(name),
           m_supervisor(governor_addr)
@@ -651,11 +651,11 @@ public:
         init_all_script(script_files_path);
     }
 
-    TokenImp(client_ptr client,
-             Address governor_addr,
-             const std::string &name,
-             function<void(const std::string &)> init_all_script_fun,
-             const std::string &temp_path)
+    TokenManagerImp(client_ptr client,
+                    Address governor_addr,
+                    const std::string &name,
+                    function<void(const std::string &)> init_all_script_fun,
+                    const std::string &temp_path)
         : m_libra_client(client),
           m_name(name),
           m_supervisor(governor_addr),
@@ -673,7 +673,7 @@ public:
         init_all_script_fun(m_temp_script_path.string());
     }
 
-    virtual ~TokenImp() {}
+    virtual ~TokenManagerImp() {}
 
     virtual std::string name() override { return m_name; }
 
@@ -748,7 +748,7 @@ public:
         m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
     }
 
-    virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index ) override
+    virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index) override
     {
         uint64_t balance = m_libra_client->get_account_resource_uint64(account_index,
                                                                        m_supervisor,
@@ -820,21 +820,21 @@ private:
     const string transfer_script = "transfer";
 };
 
-std::shared_ptr<Token> Token::create(client_ptr client,
-                                     Address governor_addr,
-                                     const std::string &name,
-                                     const std::string &script_files_path)
+std::shared_ptr<TokenManager> TokenManager::create(client_ptr client,
+                                                   Address governor_addr,
+                                                   const std::string &name,
+                                                   const std::string &script_files_path)
 {
-    return make_shared<TokenImp>(client, governor_addr, name, script_files_path);
+    return make_shared<TokenManagerImp>(client, governor_addr, name, script_files_path);
 }
 
-std::shared_ptr<Token> Token::create(client_ptr client,
-                                     Address governor_addr,
-                                     const std::string &name,
-                                     function<void(const std::string &)> init_all_script_fun,
-                                     const std::string &temp_path)
+std::shared_ptr<TokenManager> TokenManager::create(client_ptr client,
+                                                   Address governor_addr,
+                                                   const std::string &name,
+                                                   function<void(const std::string &)> init_all_script_fun,
+                                                   const std::string &temp_path)
 {
-    return make_shared<TokenImp>(client, governor_addr, name, init_all_script_fun, temp_path);
+    return make_shared<TokenManagerImp>(client, governor_addr, name, init_all_script_fun, temp_path);
 }
 
 } // namespace LIB_NAME

@@ -443,11 +443,14 @@ jobjectArray jni_get_txn_by_range(JNIEnv *env, jobject, jlong nativeObj, jlong s
 	return 0;
 }
 
-namespace Jni_Token_Wrapper
+namespace JniTokenManager
 {
-uint64_t jni_create_totken(JNIEnv *env, jobject obj,
-						   jlong native_client, jbyteArray publisher_address,
-						   jstring token_name, jstring script_files_path, jstring temp_path)
+uint64_t jni_create_totken_manager(JNIEnv *env, jobject obj,
+								   jlong native_client,
+								   jbyteArray publisher_address,
+								   jstring token_name,
+								   jstring script_files_path,
+								   jstring temp_path)
 {
 	jlong native_token = 0;
 
@@ -455,12 +458,12 @@ uint64_t jni_create_totken(JNIEnv *env, jobject obj,
 	{
 		Violas::client_ptr client = *((Violas::client_ptr *)native_client);
 
-		auto token = Violas::Token::create(client,
-										   to_address(env, publisher_address),
-										   to_string(env, token_name),
-										   to_string(env, script_files_path));
+		auto token = Violas::TokenManager::create(client,
+												  to_address(env, publisher_address),
+												  to_string(env, token_name),
+												  to_string(env, script_files_path));
 
-		native_token = (jlong) new Violas::token_ptr(token);
+		native_token = (jlong) new Violas::token_manager_ptr(token);
 	}
 	catch (exception &e)
 	{
@@ -470,11 +473,12 @@ uint64_t jni_create_totken(JNIEnv *env, jobject obj,
 	return native_token;
 }
 
-uint64_t jni_create_totken(JNIEnv *env, jobject obj,
-						   jlong native_client, jbyteArray publisher_address,
-						   jstring token_name,
-						   function<void(const std::string &)> const &init_all_script_fun,
-						   jstring temp_path)
+uint64_t jni_create_totken_manager(JNIEnv *env, jobject obj,
+								   jlong native_client,
+								   jbyteArray publisher_address,
+								   jstring token_name,
+								   function<void(const std::string &)> const &init_all_script_fun,
+								   jstring temp_path)
 {
 	jlong native_token = 0;
 
@@ -482,13 +486,13 @@ uint64_t jni_create_totken(JNIEnv *env, jobject obj,
 	{
 		Violas::client_ptr client = *((Violas::client_ptr *)native_client);
 
-		auto token = Violas::Token::create(client,
-										   to_address(env, publisher_address),
-										   to_string(env, token_name),
-										   init_all_script_fun,
-										   to_string(env, temp_path));
+		auto token = Violas::TokenManager::create(client,
+												  to_address(env, publisher_address),
+												  to_string(env, token_name),
+												  init_all_script_fun,
+												  to_string(env, temp_path));
 
-		native_token = (jlong) new Violas::token_ptr(token);
+		native_token = (jlong) new Violas::token_manager_ptr(token);
 	}
 	catch (exception &e)
 	{
@@ -499,11 +503,11 @@ uint64_t jni_create_totken(JNIEnv *env, jobject obj,
 }
 
 jstring jni_name(JNIEnv *env, jobject,
-				 long native_token)
+				 long native_token_manager)
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		Violas::token_manager_ptr token = *((Violas::token_manager_ptr *)native_token_manager);
 
 		return env->NewStringUTF(token->name().c_str());
 	}
@@ -520,7 +524,7 @@ jbyteArray jni_address(JNIEnv *env, jobject,
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		auto token = *((Violas::token_manager_ptr *)native_token);
 
 		auto address = token->address().data();
 
@@ -542,9 +546,9 @@ void jni_deploy(JNIEnv *env, jobject, jlong native_token, jlong account_index)
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		auto token_manager = *((Violas::token_manager_ptr *)native_token);
 
-		token->deploy(account_index);
+		token_manager->deploy(account_index);
 	}
 	catch (exception &e)
 	{
@@ -552,13 +556,31 @@ void jni_deploy(JNIEnv *env, jobject, jlong native_token, jlong account_index)
 	}
 }
 
-void jni_publish(JNIEnv *env, jobject, jlong native_token, jlong account_index)
+void jni_create_token(JNIEnv *env, jobject obj,
+					  jlong native_token_manager,
+					  jlong supervisor_account_index,
+					  jbyteArray ownor_address,
+					  jstring token_name)
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
 
-		token->publish(account_index);
+		token_manager->create_token(supervisor_account_index, to_address(env, ownor_address), to_string(env, token_name));
+	}
+	catch (exception &e)
+	{
+		ThrowJNIException(env, e.what());
+	}
+}
+
+void jni_publish(JNIEnv *env, jobject, jlong native_token_manager, jlong account_index)
+{
+	try
+	{
+		auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
+
+		token_manager->publish(account_index);
 	}
 	catch (exception &e)
 	{
@@ -567,20 +589,20 @@ void jni_publish(JNIEnv *env, jobject, jlong native_token, jlong account_index)
 }
 
 void jni_mint(JNIEnv *env, jobject obj,
-			  jlong native_token,
+			  jlong native_token_manager,
 			  jlong token_index,
-			  jlong account_index,			  
+			  jlong account_index,
 			  jbyteArray receiver_address,
 			  jlong amount_micro_coins)
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
 
-		token->mint(account_index,
-					token_index,
-					to_address(env, receiver_address),
-					amount_micro_coins);
+		token_manager->mint(account_index,
+							token_index,
+							to_address(env, receiver_address),
+							amount_micro_coins);
 	}
 	catch (exception &e)
 	{
@@ -589,16 +611,20 @@ void jni_mint(JNIEnv *env, jobject obj,
 }
 
 void jni_transfer(JNIEnv *env, jobject,
-				  jlong native_token, jlong account_index, jbyteArray receiver_address,
+				  jlong native_token_manager,
+				  jlong token_index,
+				  jlong account_index,
+				  jbyteArray receiver_address,
 				  jlong amount_micro_coins)
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
 
-		// token->transfer(account_index,
-		//                 to_address(env, receiver_address),
-		//                 amount_micro_coins);
+		token_manager->transfer(token_index,
+								account_index,
+								to_address(env, receiver_address),
+								amount_micro_coins);
 	}
 	catch (exception &e)
 	{
@@ -607,15 +633,15 @@ void jni_transfer(JNIEnv *env, jobject,
 }
 
 jlong jni_get_balance(JNIEnv *env, jobject,
-					  jlong native_token, 
+					  jlong native_token_manager,
 					  jlong token_index,
 					  jlong account_index)
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
 
-		return (jlong) token->get_account_balance(token_index, account_index);
+		return (jlong)token_manager->get_account_balance(token_index, account_index);
 	}
 	catch (exception &e)
 	{
@@ -626,15 +652,15 @@ jlong jni_get_balance(JNIEnv *env, jobject,
 }
 
 jlong jni_get_balance(JNIEnv *env, jobject,
-					  jlong native_token, 
+					  jlong native_token_manager,
 					  jlong token_index,
 					  jbyteArray address)
 {
 	try
 	{
-		Violas::token_ptr token = *((Violas::token_ptr *)native_token);
+		auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
 
-		return (jlong) token->get_account_balance(token_index, to_address(env, address));
+		return (jlong)token_manager->get_account_balance(token_index, to_address(env, address));
 	}
 	catch (exception &e)
 	{
@@ -643,4 +669,4 @@ jlong jni_get_balance(JNIEnv *env, jobject,
 
 	return 0;
 }
-} // namespace Jni_Token_Wrapper
+} // namespace JniTokenManager

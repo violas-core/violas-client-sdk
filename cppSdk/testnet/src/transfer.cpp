@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string_view>
+#include <map>
 #include <assert.h>
 #include <cxxabi.h>
 #include "violas_sdk.hpp"
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 
         transfer_token(host, port, mnemonic, faucet_key);
 
-        return 0;
+        /*
 
         COUT << "connecting to " << host << ":" << port << " ......"
              << endl;
@@ -153,10 +154,11 @@ int main(int argc, char *argv[])
 
             // cin >> index;
         }
+        */
     }
     catch (const std::exception &e)
     {
-        std::cerr << "catch an excpetion, '" << e.what() << "'\n"; //typeid(e).name()
+        std::cerr << "caught an excpetion, '" << e.what() << "'\n"; //typeid(e).name()
     }
     catch (...)
     {
@@ -182,79 +184,6 @@ void mint(Violas::client_ptr client)
     client->mint_coins(0, amount);
 
     cout << "Account 0's balance is " << client->get_balance(0) << endl;
-}
-
-void deploy(Violas::client_ptr client)
-{
-    auto accounts = client->get_all_accounts();
-
-    uint64_t balance = client->get_balance(1);
-    if (balance < 1.0f)
-    {
-        // make the all accounts have the enough VToken(libra) for executing the move program
-        for (auto const &account : accounts)
-        {
-            client->transfer_coins_int(0, account.address, 1 * MICRO_LIBRO_COIN);
-        }
-    }
-
-    vector<Violas::token_ptr> tokens;
-
-    assert(accounts.size() >= STABLE_TOKEN_NAMES.size() + 1);
-
-    COUT << "Deploying ";
-    for (size_t i = 0; i < STABLE_TOKEN_NAMES.size(); i++)
-    {
-        cout << ".";
-        cout.flush();
-
-        auto vstake = Violas::Token::create(client, accounts[i + 1].address, STABLE_TOKEN_NAMES.at(i));
-
-        vstake->deploy(i + 1);
-
-        vstake->publish(i + 1);
-
-        tokens.push_back(vstake);
-    }
-    cout << endl;
-
-    COUT << "List all tokens :" << endl;
-    for (size_t i = 0; i < tokens.size(); i++)
-    {
-        auto &token = tokens[i];
-        cout << "\tToken " << i << "'s name is " << token->name() << ", address is " << token->address() << endl;
-    }
-
-    cout << "Findished deploying 6 Tokens" << endl;
-}
-
-void publish(Violas::client_ptr client)
-{
-    auto accounts = client->get_all_accounts();
-
-    string token_address;
-    cout << "Please input token's address : ";
-    cin >> token_address;
-
-    auto token = Violas::Token::create(client, Address::from_string(token_address), "Unkonw");
-    cout << "Current token's address : " << token->address() << endl;
-
-    cout << "List all accounts :" << endl;
-    for (auto &account : accounts)
-    {
-        cout << "\taccount  "
-             << "index : " << account.index
-             << "address : " << account.address << endl;
-    }
-
-    //
-    //  get all arguments
-    //
-    size_t account_index;
-    cout << "Please input accout index for publish : ";
-    cin >> account_index;
-
-    token->publish(account_index);
 }
 
 void transfer_libra(Violas::client_ptr client)
@@ -286,82 +215,6 @@ void transfer_libra(Violas::client_ptr client)
     //      << events;
 }
 
-void transfer(Violas::client_ptr client)
-{
-    auto accounts = client->get_all_accounts();
-
-    vector<Violas::token_ptr> tokens;
-
-    assert(accounts.size() >= STABLE_TOKEN_NAMES.size() + 1);
-
-    for (size_t i = 0; i < STABLE_TOKEN_NAMES.size(); i++)
-    {
-        auto token = Violas::Token::create(client, accounts[i + 1].address, STABLE_TOKEN_NAMES.at(i));
-
-        tokens.push_back(token);
-    }
-
-    cout << "List all tokens :" << endl;
-    for (size_t i = 0; i < tokens.size(); i++)
-    {
-        auto &token = tokens[i];
-        cout << "\tToken " << i << "'s name is " << token->name() << ", address is " << token->address() << endl;
-    }
-    //
-    //  get all arguments
-    //
-    size_t token_index;
-    cout << "Please input Token index : ";
-    cin >> token_index;
-
-    string address;
-    cout << "Please input receiver address : ";
-    cin >> address;
-
-    uint64_t amount;
-    cout << "Please input amount of token : ";
-    cin >> amount;
-
-    auto &token = tokens[token_index];
-    auto receiver = Address::from_string(address);
-    //
-    // mint coins to the receiver
-    //
-    auto account_index = token_index + 1;
-
-    // token->mint(account_index, receiver, amount * MICRO_LIBRO_COIN);
-
-    // auto micro_to_double = [](uint64_t amount) -> double {
-    //     if (is_valid_balance(amount))
-    //         return (double)amount / MICRO_LIBRO_COIN;
-    //     else
-    //         return 0;
-    // };
-
-    // auto balance_to_string = [](uint64_t value) -> string {
-    //     if (is_valid_balance(value))
-    //         return to_string(value);
-    //     else
-    //         return "N/A";
-    // };
-
-    // cout.precision(10);
-
-    // auto balance = token->get_account_balance(receiver);
-    // cout << "account " << receiver << "'s balance is "
-    //      << GREEN
-    //      << balance_to_string(balance) << "(" << micro_to_double(balance) << ")"
-    //      << RESET
-    //      << endl;
-
-    auto [txn, events] = client->get_committed_txn_by_acc_seq(account_index, client->get_sequence_number(account_index) - 1);
-
-    CLOG << "Committed Transaction : \n"
-         << txn << endl
-         << "Events:\n"
-         << events << endl;
-}
-
 void transfer_token(string host, short port, string mnemonic_file, string mint_key_file)
 {
     using namespace Violas;
@@ -382,7 +235,7 @@ void transfer_token(string host, short port, string mnemonic_file, string mint_k
     auto accounts = client->get_all_accounts();
     for (const auto &account : accounts)
     {
-        client->mint_coins(account.index, 1);
+        // client->mint_coins(account.index, 1);
 
         cout << "Account index : " << account.index
              << ", address : " << account.address
@@ -403,7 +256,7 @@ void transfer_token(string host, short port, string mnemonic_file, string mint_k
              user2 = 4;
 
     string script_files_path = "../../cppSdk/scripts";
-    auto token = Token::create(client, accounts[supervisor].address, "token1", script_files_path);
+    auto token = TokenManager::create(client, accounts[supervisor].address, "token1", script_files_path);
     /*
     token->deploy(supervisor);
     //print_txn(0);
@@ -463,28 +316,28 @@ void transfer_token(string host, short port, string mnemonic_file, string mint_k
          << "User 2's token A : " << token->get_account_balance(0, user2) << "\n"
          << "User 2's token B : " << token->get_account_balance(1, user2) << endl;
     */
-    string input;
-    uint64_t amount = 0;
-    uint64_t token_index = 0;
-    const uint64_t MICRO_COIN = 1000000;
+    do
+    {
+        string input;
+        uint64_t amount = 0;
+        uint64_t token_index = 0;
+        map<uint64_t, uint64_t> token_owner = {{0, owner1}, {1, owner2}};
 
-    cout << "Please input an address of receiver : ";
-    cin >> input;   
-    auto receiver = Address::from_string(input); 
+        cout << "Please inout token index : ";
+        cin >> token_index;
+        if (token_index > 1)
+            throw runtime_error("token index must be less than 2");
 
-    cout << "Pleae input amount for address " << receiver << " : ";
-    cin >> amount;
-    
-    cout << "Please inout token index : ";
-    cin >> token_index;
+        cout << "Please input an address of receiver : ";
+        cin >> input;
+        auto receiver = Address::from_string(input);
 
-    token->mint(token_index, owner1, receiver, amount * MICRO_LIBRO_COIN);
-    //print_txn(owner1);
-    auto balance = token->get_account_balance(0, receiver);
-    cout << "the balance of token A of receiver is " << (double)balance / MICRO_LIBRO_COIN << endl;
+        cout << "Pleae input amount for address " << receiver << " : ";
+        cin >> amount;
 
-    // token->mint(1, owner2, receiver, 200 * MICRO_COIN);
-    // print_txn(owner2);
-    // balance = token->get_account_balance(1, receiver);
-    // cout << "the balance of token B of receiver is " << balance << endl;
+        token->mint(token_index, token_owner[token_index], receiver, amount * MICRO_LIBRO_COIN);
+        //print_txn(owner1);
+        auto balance = token->get_account_balance(token_index, receiver);
+        cout << "the balance of token A of receiver is " << (double)balance / MICRO_LIBRO_COIN << endl;
+    } while (true);
 }

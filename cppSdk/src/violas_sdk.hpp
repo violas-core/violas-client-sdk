@@ -178,23 +178,23 @@ using client_ptr = std::shared_ptr<Client>;
 //
 //  Interface Token
 //
-class Token
+class TokenManager
 {
 public:
-    static std::shared_ptr<Token>
+    static std::shared_ptr<TokenManager>
     create(client_ptr client,
-           Address governor_addr,
+           Address supervisor_addr,
            const std::string &name,
            const std::string &script_files_path = "../scripts");
 
-    static std::shared_ptr<Token>
+    static std::shared_ptr<TokenManager>
     create(client_ptr client,
-           Address governor_addr,
+           Address supervisor_addr,
            const std::string &name,
            std::function<void(const std::string &)> init_all_script_fun,
            const std::string &temp_path);
 
-    virtual ~Token() {}
+    virtual ~TokenManager() {}
 
     virtual std::string name() = 0;
 
@@ -204,7 +204,7 @@ public:
 
     virtual void publish(uint64_t account_index, const std::string &user_data = "publish") = 0;
 
-    virtual void create_token(uint64_t account_index, Address owner, const std::string &token_data = "token") = 0;
+    virtual void create_token(uint64_t supervisor, Address owner, const std::string &token_data = "token") = 0;
 
     virtual void mint(uint64_t token_index,
                       uint64_t account_index,
@@ -223,7 +223,7 @@ public:
     virtual uint64_t get_account_balance(uint64_t token_index, Address account_address) = 0;
 };
 
-using token_ptr = std::shared_ptr<Token>;
+using token_manager_ptr = std::shared_ptr<TokenManager>;
 
 } // namespace LIB_NAME
 

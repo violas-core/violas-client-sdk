@@ -5,71 +5,87 @@
 #ifndef _Included_io_violas_sdk_Token
 #define _Included_io_violas_sdk_Token
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
-  /*
+/*
  * Class:     io_violas_sdk_Token
- * Method:    nativeCreateToken
+ * Method:    nativeCreateTokenManager
  * Signature: (J[BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)J
  */
-  JNIEXPORT jlong JNICALL Java_io_violas_sdk_Token_nativeCreateToken(JNIEnv *, jobject, jlong, jbyteArray, jstring, jstring, jstring);
+JNIEXPORT jlong JNICALL Java_io_violas_sdk_Token_nativeCreateTokenManager
+  (JNIEnv *, jobject, jlong, jbyteArray, jstring, jstring, jstring);
 
-  /*
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativeName
  * Signature: (J)Ljava/lang/String;
  */
-  JNIEXPORT jstring JNICALL Java_io_violas_sdk_Token_nativeName(JNIEnv *, jobject, jlong);
+JNIEXPORT jstring JNICALL Java_io_violas_sdk_Token_nativeName
+  (JNIEnv *, jobject, jlong);
 
-  /*
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativeAddress
  * Signature: (J)[B
  */
-  JNIEXPORT jbyteArray JNICALL Java_io_violas_sdk_Token_nativeAddress(JNIEnv *, jobject, jlong);
+JNIEXPORT jbyteArray JNICALL Java_io_violas_sdk_Token_nativeAddress
+  (JNIEnv *, jobject, jlong);
 
-  /*
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativeDeploy
  * Signature: (JJ)V
  */
-  JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativeDeploy(JNIEnv *, jobject, jlong, jlong);
+JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativeDeploy
+  (JNIEnv *, jobject, jlong, jlong);
 
-  /*
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativePublish
  * Signature: (JJ)V
  */
-  JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativePublish(JNIEnv *, jobject, jlong, jlong);
+JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativePublish
+  (JNIEnv *, jobject, jlong, jlong);
 
-  /*
+/*
+ * Class:     io_violas_sdk_Token
+ * Method:    nativeCreateToken
+ * Signature: (JJ[BLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativeCreateToken
+  (JNIEnv *, jobject, jlong, jlong, jbyteArray, jstring);
+
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativeMint
- * Signature: (JJ[BJ)V
+ * Signature: (JJJ[BJ)V
  */
-  JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativeMint(JNIEnv *, jobject, jlong, jlong, jlong, jbyteArray, jlong);
+JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativeMint
+  (JNIEnv *, jobject, jlong, jlong, jlong, jbyteArray, jlong);
 
-  /*
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativeTransfer
- * Signature: (JJ[BJ)V
+ * Signature: (JJJ[BJ)V
  */
-  JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativeTransfer(JNIEnv *, jobject, jlong, jlong, jlong, jbyteArray, jlong);
+JNIEXPORT void JNICALL Java_io_violas_sdk_Token_nativeTransfer
+  (JNIEnv *, jobject, jlong, jlong, jlong, jbyteArray, jlong);
 
-  /*
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativeGetBalance
- * Signature: (JJ)J
+ * Signature: (JJJ)J
  */
-  JNIEXPORT jlong JNICALL Java_io_violas_sdk_Token_nativeGetBalance__JJ(JNIEnv *, jobject, jlong, jlong, jlong);
+JNIEXPORT jlong JNICALL Java_io_violas_sdk_Token_nativeGetBalance__JJJ
+  (JNIEnv *, jobject, jlong, jlong, jlong);
 
-  /*
+/*
  * Class:     io_violas_sdk_Token
  * Method:    nativeGetBalance
- * Signature: (J[B)J
+ * Signature: (JJ[B)J
  */
-  JNIEXPORT jlong JNICALL Java_io_violas_sdk_Token_nativeGetBalance__J_3B(JNIEnv *, jobject, jlong, jlong, jbyteArray);
+JNIEXPORT jlong JNICALL Java_io_violas_sdk_Token_nativeGetBalance__JJ_3B
+  (JNIEnv *, jobject, jlong, jlong, jbyteArray);
 
 #ifdef __cplusplus
 }

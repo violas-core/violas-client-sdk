@@ -212,7 +212,7 @@ void run_test_token(const string &host,
              user2 = 4;
 
     string script_files_path = "../../cppSdk/scripts";
-    auto token = Token::create(client, accounts[supervisor].address, "token1", script_files_path);
+    auto token = TokenManager::create(client, accounts[supervisor].address, "token1", script_files_path);
 
     token->deploy(supervisor);
     print_txn(0);

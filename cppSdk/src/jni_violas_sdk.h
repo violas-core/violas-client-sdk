@@ -7,6 +7,9 @@
 
 #include <functional>
 
+//
+//	Create native clinet
+//
 jlong createNativeClient(JNIEnv *env, jobject,
 						 jstring host,
 						 jshort port,

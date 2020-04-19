@@ -94,7 +94,6 @@ jlong createNativeClient(JNIEnv *env, jobject,
 	{
 		auto client = Violas::Client::create(to_string(env, host),
 											 (unsigned short)port,
-											 "",
 											 to_string(env, faucetKey),
 											 syncWithWallet,
 											 to_string(env, faucetServer),

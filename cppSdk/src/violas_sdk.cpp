@@ -222,16 +222,17 @@ protected:
 public:
     ClientImp(const std::string &host,
               uint16_t port,
-              const std::string &validator_set_file,
               const std::string &faucet_account_file,
               bool sync_on_wallet_recovery,
               const std::string &faucet_server,
               const std::string &mnemonic_file)
     {
-        raw_client_proxy = (void *)libra_create_client_proxy(
-            host.data(), port, validator_set_file.data(),
-            faucet_account_file.data(), sync_on_wallet_recovery,
-            faucet_server.data(), mnemonic_file.data());
+        raw_client_proxy = (void *)libra_create_client_proxy(host.data(),
+                                                             port,
+                                                             faucet_account_file.data(),
+                                                             sync_on_wallet_recovery,
+                                                             faucet_server.data(),
+                                                             mnemonic_file.data());
         if (raw_client_proxy == nullptr)
             throw runtime_error(format("failed to create native rust client proxy, error : %s",
                                        get_last_error().c_str()));
@@ -239,7 +240,6 @@ public:
         CLOG << "\ncreate violas client with "
              << "\n\thost = " << host
              << "\n\tport = " << port
-             << "\n\tvalidator_set_file = " << validator_set_file
              << "\n\tfaucet_account_file = " << faucet_account_file
              << "\n\tsync_on_wallet_recovery = " << sync_on_wallet_recovery
              << "\n\tfaucet_server = " << faucet_server
@@ -626,15 +626,17 @@ public:
 
 std::shared_ptr<Client> Client::create(const std::string &host,
                                        uint16_t port,
-                                       const std::string &validator_set_file,
                                        const std::string &faucet_account_file,
                                        bool sync_on_wallet_recovery,
                                        const std::string &faucet_server,
                                        const std::string &mnemonic_file)
 {
-    return make_shared<ClientImp>(host, port, validator_set_file,
-                                  faucet_account_file, sync_on_wallet_recovery,
-                                  faucet_server, mnemonic_file);
+    return make_shared<ClientImp>(host,
+                                  port,
+                                  faucet_account_file,
+                                  sync_on_wallet_recovery,
+                                  faucet_server,
+                                  mnemonic_file);
 }
 
 class TokenManagerImp : public TokenManager

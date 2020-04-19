@@ -79,8 +79,7 @@ class Client
 public:
     static std::shared_ptr<Client>
     create(const std::string &host,
-           uint16_t port,
-           const std::string &validator_set_file,
+           uint16_t port,           
            const std::string &faucet_account_file,
            bool sync_on_wallet_recovery,
            const std::string &faucet_server,

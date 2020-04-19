@@ -1,3 +1,5 @@
+import java.text.Format;
+
 import io.violas.sdk.*;
 import javafx.util.Pair;
 
@@ -5,21 +7,32 @@ public class Demo {
     public static void main(String[] argv) {
         System.out.println("Run Violas SDK Java Demo !");
 
+        if (argv.length < 4) {
+            System.out.println("Useage : Demo host port mint_key mnemonic");
+            //System.out.println(String.format("argc is %d", argv.length));
+
+            return;
+        }
+
         try {
-            testToken();
+            String host = argv[0];
+            short port = (short)Integer.parseInt(argv[1]);
+            String mintKeyFileName = argv[2];
+            String mnemonicFileName  = argv[3];
+
+            Client client = new Client(host, port, mintKeyFileName, false, "", mnemonicFileName);
+
+            client.test_validator_connection();
+
+            testToken(client);
 
         } catch (Exception e) {
             System.out.println("Demo has a exception, error : " + e.getMessage());
         }
     }
 
-    static void runViolasSdk() {
+    static void runViolasSdk(Client client) {
         String scripts_path = "../../cppSdk/scripts/";
-
-        Client client = new Client("localhost", (short) 36817, "/tmp/8a03b1bf30f48a37520b67d620ff6a14/mint.key", false,
-                "", "mnemonic");
-
-        client.test_validator_connection();
 
         Pair<Long, byte[]> account0 = client.createNextAccount();
         System.out.println("createNextAccount account 0");
@@ -84,34 +97,24 @@ public class Demo {
         client.close();
     }
 
-    static void testToken() {
+    static void testToken(Client client) {
         String scripts_path = "../../cppSdk/scripts/";
 
-        Client client = new Client("localhost", (short) 36817, "/tmp/8a03b1bf30f48a37520b67d620ff6a14/mint.key", false,
-                "", "mnemonic");
-
-        client.test_validator_connection();
-
         System.out.println("createNextAccount 5 accounts ...");
-        Pair<Long, byte[]> account0 = client.createNextAccount();
-        Pair<Long, byte[]> account1 = client.createNextAccount();
-        Pair<Long, byte[]> account2 = client.createNextAccount();
-        Pair<Long, byte[]> account3 = client.createNextAccount();
-        Pair<Long, byte[]> account4 = client.createNextAccount();
-
-        for (Client.Account account : client.getAllAccounts()) {
-            System.out.println("index=" + account.index);
-            client.mint(account.index, 1);
+        for(int i=0; i<5; i++)
+        { 
+            Pair<Long, byte[]> account0 = client.createNextAccount();
         }
+        
         System.out.println("getAllAccounts ...");
-
-        client.mint((long) 0, (long) 100);
-
-        double balance = client.getBalance(0);
-
-        System.out.println("the account 0's balance = " + balance);
-
-        client.mint(1, 100);
+        Client.Account accounts[] = client.getAllAccounts();
+        
+        System.out.println("mint 1 coin to each account ...");
+        for (Client.Account account : accounts) {            
+            client.mint(account.index, 1);
+            String info = String.format("the account %d's  balance is %f.", account.index, account.address, getBalance(account.index));
+            System.out.println();
+        }      
 
         //
         // test Token class
@@ -119,20 +122,21 @@ public class Demo {
 
         // accout 0 create a new Token(stable coin) with name Token1 by registerring his
         // address
-        Token token = new Token(client, account0.getValue(), "Token1", scripts_path, "");
+        Token token = new Token(client, accounts[0].address, "Token1", scripts_path, "");
 
         // account 0 deploy a new token on Violas blockchain
         // note that the account index must be the same account as above
         // account1.getValue() used in new Token,
         // otherwise an execption will get through.
+        System.out.println("account 0 deploy token  ...");
         token.deploy(0);
 
         // account 0 publishes(registers) token info
         token.publish(0);
 
         //
-        token.createToken(0, account1.getValue(), "TokenA");
-        token.createToken(0, account2.getValue(), "TokenB");
+        token.createToken(0, accounts[1].address, "TokenA");
+        token.createToken(0, accounts[2].address, "TokenB");
 
         // account 0 publishes(registers) token info
         token.publish(1);
@@ -143,10 +147,12 @@ public class Demo {
         // mint 1000 micro token for account 0
         // note that only account 1 can mint this token, other account call
         // method mint will cause an exception
-        token.mint(0, 1, account3.getValue(), 1000);
-
+        token.mint(0, 1, accounts[3].address, 1000);
+        Pair<String, String> txn_event = client.getCommittedTxnsByAccSeq(1, client.getSequenceNumber(1)-1);
+        System.out.println(txn_event.getKey());
+        
         // get the balance of account 0
-        long token_balance = token.getBalance(0, account3.getValue());
+        long token_balance = token.getBalance(0, accounts[3].address);
 
         // print and check if the token_balance is 1000
         System.out.println("the balance of Stable Coin of account 0  = " + token_balance);

@@ -18,8 +18,7 @@ extern "C"
     //
     uint64_t libra_create_client_proxy(
         const char *host,
-        uint64_t port,
-        const char *validator_set_file,
+        uint64_t port,        
         const char *faucet_account_file,
         bool sync_on_wallet_recovery,
         const char *faucet_server,

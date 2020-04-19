@@ -62,7 +62,7 @@ void run_test_client(
 {
     using namespace Violas;
 
-    auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
+    auto client = Client::create(host, port, mint_key_file, true, "", mnemonic_file);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -177,7 +177,7 @@ void run_test_token(const string &host,
 
     cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
+    auto client = Client::create(host, port, mint_key_file, true, "", mnemonic_file);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;

@@ -18,7 +18,7 @@ void run_test_libra(
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(host, port, "", mint_key_file, true, "", mnemonic_file);
+    auto client = Client::create(host, port, mint_key_file, true, "", mnemonic_file);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;

@@ -19,7 +19,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": " /usr/bin/java",
-            "args": ["--module-path", "/usr/share/openjfx/lib/", "--add-modules=javafx.base", "-cp", "../bin/violas.jar", "Demo.java"],
+            "args": ["--module-path", "/usr/share/openjfx/lib/", "--add-modules=javafx.base", "-cp", "../bin/violas.jar", "Demo.java", "localhost", "33809", "/tmp/bc471173615e33d98a71c41f8a132c89/mint.key", "mnemonic"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/Java/test",
             "environment": [],

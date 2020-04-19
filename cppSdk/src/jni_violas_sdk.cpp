@@ -598,8 +598,8 @@ void jni_mint(JNIEnv *env, jobject obj,
 	{
 		auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
 
-		token_manager->mint(account_index,
-							token_index,
+		token_manager->mint(token_index,
+							account_index,
 							to_address(env, receiver_address),
 							amount_micro_coins);
 	}

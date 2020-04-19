@@ -9,29 +9,36 @@ public class Demo {
 
         if (argv.length < 4) {
             System.out.println("Useage : Demo host port mint_key mnemonic");
-            //System.out.println(String.format("argc is %d", argv.length));
+            // System.out.println(String.format("argc is %d", argv.length));
 
             return;
         }
 
         try {
             String host = argv[0];
-            short port = (short)Integer.parseInt(argv[1]);
+            short port = (short) Integer.parseInt(argv[1]);
             String mintKeyFileName = argv[2];
-            String mnemonicFileName  = argv[3];
+            String mnemonicFileName = argv[3];
 
             Client client = new Client(host, port, mintKeyFileName, false, "", mnemonicFileName);
 
             client.test_validator_connection();
 
-            testToken(client);
+            runClientTest(client);
+
+            runTokenTest(client);
+
+            // free the resource held by client, and then mustn't call any method of client
+            client.close();
 
         } catch (Exception e) {
             System.out.println("Demo has a exception, error : " + e.getMessage());
         }
     }
 
-    static void runViolasSdk(Client client) {
+    static void runClientTest(Client client) {
+        System.out.println("run client test ...");
+
         String scripts_path = "../../cppSdk/scripts/";
 
         Pair<Long, byte[]> account0 = client.createNextAccount();
@@ -71,9 +78,9 @@ public class Demo {
 
         Pair<String, String>[] txnEvents = client.getCommitedTxnByRange(100, 10, true);
         for (Pair<String, String> x : txnEvents) {
-            System.out.println(String.format("the transcation = %s \n, the event = %s", x.getKey(), x.getValue()));
+            //System.out.println(String.format("the transcation = %s \n, the event = %s", x.getKey(), x.getValue()));
         }
-
+        /*
         //
         // compile file token.mvir and generate file token.mv
         //
@@ -92,29 +99,29 @@ public class Demo {
 
         // execute the contract publish.mv to register token info for account 0
         client.executeScript(1, scripts_path + "publish.mv", new String[0]);
-
-        // free the resource held by client, and then mustn't call any method of client
-        client.close();
+        */
     }
 
-    static void testToken(Client client) {
+    static void runTokenTest(Client client) {
+        System.out.println("run Token test ...");
+
         String scripts_path = "../../cppSdk/scripts/";
 
         System.out.println("createNextAccount 5 accounts ...");
-        for(int i=0; i<5; i++)
-        { 
+        for (int i = 0; i < 5; i++) {
             Pair<Long, byte[]> account0 = client.createNextAccount();
         }
-        
+
         System.out.println("getAllAccounts ...");
         Client.Account accounts[] = client.getAllAccounts();
-        
+
         System.out.println("mint 1 coin to each account ...");
-        for (Client.Account account : accounts) {            
+        for (Client.Account account : accounts) {
             client.mint(account.index, 1);
-            String info = String.format("the account %d's  balance is %f.", account.index, account.address, getBalance(account.index));
-            System.out.println();
-        }      
+            String info = String.format("the account %d's address %s balance is %f.", account.index, bytesToHex(account.address),
+                    client.getBalance(account.index));
+            System.out.println(info);
+        }
 
         //
         // test Token class
@@ -130,34 +137,58 @@ public class Demo {
         // otherwise an execption will get through.
         System.out.println("account 0 deploy token  ...");
         token.deploy(0);
+        //PrintTxn(client, 0);
 
         // account 0 publishes(registers) token info
         token.publish(0);
+        //PrintTxn(client, 0);
 
-        //
+        System.out.println("Crete token A ...");
         token.createToken(0, accounts[1].address, "TokenA");
+        //PrintTxn(client, 0);
+
+        System.out.println("Crete token B ...");
         token.createToken(0, accounts[2].address, "TokenB");
+        //PrintTxn(client, 0);
 
         // account 0 publishes(registers) token info
         token.publish(1);
         token.publish(2);
-        token.publish(3);
+        token.publish(3);        
         token.publish(4);
 
         // mint 1000 micro token for account 0
         // note that only account 1 can mint this token, other account call
         // method mint will cause an exception
-        token.mint(0, 1, accounts[3].address, 1000);
-        Pair<String, String> txn_event = client.getCommittedTxnsByAccSeq(1, client.getSequenceNumber(1)-1);
-        System.out.println(txn_event.getKey());
+        System.out.println("account 1 mint Token A with 1000 coins to account 3 ...");
+        token.mint(0, 1, accounts[3].address, 1000);       
+        //PrintTxn(client, 1);
         
-        // get the balance of account 0
-        long token_balance = token.getBalance(0, accounts[3].address);
+        System.out.println("account 2 mint Token A with 1000 coins to account 4 ...");
+        token.mint(1, 2, accounts[4].address, 1000);       
+        //PrintTxn(client, 1);
 
-        // print and check if the token_balance is 1000
-        System.out.println("the balance of Stable Coin of account 0  = " + token_balance);
+        token.transfer(0, 3, accounts[4].address, 500);
+        token.transfer(1, 4, accounts[3].address, 500);
 
-        // free the resource held by client, and then mustn't call any method of client
-        client.close();
+        System.out.println(String.format("the balance of Token A for account 3 is %d ", token.getBalance(0, 3)));
+        System.out.println(String.format("the balance of Token B for account 3 is %d ", token.getBalance(1, 3)));
+        System.out.println(String.format("the balance of Token A for account 4 is %d ", token.getBalance(0, 4)));
+        System.out.println(String.format("the balance of Token B for account 4 is %d ", token.getBalance(1, 4)));        
+    }
+
+    static String bytesToHex(byte[] bytes) {
+        StringBuilder hex = new StringBuilder();
+        for (byte b : bytes) {
+            hex.append(String.format("%02x", b));
+        }
+
+        return hex.toString();
+    }
+
+    static void PrintTxn(Client client, long accountIndex) {
+        long sequence_num = client.getSequenceNumber(accountIndex);
+        Pair<String, String> txn_event = client.getCommittedTxnsByAccSeq(accountIndex,  sequence_num - 1);
+        System.out.println(txn_event.getKey());
     }
 }

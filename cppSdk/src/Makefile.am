@@ -5,7 +5,7 @@ if DEBUG
     CLIENT_PROXY =
 else
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/release
-    CLIENT_PROXY = -l:libclient_proxy.a
+    CLIENT_PROXY = 
 endif
 
 libviolas_sdk_la_SOURCES = violas_sdk.cpp

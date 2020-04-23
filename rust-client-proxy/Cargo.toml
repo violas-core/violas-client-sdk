@@ -1,7 +1,7 @@
 [package]
 name = "client-proxy"
 version = "0.1.0"
-authors = ["HunterSun2008 <sht@palliums.org>"]
+authors = ["HunterSun2018 <sht@palliums.org>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,38 +11,49 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 anyhow = "1.0"
-serde_json = "1.0.40"
-serde = { version = "1.0.96", default-features = false }
-lazy_static = { version = "1.3.0", default-features = false }
-# tonic = { git = "https://github.com/hyperium/tonic.git" }
-hex = "0.3.2"
-libc = "0.2"
-tempdir = "0.3"
+chrono = "0.4.11"
+tonic = "0.2"
+hex = "0.4.2"
+itertools = "0.9.0"
+proptest = { version = "0.9.6", optional = true }
+rustyline = "6.1.1"
+rust_decimal = "1.4.1"
+num-traits = "0.2"
 once_cell = "1.3.1"
+parity-multiaddr = { version = "0.8.0", default-features = false }
+rand = "0.6.5"
+reqwest = { version = "0.10.4", features = ["blocking", "json", "rustls-tls"], default-features = false }
+serde = { version = "1.0.106", features = ["derive"] }
+serde_json = "1.0.51"
+structopt = "0.3.13"
+ureq = { version = "0.12.1"}
+tempdir = "0.3"
+lazy_static = { version = "1.3.0", default-features = false }
 
-# change this directory for the path of Libra client 
-cli = { path = "/home/hunter/libra/client/cli", version = "0.1.0" } 
-libra-types = { path = "/home/hunter/libra/types" }
-compiler = { path = "/home/hunter/libra/language/compiler"  }
-bytecode-verifier = { path = "/home/hunter/libra/language/bytecode-verifier", version = "0.1.0" }
-ir-to-bytecode = { path = "/home/hunter/libra/language/compiler/ir-to-bytecode", version = "0.1.0" }
-bytecode-source-map = { path = "/home/hunter/libra/language/compiler/bytecode-source-map", version = "0.1.0" }
-stdlib = { path = "/home/hunter/libra/language/stdlib", version = "0.1.0" }
-vm = { path = "/home/hunter/libra/language/vm", version = "0.1.0" }
-transaction-builder = { path = "/home/hunter/libra/language/transaction-builder", version = "0.1.0" }
+admission-control-proto = { path = "/home/hunter/libra/admission-control/admission-control-proto", version = "0.1.0" }
+libra-config = { path = "/home/hunter/libra/config", version = "0.1.0" }
+generate-key = { path = "/home/hunter/libra/config/generate-key", version = "0.1.0" }
+crash-handler = { path = "/home/hunter/libra/common/crash-handler", version = "0.1.0" }
+libra-crypto = { path = "/home/hunter/libra/crypto/crypto", version = "0.1.0" }
 lcs = { path = "/home/hunter/libra/common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
-move-lang = { path = "/home/hunter/libra/language/move-lang" }
+libra-wallet = { path = "/home/hunter/libra/client/libra-wallet", version = "0.1.0" }
+libra-json-rpc = { path = "/home/hunter/libra/json-rpc", version = "0.1.0" }
+libra-logger =  { path = "/home/hunter/libra/common/logger", version = "0.1.0" }
+libra-metrics = { path = "/home/hunter/libra/common/metrics", version = "0.1.0" }
+libra-types = { path = "/home/hunter/libra/types", version = "0.1.0" }
+libra-temppath = { path = "/home/hunter/libra/common/temppath/", version = "0.1.0" }
+libra-workspace-hack = { path = "/home/hunter/libra/common/workspace-hack", version = "0.1.0" }
+stdlib = { path = "/home/hunter/libra/language/stdlib", version = "0.1.0" }
+transaction-builder = { path = "/home/hunter/libra/language/transaction-builder", version = "0.1.0" }
+move-lang = { path = "/home/hunter/libra/language/move-lang", version = "0.0.1" }
 move-core-types = { path = "/home/hunter/libra/language/move-core/types"}
 
-#failure = "0.1.3"
+[dev-dependencies]
+proptest = "0.9.6"
 
-[target.'cfg(target_os="android")'.dependencies]
-jni = { version = "0.13.1", default-features = false }
-
-[target.'cfg(target_os="wasm")'.dependencies]
-wasm-bindgen = "0.2"
-
+[features]
+default = []
+fuzzing = ["proptest", "libra-crypto/fuzzing", "libra-types/fuzzing"]
 
 [profile.release]
-#abort
-panic = "unwind" 
+panic = 'abort'

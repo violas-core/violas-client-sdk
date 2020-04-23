@@ -4,8 +4,8 @@ if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/debug
     CLIENT_PROXY = -lclient_proxy
 else
-#    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/release
-#    CLIENT_PROXY = -l:libclient_proxy.a
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/release
+    CLIENT_PROXY = -l:libclient_proxy.a
 endif
 
 testnet_SOURCES = test_violas.cpp test_libra.cpp

@@ -1,39 +1,20 @@
-use anyhow::{bail, Error};
-use lazy_static::lazy_static;
+use anyhow::{bail, Error, Result}; //format_err
+
 use libra_types::{
     access_path::{AccessPath, Accesses},
     account_address::AccountAddress,
-    //account_config,
     account_state::AccountState,
-    //byte_array::ByteArray,
-    //event::EventHandle,
-    //identifier::{IdentStr, Identifier},
     language_storage::StructTag,
 };
 use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::result; //convert::TryInto,
-
-lazy_static! {
-    //static ref COIN_MODULE_NAME: Identifier = Identifier::new("DToken").unwrap();
-    //static ref COIN_STRUCT_NAME: Identifier = Identifier::new("T").unwrap();
-
-    // Module name
-    //static ref ACCOUNT_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("ViolasToken").unwrap());
-    // // Structs' name
-    //static ref TOKEN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Tokens").unwrap() );
-    // static ref TOKEN_ADDR_STRUCT_NAME: Identifier = Identifier::new("TokenAddr").unwrap();
-    // static ref INFO_STRUCT_NAME: Identifier = Identifier::new("Info").unwrap();
-    // static ref OWNER_DATA_STRUCT_NAME: Identifier = Identifier::new("OwnerData").unwrap();
-    // static ref ORDER_STRUCT_NAME: Identifier = Identifier::new("Order").unwrap();
-    // static ref ORDER2_STRUCT_NAME: Identifier = Identifier::new("Order2").unwrap();
-}
 
 // Module name
-static ACCOUNT_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("ViolasToken").unwrap());
-// // Structs' name
-static TOKEN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Tokens").unwrap() );
+static ACCOUNT_MODULE_NAME: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("ViolasToken").unwrap());
+// Structs' name
+static TOKEN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Tokens").unwrap());
 
 pub fn account_module_name() -> &'static IdentStr {
     &*ACCOUNT_MODULE_NAME
@@ -58,19 +39,30 @@ pub fn account_resource_path(addr: &AccountAddress) -> Vec<u8> {
     AccessPath::resource_access_vec(&account_struct_tag(addr), &Accesses::empty())
 }
 
-#[derive(Default, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+#[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct Token {
-    pub index : u64,
-    pub balance : u64
+    pub index: u64,
+    pub balance: u64,
+}
+
+impl Token {
+    pub fn new(index1: u64, balance1: u64) -> Self {
+        Self {
+            index: index1,
+            balance: balance1,
+        }
+    }
+}
+impl std::cmp::PartialEq for Token {
+    fn eq(&self, other: &Self) -> bool {
+        self.index == other.index
+    }
 }
 
 #[derive(Default, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct ViolasAccountResource {
-    //libra_account: account_config::AccountResource,
-    //pub balance: u64,
-    pub tokens : Vec<Token>
+    pub tokens: Vec<Token>,
 }
 
 impl ViolasAccountResource {
@@ -83,11 +75,22 @@ impl ViolasAccountResource {
     pub fn make_from(
         path_addr: &AccountAddress,
         account_state: &AccountState,
-    ) -> result::Result<Self, Error> {
+    ) -> Result<Self, Error> {
         let ap = account_resource_path(path_addr);
         match account_state.get(&ap) {
             Some(bytes) => lcs::from_bytes(bytes).map_err(Into::into),
             None => bail!("No data for {:?}", ap),
         }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct TokenView {
+    pub tokens: Vec<Token>,
+}
+
+impl TokenView {
+    pub fn new() -> Self {
+        Self { tokens: vec![] }
     }
 }

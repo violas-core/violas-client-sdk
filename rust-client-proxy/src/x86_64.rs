@@ -1,10 +1,11 @@
 //#[cfg(target_arch = "x86_64")]
 #[allow(non_snake_case)]
 pub mod x86_64 {
-    use crate::{compiler_proxy, violas_account};
+    use crate::client_proxy::{AccountEntry, ClientProxy, IndexAndSequence};
+    use crate::move_compiler;
+    use crate::violas_account;
+    use crate::AccountStatus;
     use anyhow::{bail, format_err, Error};
-    use cli::client_proxy::{AccountEntry, ClientProxy};
-    use cli::AccountStatus;
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress,
         account_config::CORE_CODE_ADDRESS, account_state::AccountState, transaction::*,
@@ -61,7 +62,7 @@ pub mod x86_64 {
     ) -> u64 {
         let ret = panic::catch_unwind(|| -> Result<ClientProxy, Error> {
             let host = unsafe { CStr::from_ptr(c_host).to_str().unwrap() };
-            let port = c_port as u16;            
+            let port = c_port as u16;
             let faucet_account_file =
                 unsafe { CStr::from_ptr(c_faucet_account_file).to_str().unwrap() };
             let sync_on_wallet_recovery = c_sync_on_wallet_recovery as bool;
@@ -377,7 +378,7 @@ pub mod x86_64 {
         is_blocking: bool,
         result: &mut IndexAndSeq,
     ) -> bool {
-        let ret = panic::catch_unwind(|| -> Result<cli::client_proxy::IndexAndSequence, Error> {
+        let ret = panic::catch_unwind(|| -> Result<IndexAndSequence, Error> {
             // convert raw ptr to object client
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let receiver_address = AccountAddress::new(*receiver_addr);
@@ -461,17 +462,17 @@ pub mod x86_64 {
                 //
                 // compile the source code
                 //
-                let args = compiler_proxy::Args {
-                    module_input: is_module,
-                    address: Some(address.to_string()), //
-                    no_stdlib: false,
-                    no_verify: false,
-                    source_path: temp_source_path.clone(),
-                    list_dependencies: false,
-                    deps_path: deps_path, //Option(String::from_str(dependencies_path.to_str())),
-                    output_source_maps: false,
-                };
-                compiler_proxy::compile(args)?;
+                // let args = compiler_proxy::Args {
+                //     module_input: is_module,
+                //     address: Some(address.to_string()), //
+                //     no_stdlib: false,
+                //     no_verify: false,
+                //     source_path: temp_source_path.clone(),
+                //     list_dependencies: false,
+                //     deps_path: deps_path, //Option(String::from_str(dependencies_path.to_str())),
+                //     output_source_maps: false,
+                // };
+                // compiler_proxy::compile(args)?;
 
                 let output_path = path::PathBuf::from(file_path);
                 fs::copy(
@@ -515,17 +516,17 @@ pub mod x86_64 {
         //
         // get all dependencies
         //
-        let args = compiler_proxy::Args {
-            module_input: is_module,
-            address: Some(address),
-            no_stdlib: false,
-            no_verify: false,
-            source_path: source_path.clone(),
-            list_dependencies: true, //specify the this flag for getting all dependencies
-            deps_path: None,
-            output_source_maps: false,
-        };
-        compiler_proxy::compile(args)?;
+        // let args = compiler_proxy::Args {
+        //     module_input: is_module,
+        //     address: Some(address),
+        //     no_stdlib: false,
+        //     no_verify: false,
+        //     source_path: source_path.clone(),
+        //     list_dependencies: true, //specify the this flag for getting all dependencies
+        //     deps_path: None,
+        //     output_source_maps: false,
+        // };
+        // compiler_proxy::compile(args)?;
 
         let dependencies_path = source_path.with_extension("depir");
         //let mut tmp_output_file = fs::File::create(output_path)?;
@@ -863,7 +864,7 @@ pub mod x86_64 {
                     ));
                 }
 
-                return Ok(ar.tokens[index].balance);
+                return Ok(ar.tokens[index].balance);                
             }
 
             bail!("Account hasn't published the module")

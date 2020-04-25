@@ -10,6 +10,7 @@ edition = "2018"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
+cpp = "0.5"
 anyhow = "1.0"
 chrono = "0.4.11"
 tonic = "0.2"
@@ -47,6 +48,9 @@ stdlib = { path = "/home/hunter/libra/language/stdlib", version = "0.1.0" }
 transaction-builder = { path = "/home/hunter/libra/language/transaction-builder", version = "0.1.0" }
 move-lang = { path = "/home/hunter/libra/language/move-lang", version = "0.0.1" }
 move-core-types = { path = "/home/hunter/libra/language/move-core/types"}
+
+[build-dependencies]
+cpp_build = "0.5"
 
 [dev-dependencies]
 proptest = "0.9.6"

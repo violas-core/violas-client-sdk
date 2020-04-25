@@ -14,11 +14,15 @@ use libra_crypto::{
 use libra_types::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
 
+#[macro_use]
+extern crate cpp;
+
 pub mod client_proxy;
 pub mod libra_client;
 pub mod move_compiler;
 pub mod violas_account;
 pub mod x86_64;
+pub mod ffi;
 
 /// Struct used to store data for each created account.  We track the sequence number
 /// so we can create new transactions easily

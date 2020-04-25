@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string_view>
 #include <map>
+#include <functional>
 #include <assert.h>
 #include <cxxabi.h>
 #include "violas_sdk.hpp"
@@ -29,7 +30,9 @@ const char *demangle(const char *mangled_name)
     return abi::__cxa_demangle(mangled_name, 0, 0, &status);
 }
 
-void transfer_token(string host, short port, string mnemonic_file, string mint_key_file);
+void create_token(client_ptr client, string script_files_path);
+
+void transfer_token(client_ptr client, string script_files_path);
 
 int main(int argc, char *argv[])
 {
@@ -48,6 +51,7 @@ int main(int argc, char *argv[])
         uint16_t port = 40001;
         string mnemonic = "mnemonic";
         string faucet_key;
+        string scripts_path = "../../cppSdk/scripts";
 
         if (argc >= 2)
             host = argv[1];
@@ -61,100 +65,27 @@ int main(int argc, char *argv[])
         if (argc >= 5)
             faucet_key = argv[4];
 
-        transfer_token(host, port, mnemonic, faucet_key);
+        if (argc >= 6)
+            scripts_path = argv[5];
 
-        /*
+        cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
 
-        COUT << "connecting to " << host << ":" << port << " ......"
-             << endl;
-
-        auto client = Violas::Client::create(host,
-                                             port,
-                                             "consensus_peers.config.toml",
-                                             faucet_key,
-                                             false,
-                                             "", //libra testnet use this url to get test libra coin
-                                             mnemonic);
+        auto client = Client::create(host, port, faucet_key, true, "", mnemonic);
 
         client->test_validator_connection();
+        cout << "succeed to test validator connection." << endl;
 
-        COUT << "connected to validator with "
-             << color::RED << "【 " << mnemonic << " 】" << color::RESET
-             << endl;
+        using handler = function<void()>;
+        map<int, handler> handlers = {
+            {0, [=]() { create_token(client, scripts_path); }},
+            {1, [=]() { transfer_token(client, scripts_path); }},
+        };
 
-        //
-        //  Create all accounts
-        //
+        int index;
+        cout << "input command index, 0 for create token, 1 for transfer : ";
+        cin >> index;
 
-        for (uint64_t i = 0; i < ACCOUNT_NUM; i++)
-        {
-            client->create_next_account(true);
-        }
-
-        COUT << "List all available acounts" << endl;
-        auto accounts = client->get_all_accounts();
-
-        for (auto const &account : accounts)
-        {
-            uint64_t balance = client->get_balance(account.index);
-
-            cout << "\n\tIndex : " << account.index
-                 << "\n\tAddress : " << account.address
-                 << "\n\tSequence : " << account.sequence_number
-                 << "\n\tStatus : " << account.status
-                 << "\n\tToken Balance : " << balance
-                 << endl;
-        }
-
-        size_t index = 0;
-
-        while (index < 5)
-        {
-            COUT << "Index for functions \n"
-                 << color::RED << "\t【 " << mnemonic << " 】" << color::RESET << "\n"
-                 << color::GREEN
-                 << (faucet_key.empty() ? "" : "\t0. Mint VToken to account 0 \n")
-                 << "\t1. Transfer Stable Token \n"
-                 << "\t2. Transfer VToken \n"
-                 << "\t3. Publish for a token\n"
-                 << "\t4. Deploy Stable Token \n"
-                 << "\t5. Quit \n"
-                 << color::RESET
-                 << "Please input the index : ";
-
-            cin >> index;
-
-            if (cin.fail())
-            {
-                cin.clear();
-                cin.ignore();
-                continue;
-            }
-
-            switch (index)
-            {
-            case 0:
-                mint(client);
-                break;
-            case 1:
-                transfer(client);
-                break;
-            case 2:
-                transfer_libra(client);
-                break;
-            case 3:
-                publish(client);
-                break;
-            case 4:
-                deploy(client);
-                break;
-            default:
-                break;
-            }
-
-            // cin >> index;
-        }
-        */
+        handlers[index]();        
     }
     catch (const std::exception &e)
     {
@@ -215,16 +146,53 @@ void transfer_libra(Violas::client_ptr client)
     //      << events;
 }
 
-void transfer_token(string host, short port, string mnemonic_file, string mint_key_file)
+void create_token(client_ptr client, string script_files_path)
+{
+    auto s = client->create_next_account(true);
+
+    auto accounts = client->get_all_accounts();
+    for (const auto &account : accounts)
+    {
+        client->mint_coins(account.index, 1);
+
+        cout << "Account index : " << account.index
+             << ", address : " << account.address
+             << ", balane : " << client->get_balance(account.index)
+             << endl;
+    }
+
+    uint64_t supervisor = 0;
+
+    auto token_mgr = TokenManager::create(client, accounts[supervisor].address, "token1", script_files_path);
+
+    token_mgr->deploy(supervisor);
+    token_mgr->publish(supervisor);
+
+    string token_addr, token_name;
+
+    cout << "Please input a token address : ";
+    cin >> token_addr;
+
+    cout << "Please input a token name : ";
+    cin >> token_name;
+
+    auto owner = Address::from_string(token_addr);
+
+    token_mgr->create_token(supervisor, owner, token_name);
+
+    auto seq_num = client->get_sequence_number(supervisor);
+
+    auto [txn, event] = client->get_committed_txn_by_acc_seq(supervisor, seq_num - 1);
+    cout << "The txn for create_token : " << txn << endl;
+
+    token_mgr->publish(0);
+
+    cout << "finished create token." << endl;
+}
+
+void transfer_token(client_ptr client, string script_files_path)
 {
     using namespace Violas;
-
-    cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
-
-    auto client = Client::create(host, port, mint_key_file, true, "", mnemonic_file);
-
-    client->test_validator_connection();
-    cout << "succeed to test validator connection." << endl;
 
     auto s = client->create_next_account(true);
     auto o1 = client->create_next_account(true);
@@ -255,7 +223,6 @@ void transfer_token(string host, short port, string mnemonic_file, string mint_k
              user1 = 3,
              user2 = 4;
 
-    string script_files_path = "../../cppSdk/scripts";
     auto token = TokenManager::create(client, accounts[supervisor].address, "token1", script_files_path);
     /*
     token->deploy(supervisor);

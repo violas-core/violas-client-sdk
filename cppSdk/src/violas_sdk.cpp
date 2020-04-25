@@ -750,6 +750,11 @@ public:
         m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
     }
 
+    virtual uint64_t token_count() override
+    {
+        return 0;
+    }
+
     virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index) override
     {
         uint64_t balance = m_libra_client->get_account_resource_uint64(account_index,
@@ -819,7 +824,7 @@ private:
     const string publish_script = "publish";
     const string create_token_script = "create_token";
     const string mint_script = "mint";
-    const string transfer_script = "transfer";
+    const string transfer_script = "transfer";    
 };
 
 std::shared_ptr<TokenManager> TokenManager::create(client_ptr client,

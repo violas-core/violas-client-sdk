@@ -217,6 +217,8 @@ public:
                           uint64_t amount_micro_coin,
                           const std::string &data = "transfer") = 0;
 
+    virtual uint64_t token_count() = 0;
+
     virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index ) = 0;
 
     virtual uint64_t get_account_balance(uint64_t token_index, Address account_address) = 0;

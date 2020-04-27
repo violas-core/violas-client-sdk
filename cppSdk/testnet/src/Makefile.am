@@ -1,11 +1,11 @@
-bin_PROGRAMS    = testnet test_jni transfer
+bin_PROGRAMS    = testnet test_jni transfer #test_rust_cpp
 
 if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/debug
     CLIENT_PROXY = -lclient_proxy
 else
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/release
-    CLIENT_PROXY = -l:libclient_proxy.a
+    CLIENT_PROXY = -lclient_proxy
 endif
 
 testnet_SOURCES = test_violas.cpp test_libra.cpp
@@ -25,3 +25,8 @@ transfer_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cppSdk/src
 transfer_LDFLAGS = -Wl,-rpath=./bin,-rpath=../bin,-rpath=/usr/local/lib \
                   -L../../src/.libs $(CLIENT_PROXY_PATH) 
 transfer_LDADD = -lviolas_sdk -l:libstdc++fs.a $(CLIENT_PROXY)
+
+# test_rust_cpp_SOURCES = test_rust_cpp.cpp
+# test_rust_cpp_CXXFLAGS = -std=c++17 -I$(top_srcdir)/rust-client-proxy/src/ffi
+# test_rust_cpp_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib $(CLIENT_PROXY_PATH)
+# test_rust_cpp_LDADD = -llibra_sdk $(CLIENT_PROXY)

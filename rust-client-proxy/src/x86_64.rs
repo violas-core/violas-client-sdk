@@ -7,8 +7,14 @@ pub mod x86_64 {
     use crate::AccountStatus;
     use anyhow::{bail, format_err, Error};
     use libra_types::{
-        access_path::AccessPath, account_address::AccountAddress,
-        account_config::CORE_CODE_ADDRESS, account_state::AccountState, transaction::*,
+        access_path::AccessPath,
+        account_address::AccountAddress,
+        account_config::CORE_CODE_ADDRESS,
+        account_config::{
+            association_address, lbr_type_tag, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
+        },
+        account_state::AccountState,
+        transaction::*,
     }; //ADDRESS_LENGTH access_path::AccessPath,
     use std::cell::RefCell;
     use std::ffi::{CStr, CString};
@@ -112,6 +118,40 @@ pub mod x86_64 {
             0
         }
     }
+
+    #[no_mangle]
+    pub extern "C" fn libra_create_client(
+        c_url: *const c_char,
+        c_mint_key: *const c_char,
+        c_mnemonic: *const c_char,
+        clinet_ptr: *mut u64,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| {
+                let client = ClientProxy::new(
+                    CStr::from_ptr(c_url).to_str().unwrap(),
+                    CStr::from_ptr(c_mint_key).to_str().unwrap(),
+                    true,
+                    None,
+                    Some(CStr::from_ptr(c_mnemonic).to_str().unwrap().to_owned()),
+                    None,
+                )
+                .unwrap();
+
+                *clinet_ptr = Box::into_raw(Box::new(client)) as u64;
+            });
+
+            if ret.is_ok() {
+                true
+            } else {
+                set_last_error(format_err!(
+                    "catch panic at function 'libra_create_client_proxy' !'"
+                ));
+                false
+            }
+        }
+    }
+
     ///
     /// Destory the raw ClientProxy pointer
     ///
@@ -756,6 +796,7 @@ pub mod x86_64 {
         len: u64,
         cap: u64,
     }
+
     #[no_mangle]
     pub extern "C" fn libra_get_txn_by_range(
         raw_ptr: u64,
@@ -864,7 +905,7 @@ pub mod x86_64 {
                     ));
                 }
 
-                return Ok(ar.tokens[index].balance);                
+                return Ok(ar.tokens[index].balance);
             }
 
             bail!("Account hasn't published the module")
@@ -990,6 +1031,76 @@ pub mod x86_64 {
                 "panic at function (libra_get_committed_txn_by_acc_seq) !"
             ));
             false
+        }
+    }
+
+    #[repr(C)]
+    pub struct c_events {
+        data: *mut *mut c_char,
+        len: u64,
+        cap: u64,
+    }
+
+    /// get events
+    #[no_mangle]
+    pub fn libra_get_events(
+        raw_client: u64,
+        address: &[c_uchar; LENGTH],
+        event_type: bool, //ture for sent, false for received
+        start_seq_number: u64,
+        limit: u64,
+        out_all_txn_events: *mut c_events,
+        out_last_event_state: *mut *mut c_char,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let path = if event_type {
+                    ACCOUNT_SENT_EVENT_PATH.to_vec()
+                } else {
+                    ACCOUNT_RECEIVED_EVENT_PATH.to_vec()
+                };
+                let access_path = AccessPath::new(AccountAddress::new(*address), path);
+
+                match proxy
+                    .client
+                    .get_events_by_access_path(access_path, start_seq_number, limit)
+                {
+                    Ok((evnets, last_event_state)) => {
+                        let mut vec_events: Vec<*mut c_char> = vec![];
+                        for event_view in evnets {
+                            let event = format!("{:#?}", event_view);
+
+                            vec_events.push(
+                                CString::new(event)
+                                    .expect("new event info failed")
+                                    .into_raw(),
+                            );
+                        }
+
+                        (*out_all_txn_events).data = vec_events.as_mut_ptr();
+                        (*out_all_txn_events).len = vec_events.len() as u64;
+                        (*out_all_txn_events).cap = vec_events.capacity() as u64;
+
+                        std::mem::forget(vec_events);
+
+                        *out_last_event_state = CString::new(format!("{:#?}", last_event_state))
+                            .expect("new last event state failed")
+                            .into_raw();
+                        true
+                    }
+                    Err(e) => {
+                        set_last_error(format_err!("failed to get events with error, {}", e));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!("catch panic at function 'libra_get_events' !'"));
+                false
+            }
         }
     }
 }

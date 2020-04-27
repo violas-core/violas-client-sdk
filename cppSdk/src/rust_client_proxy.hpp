@@ -129,6 +129,10 @@ extern "C"
 
     void libra_free_all_txn_events(AllTxnEvents *all_txn_events);
 
+    
+    /// Get events by account and event type with start sequence number and limit.
+    bool libra_get_events(uint64_t raw_ptr, )
+    //
     bool libra_get_account_resource(uint64_t raw_ptr,
                                     const char *account_index_or_addr,
                                     const char *account_path_addr,

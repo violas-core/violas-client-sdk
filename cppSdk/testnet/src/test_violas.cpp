@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <map>
+#include <functional>
 #include <violas_sdk.hpp>
 #include <cassert>
 #include "terminal.h"
@@ -37,11 +39,18 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        // run_test_case(argv[1], stol(argv[2]), argv[3], argv[4],
-        //               argc <= 5 ? "../scripts" : argv[5]);
-        //run_test_libra(argv[1], stol(argv[2]), argv[3], argv[4]);
+        using handler = function<void()>;
+        map<int, handler> handlers = {
+            {0, [=]() { run_test_libra(argv[1], stol(argv[2]), argv[3], argv[4]); }},
+            {1, [=]() { run_test_token(argv[1], stol(argv[2]), argv[3], argv[4]); }},
+        };
 
-        run_test_token(argv[1], stol(argv[2]), argv[3], argv[4]);
+        cout << "input index\n"
+                "0 for run libra, 1 for run violas" << endl;
+        int index ;
+        cin >> index;
+
+        handlers[index]();        
     }
     catch (const std::exception &e)
     {

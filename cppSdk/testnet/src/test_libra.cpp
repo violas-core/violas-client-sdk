@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <iterator>
 #define LIB_NAME Libra
 #include <violas_sdk.hpp>
 #include <cassert>
@@ -9,16 +10,15 @@
 using namespace std;
 
 void run_test_libra(
-    const string &host,
-    uint16_t port,
-    const string &mnemonic_file,
-    const string &mint_key_file)
+    const string &url,
+    const string &mint_key_file,
+    const string &mnemonic_file)
 {
     using namespace Libra;
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(host, port, mint_key_file, true, "", mnemonic_file);
+    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -40,13 +40,29 @@ void run_test_libra(
     client->mint_coins(1, 10);
     client->mint_coins(2, 10);
     client->mint_coins(3, 10);
-    cout << "account 0' balance is " << client->get_balance(0) << endl
-         << "account 1' balance is " << client->get_balance(1) << endl;
 
-    cout << "Transfer 1 libra coin from account 0 to account 1 ..." << endl;
-    client->transfer_coins_int(0, accounts[1].address, 1 * MICRO_LIBRO_COIN);
-    cout << "account 0' balance is " << client->get_balance(0) << endl
-         << "account 1' balance is " << client->get_balance(1) << endl;
+    auto print_account_balance = [=](uint64_t account_index) {
+        auto coin = double(client->get_balance(account_index)) / MICRO_COIN;
+        cout << "account " << account_index << "' balance is " << coin << endl;
+    };
+
+    print_account_balance(0);
+    print_account_balance(1);
+    client->transfer_coins_int(0, accounts[1].address, 100000);
+    print_account_balance(0);
+    print_account_balance(1);
+
+    //print account 0's all sent events
+    auto [events, last_status] = client->get_events(0, Client::EventType::sent, 0, 100);
+    cout << "account 0's sent events : " << endl;
+    copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
+    cout << last_status << endl;
+
+    //print account 1's all received events
+    tie(events, last_status) = client->get_events(1, Client::EventType::received, 0, 100);
+    cout << "account 1's received events : " << endl;
+    copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
+    cout << last_status << endl;
 
     auto print_txn = [client](Address address) {
         auto seq_num = client->get_sequence_number(address) - 1;

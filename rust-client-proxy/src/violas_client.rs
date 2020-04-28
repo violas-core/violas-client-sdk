@@ -120,9 +120,11 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_create_client(
+    pub extern "C" fn violas_create_client(
         c_url: *const c_char,
         c_mint_key: *const c_char,
+        sync_on_wallet_recovery: bool,
+        faucet_server: *const c_char,
         c_mnemonic: *const c_char,
         clinet_ptr: *mut u64,
     ) -> bool {
@@ -131,8 +133,8 @@ pub mod x86_64 {
                 let client = ClientProxy::new(
                     CStr::from_ptr(c_url).to_str().unwrap(),
                     CStr::from_ptr(c_mint_key).to_str().unwrap(),
-                    true,
-                    None,
+                    sync_on_wallet_recovery,
+                    Some(CStr::from_ptr(faucet_server).to_str().unwrap().to_owned()),
                     Some(CStr::from_ptr(c_mnemonic).to_str().unwrap().to_owned()),
                     None,
                 )
@@ -283,46 +285,33 @@ pub mod x86_64 {
     #[no_mangle]
     pub extern "C" fn libra_get_balance(
         raw_ptr: u64,
-        account_index_or_addr: *const c_char,
-        result: &mut f64,
+        address: &[c_uchar; LENGTH],
+        out_balance: *mut u64,
     ) -> bool {
-        if raw_ptr == 0 || account_index_or_addr.is_null() {
-            set_last_error(format_err!(
-                "raw ptr is null, or account index or address is null"
-            ));
-            return false;
-        }
-
-        let ret = panic::catch_unwind(|| -> Result<f64, Error> {
-            // convert raw ptr to object client
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let index_or_addr = unsafe { CStr::from_ptr(account_index_or_addr).to_str().unwrap() };
-            let balance = client
-                .get_balance(&["b", index_or_addr])
-                .unwrap_or_else(|err| {
-                    println!("failed to get balance, {}", err);
-                    String::from("0")
-                });
-            let value = balance.parse::<f64>().unwrap();
-            Ok(value)
-        });
-
-        if ret.is_ok() {
-            match ret.unwrap() {
-                Ok(value) => {
-                    *result = value;
-                    true
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                // convert raw ptr to object client
+                let proxy = &mut *(raw_ptr as *mut ClientProxy);
+                let ret = proxy.get_account_resource_and_update(AccountAddress::new(*address));
+                match ret {
+                    Ok(account_view) => {
+                        *out_balance = account_view.balance.amount;
+                        true
+                    }
+                    Err(e) => {
+                        set_last_error(format_err!("get_account_resource_and_update, {}", e));
+                        false
+                    }
                 }
-                Err(err) => {
-                    set_last_error(err);
-                    false
-                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch panic at function 'libra_get_balance' !'"
+                ));
+                false
             }
-        } else {
-            set_last_error(format_err!(
-                "catch panic at function 'libra_get_balance' !'"
-            ));
-            false
         }
     }
 
@@ -1035,10 +1024,29 @@ pub mod x86_64 {
     }
 
     #[repr(C)]
-    pub struct c_events {
+    pub struct c_str_array {
         data: *mut *mut c_char,
         len: u64,
         cap: u64,
+    }
+
+    #[no_mangle]
+    pub extern "C" fn violas_free_str_array(str_array: *mut c_str_array) {
+        if str_array.is_null() {
+            return;
+        }
+
+        unsafe {
+            let strs: Vec<*mut c_char> = Vec::from_raw_parts(
+                (*str_array).data,
+                (*str_array).len as usize,
+                (*str_array).cap as usize,
+            );
+
+            for str in strs {
+                libra_free_string(str);
+            }
+        }
     }
 
     /// get events
@@ -1049,7 +1057,7 @@ pub mod x86_64 {
         event_type: bool, //ture for sent, false for received
         start_seq_number: u64,
         limit: u64,
-        out_all_txn_events: *mut c_events,
+        out_all_txn_events: *mut c_str_array,
         out_last_event_state: *mut *mut c_char,
     ) -> bool {
         unsafe {
@@ -1077,7 +1085,6 @@ pub mod x86_64 {
                                     .into_raw(),
                             );
                         }
-
                         (*out_all_txn_events).data = vec_events.as_mut_ptr();
                         (*out_all_txn_events).len = vec_events.len() as u64;
                         (*out_all_txn_events).cap = vec_events.capacity() as u64;

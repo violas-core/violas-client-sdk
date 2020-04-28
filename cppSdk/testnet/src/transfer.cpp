@@ -134,7 +134,7 @@ void transfer_libra(Violas::client_ptr client)
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
     COUT << "Transferring " << amount << " cions ..." << endl;
 
-    auto [accout_index, sequence] = client->transfer_coins_int(0, receiver, amount * MICRO_LIBRO_COIN);
+    auto [accout_index, sequence] = client->transfer_coins_int(0, receiver, amount * MICRO_COIN);
 
     COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
 
@@ -302,9 +302,9 @@ void transfer_token(client_ptr client, string script_files_path)
         cout << "Pleae input amount for address " << receiver << " : ";
         cin >> amount;
 
-        token->mint(token_index, token_owner[token_index], receiver, amount * MICRO_LIBRO_COIN);
+        token->mint(token_index, token_owner[token_index], receiver, amount * MICRO_COIN);
         //print_txn(owner1);
         auto balance = token->get_account_balance(token_index, receiver);
-        cout << "the balance of token A of receiver is " << (double)balance / MICRO_LIBRO_COIN << endl;
+        cout << "the balance of token A of receiver is " << (double)balance / MICRO_COIN << endl;
     } while (true);
 }

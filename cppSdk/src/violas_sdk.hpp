@@ -36,7 +36,7 @@ namespace LIB_NAME
 
 std::string tx_vec_data(const std::string &data);
 
-const uint64_t MICRO_LIBRO_COIN = 1000000;
+const uint64_t MICRO_COIN = 1000000;
 
 bool is_valid_balance(uint64_t value);
 //
@@ -79,11 +79,18 @@ class Client
 public:
     static std::shared_ptr<Client>
     create(const std::string &host,
-           uint16_t port,           
+           uint16_t port,
            const std::string &faucet_account_file,
            bool sync_on_wallet_recovery,
            const std::string &faucet_server,
            const std::string &mnemonic_file);
+
+    static std::shared_ptr<Client>
+    create(const std::string &url,
+           const std::string &mint_key_file_name,
+           bool sync_on_wallet_recovery,
+           const std::string &faucet_server,
+           const std::string &mnemonic_file_name);
 
     virtual ~Client(){};
 
@@ -109,9 +116,9 @@ public:
 
     virtual std::vector<Account> get_all_accounts() = 0;
 
-    virtual double get_balance(uint64_t index) = 0;
+    virtual uint64_t get_balance(uint64_t index) = 0;
 
-    virtual double get_balance(const Address &address) = 0;
+    virtual uint64_t get_balance(const Address &address) = 0;
 
     virtual uint64_t get_sequence_number(uint64_t index) = 0;
     virtual uint64_t get_sequence_number(const Address &address) = 0;
@@ -160,6 +167,22 @@ public:
 
     virtual std::vector<std::pair<std::string, std::string>>
     get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) = 0;
+
+    enum EventType
+    {
+        sent = true,
+        received = false
+    };
+    //
+    /// Get events by account index and event type with start sequence number and limit.
+    //
+    virtual std::pair<std::vector<std::string>, std::string>
+    get_events(uint64_t account_index, EventType type, uint64_t start_seq_number, uint64_t limit) = 0;
+    //
+    // Get events by account and event type with start sequence number and limit.
+    //
+    virtual std::pair<std::vector<std::string>, std::string>
+    get_events(Address address, EventType type, uint64_t start_seq_number, uint64_t limit) = 0;
 
     //
     //  get unsigned int 64 resource of a account
@@ -219,7 +242,7 @@ public:
 
     virtual uint64_t token_count() = 0;
 
-    virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index ) = 0;
+    virtual uint64_t get_account_balance(uint64_t token_index, uint64_t account_index) = 0;
 
     virtual uint64_t get_account_balance(uint64_t token_index, Address account_address) = 0;
 };

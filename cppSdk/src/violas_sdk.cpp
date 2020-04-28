@@ -247,6 +247,32 @@ public:
              << endl;
     }
 
+    ClientImp(const std::string &url,
+              const std::string &mint_key_file_name,
+              bool sync_on_wallet_recovery,
+              const std::string &faucet_server,
+              const std::string &mnemonic_file_name)
+    {
+
+        bool ret = (void *)violas_create_client(url.data(),
+                                                mint_key_file_name.data(),
+                                                sync_on_wallet_recovery,
+                                                faucet_server.data(),
+                                                mnemonic_file_name.data(),
+                                                (uint64_t *)&raw_client_proxy);
+        if (!ret)
+            throw runtime_error(format("failed to create native rust client proxy, error : %s",
+                                       get_last_error().c_str()));
+
+        CLOG << "\ncreate violas client with "
+             << "\n\turl = " << url
+             << "\n\tmint_key = " << mint_key_file_name
+             << "\n\tsync_on_wallet_recovery = " << sync_on_wallet_recovery
+             << "\n\tfaucet_server = " << faucet_server
+             << "\n\tmnemonic_file = " << mnemonic_file_name
+             << endl;
+    }
+
     virtual ~ClientImp()
     {
         libra_destory_client_proxy((uint64_t)raw_client_proxy);
@@ -308,25 +334,20 @@ public:
         return accounts;
     }
 
-    virtual double get_balance(uint64_t index) override
+    virtual uint64_t get_balance(uint64_t account_index) override
     {
-        double balance = 0.f;
+        const auto &address = m_accounts.at(account_index).second;
 
-        bool ret = libra_get_balance((uint64_t)raw_client_proxy, to_string(index).c_str(),
-                                     &balance);
-        if (!ret)
-            throw runtime_error(
-                format("failed to get balance, error : %s", get_last_error().c_str()));
-
-        return balance;
+        return get_balance(address);
     }
 
-    virtual double get_balance(const Address &address) override
+    virtual uint64_t get_balance(const Address &address) override
     {
-        double balance = 0.f;
+        uint64_t balance = 0.f;
 
         bool ret = libra_get_balance((uint64_t)raw_client_proxy,
-                                     address.to_string().c_str(), &balance);
+                                     address.data().data(),
+                                     &balance);
         if (!ret)
             throw runtime_error(
                 format("failed to get balance, error : %s", get_last_error().c_str()));
@@ -586,6 +607,54 @@ public:
 
         return vec_txn_events;
     }
+    //
+    /// Get events by account index and event type with start sequence number and limit.
+    //
+    virtual std::pair<std::vector<std::string>, std::string>
+    get_events(uint64_t account_index,
+               EventType type,
+               uint64_t start_seq_number,
+               uint64_t limit) override
+    {
+        const auto &address = m_accounts.at(account_index).second;
+        return get_events(address, type, start_seq_number, limit);
+    }
+    //
+    // Get events by account and event type with start sequence number and limit.
+    //
+    virtual std::pair<std::vector<std::string>, std::string>
+    get_events(Address address,
+               EventType type,
+               uint64_t start_seq_number,
+               uint64_t limit) override
+    {
+        StrArrray out_all_events = {nullptr, 0, 0};
+        char *out_last_account_event;
+
+        bool ret = libra_get_events((uint64_t)raw_client_proxy,
+                                    address.data().data(),
+                                    (libra_event_type)type,
+                                    start_seq_number, limit,
+                                    &out_all_events,
+                                    &out_last_account_event);
+        if (!ret)
+        {
+            throw runtime_error(format("failed to get events, errror : %d ",
+                                       get_last_error().c_str()));
+        }
+
+        vector<string> all_events;
+        for (int i = 0; i < out_all_events.len; i++)
+        {
+            all_events.push_back(out_all_events.data[i]);
+        }
+        violas_free_str_array(&out_all_events);
+
+        string last_account_event = out_last_account_event;
+        libra_free_string(out_last_account_event);
+
+        return make_pair<>(all_events, last_account_event);
+    }
 
     virtual uint64_t get_account_resource_uint64(uint64_t account_index,
                                                  const Address &res_path_addr,
@@ -637,6 +706,20 @@ std::shared_ptr<Client> Client::create(const std::string &host,
                                   sync_on_wallet_recovery,
                                   faucet_server,
                                   mnemonic_file);
+}
+
+std::shared_ptr<Client>
+Client::create(const std::string &url,
+               const std::string &mint_key_file_name,
+               bool sync_on_wallet_recovery,
+               const std::string &faucet_server,
+               const std::string &mnemonic_file_name)
+{
+    return make_shared<ClientImp>(url,
+                                  mint_key_file_name,
+                                  sync_on_wallet_recovery,
+                                  faucet_server,
+                                  mnemonic_file_name);
 }
 
 class TokenManagerImp : public TokenManager
@@ -824,7 +907,7 @@ private:
     const string publish_script = "publish";
     const string create_token_script = "create_token";
     const string mint_script = "mint";
-    const string transfer_script = "transfer";    
+    const string transfer_script = "transfer";
 };
 
 std::shared_ptr<TokenManager> TokenManager::create(client_ptr client,

@@ -18,11 +18,18 @@ extern "C"
     //
     uint64_t libra_create_client_proxy(
         const char *host,
-        uint64_t port,        
+        uint64_t port,
         const char *faucet_account_file,
         bool sync_on_wallet_recovery,
         const char *faucet_server,
         const char *mnemonic_file);
+
+    bool violas_create_client(const char *url,
+                              const char *mint_key_file_name,
+                              bool sync_on_wallet_recovery,
+                              const char *faucet_server,
+                              const char *mnemonic_file_name,
+                              uint64_t *out_raw_ptr);
 
     void libra_destory_client_proxy(uint64_t raw_ptr);
 
@@ -57,10 +64,10 @@ extern "C"
     void libra_free_all_accounts_buf(Accounts accounts);
 
     /// Get the latest sequence number from validator for the account specified.
-    bool libra_get_balance(uint64_t raw_ptr, const char *account_index_or_addr, double *result);
+    bool libra_get_balance(uint64_t raw_ptr, const uint8_t address[ADDRESS_LENGTH], uint64_t *result);
 
     /// Get the latest sequence number from validator for the account specified.
-    bool libra_get_sequence_number(uint64_t raw_ptr, const uint8_t address[], uint64_t & sequence_num );
+    bool libra_get_sequence_number(uint64_t raw_ptr, const uint8_t address[ADDRESS_LENGTH], uint64_t &sequence_num);
 
     /// Mints coins for the receiver specified.
     bool libra_mint_coins(uint64_t raw_ptr, uint64_t index, uint64_t num_coins, bool is_blocking);
@@ -129,9 +136,36 @@ extern "C"
 
     void libra_free_all_txn_events(AllTxnEvents *all_txn_events);
 
-    
-    /// Get events by account and event type with start sequence number and limit.
-    bool libra_get_events(uint64_t raw_ptr, )
+    enum libra_event_type
+    {
+        sent = true,
+        received = false
+    };
+    struct StrArrray
+    {
+        const char **data;
+        uint64_t len;
+        uint64_t cap;
+    };
+    //
+    //  Get events by account and event type with start sequence number and limit.
+    //  address : account address
+    //  type : event type, true for sent, false for false
+    //  start_seq_number : start sequence number
+    //  limit : limit for fetched amount
+    bool libra_get_events(uint64_t raw_ptr,
+                          const uint8_t address[],
+                          libra_event_type type,
+                          uint64_t start_seq_number,
+                          uint64_t limit,
+                          StrArrray *out_all_txn_events,
+                          char **out_last_event_state);
+
+    //
+    //
+    //
+    void violas_free_str_array(StrArrray *str_array);
+
     //
     bool libra_get_account_resource(uint64_t raw_ptr,
                                     const char *account_index_or_addr,

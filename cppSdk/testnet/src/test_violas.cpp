@@ -13,60 +13,6 @@ void run_test_client(
     uint16_t port,
     const string &mnemonic_file,
     const string &mint_key_file,
-    const string &script_files_path);
-
-void run_test_libra(
-    const string &host,
-    uint16_t port,
-    const string &mnemonic_file,
-    const string &mint_key_file);
-
-void run_test_token(const string &host,
-                    uint16_t port,
-                    const string &mnemonic_file,
-                    const string &mint_key_file);
-
-int main(int argc, char *argv[])
-{
-    ofstream file("log.txt");
-    streambuf *mylog = clog.rdbuf(file.rdbuf());
-
-    try
-    {
-        if (argc <= 4)
-        {
-            cout << "usage : test_violas host port mnemonic_file mint_key_file script_files_path";
-            return -1;
-        }
-
-        using handler = function<void()>;
-        map<int, handler> handlers = {
-            {0, [=]() { run_test_libra(argv[1], stol(argv[2]), argv[3], argv[4]); }},
-            {1, [=]() { run_test_token(argv[1], stol(argv[2]), argv[3], argv[4]); }},
-        };
-
-        cout << "input index\n"
-                "0 for run libra, 1 for run violas" << endl;
-        int index ;
-        cin >> index;
-
-        handlers[index]();        
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << '\n';
-    }
-
-    clog.rdbuf(mylog);
-
-    return 0;
-}
-
-void run_test_client(
-    const string &host,
-    uint16_t port,
-    const string &mnemonic_file,
-    const string &mint_key_file,
     const string &script_files_path)
 {
     using namespace Violas;
@@ -97,7 +43,7 @@ void run_test_client(
          << "account 1' balance is " << client->get_balance(1) << endl;
 
     cout << "Transfer 1 libra coin from account 0 to account 1 ..." << endl;
-    client->transfer_coins_int(0, accounts[1].address, 1 * MICRO_LIBRO_COIN);
+    client->transfer_coins_int(0, accounts[1].address, 1 * MICRO_COIN);
     cout << "account 0' balance is " << client->get_balance(0) << endl
          << "account 1' balance is " << client->get_balance(1) << endl;
 

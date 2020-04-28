@@ -485,30 +485,30 @@ impl ClientProxy {
 
     /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
-        let mut max_iterations = 5000;
-        print!(
-            "waiting for {} with sequence number {}",
-            account, sequence_number
-        );
+        let mut max_iterations = 1500;
+        // print!(
+        //     "waiting for {} with sequence number {}",
+        //     account, sequence_number
+        // );
         loop {
-            stdout().flush().unwrap();
+            //stdout().flush().unwrap();
 
             match self
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
             {
-                Ok(Some(txn_view)) => {
-                    println!("transaction is stored!");
-                    if txn_view.events.is_empty() {
-                        println!("no events emitted");
-                    }
+                Ok(Some(_txn_view)) => {
+                    // println!("transaction is stored!");
+                    // if txn_view.events.is_empty() {
+                    //     println!("no events emitted");
+                    // }
                     break;
                 }
                 Err(e) => {
                     println!("Response with error: {:?}", e);
                 }
                 _ => {
-                    print!(".");
+                    //print!(".");
                 }
             }
             max_iterations -= 1;
@@ -1035,7 +1035,7 @@ impl ClientProxy {
     }
 
     /// Get account resource from validator and update status of account if it is cached locally.
-    fn get_account_resource_and_update(&mut self, address: AccountAddress) -> Result<AccountView> {
+    pub fn get_account_resource_and_update(&mut self, address: AccountAddress) -> Result<AccountView> {
         let account_state = self.get_account_state_and_update(address)?;
         if let Some(view) = account_state.0 {
             Ok(view)

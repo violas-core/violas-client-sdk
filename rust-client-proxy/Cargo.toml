@@ -50,7 +50,7 @@ move-lang = { path = "/home/hunter/libra/language/move-lang", version = "0.0.1" 
 move-core-types = { path = "/home/hunter/libra/language/move-core/types"}
 
 [build-dependencies]
-cpp_build = "0.5"
+#cpp_build = "0.5"
 
 [dev-dependencies]
 proptest = "0.9.6"

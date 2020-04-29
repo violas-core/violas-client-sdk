@@ -12,10 +12,10 @@ using namespace std;
 using namespace Violas;
 
 //账户数量
-const size_t ACCOUNT_NUM = 7;
+const size_t ACCOUNT_NUM = 5;
 
 //6种稳定币
-const vector<string> STABLE_TOKEN_NAMES = {"ABCUSD", "HIJUDS", "XYZUSD", "BCDCAN", "CDESDG", "DEFHKD"};
+const vector<string> STABLE_TOKEN_NAMES = {"AAAUSD", "BBBGBP", "CCCEUR", "DDDJPY", "EEESGD", "DEFHKD"};
 
 void mint(Violas::client_ptr client);
 void deploy(Violas::client_ptr client);
@@ -33,6 +33,8 @@ const char *demangle(const char *mangled_name)
 void create_token(client_ptr client, string script_files_path);
 
 void transfer_token(client_ptr client, string script_files_path);
+
+void deploy_tokens(client_ptr client, string script_files_path);
 
 int main(int argc, char *argv[])
 {
@@ -77,15 +79,22 @@ int main(int argc, char *argv[])
 
         using handler = function<void()>;
         map<int, handler> handlers = {
-            {0, [=]() { create_token(client, scripts_path); }},
-            {1, [=]() { transfer_token(client, scripts_path); }},
+            {1, [=]() { transfer_libra(client); }},
+            {2, [=]() { transfer_token(client, scripts_path); }},
+            {3, [=]() { create_token(client, scripts_path); }},
+            {4, [=]() { deploy_tokens(client, scripts_path); }},
         };
 
         int index;
-        cout << "input command index, 0 for create token, 1 for transfer : ";
+        cout << "commands list : \n"
+                "   1 - Transfer Violas coin\n"
+                "   2 - Transfer Token coin\n"
+                "   3 - Create a new Token\n"
+                "   4 - Deploy 5 tokens\n"
+                "input command index : ";
         cin >> index;
 
-        handlers[index]();        
+        handlers[index]();
     }
     catch (const std::exception &e)
     {
@@ -102,24 +111,13 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-void mint(Violas::client_ptr client)
-{
-    cout << "Minting VToken to account 0 \n"
-         << "Please input the amount :";
-
-    uint64_t amount;
-    cin >> amount;
-
-    cout << "Minting " << amount << " VToken ..." << endl;
-
-    client->mint_coins(0, amount);
-
-    cout << "Account 0's balance is " << client->get_balance(0) << endl;
-}
 
 void transfer_libra(Violas::client_ptr client)
 {
-    COUT << "Let's transfer VToken ..." << endl;
+    cout << "Let's transfer VToken ..." << endl;
+
+    auto [supervisor, sup_address] = client->create_next_account(true);
+    cout << "Account 0's address is " << sup_address.to_string() << endl;
 
     string address;
     cout << "\tPlease input receiver address : ";
@@ -131,23 +129,57 @@ void transfer_libra(Violas::client_ptr client)
 
     auto receiver = Address::from_string(address);
 
-    COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
-    COUT << "Transferring " << amount << " cions ..." << endl;
+    cout << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
+
+    client->mint_coins(0, amount);
 
     auto [accout_index, sequence] = client->transfer_coins_int(0, receiver, amount * MICRO_COIN);
 
-    COUT << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
+    cout << "The address " << receiver << "'s balance is " << client->get_balance(receiver) << endl;
 
-    auto [txn, events] = client->get_committed_txn_by_acc_seq(accout_index, sequence);
+    //auto [txn, events] = client->get_committed_txn_by_acc_seq(accout_index, sequence);
+}
 
-    // cout << "txn :" << endl
-    //      << txn << endl
-    //      << "events :" << endl
-    //      << events;
+void deploy_tokens(client_ptr client, string script_files_path)
+{
+    cout << "Are you sure to deploy 5 tokens ? y for yes, other for no " << endl;
+
+    char c;
+    cin >> c;
+    if (c != 'y')
+        return;
+
+    cout << "Let's deploy 5 tokens ..." << endl;
+
+    auto [supervisor, sup_address] = client->create_next_account(true);
+
+    client->mint_coins(supervisor, 1);
+
+    auto token_mgr = TokenManager::create(client, sup_address, "token1", script_files_path);
+    token_mgr->deploy(supervisor);
+    token_mgr->publish(supervisor);
+
+    for (size_t i = 0; i < ACCOUNT_NUM; i++)
+    {
+        auto [index, address] = client->create_next_account(true);
+        client->mint_coins(index, 1);
+
+        token_mgr->create_token(supervisor, address, STABLE_TOKEN_NAMES[i]);
+        token_mgr->publish(index);
+
+        token_mgr->mint(i, index, address, 1 * MICRO_COIN);
+
+        cout << "Token index : " << i
+             << ", owner's address : " << address
+             << " , owner's balance is " << (double)token_mgr->get_account_balance(i, address) / MICRO_COIN
+             << endl;
+    }
 }
 
 void create_token(client_ptr client, string script_files_path)
 {
+    cout << "Let's create a new token ..." << endl;
+
     auto s = client->create_next_account(true);
 
     auto accounts = client->get_all_accounts();
@@ -185,7 +217,8 @@ void create_token(client_ptr client, string script_files_path)
     auto [txn, event] = client->get_committed_txn_by_acc_seq(supervisor, seq_num - 1);
     cout << "The txn for create_token : " << txn << endl;
 
-    token_mgr->publish(0);
+    for (const auto &account : accounts)
+        token_mgr->publish(account.index);
 
     cout << "finished create token." << endl;
 }
@@ -194,20 +227,19 @@ void transfer_token(client_ptr client, string script_files_path)
 {
     using namespace Violas;
 
-    auto s = client->create_next_account(true);
-    auto o1 = client->create_next_account(true);
-    auto o2 = client->create_next_account(true);
-    auto u1 = client->create_next_account(true);
-    auto u2 = client->create_next_account(true);
+    auto [supervisor, sup_address] = client->create_next_account(true);
 
-    auto accounts = client->get_all_accounts();
-    for (const auto &account : accounts)
+    client->mint_coins(supervisor, 1);
+
+    auto token_mgr = TokenManager::create(client, sup_address, "token1", script_files_path);
+
+    for (size_t i = 0; i < ACCOUNT_NUM; i++)
     {
-        // client->mint_coins(account.index, 1);
+        auto [index, address] = client->create_next_account(true);
 
-        cout << "Account index : " << account.index
-             << ", address : " << account.address
-             << ", balane : " << client->get_balance(account.index)
+        cout << "Token index : " << i
+             << ", owner address : " << address
+             << ", Owner's balance is " << (double)token_mgr->get_account_balance(i, address) / MICRO_COIN
              << endl;
     }
 
@@ -217,94 +249,36 @@ void transfer_token(client_ptr client, string script_files_path)
         cout << "txn = " << txn << endl;
     };
 
-    uint64_t supervisor = 0,
-             owner1 = 1,
-             owner2 = 2,
-             user1 = 3,
-             user2 = 4;
-
-    auto token = TokenManager::create(client, accounts[supervisor].address, "token1", script_files_path);
-    /*
-    token->deploy(supervisor);
-    //print_txn(0);
-    cout << "account " << supervisor << " deployed token successfully ." << endl;
-
-    token->publish(supervisor);
-    //print_txn(0);
-    cout << "supervisor published Violas Token Module successfuly." << endl;
-
-    //token->create_token(supervisor, accounts[owner1].address, "Token A");
-    //print_txn(0);
-    cout << "created token A successfully." << endl;
-
-    //token->create_token(supervisor, accounts[owner2].address, "Token B");
-    //print_txn(0);
-    cout << "created token B successfully." << endl;
-
-    for (size_t i = 1; i < accounts.size(); i++)
-    {
-        token->publish((uint64_t)i);
-        //print_txn(0);
-    }
-    cout << "all accounts publish token module successfully." << endl;
-    
-    //
-    // 6. Oa调用mint给U1铸Ta币种的100块钱
-    //
-    token->mint(0, owner1, accounts[user1].address, 100);
-    //print_txn(owner1);
-    cout << "owner1 mint 100 cions to user1 ." << endl;
-
-    auto balance = token->get_account_balance(0, user1);
-    cout << "the balance of token A of user 1 is " << balance << endl;
-
-    //
-    // 7. Ob调用mint给U2铸Tb币种的100块钱
-    //
-    token->mint(0, owner2, accounts[user2].address, 100);
-    //print_txn(owner2);
-    cout << "Owner2 mint 100 coins to user2" << endl;
-
-    balance = token->get_account_balance(1, user2);
-    cout << "the balance of token B of user 1 is " << balance << endl;
-
-    token->transfer(0, user1, accounts[user2].address, 50);
-    //print_txn(owner1);
-    balance = token->get_account_balance(0, user2);
-    cout << "User 1 transferred 50 token A to user 2, the balance of Token A fo user 2 is " << balance << endl;
-
-    token->transfer(1, user2, accounts[user1].address, 50);
-    //print_txn(owner2);
-    balance = token->get_account_balance(1, user1);
-    cout << "User 2 transferred 50 token B to user 1, the balance of Token B of user 1 is " << balance << endl;
-
-    cout << "User 1's token A : " << token->get_account_balance(0, user1) << "\n"
-         << "User 1's token B : " << token->get_account_balance(1, user1) << "\n"
-         << "User 2's token A : " << token->get_account_balance(0, user2) << "\n"
-         << "User 2's token B : " << token->get_account_balance(1, user2) << endl;
-    */
     do
     {
         string input;
         uint64_t amount = 0;
         uint64_t token_index = 0;
-        map<uint64_t, uint64_t> token_owner = {{0, owner1}, {1, owner2}};
 
-        cout << "Please inout token index : ";
+        cout << "Please input token index : ";
         cin >> token_index;
-        if (token_index > 1)
-            throw runtime_error("token index must be less than 2");
+        if (token_index > 5)
+            throw runtime_error("token index must be less than 5");
 
         cout << "Please input an address of receiver : ";
         cin >> input;
         auto receiver = Address::from_string(input);
 
-        cout << "Pleae input amount for address " << receiver << " : ";
+        cout << "Pleae input amount : ";
         cin >> amount;
 
-        token->mint(token_index, token_owner[token_index], receiver, amount * MICRO_COIN);
-        //print_txn(owner1);
-        auto balance = token->get_account_balance(token_index, receiver);
-        cout << "the balance of token A of receiver is " << (double)balance / MICRO_COIN << endl;
+        uint64_t account_index = token_index + 1;
+
+        cout << "The original balance of token " << STABLE_TOKEN_NAMES[token_index]
+             << " of receiver " << receiver.to_string() << " is "
+             << (double)token_mgr->get_account_balance(token_index, receiver) / MICRO_COIN
+             << endl;
+
+        token_mgr->mint(token_index, account_index, receiver, amount * MICRO_COIN);
+
+        cout << "The current balance of token " << STABLE_TOKEN_NAMES[token_index]
+             << " of receiver " << receiver.to_string() << " is "
+             << (double)token_mgr->get_account_balance(token_index, receiver) / MICRO_COIN
+             << endl;
     } while (true);
 }

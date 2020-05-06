@@ -65,68 +65,6 @@ pub mod x86_64 {
     //
     //  create libra client proxy
     //
-    // #[no_mangle]
-    // pub extern "C" fn libra_create_client_proxy(
-    //     c_host: *const c_char,
-    //     c_port: u16,
-    //     c_faucet_account_file: *const c_char,
-    //     c_sync_on_wallet_recovery: bool,
-    //     c_faucet_server: *const c_char,
-    //     c_mnemonic_file: *const c_char,
-    // ) -> u64 {
-    //     let ret = panic::catch_unwind(|| -> Result<ClientProxy, Error> {
-    //         let host = unsafe { CStr::from_ptr(c_host).to_str().unwrap() };
-    //         let port = c_port as u16;
-    //         let faucet_account_file =
-    //             unsafe { CStr::from_ptr(c_faucet_account_file).to_str().unwrap() };
-    //         let sync_on_wallet_recovery = c_sync_on_wallet_recovery as bool;
-    //         let faucet_server =
-    //             unsafe { CStr::from_ptr(c_faucet_server).to_str().unwrap().to_owned() };
-    //         let mnemonic_file =
-    //             unsafe { CStr::from_ptr(c_mnemonic_file).to_str().unwrap().to_owned() };
-    //         let url = format!("http://{}:{}", host, port);
-    //         println!("{}", url);
-
-    //         //
-    //         // new Client Proxy
-    //         //
-    //         ClientProxy::new(
-    //             url.as_str(),
-    //             faucet_account_file,
-    //             sync_on_wallet_recovery,
-    //             Some(faucet_server),
-    //             Some(mnemonic_file),
-    //             None,
-    //         )
-    //     });
-
-    //
-    //  Check the result and then return a raw pointer
-    //
-    // let raw_ptr = match ret.is_ok() {
-    //     Some(value) => Box::into_raw(Box::new(value)) as u64,
-    //     None => {
-    //         set_last_error(format_err!("failed to new client proxy "));
-    //         0
-    //     }
-    // };
-
-    //     if ret.is_ok() {
-    //         match ret.unwrap() {
-    //             Ok(value) => Box::into_raw(Box::new(value)) as u64,
-    //             Err(err) => {
-    //                 set_last_error(err);
-    //                 0
-    //             }
-    //         }
-    //     } else {
-    //         set_last_error(format_err!(
-    //             "catch panic at function 'libra_create_client_proxy' !'"
-    //         ));
-    //         0
-    //     }
-    // }
-
     #[no_mangle]
     pub extern "C" fn violas_create_client(
         c_url: *const c_char,

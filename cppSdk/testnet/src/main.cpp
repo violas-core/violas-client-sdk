@@ -7,15 +7,16 @@
 using namespace std;
 
 void run_test_libra(
-    const string &url,    
+    const string &url,
     const string &mint_key_file,
-    const string &mnemonic_file);
+    const string &mnemonic_file,
+    const string &waypoint);
 
-void run_test_token(const string &host,
-                    uint16_t port,
+void run_test_token(const string &url,
                     const string &mnemonic_file,
-                    const string &mint_key_file);
-
+                    const string &mint_key_file,
+                    const string &waypoint);
+    
 int main(int argc, char *argv[])
 {
     ofstream file("log.txt");
@@ -23,16 +24,16 @@ int main(int argc, char *argv[])
 
     try
     {
-        if (argc < 4)
+        if (argc < 5)
         {
-            cout << "usage : test_violas url mint_key_file mnemonic_file script_files_path";
+            cout << "usage : test_violas url mint_key_file mnemonic_file waypoint script_files_path";
             return -1;
         }
 
         using handler = function<void()>;
         map<int, handler> handlers = {
-            {0, [=]() { run_test_libra(argv[1], argv[2], argv[3]); }},
-            {1, [=]() { run_test_token(argv[1], stol(argv[2]), argv[3], argv[4]); }},
+            {0, [=]() { run_test_libra(argv[1], argv[2], argv[3], argv[4]); }},
+            {1, [=]() { run_test_token(argv[1], argv[2], argv[3], argv[4]); }},
         };
 
         cout << "input index\n"

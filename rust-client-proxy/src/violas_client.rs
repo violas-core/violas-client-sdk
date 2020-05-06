@@ -6,6 +6,7 @@ pub mod x86_64 {
     use crate::violas_account;
     use crate::AccountStatus;
     use anyhow::{bail, format_err, Error};
+    use libra_types::waypoint::Waypoint;
     use libra_types::{
         access_path::AccessPath,
         account_address::AccountAddress,
@@ -16,12 +17,19 @@ pub mod x86_64 {
         account_state::AccountState,
         transaction::*,
     }; //ADDRESS_LENGTH access_path::AccessPath,
-    use std::cell::RefCell;
-    use std::ffi::{CStr, CString};
-    use std::os::raw::{c_char, c_uchar};
-    use std::{convert::TryFrom, io::Write, path::Path, result::Result, *};
+    use std::{
+        cell::RefCell,
+        convert::TryFrom,
+        ffi::{CStr, CString},
+        io::Write,
+        os::raw::{c_char, c_uchar},
+        path::Path,
+        result::Result,
+        str::FromStr,
+        *,
+    };
     use tempdir::TempDir;
-    //use transaction_builder::get_transaction_name;
+    
 
     pub const LENGTH: usize = 16;
 
@@ -57,67 +65,67 @@ pub mod x86_64 {
     //
     //  create libra client proxy
     //
-    #[no_mangle]
-    pub extern "C" fn libra_create_client_proxy(
-        c_host: *const c_char,
-        c_port: u16,
-        c_faucet_account_file: *const c_char,
-        c_sync_on_wallet_recovery: bool,
-        c_faucet_server: *const c_char,
-        c_mnemonic_file: *const c_char,
-    ) -> u64 {
-        let ret = panic::catch_unwind(|| -> Result<ClientProxy, Error> {
-            let host = unsafe { CStr::from_ptr(c_host).to_str().unwrap() };
-            let port = c_port as u16;
-            let faucet_account_file =
-                unsafe { CStr::from_ptr(c_faucet_account_file).to_str().unwrap() };
-            let sync_on_wallet_recovery = c_sync_on_wallet_recovery as bool;
-            let faucet_server =
-                unsafe { CStr::from_ptr(c_faucet_server).to_str().unwrap().to_owned() };
-            let mnemonic_file =
-                unsafe { CStr::from_ptr(c_mnemonic_file).to_str().unwrap().to_owned() };
-            let url = format!("http://{}:{}", host, port);
-            println!("{}", url);
+    // #[no_mangle]
+    // pub extern "C" fn libra_create_client_proxy(
+    //     c_host: *const c_char,
+    //     c_port: u16,
+    //     c_faucet_account_file: *const c_char,
+    //     c_sync_on_wallet_recovery: bool,
+    //     c_faucet_server: *const c_char,
+    //     c_mnemonic_file: *const c_char,
+    // ) -> u64 {
+    //     let ret = panic::catch_unwind(|| -> Result<ClientProxy, Error> {
+    //         let host = unsafe { CStr::from_ptr(c_host).to_str().unwrap() };
+    //         let port = c_port as u16;
+    //         let faucet_account_file =
+    //             unsafe { CStr::from_ptr(c_faucet_account_file).to_str().unwrap() };
+    //         let sync_on_wallet_recovery = c_sync_on_wallet_recovery as bool;
+    //         let faucet_server =
+    //             unsafe { CStr::from_ptr(c_faucet_server).to_str().unwrap().to_owned() };
+    //         let mnemonic_file =
+    //             unsafe { CStr::from_ptr(c_mnemonic_file).to_str().unwrap().to_owned() };
+    //         let url = format!("http://{}:{}", host, port);
+    //         println!("{}", url);
 
-            //
-            // new Client Proxy
-            //
-            ClientProxy::new(
-                url.as_str(),
-                faucet_account_file,
-                sync_on_wallet_recovery,
-                Some(faucet_server),
-                Some(mnemonic_file),
-                None,
-            )
-        });
+    //         //
+    //         // new Client Proxy
+    //         //
+    //         ClientProxy::new(
+    //             url.as_str(),
+    //             faucet_account_file,
+    //             sync_on_wallet_recovery,
+    //             Some(faucet_server),
+    //             Some(mnemonic_file),
+    //             None,
+    //         )
+    //     });
 
-        //
-        //  Check the result and then return a raw pointer
-        //
-        // let raw_ptr = match ret.is_ok() {
-        //     Some(value) => Box::into_raw(Box::new(value)) as u64,
-        //     None => {
-        //         set_last_error(format_err!("failed to new client proxy "));
-        //         0
-        //     }
-        // };
+    //
+    //  Check the result and then return a raw pointer
+    //
+    // let raw_ptr = match ret.is_ok() {
+    //     Some(value) => Box::into_raw(Box::new(value)) as u64,
+    //     None => {
+    //         set_last_error(format_err!("failed to new client proxy "));
+    //         0
+    //     }
+    // };
 
-        if ret.is_ok() {
-            match ret.unwrap() {
-                Ok(value) => Box::into_raw(Box::new(value)) as u64,
-                Err(err) => {
-                    set_last_error(err);
-                    0
-                }
-            }
-        } else {
-            set_last_error(format_err!(
-                "catch panic at function 'libra_create_client_proxy' !'"
-            ));
-            0
-        }
-    }
+    //     if ret.is_ok() {
+    //         match ret.unwrap() {
+    //             Ok(value) => Box::into_raw(Box::new(value)) as u64,
+    //             Err(err) => {
+    //                 set_last_error(err);
+    //                 0
+    //             }
+    //         }
+    //     } else {
+    //         set_last_error(format_err!(
+    //             "catch panic at function 'libra_create_client_proxy' !'"
+    //         ));
+    //         0
+    //     }
+    // }
 
     #[no_mangle]
     pub extern "C" fn violas_create_client(
@@ -126,7 +134,8 @@ pub mod x86_64 {
         sync_on_wallet_recovery: bool,
         faucet_server: *const c_char,
         c_mnemonic: *const c_char,
-        clinet_ptr: *mut u64,
+        in_waypoint: *const c_char,
+        out_clinet_ptr: *mut u64,
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| {
@@ -136,11 +145,11 @@ pub mod x86_64 {
                     sync_on_wallet_recovery,
                     Some(CStr::from_ptr(faucet_server).to_str().unwrap().to_owned()),
                     Some(CStr::from_ptr(c_mnemonic).to_str().unwrap().to_owned()),
-                    None,
+                    Waypoint::from_str(CStr::from_ptr(in_waypoint).to_str().unwrap()).unwrap(),
                 )
                 .unwrap();
 
-                *clinet_ptr = Box::into_raw(Box::new(client)) as u64;
+                *out_clinet_ptr = Box::into_raw(Box::new(client)) as u64;
             });
 
             if ret.is_ok() {

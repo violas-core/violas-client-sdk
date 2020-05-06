@@ -1,8 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    //commands::{is_address, is_authentication_key},
+use crate::{    
     libra_client::LibraClient,
     AccountData, AccountStatus,
 };
@@ -10,10 +9,10 @@ use anyhow::{bail, ensure, format_err, Error, Result};
 use libra_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature},
     test_utils::KeyPair,
-    traits::ValidKey,
-    x25519, ValidKeyStringExt,
+    traits::ValidCryptoMaterial,
+    x25519, ValidCryptoMaterialStringExt,
 };
-use libra_json_rpc::views::{AccountView, BlockMetadata, EventView, TransactionView};
+use libra_json_rpc_client::views::{AccountView, BlockMetadata, EventView, TransactionView};
 use libra_logger::prelude::*;
 use libra_temppath::TempPath;
 use libra_types::{
@@ -130,7 +129,7 @@ impl ClientProxy {
         sync_on_wallet_recovery: bool,
         faucet_server: Option<String>,
         mnemonic_file: Option<String>,
-        waypoint: Option<Waypoint>,
+        waypoint: Waypoint,
     ) -> Result<Self> {
         // fail fast if url is not valid
         let url = Url::parse(url)?;
@@ -485,30 +484,30 @@ impl ClientProxy {
 
     /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
-        let mut max_iterations = 1500;
-        // print!(
-        //     "waiting for {} with sequence number {}",
-        //     account, sequence_number
-        // );
+        let mut max_iterations = 5000;
+        print!(
+            "waiting for {} with sequence number {}",
+            account, sequence_number
+        );
         loop {
-            //stdout().flush().unwrap();
+            stdout().flush().unwrap();
 
             match self
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
             {
-                Ok(Some(_txn_view)) => {
-                    // println!("transaction is stored!");
-                    // if txn_view.events.is_empty() {
-                    //     println!("no events emitted");
-                    // }
+                Ok(Some(txn_view)) => {
+                    println!("transaction is stored!");
+                    if txn_view.events.is_empty() {
+                        println!("no events emitted");
+                    }
                     break;
                 }
                 Err(e) => {
                     println!("Response with error: {:?}", e);
                 }
                 _ => {
-                    //print!(".");
+                    print!(".");
                 }
             }
             max_iterations -= 1;
@@ -1304,6 +1303,7 @@ impl fmt::Display for AccountEntry {
 mod tests {
     use crate::client_proxy::{parse_bool, AddressAndIndex, ClientProxy};
     use libra_temppath::TempPath;
+    use libra_types::{ledger_info::LedgerInfo, on_chain_config::ValidatorSet, waypoint::Waypoint};
     use libra_wallet::io_utils;
     use proptest::prelude::*;
 
@@ -1312,6 +1312,9 @@ mod tests {
         accounts.reserve(count);
         let file = TempPath::new();
         let mnemonic_path = file.path().to_str().unwrap().to_string();
+        let waypoint =
+            Waypoint::new_epoch_boundary(&LedgerInfo::mock_genesis(Some(ValidatorSet::empty())))
+                .unwrap();
 
         // Note: `client_proxy` won't actually connect to URL - it will be used only to
         // generate random accounts
@@ -1321,7 +1324,7 @@ mod tests {
             false,
             None,
             Some(mnemonic_path),
-            None,
+            waypoint,
         )
         .unwrap();
         for _ in 0..count {

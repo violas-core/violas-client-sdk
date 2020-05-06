@@ -9,15 +9,15 @@
 using namespace std;
 
 void run_test_client(
-    const string &host,
-    uint16_t port,
+    const string &url,
     const string &mnemonic_file,
     const string &mint_key_file,
+    const string &waypoint,
     const string &script_files_path)
 {
     using namespace Violas;
 
-    auto client = Client::create(host, port, mint_key_file, true, "", mnemonic_file);
+    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -123,16 +123,16 @@ void run_test_client(
 // 11. U1调用make_order币币交易挂单卖出Ta 10块，买入Tb 20块, 调用参数为make_order(Ta, 10, Tb, 20, data)
 // 12. U2调用take_order去取U1挂的单， 成功后：U1有Ta 40块，Tb 70块， U2有Ta 60块，Tb 30块。
 //
-void run_test_token(const string &host,
-                    uint16_t port,
+void run_test_token(const string &url,
                     const string &mnemonic_file,
-                    const string &mint_key_file)
+                    const string &mint_key_file,
+                    const string &waypoint)
 {
     using namespace Violas;
 
     cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(host, port, mint_key_file, true, "", mnemonic_file);
+    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;

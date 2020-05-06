@@ -14,19 +14,19 @@ extern "C" {
 JNIEXPORT jlong
 JNICALL CLASS_METHOD(createNativeClient)(JNIEnv *env,
                                          jobject obj,
-                                         jstring host,
-                                         jshort port,
+                                         jstring url,                                         
                                          jstring mint_key_file,
                                          jboolean sync_with_wallet,
                                          jstring faucet_server,
-                                         jstring mnemonic_file) {
+                                         jstring mnemonic_file,
+										 jstring waypoint) {
 	return createNativeClient(env, obj,
-	                          host, 
-							  port,
+	                          url,							  
 	                          mint_key_file,
 	                          sync_with_wallet,
 	                          faucet_server,
-	                          mnemonic_file);
+	                          mnemonic_file,
+							  waypoint);
 }
 
 /*

@@ -11,12 +11,12 @@
 //	Create native clinet
 //
 jlong createNativeClient(JNIEnv *env, jobject,
-						 jstring host,
-						 jshort port,
+						 jstring url,						 
 						 jstring faucetKey,
 						 jboolean syncWithWallet,
 						 jstring faucetServer,
-						 jstring mnemonic);
+						 jstring mnemonic,
+						 jstring waypoint);
 
 //
 // function:    destroy native vlient

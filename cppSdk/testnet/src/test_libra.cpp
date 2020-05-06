@@ -12,13 +12,14 @@ using namespace std;
 void run_test_libra(
     const string &url,
     const string &mint_key_file,
-    const string &mnemonic_file)
+    const string &mnemonic_file,
+    const string &waypoint)
 {
     using namespace Libra;
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file);
+    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;

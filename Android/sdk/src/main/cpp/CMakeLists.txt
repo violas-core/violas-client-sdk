@@ -21,7 +21,7 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        # jni_violas_sdk.cpp
+        jni_violas_sdk.cpp
         io_violas_sdk_Client.cpp
         io_violas_sdk_java_Client.cpp
         io_violas_sdk_java_Token.cpp)
@@ -46,7 +46,7 @@ add_library(c++fs STATIC IMPORTED)
 set_property(TARGET c++fs PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../cppSdk/lib/libc++fs-arm64v8a.a)
 
 add_library(cppSdk STATIC IMPORTED)
-set_property(TARGET cppSdk PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../cppSdk/lib/libcppSdk-arm64v8a.a)
+set_property(TARGET cppSdk PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../build/release/lib/libjniSdk.a)
 
 add_library(client_proxy STATIC IMPORTED)
 set_property(TARGET client_proxy PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../../../../../rust-client-proxy/target/aarch64-linux-android/release/libclient_proxy.a)

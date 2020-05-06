@@ -13,7 +13,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;SLjava/lang/String;ZLjava/lang/String;Ljava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_io_violas_sdk_Client_createNativeClient
-  (JNIEnv *, jobject, jstring, jshort, jstring, jboolean, jstring, jstring);
+  (JNIEnv *, jobject, jstring, jstring, jboolean, jstring, jstring, jstring);
 
 /*
  * Class:     io_violas_sdk_Client

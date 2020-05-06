@@ -80,24 +80,24 @@ static Violas::Address to_address(JNIEnv *env, jbyteArray _address)
 //  native function
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 jlong createNativeClient(JNIEnv *env, jobject,
-						 jstring host,
-						 jshort port,
+						 jstring url,						 
 						 jstring faucetKey,
 						 jboolean syncWithWallet,
 						 jstring faucetServer,
-						 jstring mnemonic)
+						 jstring mnemonic,
+						 jstring waypoint)
 {
 
 	jlong nativeObj = 0;
 
 	try
 	{
-		auto client = Violas::Client::create(to_string(env, host),
-											 (unsigned short)port,
+		auto client = Violas::Client::create(to_string(env, url),											 
 											 to_string(env, faucetKey),
 											 syncWithWallet,
 											 to_string(env, faucetServer),
-											 to_string(env, mnemonic));
+											 to_string(env, mnemonic),
+											 to_string(env, waypoint));
 
 		nativeObj = (jlong) new Violas::client_ptr(client);
 	}
@@ -236,7 +236,7 @@ jdouble client_get_balance(JNIEnv *env, jobject obj, jlong nativeObj, jbyteArray
 		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
 		//Violas::Address address;
 
-		jbyte *buffer = env->GetByteArrayElements(_address, 0);
+		//jbyte *buffer = env->GetByteArrayElements(_address, 0);
 		size_t length = env->GetArrayLength(_address);
 
 		if (length != Violas::Address::length)

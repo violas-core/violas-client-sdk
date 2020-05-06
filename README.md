@@ -13,28 +13,7 @@ sudo apt install libtool automake autoconf gcc-8 libstdc++-dev clang-9
 
 ## Build
 
-1. download Libra source code and change file libra/client/src/grpc_client.rs
-
-#### original  
-
-```Rust
-pub(crate) fn get_account_blob
-```
-
-#### modified  
-
-```rust
-pub fn get_account_blob
-```
-
-#### change max_iterations from 5000 to 10 at file libra/client/src/client_proxy.rs
-
-```Rust
- pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
-        let mut max_iterations = 1000;
-        ...
- }
-```
+1. download Libra source code 
 
 2. open ViolasClientSdk/rust-client-proxy/cargo.toml, replace all reference for 'Libra' with correct path.
 

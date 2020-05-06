@@ -45,34 +45,34 @@ int main(int argc, char *argv[])
     {
         cout << "usage: \n"
              << "\t"
-             << color::GREEN << "transfer host port mnemonic [faucet]" << color::RESET
+             << color::GREEN << "transfer url mnemonic [faucet]" << color::RESET
              << "\n"
              << endl;
 
-        auto host = "52.151.2.66";
-        uint16_t port = 40001;
+        auto url = "52.151.2.66";
         string mnemonic = "mnemonic";
         string faucet_key;
+        string waypoint;
         string scripts_path = "../../cppSdk/scripts";
 
         if (argc >= 2)
-            host = argv[1];
+            url = argv[1];
 
         if (argc >= 3)
-            port = stol(argv[2]);
+            mnemonic = argv[2];
 
         if (argc >= 4)
-            mnemonic = argv[3];
+            faucet_key = argv[3];
 
         if (argc >= 5)
-            faucet_key = argv[4];
+            waypoint = argv[4];
 
         if (argc >= 6)
             scripts_path = argv[5];
 
         cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
 
-        auto client = Client::create(host, port, faucet_key, true, "", mnemonic);
+        auto client = Client::create(url, faucet_key, true, "", mnemonic, waypoint);
 
         client->test_validator_connection();
         cout << "succeed to test validator connection." << endl;

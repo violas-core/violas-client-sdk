@@ -21,10 +21,10 @@ liblibra_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
 liblibra_sdk_la_LIBADD = $(CLIENT_PROXY)
 
 libjniSdk_la_SOURCES = violas_sdk.cpp jni_violas_sdk.cpp
-libjniSdk_la_CXXFLAGS = -std=c++17 -fPIC \
+libjniSdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -fPIC\
                         -I/usr/lib/jvm/java-11-openjdk-amd64/include \
                         -I/usr/lib/jvm/java-11-openjdk-amd64/include/linux/
 libjniSdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
-libjniSdk_la_LIBADD = -lstdc++fs $(CLIENT_PROXY)
+libjniSdk_la_LIBADD =  $(CLIENT_PROXY)
 
 

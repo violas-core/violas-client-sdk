@@ -14,21 +14,14 @@ extern "C"
     //
     void libra_free_string(char *str);
     //
-    //  crete a Libra client proxy pointer
+    //  crete a Violas client proxy pointer
     //
-    uint64_t libra_create_client_proxy(
-        const char *host,
-        uint64_t port,
-        const char *faucet_account_file,
-        bool sync_on_wallet_recovery,
-        const char *faucet_server,
-        const char *mnemonic_file);
-
     bool violas_create_client(const char *url,
                               const char *mint_key_file_name,
                               bool sync_on_wallet_recovery,
                               const char *faucet_server,
                               const char *mnemonic_file_name,
+                              const char *waypoint,
                               uint64_t *out_raw_ptr);
 
     void libra_destory_client_proxy(uint64_t raw_ptr);

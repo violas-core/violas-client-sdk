@@ -1,10 +1,8 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{    
-    libra_client::LibraClient,
-    AccountData, AccountStatus,
-};
+use crate::violas_account::*;
+use crate::{libra_client::LibraClient, AccountData, AccountStatus};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use libra_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature},
@@ -480,6 +478,38 @@ impl ClientProxy {
             self.wait_for_transaction(sender.address, sender.sequence_number);
         }
         Ok(())
+    }
+
+    pub fn add_curency(
+        &mut self,
+        modue_name : &str,
+        exchange_rate_denom: u64,
+        exchange_rate_num: u64,
+        is_synthetic: bool,
+        scaling_factor: u64,
+        fractional_part: u64,
+        currency_code: Vec<u8>,
+        is_blocking: bool,
+    ) -> Result<()> {
+        match &self.faucet_account {
+            Some(faucet) => {
+                let type_tag = currency_type_tag(&faucet.address, modue_name);
+
+                self.association_transaction_with_local_faucet_account(
+                    transaction_builder::encode_add_currency(
+                        type_tag,
+                        exchange_rate_denom,
+                        exchange_rate_num,
+                        is_synthetic,
+                        scaling_factor,
+                        fractional_part,
+                        currency_code,
+                    ),
+                    is_blocking,
+                )
+            }
+            None => unimplemented!(),
+        }
     }
 
     /// Waits for the next transaction for a specific address and prints it
@@ -1034,7 +1064,10 @@ impl ClientProxy {
     }
 
     /// Get account resource from validator and update status of account if it is cached locally.
-    pub fn get_account_resource_and_update(&mut self, address: AccountAddress) -> Result<AccountView> {
+    pub fn get_account_resource_and_update(
+        &mut self,
+        address: AccountAddress,
+    ) -> Result<AccountView> {
         let account_state = self.get_account_state_and_update(address)?;
         if let Some(view) = account_state.0 {
             Ok(view)

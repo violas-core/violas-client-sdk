@@ -150,7 +150,7 @@ namespace LIB_NAME
 
         /// execute script with faucet account
         virtual void execute_script_with_faucet_account(const std::string &script_file,
-                                                        const std::vector<std::string> &script_args) = 0;
+                                                        const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
         virtual std::pair<std::string, std::string>
         get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;

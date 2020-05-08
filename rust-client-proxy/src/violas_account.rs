@@ -4,7 +4,8 @@ use libra_types::{
     access_path::{AccessPath, Accesses},
     account_address::AccountAddress,
     account_state::AccountState,
-    language_storage::StructTag,
+    account_config::{*},
+    language_storage::{StructTag, TypeTag},
 };
 use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
@@ -31,6 +32,15 @@ pub fn account_struct_tag(addr: &AccountAddress) -> StructTag {
         name: account_struct_name().to_owned(),
         type_params: vec![],
     }
+}
+
+pub fn currency_type_tag(addr: &AccountAddress, module_name : &str ) -> TypeTag {
+    TypeTag::Struct(StructTag {
+        address: *addr,
+        module: from_currency_code_string(module_name).unwrap(),
+        name: coin_struct_name().to_owned(),
+        type_params: vec![],
+    })
 }
 
 /// Return the path to the Account resource. It can be used to create an AccessPath for an

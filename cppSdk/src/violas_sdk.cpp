@@ -236,7 +236,7 @@ namespace LIB_NAME
                                                     waypoint.data(),
                                                     (uint64_t *)&raw_client_proxy);
             if (!ret)
-                throw runtime_error(format("failed to create native rust client proxy, error : %s",
+                throw runtime_error(format("failed to create native Violas client, error : %s",
                                            get_last_error().c_str()));
 
             CLOG << "\ncreate violas client with "

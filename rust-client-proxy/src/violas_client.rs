@@ -94,7 +94,7 @@ pub mod x86_64 {
                 true
             } else {
                 set_last_error(format_err!(
-                    "catch panic at function 'libra_create_client_proxy' !'"
+                    "catch panic at function 'violas_create_client' !'"
                 ));
                 false
             }

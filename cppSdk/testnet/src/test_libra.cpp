@@ -74,16 +74,16 @@ void run_test_libra(
     const auto faucet = Address::from_string("0000000000000000000000000A550C18");
 
     replace_mv_with_addr("../../cppSdk/scripts/violas.mv",
-                         "token.mv",
+                         "violas.mv",
                          faucet);
 
-    client->publish_module_with_faucet_account("token.mv");
+    client->publish_module_with_faucet_account("violas.mv");
     print_txn(faucet);
 
-    replace_mv_with_addr("../../cppSdk/scripts/publish.mv",
-                         "publish.mv",
+    replace_mv_with_addr("../../cppSdk/scripts/violas_initialize.mv",
+                         "violas_initialize.mv",
                          faucet);
 
-    client->execute_script_with_faucet_account("publish.mv", vector<string>({"b\"00\""}));
+    client->execute_script_with_faucet_account("violas_initialize.mv");
     print_txn(faucet);
 }

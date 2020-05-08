@@ -482,7 +482,7 @@ impl ClientProxy {
 
     pub fn add_currency(
         &mut self,
-        modue_name : &str,
+        module_name : &str,
         exchange_rate_denom: u64,
         exchange_rate_num: u64,
         is_synthetic: bool,
@@ -493,7 +493,7 @@ impl ClientProxy {
     ) -> Result<()> {
         match &self.faucet_account {
             Some(faucet) => {
-                let type_tag = currency_type_tag(&faucet.address, modue_name);
+                let type_tag = currency_type_tag(&faucet.address, module_name);
 
                 self.association_transaction_with_local_faucet_account(
                     transaction_builder::encode_add_currency(

@@ -29,7 +29,6 @@ pub mod x86_64 {
         *,
     };
     use tempdir::TempDir;
-    
 
     pub const LENGTH: usize = 16;
 
@@ -1053,6 +1052,52 @@ pub mod x86_64 {
                 ret.unwrap()
             } else {
                 set_last_error(format_err!("catch panic at function 'libra_get_events' !'"));
+                false
+            }
+        }
+    }
+
+    /// add a new currency
+    #[no_mangle]
+    pub fn violas_add_currency(
+        raw_client: u64,
+        module_name: *const c_char,
+        exchange_rate_denom: u64,
+        exchange_rate_num: u64,
+        is_synthetic: bool,
+        scaling_factor: u64,
+        fractional_part: u64,
+        currency_code: *const c_uchar,
+        currency_code_len: u64,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let data = slice::from_raw_parts(currency_code, currency_code_len as usize);
+                //
+                match proxy.add_currency(
+                    CStr::from_ptr(module_name).to_str().unwrap(),
+                    exchange_rate_denom,
+                    exchange_rate_num,
+                    is_synthetic,
+                    scaling_factor,
+                    fractional_part,
+                    data.to_vec(),
+                    true,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!("failed to add currency with error, {}", e));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency' !'"
+                ));
                 false
             }
         }

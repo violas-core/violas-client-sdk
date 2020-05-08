@@ -480,7 +480,7 @@ impl ClientProxy {
         Ok(())
     }
 
-    pub fn add_curency(
+    pub fn add_currency(
         &mut self,
         modue_name : &str,
         exchange_rate_denom: u64,

@@ -12,19 +12,19 @@ testnet_SOURCES = test_violas.cpp test_libra.cpp main.cpp
 testnet_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cppSdk/src
 testnet_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib \
                   -L$(top_builddir)/cppSdk/src/.libs $(CLIENT_PROXY_PATH) 
-testnet_LDADD = -lviolas_sdk -llibra_sdk $(CLIENT_PROXY)
+testnet_LDADD = -lviolas_sdk -llibra_sdk $(CLIENT_PROXY) -lstdc++fs
 
 test_jni_SOURCES = test_violas.cpp test_libra.cpp main.cpp
 test_jni_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cppSdk/src
 test_jni_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib \
                   -L../../src/.libs -L../../../lib $(CLIENT_PROXY_PATH)                  
-test_jni_LDADD = -lviolas_sdk_jni -lviolas_sdk -llibra_sdk $(CLIENT_PROXY)
+test_jni_LDADD = -lviolas_sdk_jni -lviolas_sdk -llibra_sdk $(CLIENT_PROXY) -lstdc++fs
 
 transfer_SOURCES = transfer.cpp
 transfer_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cppSdk/src
 transfer_LDFLAGS = -Wl,-rpath=./bin,-rpath=../bin,-rpath=/usr/local/lib \
                   -L../../src/.libs $(CLIENT_PROXY_PATH) 
-transfer_LDADD = -lviolas_sdk $(CLIENT_PROXY)
+transfer_LDADD = -lviolas_sdk $(CLIENT_PROXY) -lstdc++fs
 
 # test_rust_cpp_SOURCES = test_rust_cpp.cpp
 # test_rust_cpp_CXXFLAGS = -std=c++17 -I$(top_srcdir)/rust-client-proxy/src/ffi

@@ -514,11 +514,11 @@ impl ClientProxy {
 
     /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
-        let mut max_iterations = 5000;
-        print!(
-            "waiting for {} with sequence number {}",
-            account, sequence_number
-        );
+        let mut max_iterations = 1000;
+        // print!(
+        //     "waiting for {} with sequence number {}",
+        //     account, sequence_number
+        // );
         loop {
             stdout().flush().unwrap();
 
@@ -526,18 +526,18 @@ impl ClientProxy {
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
             {
-                Ok(Some(txn_view)) => {
-                    println!("transaction is stored!");
-                    if txn_view.events.is_empty() {
-                        println!("no events emitted");
-                    }
+                Ok(Some(_txn_view)) => {
+                    // println!("transaction is stored!");
+                    // if txn_view.events.is_empty() {
+                    //     println!("no events emitted");
+                    // }
                     break;
                 }
                 Err(e) => {
                     println!("Response with error: {:?}", e);
                 }
                 _ => {
-                    print!(".");
+                    //print!(".");
                 }
             }
             max_iterations -= 1;

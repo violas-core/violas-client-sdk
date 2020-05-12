@@ -13,8 +13,8 @@ void run_test_libra(
     const string &waypoint);
 
 void run_test_token(const string &url,
-                    const string &mnemonic_file,
                     const string &mint_key_file,
+                    const string &mnemonic_file,                    
                     const string &waypoint);
     
 int main(int argc, char *argv[])

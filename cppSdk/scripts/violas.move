@@ -8,7 +8,7 @@ module VIOLAS {
     struct T { }
 
     public fun initialize() {
-        Association::assert_sender_is_association();
+         Association::assert_sender_is_association();
 
         // Register the VIOLAS currency.
         Libra::register_currency<T>(

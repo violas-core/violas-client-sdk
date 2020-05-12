@@ -428,7 +428,7 @@ pub mod x86_64 {
                 //
                 // handle dependencies
                 //
-                let deps_path = handle_dependencies(
+                let _deps_path = handle_dependencies(
                     client,
                     address.to_string(),
                     temp_source_path.clone(),

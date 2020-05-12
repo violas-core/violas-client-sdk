@@ -84,6 +84,21 @@ void run_test_libra(
                          "violas_initialize.mv",
                          faucet);
 
-    client->execute_script_with_faucet_account("violas_initialize.mv");
+    client->execute_script_with_faucet_account("violas_initialize.mv", vector<string>({"b\"00\""}));
     print_txn(faucet);
+
+    // replace_mv_with_addr("../../cppSdk/scripts/token.mv",
+    //                      "token.mv",
+    //                      accounts[0].address);
+
+    // client->publish_module(0, "token.mv");
+    // print_txn(s.second);
+
+    // replace_mv_with_addr("../../cppSdk/scripts/publish.mv",
+    //                      "publish.mv",
+    //                      accounts[0].address);
+
+    // //client->execute_script_with_faucet_account("violas_initialize.mv");
+    // client->execute_script(0, "publish.mv", vector<string>({"b\"00\""}));
+    // print_txn(s.second);
 }

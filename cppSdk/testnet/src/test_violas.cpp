@@ -124,8 +124,8 @@ void run_test_client(
 // 12. U2调用take_order去取U1挂的单， 成功后：U1有Ta 40块，Tb 70块， U2有Ta 60块，Tb 30块。
 //
 void run_test_token(const string &url,
-                    const string &mnemonic_file,
                     const string &mint_key_file,
+                    const string &mnemonic_file,
                     const string &waypoint)
 {
     using namespace Violas;

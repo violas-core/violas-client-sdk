@@ -156,12 +156,16 @@ namespace LIB_NAME
         mv.seekg(0, mv.beg);
         mv.read((char *)buffer.data(), buffer.size());
 
-        auto pos = search(begin(buffer), end(buffer), addr, end(addr));
-        if (pos != end(buffer))
+        auto pos = begin(buffer);
+        do
         {
-            auto data = address.data();
-            copy(begin(data), end(data), pos);
-        }
+            pos = search(pos, end(buffer), addr, end(addr));
+            if (pos != end(buffer))
+            {
+                auto data = address.data();
+                copy(begin(data), end(data), pos);
+            }
+        } while (pos != end(buffer));
 
         copy(begin(buffer), end(buffer), ostreambuf_iterator<char>(ofs));
     }

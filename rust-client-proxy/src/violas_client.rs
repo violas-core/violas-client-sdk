@@ -565,7 +565,7 @@ pub mod x86_64 {
 
     /// association transaction with local faucet account
     #[no_mangle]
-    pub fn libra_publish_module_with_faucet_account(
+    pub fn violas_publish_module_with_association_account(
         raw_ptr: u64,
         module_file_name: *const c_char,
     ) -> bool {
@@ -573,23 +573,7 @@ pub mod x86_64 {
             let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
 
-            if proxy.faucet_account.is_none() {
-                bail!("No faucet account loaded");
-            }
-            let sender = proxy.faucet_account.as_ref().unwrap();
-            let sender_address = sender.address;
-            let module_bytes = fs::read(module)?;
-            let program = TransactionPayload::Module(Module::new(module_bytes));
-
-            let txn = proxy.create_txn_to_submit(program, sender, None, None)?;
-            let mut sender_mut = proxy.faucet_account.as_mut().unwrap();
-            let resp = proxy.client.submit_transaction(Some(&mut sender_mut), txn);
-            proxy.wait_for_transaction(
-                sender_address,
-                proxy.faucet_account.as_ref().unwrap().sequence_number,
-            );
-
-            resp
+            proxy.publish_module_with_association_account(module)
         });
 
         if result.is_ok() {
@@ -656,6 +640,46 @@ pub mod x86_64 {
         }
     }
 
+    #[no_mangle]
+    pub extern "C" fn violas_execute_script_with_association_account(
+        raw_ptr: u64,        
+        script_file: *const c_char,
+        script_args: &ScriptArgs,
+    ) -> bool {
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
+            //
+            // convert raw ptr to object client
+            //
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };            
+            let script = unsafe { CStr::from_ptr(script_file).to_str().unwrap() };
+            let mut args = vec![script];
+            let s = unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
+
+            for i in 0..s.len() {
+                let arg = unsafe { CStr::from_ptr(s[i]).to_str().unwrap() };
+                args.push(arg);
+            }
+            //
+            //  execute script
+            //
+            client.execcute_script_with_association_account(&args)
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'libra_execute_script_with_association_account' !"
+            ));
+            false
+        }
+    }
     ///
     ///
     ///

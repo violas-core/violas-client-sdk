@@ -87,7 +87,7 @@ extern "C"
     bool libra_publish_module(uint64_t raw_ptr, uint64_t account_index, const char *module_file);
 
     /// association transaction with local faucet account
-    bool libra_publish_module_with_faucet_account(uint64_t raw_ptr, const char *module_file);
+    bool violas_publish_module_with_association_account(uint64_t raw_ptr, const char *module_file);
 
     struct ScriptArgs
     {
@@ -97,7 +97,7 @@ extern "C"
 
     bool libra_execute_script(uint64_t raw_ptr, uint64_t account_index, const char *script_file, const ScriptArgs *script_args);
 
-    bool libra_execute_script_with_faucet_account(uint64_t raw_ptr, const char *script_file, const ScriptArgs *script_args);
+    bool violas_execute_script_with_association_account(uint64_t raw_ptr, const char *script_file, const ScriptArgs *script_args);
 
     //
     //  get committed transaction and events info

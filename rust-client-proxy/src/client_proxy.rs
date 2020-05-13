@@ -482,7 +482,7 @@ impl ClientProxy {
 
     pub fn add_currency(
         &mut self,
-        module_name : &str,
+        module_name: &str,
         exchange_rate_denom: u64,
         exchange_rate_num: u64,
         is_synthetic: bool,
@@ -795,6 +795,31 @@ impl ClientProxy {
         )
     }
 
+    /// Publish Move module with association account
+    pub fn publish_module_with_association_account(
+        &mut self,
+        module_file_name: &str,
+    ) -> Result<()> {
+        if self.faucet_account.is_none() {
+            bail!("No faucet account loaded");
+        }
+        let sender = self.faucet_account.as_ref().unwrap();
+        let sender_address = sender.address;
+        let module_bytes = fs::read(module_file_name)?;
+        let program = TransactionPayload::Module(Module::new(module_bytes));
+
+        let txn = self.create_txn_to_submit(program, sender, None, None)?;
+        let resp = self
+            .client
+            .submit_transaction(self.faucet_account.as_mut(), txn);
+        self.wait_for_transaction(
+            sender_address,
+            self.faucet_account.as_ref().unwrap().sequence_number,
+        );
+
+        resp
+    }
+
     /// Execute custom script
     pub fn execute_script(&mut self, space_delim_strings: &[&str]) -> Result<()> {
         ensure!(
@@ -811,6 +836,23 @@ impl ClientProxy {
         self.submit_program(
             space_delim_strings,
             TransactionPayload::Script(Script::new(script_bytes, vec![], arguments)),
+        )
+    }
+
+    /// Execute custom script with association account
+    pub fn execcute_script_with_association_account(
+        &mut self,
+        space_delim_strings: &[&str],
+    ) -> Result<()> {
+        let script_bytes = fs::read(space_delim_strings[0])?;
+        let arguments: Vec<_> = space_delim_strings[1..]
+            .iter()
+            .filter_map(|arg| parse_as_transaction_argument_for_client(arg).ok())
+            .collect();
+        // TODO: support type arguments in the client.
+        self.association_transaction_with_local_faucet_account(
+            Script::new(script_bytes, vec![], arguments),
+            true,
         )
     }
 

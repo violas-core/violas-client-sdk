@@ -445,7 +445,7 @@ namespace LIB_NAME
 
         virtual void publish_module_with_faucet_account(const std::string &module_file) override
         {
-            bool ret = libra_publish_module_with_faucet_account((uint64_t)raw_client_proxy,
+            bool ret = violas_publish_module_with_association_account((uint64_t)raw_client_proxy,
                                                                 module_file.c_str());
             if (!ret)
             {
@@ -504,7 +504,7 @@ namespace LIB_NAME
             args.len = script_args.size();
             args.data = args_array.data();
 
-            bool ret = libra_execute_script_with_faucet_account((uint64_t)raw_client_proxy,
+            bool ret = violas_execute_script_with_association_account((uint64_t)raw_client_proxy,
                                                                 script_file.c_str(),
                                                                 &args);
             if (!ret)

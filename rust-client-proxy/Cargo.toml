@@ -32,24 +32,24 @@ cpp = "0.5"
 tempdir = "0.3"
 lazy_static = { version = "1.3.0", default-features = false }
 
-admission-control-proto = { path = "/home/hunter/libra/admission-control/admission-control-proto", version = "0.1.0" }
-libra-config = { path = "/home/hunter/libra/config", version = "0.1.0" }
-generate-key = { path = "/home/hunter/libra/config/generate-key", version = "0.1.0" }
-crash-handler = { path = "/home/hunter/libra/common/crash-handler", version = "0.1.0" }
-libra-crypto = { path = "/home/hunter/libra/crypto/crypto", version = "0.1.0" }
-lcs = { path = "/home/hunter/libra/common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
-libra-wallet = { path = "/home/hunter/libra/client/libra-wallet", version = "0.1.0" }
-libra-json-rpc-client = { path = "/home/hunter/libra/client/json-rpc", version = "0.1.0" }
-libra-logger =  { path = "/home/hunter/libra/common/logger", version = "0.1.0" }
-libra-metrics = { path = "/home/hunter/libra/common/metrics", version = "0.1.0" }
-libra-types = { path = "/home/hunter/libra/types", version = "0.1.0" }
-libra-temppath = { path = "/home/hunter/libra/common/temppath/", version = "0.1.0" }
-libra-workspace-hack = { path = "/home/hunter/libra/common/workspace-hack", version = "0.1.0" }
-stdlib = { path = "/home/hunter/libra/language/stdlib", version = "0.1.0" }
-transaction-builder = { path = "/home/hunter/libra/language/transaction-builder", version = "0.1.0" }
+admission-control-proto = { path = "../../libra/admission-control/admission-control-proto", version = "0.1.0" }
+libra-config = { path = "../../libra/config", version = "0.1.0" }
+generate-key = { path = "../../libra/config/generate-key", version = "0.1.0" }
+crash-handler = { path = "../../libra/common/crash-handler", version = "0.1.0" }
+libra-crypto = { path = "../../libra/crypto/crypto", version = "0.1.0" }
+lcs = { path = "../../libra/common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
+libra-wallet = { path = "../../libra/testsuite/cli/libra-wallet", version = "0.1.0" }
+libra-json-rpc-client = { path = "../../libra/client/json-rpc", version = "0.1.0" }
+libra-logger =  { path = "../../libra/common/logger", version = "0.1.0" }
+libra-metrics = { path = "../../libra/common/metrics", version = "0.1.0" }
+libra-types = { path = "../../libra/types", version = "0.1.0" }
+libra-temppath = { path = "../../libra/common/temppath/", version = "0.1.0" }
+libra-workspace-hack = { path = "../../libra/common/workspace-hack", version = "0.1.0" }
+stdlib = { path = "../../libra/language/stdlib", version = "0.1.0" }
+transaction-builder = { path = "../../libra/language/transaction-builder", version = "0.1.0" }
 
-move-lang = { path = "/home/hunter/libra/language/move-lang", version = "0.0.1" }
-move-core-types = { path = "/home/hunter/libra/language/move-core/types"}
+move-lang = { path = "../../libra/language/move-lang", version = "0.0.1" }
+move-core-types = { path = "../../libra/language/move-core/types"}
 
 [build-dependencies]
 #cpp_build = "0.5"

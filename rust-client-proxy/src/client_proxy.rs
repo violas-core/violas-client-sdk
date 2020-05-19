@@ -1,7 +1,6 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::violas_account::*;
 use crate::{libra_client::LibraClient, AccountData, AccountStatus};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use libra_crypto::{
@@ -49,6 +48,8 @@ use std::{
 };
 use stdlib::transaction_scripts::StdlibScript;
 use transaction_builder::encode_register_validator_script;
+
+use move_core_types::language_storage::TypeTag;
 
 const CLIENT_WALLET_MNEMONIC_FILE: &str = "client.mnemonic";
 const GAS_UNIT_PRICE: u64 = 0;
@@ -254,16 +255,27 @@ impl ClientProxy {
     }
 
     /// Get balance from validator for the account specified.
-    pub fn get_balance(&mut self, space_delim_strings: &[&str]) -> Result<String> {
+    pub fn get_balances(&mut self, space_delim_strings: &[&str]) -> Result<Vec<String>> {
         ensure!(
             space_delim_strings.len() == 2,
-            "Invalid number of arguments for getting balance"
+            "Invalid number of arguments for getting balances"
         );
         let (address, _) = self.get_account_address_from_parameter(space_delim_strings[1])?;
         self.get_account_resource_and_update(address).map(|res| {
-            let whole_num = res.balance.amount / 1_000_000;
-            let remainder = res.balance.amount % 1_000_000;
-            format!("{}.{:0>6}", whole_num.to_string(), remainder.to_string())
+            res.balances
+                .iter()
+                .map(|amt_view| {
+                    // TODO: Need to get these numbers from CurrencyInfoView for the specific currency
+                    let whole_num = amt_view.amount / 1_000_000;
+                    let remainder = amt_view.amount % 1_000_000;
+                    format!(
+                        "{}.{:0>6}{}",
+                        whole_num.to_string(),
+                        remainder.to_string(),
+                        amt_view.currency
+                    )
+                })
+                .collect()
         })
     }
 
@@ -479,39 +491,6 @@ impl ClientProxy {
         }
         Ok(())
     }
-
-    pub fn add_currency(
-        &mut self,
-        module_name: &str,
-        exchange_rate_denom: u64,
-        exchange_rate_num: u64,
-        is_synthetic: bool,
-        scaling_factor: u64,
-        fractional_part: u64,
-        currency_code: Vec<u8>,
-        is_blocking: bool,
-    ) -> Result<()> {
-        match &self.faucet_account {
-            Some(faucet) => {
-                let type_tag = currency_type_tag(&faucet.address, module_name);
-
-                self.association_transaction_with_local_faucet_account(
-                    transaction_builder::encode_add_currency(
-                        type_tag,
-                        exchange_rate_denom,
-                        exchange_rate_num,
-                        is_synthetic,
-                        scaling_factor,
-                        fractional_part,
-                        currency_code,
-                    ),
-                    is_blocking,
-                )
-            }
-            None => unimplemented!(),
-        }
-    }
-
     /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(&mut self, account: AccountAddress, sequence_number: u64) {
         let mut max_iterations = 1000;
@@ -572,6 +551,7 @@ impl ClientProxy {
                 receiver_auth_key_prefix,
                 num_coins,
                 vec![],
+                vec![],
             );
             let txn = self.create_txn_to_submit(
                 TransactionPayload::Script(program),
@@ -616,6 +596,7 @@ impl ClientProxy {
             &receiver_address,
             receiver_auth_key_prefix,
             num_coins,
+            vec![],
             vec![],
         );
 
@@ -793,31 +774,6 @@ impl ClientProxy {
             space_delim_strings,
             TransactionPayload::Module(Module::new(module_bytes)),
         )
-    }
-
-    /// Publish Move module with association account
-    pub fn publish_module_with_association_account(
-        &mut self,
-        module_file_name: &str,
-    ) -> Result<()> {
-        if self.faucet_account.is_none() {
-            bail!("No faucet account loaded");
-        }
-        let sender = self.faucet_account.as_ref().unwrap();
-        let sender_address = sender.address;
-        let module_bytes = fs::read(module_file_name)?;
-        let program = TransactionPayload::Module(Module::new(module_bytes));
-
-        let txn = self.create_txn_to_submit(program, sender, None, None)?;
-        let resp = self
-            .client
-            .submit_transaction(self.faucet_account.as_mut(), txn);
-        self.wait_for_transaction(
-            sender_address,
-            self.faucet_account.as_ref().unwrap().sequence_number,
-        );
-
-        resp
     }
 
     /// Execute custom script
@@ -1334,6 +1290,176 @@ impl ClientProxy {
             .get_mut(account_ref_id)
             .ok_or_else(|| format_err!("Unable to find account by ref id: {}", account_ref_id))?;
         Ok(account_data)
+    }
+
+    /// submit a transaction with specified account index
+    fn submit_transction_with_account(
+        &mut self,
+        account_ref_id: usize,
+        program: Script,
+        max_gas_amount: Option<u64>,
+        gas_unit_price: Option<u64>,
+        is_blocking: bool,
+    ) -> Result<(IndexAndSequence)> {
+        let sender = self
+            .accounts
+            .get(account_ref_id)
+            .ok_or_else(|| format_err!("Unable to find sender account: {}", account_ref_id))?;
+        let txn = self.create_txn_to_submit(
+            TransactionPayload::Script(program),
+            sender,
+            max_gas_amount, /* max_gas_amount */
+            gas_unit_price, /* gas_unit_price */
+        )?;
+        let sender_mut = self
+            .accounts
+            .get_mut(account_ref_id)
+            .ok_or_else(|| format_err!("Unable to find sender account: {}", account_ref_id))?;
+
+        self.client.submit_transaction(Some(sender_mut), txn)?;
+        let sender_address = sender_mut.address;
+        let sender_sequence = sender_mut.sequence_number;
+
+        if is_blocking {
+            self.wait_for_transaction(sender_address, sender_sequence);
+        }
+
+        Ok(IndexAndSequence {
+            account_index: AccountEntry::Index(account_ref_id),
+            sequence_number: sender_sequence - 1,
+        })
+    }
+
+    /// Publish Move module with association account
+    pub fn publish_module_with_association_account(
+        &mut self,
+        module_file_name: &str,
+    ) -> Result<()> {
+        if self.faucet_account.is_none() {
+            bail!("No faucet account loaded");
+        }
+        let sender = self.faucet_account.as_ref().unwrap();
+        let sender_address = sender.address;
+        let module_bytes = fs::read(module_file_name)?;
+        let program = TransactionPayload::Module(Module::new(module_bytes));
+
+        let txn = self.create_txn_to_submit(program, sender, None, None)?;
+        let resp = self
+            .client
+            .submit_transaction(self.faucet_account.as_mut(), txn);
+        self.wait_for_transaction(
+            sender_address,
+            self.faucet_account.as_ref().unwrap().sequence_number,
+        );
+
+        resp
+    }
+    /// add a new currency with association account
+    pub fn add_currency(
+        &mut self,
+        type_tag: TypeTag,
+        exchange_rate_denom: u64,
+        exchange_rate_num: u64,
+        is_synthetic: bool,
+        scaling_factor: u64,
+        fractional_part: u64,
+        currency_code: Vec<u8>,
+        is_blocking: bool,
+    ) -> Result<()> {
+        match &self.faucet_account {
+            Some(_) => self.association_transaction_with_local_faucet_account(
+                transaction_builder::encode_add_currency(
+                    type_tag,
+                    exchange_rate_denom,
+                    exchange_rate_num,
+                    is_synthetic,
+                    scaling_factor,
+                    fractional_part,
+                    currency_code,
+                ),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
+
+    pub fn register_currency(
+        &mut self,
+        type_tag: TypeTag,
+        account_ref_id: usize,
+        is_blocking: bool,
+    ) -> Result<()> {
+        self.submit_transction_with_account(
+            account_ref_id,
+            transaction_builder::encode_add_currency_to_account_script(type_tag),
+            None,
+            None,
+            is_blocking,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn register_currency_with_association_account(
+        &mut self,
+        type_tag: TypeTag,
+        is_blocking: bool,
+    ) -> Result<()> {
+        match &self.faucet_account {
+            Some(_) => self.association_transaction_with_local_faucet_account(
+                transaction_builder::encode_add_currency_to_account_script(type_tag),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
+
+    ///
+    pub fn mint_currency(
+        &mut self,
+        type_tag: TypeTag,
+        address: &AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        amount: u64,
+        is_blocking: bool,
+    ) -> Result<()> {
+        match &self.faucet_account {
+            Some(_faucet) => self.association_transaction_with_local_faucet_account(
+                transaction_builder::encode_mint_script(type_tag, address, auth_key_prefix, amount),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
+
+    ///
+    pub fn transfer_currency(
+        &mut self,
+        type_tag: TypeTag,
+        sender_account_ref_id: usize,
+        receiver_address: &AccountAddress,
+        receiver_auth_key_prefix: Vec<u8>,
+        num_coins: u64,
+        is_blocking: bool,
+    ) -> Result<()> {
+        let program = transaction_builder::encode_transfer_with_metadata_script(
+            type_tag,
+            &receiver_address,
+            receiver_auth_key_prefix,
+            num_coins,
+            vec![],
+            vec![],
+        );
+
+        self.submit_transction_with_account(
+            sender_account_ref_id,
+            program,
+            None,
+            None,
+            is_blocking,
+        )?;
+
+        Ok(())
     }
 }
 

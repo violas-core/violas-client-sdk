@@ -1,6 +1,6 @@
 address 0xA550C18 {    //0xA550C18
 
-module Violas {
+module USD {
     use 0x0::Association;
     use 0x0::Libra;
     use 0x0::FixedPoint32;
@@ -16,7 +16,7 @@ module Violas {
             false,   // is_synthetic
             1000000, // scaling_factor = 10^6
             100,     // fractional_part = 10^2
-            x"4C425231", // UTF8 encoding of "Violas" in hex  LBR 4C4252  //56696f6c6173
+            x"4C4252", // UTF8 encoding of "Violas" in hex  LBR 4C4252  //56696f6c6173
         );
     }
 }

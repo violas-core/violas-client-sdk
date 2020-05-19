@@ -1,11 +1,7 @@
 use crate::client_proxy::ClientProxy;
 use cpp::cpp;
 use libra_types::waypoint::Waypoint;
-use std::{
-    ffi::{CStr, CString},
-    os::raw::{c_char, c_uchar},
-    str::FromStr,
-};
+use std::{ffi::CStr, os::raw::c_char, str::FromStr};
 
 cpp! {{
 

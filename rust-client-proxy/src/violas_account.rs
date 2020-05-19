@@ -1,13 +1,13 @@
 use anyhow::{bail, Error, Result}; //format_err
 
 use libra_types::{
-    access_path::{AccessPath, Accesses},
-    account_address::AccountAddress,
+    access_path::AccessPath, account_address::AccountAddress, account_config::*,
     account_state::AccountState,
-    account_config::{*},
+};
+use move_core_types::{
+    identifier::{IdentStr, Identifier},
     language_storage::{StructTag, TypeTag},
 };
-use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +34,7 @@ pub fn account_struct_tag(addr: &AccountAddress) -> StructTag {
     }
 }
 
-pub fn currency_type_tag(addr: &AccountAddress, module_name : &str ) -> TypeTag {
+pub fn currency_type_tag(addr: &AccountAddress, module_name: &str) -> TypeTag {
     TypeTag::Struct(StructTag {
         address: *addr,
         module: from_currency_code_string(module_name).unwrap(),
@@ -46,7 +46,7 @@ pub fn currency_type_tag(addr: &AccountAddress, module_name : &str ) -> TypeTag 
 /// Return the path to the Account resource. It can be used to create an AccessPath for an
 /// Account resource.
 pub fn account_resource_path(addr: &AccountAddress) -> Vec<u8> {
-    AccessPath::resource_access_vec(&account_struct_tag(addr), &Accesses::empty())
+    AccessPath::resource_access_vec(&account_struct_tag(addr))
 }
 
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]

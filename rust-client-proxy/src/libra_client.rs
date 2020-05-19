@@ -8,9 +8,9 @@ use libra_json_rpc_client::{
     get_response_from_batch,
     views::{
         AccountStateWithProofView, AccountView, BlockMetadata, BytesView, EventView,
-        ResponseAsView, StateProofView, TransactionView,
+        StateProofView, TransactionView,
     },
-    JsonRpcBatch, JsonRpcClient, JsonRpcResponse,
+    JsonRpcBatch, JsonRpcClient, JsonRpcResponse, ResponseAsView
 };
 use libra_logger::prelude::*;
 use libra_types::{

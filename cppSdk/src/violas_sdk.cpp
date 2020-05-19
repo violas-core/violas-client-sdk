@@ -301,6 +301,7 @@ namespace LIB_NAME
                 const auto &_a = all_accounts.data[i];
 
                 a.address = Address(_a.address, ADDRESS_LENGTH);
+                copy(begin(_a.auth_key), end(_a.auth_key), a.auth_key);
                 a.index = _a.index;
                 a.sequence_number = _a.sequence_number;
                 a.status = _a.status;
@@ -446,7 +447,7 @@ namespace LIB_NAME
         virtual void publish_module_with_faucet_account(const std::string &module_file) override
         {
             bool ret = violas_publish_module_with_association_account((uint64_t)raw_client_proxy,
-                                                                module_file.c_str());
+                                                                      module_file.c_str());
             if (!ret)
             {
                 auto error = format("failed to publish module file '%s' with faucet account, error : %s",
@@ -505,8 +506,8 @@ namespace LIB_NAME
             args.data = args_array.data();
 
             bool ret = violas_execute_script_with_association_account((uint64_t)raw_client_proxy,
-                                                                script_file.c_str(),
-                                                                &args);
+                                                                      script_file.c_str(),
+                                                                      &args);
             if (!ret)
                 throw runtime_error(
                     format("failed to execute script file '%s' for account faucet, "
@@ -669,6 +670,110 @@ namespace LIB_NAME
                     EXCEPTION_AT);
 
             return result;
+        }
+
+        //
+        // multi currency methods
+        //
+
+        ViolasTypeTag from_type_tag(const TypeTag &type_tag)
+        {
+            ViolasTypeTag tag;
+
+            copy(begin(type_tag.address.data()), end(type_tag.address.data()), tag.address);
+            tag.module = type_tag.module.data();
+            tag.name = type_tag.res_name.data();
+
+            return tag;
+        }
+
+        /// register a currency
+        virtual void
+        register_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) override
+        {
+            ViolasTypeTag tag = from_type_tag(type_tag);
+            bool ret = violas_register_currency((uint64_t)raw_client_proxy, tag, account_index, is_blocking);
+
+            if (!ret)
+                throw runtime_error(format("failed to register currency, errror : %d ",
+                                           get_last_error().c_str()));
+        }
+
+        ///
+        virtual void
+        register_currency_with_association_account(const TypeTag &type_tag, bool is_blocking = true) override
+        {
+            ViolasTypeTag tag = from_type_tag(type_tag);
+            bool ret = violas_register_currency_with_association_account((uint64_t)raw_client_proxy, tag, is_blocking);
+
+            if (!ret)
+                throw runtime_error(format("failed to register currency with association account, errror : %d ",
+                                           get_last_error().c_str()));
+        }
+
+        virtual void
+        add_currency(const TypeTag &type_tag,
+                     uint64_t exchange_rate_denom,
+                     uint64_t exchange_rate_num,
+                     bool is_synthetic,
+                     uint64_t scaling_factor,
+                     uint64_t fractional_part,
+                     std::string_view currency_code) override
+        {
+            ViolasTypeTag tag = from_type_tag(type_tag);
+
+            bool ret = violas_add_currency((uint64_t)raw_client_proxy,
+                                           tag,
+                                           exchange_rate_denom,
+                                           exchange_rate_num,
+                                           is_synthetic,
+                                           scaling_factor,
+                                           fractional_part,
+                                           currency_code.data(),
+                                           currency_code.size());
+            if (!ret)
+                throw runtime_error(format("failed to add currency, errror : %d ",
+                                           get_last_error().c_str()));
+        }
+
+        /// mint curency for a receiver
+        virtual void
+        mint_currency(const TypeTag &type_tag,
+                      const uint8_t receiver[32],
+                      uint64_t amount,
+                      bool is_blocking) override
+        {
+            ViolasTypeTag tag = from_type_tag(type_tag);
+
+            bool ret = violas_mint_currency((uint64_t)raw_client_proxy,
+                                            tag,
+                                            receiver,
+                                            amount,
+                                            is_blocking);
+            if (!ret)
+                throw runtime_error(format("failed to mint currency, errror : %d ",
+                                           get_last_error().c_str()));
+        }
+
+        /// transfer currency to a receiver
+        virtual void
+        transfer_currency(const TypeTag &_tag,
+                          uint64_t sender_account_index,
+                          uint8_t receiver_auth_key[32],
+                          uint64_t amount,
+                          bool is_blocking) override
+        {
+            ViolasTypeTag tag = from_type_tag(_tag);
+
+            bool ret = violas_transfer_currency((uint64_t)raw_client_proxy,
+                                                tag,
+                                                sender_account_index,
+                                                receiver_auth_key,
+                                                amount,
+                                                is_blocking);
+            if (!ret)
+                throw runtime_error(format("failed to transfer currency, errror : %d ",
+                                           get_last_error().c_str()));
         }
     };
 

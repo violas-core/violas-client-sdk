@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <iterator>
+#include <tuple>
 #define LIB_NAME Libra
 #include <violas_sdk.hpp>
 #include <cassert>
@@ -58,8 +59,9 @@ void run_test_libra(
     cout << "account 0's sent events : " << endl;
     copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
     cout << last_status << endl;
-
-    //print account 1's all received events
+    //
+    // print account 1's all received events
+    //
     tie(events, last_status) = client->get_events(1, Client::EventType::received, 0, 100);
     cout << "account 1's received events : " << endl;
     copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
@@ -70,22 +72,6 @@ void run_test_libra(
         auto [txn, event] = client->get_committed_txn_by_acc_seq(address, seq_num);
         cout << "txn = " << txn << endl;
     };
-
-    const auto faucet = Address::from_string("0000000000000000000000000A550C18");
-
-    replace_mv_with_addr("../../cppSdk/scripts/violas.mv",
-                         "violas.mv",
-                         faucet);
-
-    client->publish_module_with_faucet_account("violas.mv");
-    print_txn(faucet);
-
-    replace_mv_with_addr("../../cppSdk/scripts/violas_initialize.mv",
-                         "violas_initialize.mv",
-                         faucet);
-
-    client->execute_script_with_faucet_account("violas_initialize.mv", vector<string>({"b\"00\""}));
-    print_txn(faucet);
 
     // replace_mv_with_addr("../../cppSdk/scripts/token.mv",
     //                      "token.mv",
@@ -98,7 +84,88 @@ void run_test_libra(
     //                      "publish.mv",
     //                      accounts[0].address);
 
-    // //client->execute_script_with_faucet_account("violas_initialize.mv");
     // client->execute_script(0, "publish.mv", vector<string>({"b\"00\""}));
     // print_txn(s.second);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //  test multi currency for move language stdlib
+    ////////////////////////////////////////////////////////////////////////////////
+
+    //const auto root   = Address::from_string("00000000000000000000000000000000");
+    const auto faucet = Address::from_string("0000000000000000000000000A550C18");
+
+    auto args = {make_tuple("coin_usd.mv", "USD", u8"Coin1"),
+                 make_tuple("coin_eur.mv", "EUR", u8"Coin2")};
+
+    for (const auto &arg : args)
+    {
+        auto contract = get<0>(arg);
+        replace_mv_with_addr(string("../../cppSdk/scripts/") + contract,
+                             contract,
+                             faucet);
+
+        client->publish_module_with_faucet_account(contract);
+        //client->publish_module(0, "violas.mv");
+        print_txn(faucet);
+
+        auto module_name = get<1>(arg);
+        Client::TypeTag type_tag(faucet, module_name, "T");
+
+        auto currency_code = get<2>(arg);
+        client->add_currency(type_tag, 1, 2, false, 1000000, 100, currency_code);
+        print_txn(faucet);
+
+        client->register_currency(type_tag, 0);
+        print_txn(accounts[0].address);
+
+        client->mint_currency(type_tag, accounts[0].auth_key, 10);
+        print_txn(faucet);
+
+        client->register_currency(type_tag, 1);
+        print_txn(accounts[1].address);
+
+        client->mint_currency(type_tag, accounts[1].auth_key, 20);
+        print_txn(faucet);
+
+        client->transfer_currency(type_tag, 0, accounts[1].auth_key, 5);
+        print_txn(accounts[0].address);
+    }
+
+    replace_mv_with_addr("../../cppSdk/scripts/violas.mv",
+                         "violas.mv",
+                         faucet);
+
+    client->publish_module_with_faucet_account("violas.mv");
+    //client->publish_module(0, "violas.mv");
+    print_txn(faucet);
+
+    // replace_mv_with_addr("../../cppSdk/scripts/violas_initialize.mv",
+    //                      "violas_initialize.mv",
+    //                      faucet);
+
+    // client->execute_script_with_faucet_account("violas_initialize.mv", vector<string>({"b\"00\""}));
+    // print_txn(faucet);
+
+    Client::TypeTag type_tag(faucet, "Violas", "T");
+
+    client->add_currency(type_tag, 1, 2, false, 1000000, 100, u8"Coin1");
+    print_txn(faucet);
+
+    // client->register_currency_with_association_account(type_tag);
+    // print_txn(faucet);
+
+    client->register_currency(type_tag, 0);
+    print_txn(accounts[0].address);
+
+    client->mint_currency(type_tag, accounts[0].auth_key, 10);
+    print_txn(faucet);
+
+    client->register_currency(type_tag, 1);
+    print_txn(accounts[1].address);
+
+    client->mint_currency(type_tag, accounts[1].auth_key, 20);
+    print_txn(faucet);
+
+    client->transfer_currency(type_tag, 0, accounts[1].auth_key, 5);
+    print_txn(accounts[0].address);
 }

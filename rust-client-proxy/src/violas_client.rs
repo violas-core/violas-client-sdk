@@ -2,8 +2,8 @@
 #[allow(non_snake_case)]
 pub mod x86_64 {
     use crate::client_proxy::{AccountEntry, ClientProxy, IndexAndSequence};
-    use crate::move_compiler;
-    use crate::violas_account;
+    //use crate::move_compiler;
+    use crate::violas_account::*;
     use crate::AccountStatus;
     use anyhow::{bail, format_err, Error};
     use libra_types::waypoint::Waypoint;
@@ -12,11 +12,13 @@ pub mod x86_64 {
         account_address::AccountAddress,
         account_config::CORE_CODE_ADDRESS,
         account_config::{
-            association_address, lbr_type_tag, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
+            //association_address, lbr_type_tag,
+            ACCOUNT_RECEIVED_EVENT_PATH,
+            ACCOUNT_SENT_EVENT_PATH,
         },
         account_state::AccountState,
-        transaction::*,
-    }; //ADDRESS_LENGTH access_path::AccessPath,
+        transaction::{authenticator::AuthenticationKey, *},
+    };
     use std::{
         cell::RefCell,
         convert::TryFrom,
@@ -169,6 +171,7 @@ pub mod x86_64 {
     #[repr(C)]
     pub struct Account {
         pub address: [c_uchar; LENGTH],
+        pub auth_key: [c_uchar; 32],
         pub index: u64,
         pub sequence_number: u64,
         pub status: i64,
@@ -189,6 +192,7 @@ pub mod x86_64 {
         for (i, ref acc) in client.accounts.iter().enumerate() {
             let mut accout = Account {
                 address: [0; LENGTH],
+                auth_key: [0;32],
                 index: i as u64,
                 sequence_number: acc.sequence_number,
                 status: match &acc.status {
@@ -200,6 +204,9 @@ pub mod x86_64 {
 
             let bytes = &acc.address.to_vec();
             accout.address.copy_from_slice(bytes);
+            
+            let auth_key = acc.authentication_key.as_ref().unwrap();
+            accout.auth_key.copy_from_slice(&auth_key);
 
             accounts.push(accout);
         }
@@ -241,7 +248,7 @@ pub mod x86_64 {
                 let ret = proxy.get_account_resource_and_update(AccountAddress::new(*address));
                 match ret {
                     Ok(account_view) => {
-                        *out_balance = account_view.balance.amount;
+                        *out_balance = account_view.balances[0].amount;
                         true
                     }
                     Err(e) => {
@@ -484,9 +491,9 @@ pub mod x86_64 {
 
     fn handle_dependencies(
         client: &mut ClientProxy,
-        address: String,
+        _address: String,
         source_path: path::PathBuf,
-        is_module: bool,
+        _is_module: bool,
     ) -> Result<Option<String>, Error> {
         //
         // get all dependencies
@@ -642,7 +649,7 @@ pub mod x86_64 {
 
     #[no_mangle]
     pub extern "C" fn violas_execute_script_with_association_account(
-        raw_ptr: u64,        
+        raw_ptr: u64,
         script_file: *const c_char,
         script_args: &ScriptArgs,
     ) -> bool {
@@ -650,7 +657,7 @@ pub mod x86_64 {
             //
             // convert raw ptr to object client
             //
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };            
+            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let script = unsafe { CStr::from_ptr(script_file).to_str().unwrap() };
             let mut args = vec![script];
             let s = unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
@@ -853,7 +860,7 @@ pub mod x86_64 {
                     unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
                 let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
-                let ar = violas_account::ViolasAccountResource::make_from(&addr, &account_state)?;
+                let ar = ViolasAccountResource::make_from(&addr, &account_state)?;
 
                 let index: usize = token_index as usize;
                 if index >= ar.tokens.len() {
@@ -1081,11 +1088,22 @@ pub mod x86_64 {
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// Violas Interfaces
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ///
+    #[repr(C)]
+    pub struct ViolasTypeTag {
+        address: [c_uchar; LENGTH],
+        module: *const c_char,
+        name: *const c_char,
+    }
     /// add a new currency
     #[no_mangle]
     pub fn violas_add_currency(
         raw_client: u64,
-        module_name: *const c_char,
+        violas_type_tag: &ViolasTypeTag,
         exchange_rate_denom: u64,
         exchange_rate_num: u64,
         is_synthetic: bool,
@@ -1098,9 +1116,14 @@ pub mod x86_64 {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ClientProxy);
                 let data = slice::from_raw_parts(currency_code, currency_code_len as usize);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(violas_type_tag.address),
+                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                );
+
                 //
                 match proxy.add_currency(
-                    CStr::from_ptr(module_name).to_str().unwrap(),
+                    type_tag,
                     exchange_rate_denom,
                     exchange_rate_num,
                     is_synthetic,
@@ -1108,6 +1131,170 @@ pub mod x86_64 {
                     fractional_part,
                     data.to_vec(),
                     true,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!("failed to add currency with error, {}", e));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// register currency for an account
+    #[no_mangle]
+    pub fn violas_register_currency(
+        raw_client: u64,
+        violas_type_tag: &ViolasTypeTag,
+        account_index: u64,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(violas_type_tag.address),
+                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                );
+                // register currency
+                match proxy.register_currency(type_tag, account_index as usize, is_blocking) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!("failed to add currency with error, {}", e));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// register currency for an account
+    #[no_mangle]
+    pub fn violas_register_currency_with_association_account(
+        raw_client: u64,
+        violas_type_tag: &ViolasTypeTag,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(violas_type_tag.address),
+                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                );
+                // register currency
+                match proxy.register_currency_with_association_account(type_tag, is_blocking) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to add currency with association, error : {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// mint currency for an account
+    #[no_mangle]
+    pub fn violas_mint_currency(
+        raw_client: u64,
+        violas_type_tag: &ViolasTypeTag,
+        receiver: &[c_uchar; 32],
+        amount: u64,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(violas_type_tag.address),
+                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                );
+
+                let auth_key = AuthenticationKey::new(*receiver);
+
+                // register currency
+                match proxy.mint_currency(
+                    type_tag,
+                    &auth_key.derived_address(),
+                    auth_key.prefix().to_vec(),
+                    amount,
+                    is_blocking,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!("failed to add currency with error, {}", e));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// transfer currency from sender to receiver
+    #[no_mangle]
+    pub fn violas_transfer_currency(
+        raw_client: u64,
+        violas_type_tag: &ViolasTypeTag,
+        sender_account_index: u64,
+        receiver: &[c_uchar; 32],
+        amount: u64,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(violas_type_tag.address),
+                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                );
+
+                let auth_key = AuthenticationKey::new(*receiver);
+
+                // register currency
+                match proxy.transfer_currency(
+                    type_tag,
+                    sender_account_index as usize,
+                    &auth_key.derived_address(),
+                    auth_key.prefix().to_vec(),
+                    amount,
+                    is_blocking,
                 ) {
                     Ok(_) => true,
                     Err(e) => {

@@ -41,6 +41,7 @@ extern "C"
     struct _Account
     {
         uint8_t address[ADDRESS_LENGTH];
+        uint8_t auth_key[32]; //authentication key
         uint64_t index;
         uint64_t sequence_number;
         int64_t status;
@@ -165,6 +166,52 @@ extern "C"
                                     const char *account_path_addr,
                                     uint64_t token_index,
                                     uint64_t *balance);
+    ///
+    /// the following all functions for multi currencies
+    ///
+    struct ViolasTypeTag
+    {
+        uint8_t address[ADDRESS_LENGTH];
+        const char *module;
+        const char *name;
+    };
+
+    // add a new currency
+    bool violas_add_currency(uint64_t raw_client,
+                             const ViolasTypeTag &violas_type_tag,
+                             uint64_t exchange_rate_denom,
+                             uint64_t exchange_rate_num,
+                             bool is_synthetic,
+                             uint64_t scaling_factor,
+                             uint64_t fractional_part,
+                             const char *currency_code,
+                             uint64_t currency_code_len);
+
+    /// register a currency
+    bool violas_register_currency(uint64_t raw_client,
+                                  const ViolasTypeTag &violas_type_tag,
+                                  uint64_t account_index,
+                                  bool is_blocking);
+
+    /// register a currency with association account
+    bool violas_register_currency_with_association_account(uint64_t raw_client,
+                                                           const ViolasTypeTag &violas_type_tag,
+                                                           bool is_blocking);
+
+    /// mint coins for a receiver for a speciafied currency
+    bool violas_mint_currency(uint64_t raw_client,
+                              const ViolasTypeTag &violas_type_tag,
+                              const uint8_t receiver_auth_key[32],
+                              uint64_t amount,
+                              bool is_blocking);
+
+    /// transfer currency from payer to payee
+    bool violas_transfer_currency(uint64_t raw_client,
+                                  const ViolasTypeTag &violas_type_tag,
+                                  uint64_t sender_account_index,
+                                  uint8_t receiver_auth_key[32],
+                                  uint64_t amount,
+                                  bool is_blocking);
 
 #ifdef __cplusplus
 }

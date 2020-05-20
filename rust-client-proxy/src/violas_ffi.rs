@@ -192,7 +192,7 @@ pub mod x86_64 {
         for (i, ref acc) in client.accounts.iter().enumerate() {
             let mut accout = Account {
                 address: [0; LENGTH],
-                auth_key: [0;32],
+                auth_key: [0; 32],
                 index: i as u64,
                 sequence_number: acc.sequence_number,
                 status: match &acc.status {
@@ -204,7 +204,6 @@ pub mod x86_64 {
 
             let bytes = &acc.address.to_vec();
             accout.address.copy_from_slice(bytes);
-            
             let auth_key = acc.authentication_key.as_ref().unwrap();
             accout.auth_key.copy_from_slice(&auth_key);
 
@@ -1305,6 +1304,53 @@ pub mod x86_64 {
             });
             if ret.is_ok() {
                 ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    ///
+    #[no_mangle]
+    pub fn violas_get_currency_balance(
+        raw_client: u64,
+        violas_type_tag: &ViolasTypeTag,
+        addr: &[u8; 16],
+        out_balance: &mut u64,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> Option<u64> {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let tag = currency_type_tag(
+                    &AccountAddress::new(violas_type_tag.address),
+                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                );
+
+                match proxy.get_balance_of_currency(tag, AccountAddress::new(*addr)) {
+                    Ok(balance) => Some(balance),
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to get balance of currency with error, {}",
+                            e
+                        ));
+                        None
+                    }
+                }
+            });
+
+            *out_balance = u64::max_value();
+
+            if ret.is_ok() {
+                match ret.unwrap() {
+                    Some(balance) => {
+                        *out_balance = balance;
+                        true
+                    }
+                    None => false,
+                }
             } else {
                 set_last_error(format_err!(
                     "catch a panic at function 'violas_add_currency' !'"

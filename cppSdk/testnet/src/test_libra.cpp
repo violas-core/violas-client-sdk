@@ -105,67 +105,29 @@ void run_test_libra(
                              faucet);
 
         client->publish_module_with_faucet_account(contract);
-        //client->publish_module(0, "violas.mv");
+        //client->publish_module(0, contract);
         print_txn(faucet);
 
         auto module_name = get<1>(arg);
-        Client::TypeTag type_tag(faucet, module_name, "T");
+        Client::CurrencyTag tag(faucet, module_name, "T");
 
         auto currency_code = get<2>(arg);
-        client->add_currency(type_tag, 1, 2, false, 1000000, 100, currency_code);
+        client->add_currency(tag, 1, 2, false, 1000000, 100, currency_code);
         print_txn(faucet);
 
-        client->register_currency(type_tag, 0);
+        client->register_currency(tag, 0);
         print_txn(accounts[0].address);
 
-        client->mint_currency(type_tag, accounts[0].auth_key, 10);
+        client->mint_currency(tag, accounts[0].auth_key, 10);
         print_txn(faucet);
 
-        client->register_currency(type_tag, 1);
+        client->register_currency(tag, 1);
         print_txn(accounts[1].address);
 
-        client->mint_currency(type_tag, accounts[1].auth_key, 20);
-        print_txn(faucet);
-
-        client->transfer_currency(type_tag, 0, accounts[1].auth_key, 5);
+        client->transfer_currency(tag, 0, accounts[1].auth_key, 5);
         print_txn(accounts[0].address);
-    }
 
-    replace_mv_with_addr("../../cppSdk/scripts/violas.mv",
-                         "violas.mv",
-                         faucet);
-
-    client->publish_module_with_faucet_account("violas.mv");
-    //client->publish_module(0, "violas.mv");
-    print_txn(faucet);
-
-    // replace_mv_with_addr("../../cppSdk/scripts/violas_initialize.mv",
-    //                      "violas_initialize.mv",
-    //                      faucet);
-
-    // client->execute_script_with_faucet_account("violas_initialize.mv", vector<string>({"b\"00\""}));
-    // print_txn(faucet);
-
-    Client::TypeTag type_tag(faucet, "Violas", "T");
-
-    client->add_currency(type_tag, 1, 2, false, 1000000, 100, u8"Coin1");
-    print_txn(faucet);
-
-    // client->register_currency_with_association_account(type_tag);
-    // print_txn(faucet);
-
-    client->register_currency(type_tag, 0);
-    print_txn(accounts[0].address);
-
-    client->mint_currency(type_tag, accounts[0].auth_key, 10);
-    print_txn(faucet);
-
-    client->register_currency(type_tag, 1);
-    print_txn(accounts[1].address);
-
-    client->mint_currency(type_tag, accounts[1].auth_key, 20);
-    print_txn(faucet);
-
-    client->transfer_currency(type_tag, 0, accounts[1].auth_key, 5);
-    print_txn(accounts[0].address);
+        auto balance = client->get_currency_balance(tag, accounts[1].address);
+        cout << "balance is " << (is_valid_balance(balance) ? to_string(balance) : "N/A") << endl;
+    }    
 }

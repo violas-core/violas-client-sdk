@@ -16,8 +16,10 @@ use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{
-        association_address, lbr_type_tag, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
+        association_address, lbr_type_tag, BalanceResource, ACCOUNT_RECEIVED_EVENT_PATH,
+        ACCOUNT_SENT_EVENT_PATH,
     },
+    account_state::AccountState,
     ledger_info::LedgerInfoWithSignatures,
     on_chain_config::VMPublishingOption,
     transaction::{
@@ -1460,6 +1462,28 @@ impl ClientProxy {
         )?;
 
         Ok(())
+    }
+
+    ///
+    pub fn get_balance_of_currency(
+        &mut self,
+        currency_tag: TypeTag,
+        address: AccountAddress,
+    ) -> Result<u64> {
+        if let Some(blob) = self.client.get_account_blob(address)? {
+            let account_state = AccountState::try_from(&blob)?;
+            let res_path = BalanceResource::access_path_for(currency_tag);
+
+            match account_state.get(&res_path) {
+                Some(bytes) => {
+                    let bal_res: BalanceResource = lcs::from_bytes(bytes).unwrap();
+                    Ok(bal_res.coin())
+                }
+                None => bail!("No data for {:?}", address),
+            }
+        } else {
+            bail!("No data for {:?}", address);
+        }
     }
 }
 

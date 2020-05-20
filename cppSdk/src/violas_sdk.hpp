@@ -190,28 +190,28 @@ namespace LIB_NAME
         virtual uint64_t
         get_account_resource_uint64(const Address &account_addr, const Address &res_path_addr, uint64_t token_index) = 0;
 
-        struct TypeTag
+        struct CurrencyTag
         {
             Address address;
             std::string module;
             std::string res_name;
 
-            TypeTag(Address addr, std::string_view mod, std::string_view name) : address(addr), module(mod), res_name(name)
+            CurrencyTag(Address addr, std::string_view mod, std::string_view name) : address(addr), module(mod), res_name(name)
             {
             }
         };
 
         /// register a currency
         virtual void
-        register_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
+        register_currency(const CurrencyTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
 
         ///
         virtual void
-        register_currency_with_association_account(const TypeTag &type_tag, bool is_blocking = true) = 0;
+        register_currency_with_association_account(const CurrencyTag &type_tag, bool is_blocking = true) = 0;
 
         /// add a new currency to association account
         virtual void
-        add_currency(const TypeTag &type_tag,
+        add_currency(const CurrencyTag &type_tag,
                      uint64_t exchange_rate_denom,
                      uint64_t exchange_rate_num,
                      bool is_synthetic,
@@ -221,18 +221,23 @@ namespace LIB_NAME
 
         /// mint currency for a receiver
         virtual void
-        mint_currency(const TypeTag &tag,
+        mint_currency(const CurrencyTag &tag,
                       const uint8_t receiver[32],
                       uint64_t amount,
                       bool is_blocking = true) = 0;
 
         /// transfer currency to a receiver
         virtual void
-        transfer_currency(const TypeTag &tag,
+        transfer_currency(const CurrencyTag &tag,
                           uint64_t sender_account_index,
                           uint8_t receiver_auth_key[32],
                           uint64_t amount,
                           bool is_blocking = true) = 0;
+
+        /// get balance of currency
+        // 
+        virtual uint64_t
+        get_currency_balance(const CurrencyTag &tag, const Address &address, bool throw_excption = false) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

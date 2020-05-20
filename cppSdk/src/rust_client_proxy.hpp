@@ -213,6 +213,12 @@ extern "C"
                                   uint64_t amount,
                                   bool is_blocking);
 
+    /// get balance of currency
+    bool violas_get_currency_balance(uint64_t raw_client,
+                                     const ViolasTypeTag &violas_type_tag,
+                                     const uint8_t address[ADDRESS_LENGTH],
+                                     uint64_t *out_balance);
+
 #ifdef __cplusplus
 }
 #endif

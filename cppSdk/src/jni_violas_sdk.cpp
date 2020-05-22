@@ -506,7 +506,7 @@ jstring jni_name(JNIEnv *env, jobject,
 {
 	try
 	{
-		Violas::token_manager_ptr token = *((Violas::token_manager_ptr *)native_token_manager);
+		Violas::token_manager_ptr token = *((Violas::token_manager_ptr *)((intptr_t)native_token_manager));
 
 		return env->NewStringUTF(token->name().c_str());
 	}
@@ -523,7 +523,7 @@ jbyteArray jni_address(JNIEnv *env, jobject,
 {
 	try
 	{
-		auto token = *((Violas::token_manager_ptr *)native_token);
+		auto token = *((Violas::token_manager_ptr *)(intptr_t)native_token);
 
 		auto address = token->address().data();
 

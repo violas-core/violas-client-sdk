@@ -1,11 +1,11 @@
 bin_PROGRAMS    = testnet test_jni transfer #test_rust_cpp
 
 if DEBUG
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/debug
-    CLIENT_PROXY = -lclient_proxy
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/lib -L$(top_srcdir)/rust-client-proxy/target/debug
+    CLIENT_PROXY = -lclient_proxy 
 else
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/release -L$(top_srcdir)/rust-client-proxy/target/aarch64-linux-android/release
-    CLIENT_PROXY = -lclient_proxy
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/lib -L$(top_srcdir)/rust-client-proxy/target/release
+    CLIENT_PROXY =  -lclient_proxy 
 endif
 
 testnet_SOURCES = test_violas.cpp test_libra.cpp main.cpp

@@ -64,7 +64,7 @@ void run_test_libra(
     //
     tie(events, last_status) = client->get_events(1, Client::EventType::received, 0, 100);
     cout << "account 1's received events : " << endl;
-    copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
+    //copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
     cout << last_status << endl;
 
     auto print_txn = [client](Address address) {

@@ -33,3 +33,6 @@ mv move_build_output/modules/0_USD.mv coin_usd.mv
 echo "build coin_eur.move"
 ./build.sh coin_eur.move 0x0
 mv move_build_output/modules/0_EUR.mv coin_eur.mv
+
+echo "done"
+rm -r move_build_output

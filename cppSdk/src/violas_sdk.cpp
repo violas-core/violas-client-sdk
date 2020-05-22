@@ -23,22 +23,22 @@ namespace fs = boost::filesystem;
 
 using namespace std;
 
-ostream &log(ostream &ost, const char *flag, const char *file, int line,
-             const char *func)
-{
-    time_t now = time(nullptr);
-
-    ost << flag << put_time(std::localtime(&now), "%F %T") << " (" << file << ":"
-        << line << ":" << func << ") : ";
-
-    return ost;
-}
-
 #define EXCEPTION_AT \
     format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
 
 namespace LIB_NAME
 {
+    ostream &log(ostream &ost, const char *flag, const char *file, int line,
+                 const char *func)
+    {
+        time_t now = time(nullptr);
+
+        ost << flag << put_time(std::localtime(&now), "%F %T") << " (" << file << ":"
+            << line << ":" << func << ") : ";
+
+        return ost;
+    }
+
     template <size_t N>
     using bytes = array<uint8_t, N>;
 
@@ -864,7 +864,7 @@ namespace LIB_NAME
 
             try_compile(script_file_name, true);
 
-            m_libra_client->publish_module(account_index, (script_file_name += ".mv").c_str());
+            m_libra_client->publish_module(account_index, (script_file_name += ".mv").string());
         }
 
         virtual void publish(uint64_t account_index, const std::string &user_data) override
@@ -873,7 +873,7 @@ namespace LIB_NAME
 
             try_compile(script_file_name);
 
-            m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(),
+            m_libra_client->execute_script(account_index, (script_file_name += ".mv").string(),
                                            vector<string>{tx_vec_data(user_data)});
         }
 
@@ -881,7 +881,7 @@ namespace LIB_NAME
         {
             auto script_file_name = m_temp_script_path / create_token_script;
 
-            m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(),
+            m_libra_client->execute_script(account_index, (script_file_name += ".mv").string(),
                                            vector<string>{owner.to_string(), tx_vec_data(token_data)});
         }
 
@@ -903,7 +903,7 @@ namespace LIB_NAME
                                        to_string(amount_micro_coin),
                                        tx_vec_data(data)};
 
-            m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
+            m_libra_client->execute_script(account_index, (script_file_name += ".mv").string(), args);
         }
 
         virtual void transfer(uint64_t token_index,
@@ -921,7 +921,7 @@ namespace LIB_NAME
                                        to_string(amount_micro_coin),
                                        tx_vec_data(data)};
 
-            m_libra_client->execute_script(account_index, (script_file_name += ".mv").c_str(), args);
+            m_libra_client->execute_script(account_index, (script_file_name += ".mv").string(), args);
         }
 
         virtual uint64_t token_count() override
@@ -973,7 +973,7 @@ namespace LIB_NAME
 #endif
                     //fs::copy_file(file.path().string(), new_file, option);
 
-                    replace_mv_with_addr(file.path().string(), new_file, m_supervisor);
+                    replace_mv_with_addr(file.path().string(), new_file.string(), m_supervisor);
                 }
             }
         }

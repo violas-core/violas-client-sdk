@@ -918,7 +918,7 @@ pub mod x86_64 {
             let args = args1
                 .iter()
                 .map(|arg| unsafe { CStr::from_ptr(*arg).to_str().unwrap() })
-                .filter_map(|arg| parse_as_transaction_argument(arg).ok())
+                .filter_map(|arg| parse_transaction_argument(arg).ok())
                 .collect();
             let program = TransactionPayload::Script(Script::new(script_bytes, vec![], args));
 

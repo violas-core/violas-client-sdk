@@ -17,7 +17,7 @@ use libra_types::{
     account_address::AccountAddress,
     account_config::{
         association_address, lbr_type_tag, BalanceResource, ACCOUNT_RECEIVED_EVENT_PATH,
-        ACCOUNT_SENT_EVENT_PATH,
+        ACCOUNT_SENT_EVENT_PATH, LBR_NAME,
     },
     account_state::AccountState,
     ledger_info::LedgerInfoWithSignatures,
@@ -25,7 +25,7 @@ use libra_types::{
     transaction::{
         authenticator::AuthenticationKey,
         helpers::{create_unsigned_txn, create_user_txn, TransactionSigner},
-        parse_as_transaction_argument, Module, RawTransaction, Script, SignedTransaction,
+        parse_transaction_argument, Module, RawTransaction, Script, SignedTransaction,
         TransactionArgument, TransactionPayload, Version,
     },
     waypoint::Waypoint,
@@ -608,6 +608,7 @@ impl ClientProxy {
             sender_sequence_number,
             max_gas_amount.unwrap_or(MAX_GAS_AMOUNT),
             gas_unit_price.unwrap_or(GAS_UNIT_PRICE),
+            LBR_NAME.to_owned(),
             TX_EXPIRATION,
         ))
     }
@@ -1268,6 +1269,7 @@ impl ClientProxy {
             sender_account.sequence_number,
             max_gas_amount.unwrap_or(MAX_GAS_AMOUNT),
             gas_unit_price.unwrap_or(GAS_UNIT_PRICE),
+            LBR_NAME.to_owned(),
             TX_EXPIRATION,
         )
     }
@@ -1302,7 +1304,7 @@ impl ClientProxy {
         max_gas_amount: Option<u64>,
         gas_unit_price: Option<u64>,
         is_blocking: bool,
-    ) -> Result<(IndexAndSequence)> {
+    ) -> Result<()> {
         let sender = self
             .accounts
             .get(account_ref_id)
@@ -1326,10 +1328,11 @@ impl ClientProxy {
             self.wait_for_transaction(sender_address, sender_sequence);
         }
 
-        Ok(IndexAndSequence {
-            account_index: AccountEntry::Index(account_ref_id),
-            sequence_number: sender_sequence - 1,
-        })
+        // Ok(IndexAndSequence {
+        //     account_index: AccountEntry::Index(account_ref_id),
+        //     sequence_number: sender_sequence - 1,
+        // })
+        Ok(())
     }
 
     /// Publish Move module with association account
@@ -1492,7 +1495,7 @@ fn parse_as_transaction_argument_for_client(s: &str) -> Result<TransactionArgume
         let account_address = ClientProxy::address_from_strings(s)?;
         return Ok(TransactionArgument::Address(account_address));
     }
-    parse_as_transaction_argument(s)
+    parse_transaction_argument(s)
 }
 
 fn format_parse_data_error<T: std::fmt::Debug>(

@@ -1,4 +1,4 @@
-address 0x7257c2417e4d1038e1817c8f283ace2e {
+address 0xA550C18 {
 
 module Exchange {
     use 0x0::LBR;
@@ -321,7 +321,7 @@ module Exchange {
     }
 
     fun singleton_addr(): address {
-        0x7257c2417e4d1038e1817c8f283ace2e
+        0xA550C18
     }
 
     fun assert_deadline(deadline: u64) {

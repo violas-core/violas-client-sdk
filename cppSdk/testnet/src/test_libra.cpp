@@ -73,26 +73,12 @@ void run_test_libra(
         cout << "txn = " << txn << endl;
     };
 
-    // replace_mv_with_addr("../../cppSdk/scripts/token.mv",
-    //                      "token.mv",
-    //                      accounts[0].address);
-
-    // client->publish_module(0, "token.mv");
-    // print_txn(s.second);
-
-    // replace_mv_with_addr("../../cppSdk/scripts/publish.mv",
-    //                      "publish.mv",
-    //                      accounts[0].address);
-
-    // client->execute_script(0, "publish.mv", vector<string>({"b\"00\""}));
-    // print_txn(s.second);
-
     ////////////////////////////////////////////////////////////////////////////////
     //  test multi currency for move language stdlib
     ////////////////////////////////////////////////////////////////////////////////
 
     //const auto root   = Address::from_string("00000000000000000000000000000000");
-    const auto faucet = Address::from_string("0000000000000000000000000A550C18");
+    const auto &faucet = ASSOCIATION_ADDRESS;
 
     auto args = {make_tuple("coin_usd.mv", "USD", u8"Coin1"),
                  make_tuple("coin_eur.mv", "EUR", u8"Coin2")};
@@ -100,16 +86,16 @@ void run_test_libra(
     for (const auto &arg : args)
     {
         auto contract = get<0>(arg);
-        replace_mv_with_addr(string("../../cppSdk/scripts/") + contract,
+        replace_mv_with_addr(string("../../cppSdk/move/compiled/") + contract,
                              contract,
                              faucet);
 
-        client->publish_module_with_faucet_account(contract);
+        client->publish_module(ASSOCIATION_ID, contract);
         //client->publish_module(0, contract);
         print_txn(faucet);
 
         auto module_name = get<1>(arg);
-        Client::CurrencyTag tag(faucet, module_name, "T");
+        Client::TypeTag tag(faucet, module_name, "T");
 
         auto currency_code = get<2>(arg);
         client->add_currency(tag, 1, 2, false, 1000000, 100, currency_code);
@@ -129,5 +115,7 @@ void run_test_libra(
 
         auto balance = client->get_currency_balance(tag, accounts[1].address);
         cout << "balance is " << (is_valid_balance(balance) ? to_string(balance) : "N/A") << endl;
-    }    
+    }
+
+
 }

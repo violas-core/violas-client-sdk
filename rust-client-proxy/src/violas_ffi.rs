@@ -17,7 +17,7 @@ pub mod x86_64 {
             ACCOUNT_SENT_EVENT_PATH,
         },
         account_state::AccountState,
-        transaction::{authenticator::AuthenticationKey, *},
+        transaction::authenticator::AuthenticationKey,
     };
     use std::{
         cell::RefCell,
@@ -538,48 +538,18 @@ pub mod x86_64 {
         Ok(Some(String::from(dependencies_path.to_str().unwrap())))
     }
 
-    #[no_mangle]
-    pub extern "C" fn libra_publish_module(
-        raw_ptr: u64,
-        account_index: u64,
-        module_file: *const c_char,
-    ) -> bool {
-        let ret = panic::catch_unwind(|| -> Result<(), Error> {
-            // convert raw ptr to object client
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let module = unsafe { CStr::from_ptr(module_file).to_str().unwrap() };
-            let index = account_index.to_string();
-
-            client.publish_module(&["publish", index.as_str(), module])
-        });
-
-        if ret.is_ok() {
-            match ret.unwrap() {
-                Ok(_) => true,
-                Err(err) => {
-                    set_last_error(err);
-                    false
-                }
-            }
-        } else {
-            set_last_error(format_err!(
-                "catch panic at function 'libra_publish_module' !"
-            ));
-            false
-        }
-    }
-
     /// association transaction with local faucet account
     #[no_mangle]
-    pub fn violas_publish_module_with_association_account(
+    pub fn violas_publish_module(
         raw_ptr: u64,
+        sender_ref_id: u64,
         module_file_name: *const c_char,
     ) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
             let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
 
-            proxy.publish_module_with_association_account(module)
+            proxy.publish_module(sender_ref_id, module)
         });
 
         if result.is_ok() {
@@ -641,47 +611,6 @@ pub mod x86_64 {
         } else {
             set_last_error(format_err!(
                 "catch panic at function 'libra_execute_script' !"
-            ));
-            false
-        }
-    }
-
-    #[no_mangle]
-    pub extern "C" fn violas_execute_script_with_association_account(
-        raw_ptr: u64,
-        script_file: *const c_char,
-        script_args: &ScriptArgs,
-    ) -> bool {
-        let ret = panic::catch_unwind(|| -> Result<(), Error> {
-            //
-            // convert raw ptr to object client
-            //
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let script = unsafe { CStr::from_ptr(script_file).to_str().unwrap() };
-            let mut args = vec![script];
-            let s = unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
-
-            for i in 0..s.len() {
-                let arg = unsafe { CStr::from_ptr(s[i]).to_str().unwrap() };
-                args.push(arg);
-            }
-            //
-            //  execute script
-            //
-            client.execcute_script_with_association_account(&args)
-        });
-
-        if ret.is_ok() {
-            match ret.unwrap() {
-                Ok(_) => true,
-                Err(err) => {
-                    set_last_error(err);
-                    false
-                }
-            }
-        } else {
-            set_last_error(format_err!(
-                "catch panic at function 'libra_execute_script_with_association_account' !"
             ));
             false
         }
@@ -895,60 +824,6 @@ pub mod x86_64 {
         }
     }
 
-    /// association transaction with local faucet account
-    #[no_mangle]
-    pub fn libra_execute_script_with_faucet_account(
-        raw_ptr: u64,
-        script_file_name: *const c_char,
-        script_args: &ScriptArgs,
-    ) -> bool {
-        let result = panic::catch_unwind(|| -> Result<(), Error> {
-            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
-            let script = unsafe { CStr::from_ptr(script_file_name).to_str().unwrap() };
-            let args1 =
-                unsafe { slice::from_raw_parts(script_args.data, script_args.len as usize) };
-
-            if proxy.faucet_account.is_none() {
-                bail!("No faucet account loaded");
-            }
-            let sender = proxy.faucet_account.as_ref().unwrap();
-            let sender_address = sender.address;
-            let script_bytes = fs::read(script)?;
-
-            let args = args1
-                .iter()
-                .map(|arg| unsafe { CStr::from_ptr(*arg).to_str().unwrap() })
-                .filter_map(|arg| parse_transaction_argument(arg).ok())
-                .collect();
-            let program = TransactionPayload::Script(Script::new(script_bytes, vec![], args));
-
-            let txn = proxy.create_txn_to_submit(program, sender, None, None)?;
-            let mut sender_mut = proxy.faucet_account.as_mut().unwrap();
-            let resp = proxy.client.submit_transaction(Some(&mut sender_mut), txn);
-            proxy.wait_for_transaction(
-                sender_address,
-                proxy.faucet_account.as_ref().unwrap().sequence_number,
-            );
-
-            resp
-        });
-
-        if result.is_ok() {
-            match result.unwrap() {
-                Ok(()) => true,
-                Err(err) => {
-                    set_last_error(err);
-                    false
-                }
-            }
-        } else {
-            set_last_error(format_err!(
-                "panic at function (libra_get_committed_txn_by_acc_seq) !"
-            ));
-            false
-        }
-    }
-
     ///  Allow executing arbitrary script in the network.
     #[no_mangle]
     pub fn libra_enable_custom_script(raw_ptr: u64) -> bool {
@@ -1086,7 +961,6 @@ pub mod x86_64 {
             }
         }
     }
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     /// Violas Interfaces
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1098,6 +972,60 @@ pub mod x86_64 {
         module: *const c_char,
         name: *const c_char,
     }
+    /// execute script with currency type tag
+    #[no_mangle]
+    pub extern "C" fn violas_execute_script(
+        raw_ptr: u64,
+        tag: ViolasTypeTag,
+        sender_ref_id: u64,
+        in_script_file_name: *const c_char,
+        in_script_args: &ScriptArgs,
+    ) -> bool {
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
+            unsafe {
+                let client = { &mut *(raw_ptr as *mut ClientProxy) };
+                let script_file_name = { CStr::from_ptr(in_script_file_name).to_str().unwrap() };
+                let type_tags = if tag.module.is_null() {
+                    vec![]
+                } else {
+                    vec![currency_type_tag(
+                        &AccountAddress::new(tag.address),
+                        CStr::from_ptr(tag.module).to_str().unwrap(),
+                    )]
+                };
+
+                let script_args =
+                    { slice::from_raw_parts(in_script_args.data, in_script_args.len as usize) };
+                let mut args: Vec<&str> = vec![];
+
+                for i in 0..script_args.len() {
+                    let arg = CStr::from_ptr(script_args[i]).to_str().unwrap();
+                    args.push(arg);
+                }
+
+                //
+                //  execute script
+                //
+                client.execcute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
+            }
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'violas_execute_script' !"
+            ));
+            false
+        }
+    }
+
     /// add a new currency
     #[no_mangle]
     pub fn violas_add_currency(

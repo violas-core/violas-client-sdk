@@ -85,11 +85,6 @@ extern "C"
     bool libra_compile(uint64_t raw_ptr, const char *account_index_or_addr, const char *script_file_path, bool is_module,
                        const char *temp_dir);
 
-    bool libra_publish_module(uint64_t raw_ptr, uint64_t account_index, const char *module_file);
-
-    /// association transaction with local faucet account
-    bool violas_publish_module_with_association_account(uint64_t raw_ptr, const char *module_file);
-
     struct ScriptArgs
     {
         uint64_t len;
@@ -97,8 +92,6 @@ extern "C"
     };
 
     bool libra_execute_script(uint64_t raw_ptr, uint64_t account_index, const char *script_file, const ScriptArgs *script_args);
-
-    bool violas_execute_script_with_association_account(uint64_t raw_ptr, const char *script_file, const ScriptArgs *script_args);
 
     //
     //  get committed transaction and events info
@@ -166,6 +159,12 @@ extern "C"
                                     const char *account_path_addr,
                                     uint64_t token_index,
                                     uint64_t *balance);
+
+    //
+    //  publish a module with speciafied account index
+    //
+    bool violas_publish_module(uint64_t raw_ptr, uint64_t account_index, const char *module_file);
+
     ///
     /// the following all functions for multi currencies
     ///
@@ -175,6 +174,13 @@ extern "C"
         const char *module;
         const char *name;
     };
+
+    // execute script with currency type tag
+    bool violas_execute_script(uint64_t raw_ptr,
+                               const ViolasTypeTag &violas_type_tag,
+                               uint64_t sender_ref_id,
+                               const char *script_file,
+                               const ScriptArgs *script_args);
 
     // add a new currency
     bool violas_add_currency(uint64_t raw_client,

@@ -432,8 +432,8 @@ namespace LIB_NAME
         virtual void publish_module(uint64_t account_index,
                                     const std::string &module_file) override
         {
-            bool ret = libra_publish_module((uint64_t)raw_client_proxy, account_index,
-                                            module_file.c_str());
+            bool ret = violas_publish_module((uint64_t)raw_client_proxy, account_index,
+                                             module_file.c_str());
             if (!ret)
             {
                 auto error = format("failed to publish module file '%s', error : %s",
@@ -444,22 +444,9 @@ namespace LIB_NAME
             CLOG << "published module " << module_file << endl;
         }
 
-        virtual void publish_module_with_faucet_account(const std::string &module_file) override
-        {
-            bool ret = violas_publish_module_with_association_account((uint64_t)raw_client_proxy,
-                                                                      module_file.c_str());
-            if (!ret)
-            {
-                auto error = format("failed to publish module file '%s' with faucet account, error : %s",
-                                    module_file.c_str(), get_last_error().c_str());
-                throw runtime_error(error);
-            }
-
-            CLOG << "published module '" << module_file << "' with faucet account" << endl;
-        }
-
         virtual void
-        execute_script(uint64_t account_index, const std::string &script_file,
+        execute_script(uint64_t account_index,
+                       const std::string &script_file,
                        const std::vector<std::string> &script_args) override
         {
             ScriptArgs args;
@@ -473,26 +460,33 @@ namespace LIB_NAME
             args.len = script_args.size();
             args.data = args_array.data();
 
-            bool ret = libra_execute_script((uint64_t)raw_client_proxy, account_index,
-                                            script_file.c_str(), &args);
+            ViolasTypeTag tag = from_type_tag(TypeTag(Address(), "", ""));
+
+            bool ret = violas_execute_script((uint64_t)raw_client_proxy,
+                                             tag,
+                                             account_index,
+                                             script_file.c_str(),
+                                             &args);
             if (!ret)
                 throw runtime_error(
                     format("failed to execute script file '%s' for account index %d, "
                            "error : %s, "
                            "at %s",
-                           script_file.c_str(),
+                           script_file.data(),
                            account_index,
                            get_last_error().c_str(),
                            EXCEPTION_AT.c_str()));
 
             CLOG << format("excuted script file '%s' for account index %d",
-                           script_file.c_str(), account_index)
+                           script_file.data(), account_index)
                  << endl;
         }
 
         /// execute script with faucet account
-        virtual void execute_script_with_faucet_account(const std::string &script_file,
-                                                        const std::vector<std::string> &script_args) override
+        virtual void execute_script(const TypeTag &currency_tag,
+                                    uint64_t account_index,
+                                    const std::string &script_file,
+                                    const std::vector<std::string> &script_args = std::vector<std::string>()) override
         {
             ScriptArgs args;
 
@@ -505,9 +499,13 @@ namespace LIB_NAME
             args.len = script_args.size();
             args.data = args_array.data();
 
-            bool ret = violas_execute_script_with_association_account((uint64_t)raw_client_proxy,
-                                                                      script_file.c_str(),
-                                                                      &args);
+            ViolasTypeTag tag = from_type_tag(currency_tag);
+
+            bool ret = violas_execute_script((uint64_t)raw_client_proxy,
+                                             tag,
+                                             account_index,
+                                             script_file.c_str(),
+                                             &args);
             if (!ret)
                 throw runtime_error(
                     format("failed to execute script file '%s' for account faucet, "
@@ -676,7 +674,7 @@ namespace LIB_NAME
         // multi currency methods
         //
 
-        ViolasTypeTag from_type_tag(const CurrencyTag &type_tag)
+        ViolasTypeTag from_type_tag(const TypeTag &type_tag)
         {
             ViolasTypeTag tag;
 
@@ -689,7 +687,7 @@ namespace LIB_NAME
 
         /// register a currency
         virtual void
-        register_currency(const CurrencyTag &type_tag, uint64_t account_index, bool is_blocking = true) override
+        register_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) override
         {
             ViolasTypeTag tag = from_type_tag(type_tag);
             bool ret = violas_register_currency((uint64_t)raw_client_proxy, tag, account_index, is_blocking);
@@ -701,7 +699,7 @@ namespace LIB_NAME
 
         ///
         virtual void
-        register_currency_with_association_account(const CurrencyTag &type_tag, bool is_blocking = true) override
+        register_currency_with_association_account(const TypeTag &type_tag, bool is_blocking = true) override
         {
             ViolasTypeTag tag = from_type_tag(type_tag);
             bool ret = violas_register_currency_with_association_account((uint64_t)raw_client_proxy, tag, is_blocking);
@@ -712,7 +710,7 @@ namespace LIB_NAME
         }
 
         virtual void
-        add_currency(const CurrencyTag &type_tag,
+        add_currency(const TypeTag &type_tag,
                      uint64_t exchange_rate_denom,
                      uint64_t exchange_rate_num,
                      bool is_synthetic,
@@ -738,7 +736,7 @@ namespace LIB_NAME
 
         /// mint curency for a receiver
         virtual void
-        mint_currency(const CurrencyTag &type_tag,
+        mint_currency(const TypeTag &type_tag,
                       const uint8_t receiver[32],
                       uint64_t amount,
                       bool is_blocking) override
@@ -757,7 +755,7 @@ namespace LIB_NAME
 
         /// transfer currency to a receiver
         virtual void
-        transfer_currency(const CurrencyTag &_tag,
+        transfer_currency(const TypeTag &_tag,
                           uint64_t sender_account_index,
                           uint8_t receiver_auth_key[32],
                           uint64_t amount,
@@ -778,7 +776,7 @@ namespace LIB_NAME
 
         /// get balance of currency
         virtual uint64_t
-        get_currency_balance(const CurrencyTag &currency_tag, const Address &address, bool throw_excption) override
+        get_currency_balance(const TypeTag &currency_tag, const Address &address, bool throw_excption) override
         {
             ViolasTypeTag tag = from_type_tag(currency_tag);
             uint64_t balance = 0;

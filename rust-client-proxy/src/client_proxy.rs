@@ -766,18 +766,18 @@ impl ClientProxy {
     }
 
     /// Publish Move module
-    pub fn publish_module(&mut self, space_delim_strings: &[&str]) -> Result<()> {
-        ensure!(
-            space_delim_strings[0] == "publish",
-            "inconsistent command '{}' for publish_module",
-            space_delim_strings[0]
-        );
-        let module_bytes = fs::read(space_delim_strings[2])?;
-        self.submit_program(
-            space_delim_strings,
-            TransactionPayload::Module(Module::new(module_bytes)),
-        )
-    }
+    // pub fn publish_module(&mut self, space_delim_strings: &[&str]) -> Result<()> {
+    //     ensure!(
+    //         space_delim_strings[0] == "publish",
+    //         "inconsistent command '{}' for publish_module",
+    //         space_delim_strings[0]
+    //     );
+    //     let module_bytes = fs::read(space_delim_strings[2])?;
+    //     self.submit_program(
+    //         space_delim_strings,
+    //         TransactionPayload::Module(Module::new(module_bytes)),
+    //     )
+    // }
 
     /// Execute custom script
     pub fn execute_script(&mut self, space_delim_strings: &[&str]) -> Result<()> {
@@ -799,20 +799,40 @@ impl ClientProxy {
     }
 
     /// Execute custom script with association account
-    pub fn execcute_script_with_association_account(
+    pub fn execcute_script_ex(
         &mut self,
-        space_delim_strings: &[&str],
+        tags : Vec<TypeTag>,
+        sender_ref_id: u64,
+        script_file_name: &str,
+        args: &[&str],
     ) -> Result<()> {
-        let script_bytes = fs::read(space_delim_strings[0])?;
-        let arguments: Vec<_> = space_delim_strings[1..]
+        let sender = if sender_ref_id == u64::MAX {
+            if self.faucet_account.is_none() {
+                bail!("No faucet account loaded");
+            }
+            self.faucet_account.as_ref().unwrap()
+        } else {
+            self.accounts.get(sender_ref_id as usize).unwrap()
+        };
+
+        let script_bytes = fs::read(script_file_name)?;
+        let arguments: Vec<_> = args[0..]
             .iter()
             .filter_map(|arg| parse_as_transaction_argument_for_client(arg).ok())
             .collect();
-        // TODO: support type arguments in the client.
-        self.association_transaction_with_local_faucet_account(
-            Script::new(script_bytes, vec![], arguments),
-            true,
-        )
+
+        let program = TransactionPayload::Script(Script::new(script_bytes, tags, arguments));
+        let sender_address = sender.address;
+        let txn = self.create_txn_to_submit(program, sender, None, None)?;
+        let resp = self
+            .client
+            .submit_transaction(self.faucet_account.as_mut(), txn);
+        self.wait_for_transaction(
+            sender_address,
+            self.faucet_account.as_ref().unwrap().sequence_number,
+        );
+
+        resp
     }
 
     /// Get the latest account state from validator.
@@ -1336,14 +1356,18 @@ impl ClientProxy {
     }
 
     /// Publish Move module with association account
-    pub fn publish_module_with_association_account(
-        &mut self,
-        module_file_name: &str,
-    ) -> Result<()> {
-        if self.faucet_account.is_none() {
-            bail!("No faucet account loaded");
-        }
-        let sender = self.faucet_account.as_ref().unwrap();
+    /// if sender ref id is u64::MAX, then publish module with association account
+    ///
+    pub fn publish_module(&mut self, sender_ref_id: u64, module_file_name: &str) -> Result<()> {
+        let sender = if sender_ref_id == u64::MAX {
+            if self.faucet_account.is_none() {
+                bail!("No faucet account loaded");
+            }
+            self.faucet_account.as_ref().unwrap()
+        } else {
+            self.accounts.get(sender_ref_id as usize).unwrap()
+        };
+
         let sender_address = sender.address;
         let module_bytes = fs::read(module_file_name)?;
         let program = TransactionPayload::Module(Module::new(module_bytes));
@@ -1359,7 +1383,9 @@ impl ClientProxy {
 
         resp
     }
+    ///
     /// add a new currency with association account
+    ///
     pub fn add_currency(
         &mut self,
         type_tag: TypeTag,

@@ -37,8 +37,6 @@ namespace LIB_NAME
 
     std::string tx_vec_data(const std::string &data);
 
-    const uint64_t MICRO_COIN = 1000000;
-
     bool is_valid_balance(uint64_t value);
     //
     //  Address
@@ -71,6 +69,10 @@ namespace LIB_NAME
     void replace_mv_with_addr(const std::string &mv_file_name,
                               const std::string &new_file_name,
                               const Address &address);
+
+    const uint64_t MICRO_COIN = 1000000;
+    const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
+    const Address ASSOCIATION_ADDRESS = Address::from_string("0000000000000000000000000A550C18");
 
     //
     //  interface Client
@@ -145,14 +147,9 @@ namespace LIB_NAME
 
         virtual void publish_module(uint64_t account_index, const std::string &module_file) = 0;
 
-        virtual void publish_module_with_faucet_account(const std::string &module_file) = 0;
-
-        virtual void execute_script(uint64_t account_index, const std::string &script_file,
-                                    const std::vector<std::string> &script_args) = 0;
-
-        /// execute script with faucet account
-        virtual void execute_script_with_faucet_account(const std::string &script_file,
-                                                        const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
+        virtual void execute_script(uint64_t account_index,
+                                    const std::string & script_file,
+                                    const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
         virtual std::pair<std::string, std::string>
         get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
@@ -190,28 +187,34 @@ namespace LIB_NAME
         virtual uint64_t
         get_account_resource_uint64(const Address &account_addr, const Address &res_path_addr, uint64_t token_index) = 0;
 
-        struct CurrencyTag
+        struct TypeTag
         {
             Address address;
             std::string module;
             std::string res_name;
 
-            CurrencyTag(Address addr, std::string_view mod, std::string_view name) : address(addr), module(mod), res_name(name)
+            TypeTag(Address addr, std::string_view mod, std::string_view name) : address(addr), module(mod), res_name(name)
             {
             }
         };
 
+        /// execute script with faucet account
+        virtual void execute_script(const TypeTag &tag,
+                                    uint64_t account_index,
+                                    const std::string &script_file,
+                                    const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
+
         /// register a currency
         virtual void
-        register_currency(const CurrencyTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
+        register_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
 
         ///
         virtual void
-        register_currency_with_association_account(const CurrencyTag &type_tag, bool is_blocking = true) = 0;
+        register_currency_with_association_account(const TypeTag &type_tag, bool is_blocking = true) = 0;
 
         /// add a new currency to association account
         virtual void
-        add_currency(const CurrencyTag &type_tag,
+        add_currency(const TypeTag &type_tag,
                      uint64_t exchange_rate_denom,
                      uint64_t exchange_rate_num,
                      bool is_synthetic,
@@ -221,23 +224,23 @@ namespace LIB_NAME
 
         /// mint currency for a receiver
         virtual void
-        mint_currency(const CurrencyTag &tag,
+        mint_currency(const TypeTag &tag,
                       const uint8_t receiver[32],
                       uint64_t amount,
                       bool is_blocking = true) = 0;
 
         /// transfer currency to a receiver
         virtual void
-        transfer_currency(const CurrencyTag &tag,
+        transfer_currency(const TypeTag &tag,
                           uint64_t sender_account_index,
                           uint8_t receiver_auth_key[32],
                           uint64_t amount,
                           bool is_blocking = true) = 0;
 
         /// get balance of currency
-        // 
+        //
         virtual uint64_t
-        get_currency_balance(const CurrencyTag &tag, const Address &address, bool throw_excption = false) = 0;
+        get_currency_balance(const TypeTag &tag, const Address &address, bool throw_excption = false) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

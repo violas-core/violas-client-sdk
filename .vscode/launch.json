@@ -10,7 +10,7 @@
             "request": "launch",
             "name": "Launch testnet",
             "program": "${workspaceFolder}/build/debug/bin/testnet",
-            "args": ["http://localhost:41495", "/tmp/libra/mint.key", "governor", "0:b09440f0ce8cc329a9df0c92a2cde69b9caa7317a7b1de6b1634315ba3ea5b1c"],
+            "args": ["http://localhost:40931", "/tmp/libra/mint.key", "governor", "0:83b703489842ed91ae5b9692905b815237dc3ffb6f8f06585412a874ec271bbc"],
             //"args": ["http://125.39.5.57:50001", "mint_tianjin.key", "governor","0:cb5bf8f6d02774cc41e6793467ee62335ea833eae8352d349bb33bc703bd3269"],
             "cwd": "${workspaceFolder}/build/debug"
         },

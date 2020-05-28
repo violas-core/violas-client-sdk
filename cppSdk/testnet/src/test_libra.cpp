@@ -38,10 +38,10 @@ void run_test_libra(
              << endl;
     }
 
-    client->mint_coins(0, 10);
-    client->mint_coins(1, 10);
-    client->mint_coins(2, 10);
-    client->mint_coins(3, 10);
+    for (size_t i = 0; i < accounts.size(); i++)
+    {
+       client->mint_coins(i, 100);
+    }
 
     auto print_account_balance = [=](uint64_t account_index) {
         auto coin = double(client->get_balance(account_index)) / MICRO_COIN;
@@ -95,7 +95,7 @@ void run_test_libra(
         print_txn(faucet);
 
         auto module_name = get<1>(arg);
-        Client::TypeTag tag(faucet, module_name, "T");
+        TypeTag tag(faucet, module_name, "T");
 
         auto currency_code = get<2>(arg);
         client->add_currency(tag, 1, 2, false, 1000000, 100, currency_code);
@@ -104,13 +104,13 @@ void run_test_libra(
         client->register_currency(tag, 0);
         print_txn(accounts[0].address);
 
-        client->mint_currency(tag, accounts[0].auth_key, 10);
+        client->mint_currency(tag, accounts[0].auth_key, 1000 * MICRO_COIN);
         print_txn(faucet);
 
         client->register_currency(tag, 1);
         print_txn(accounts[1].address);
 
-        client->transfer_currency(tag, 0, accounts[1].auth_key, 5);
+        client->transfer_currency(tag, 0, accounts[1].auth_key, 500 * MICRO_COIN);
         print_txn(accounts[0].address);
 
         auto balance = client->get_currency_balance(tag, accounts[1].address);

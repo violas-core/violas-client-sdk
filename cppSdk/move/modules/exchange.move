@@ -128,14 +128,16 @@ module Exchange {
         let token_reserve = Libra::value<CoinType>(&reserve.token);
         let violas_reserve = Libra::value<LBR::T>(&reserve.violas);
         (reserve.liquidity_total_supply, token_reserve, violas_reserve)
-    }
+    }  
 
     public fun add_liquidity<CoinType>(min_liquidity: u64, max_token_amount: u64, violas_amount: u64, deadline: u64) acquires T, Reserve, ExchangeInfo {
         assert_deadline(deadline);
+        
         let reserve = borrow_global_mut<Reserve<CoinType>>(singleton_addr());
         let token_reserve = Libra::value<CoinType>(&reserve.token);
         let violas_reserve = Libra::value<LBR::T>(&reserve.violas);
         let total_liquidity = reserve.liquidity_total_supply;
+
         let (token_amount, liquidity_token_minted) = if (total_liquidity > 0) {
             Transaction::assert(min_liquidity > 0, 3006);
             let big_num:u128 = (violas_amount as u128) * (token_reserve as u128);
@@ -151,13 +153,16 @@ module Exchange {
             let liquidity_token_minted = violas_amount;
             (token_amount, liquidity_token_minted)
         };
+
         reserve.liquidity_total_supply = total_liquidity + liquidity_token_minted;
         mint<CoinType>(liquidity_token_minted);
         let token = LibraAccount::withdraw_from_sender<CoinType>(token_amount);
         let violas = LibraAccount::withdraw_from_sender<LBR::T>(violas_amount);
         Libra::deposit<CoinType>(&mut reserve.token, token);
         Libra::deposit<LBR::T>(&mut reserve.violas, violas);
+        
         let currency_code = Libra::currency_code<CoinType>();
+        
         let info = borrow_global_mut<ExchangeInfo>(singleton_addr());
         let mint_event = MintEvent{
                 mint_amount: liquidity_token_minted,
@@ -175,12 +180,15 @@ module Exchange {
 
     public fun remove_liquidity<CoinType>(amount: u64, min_violas: u64, min_tokens: u64, deadline: u64) acquires T, Reserve, ExchangeInfo{
         assert_deadline(deadline);
+
         Transaction::assert(amount > 0 && min_violas > 0 && min_tokens > 0, 3009);
+        
         let addr = singleton_addr();
         let reserve = borrow_global_mut<Reserve<CoinType>>(addr);
         let token_reserve = Libra::value<CoinType>(&reserve.token);
         let violas_reserve = Libra::value<LBR::T>(&reserve.violas);
         let total_liquidity = reserve.liquidity_total_supply;
+       
         Transaction::assert(total_liquidity > 0, 3010);
 
         let big_amount:u128 = (amount as u128);
@@ -189,14 +197,17 @@ module Exchange {
         let big_total_liquidity:u128 = (total_liquidity as u128);
         let violas_amount:u64 = ((big_amount * big_violas_reserve / big_total_liquidity) as u64);
         let token_amount:u64 = ((big_amount * big_token_reserve / big_total_liquidity) as u64);
+        
         Transaction::assert(violas_amount >= min_violas && token_amount >= min_tokens, 3011);
         reserve.liquidity_total_supply = total_liquidity - amount;
         destroy<CoinType>(amount);
+        
         let sender = Transaction::sender();
         let token = Libra::withdraw<CoinType>(&mut reserve.token, token_amount);
         LibraAccount::deposit<CoinType>(sender, token);
         let violas = Libra::withdraw<LBR::T>(&mut reserve.violas, violas_amount);
         LibraAccount::deposit<LBR::T>(sender, violas);
+
         let currency_code = Libra::currency_code<CoinType>();
         let info = borrow_global_mut<ExchangeInfo>(singleton_addr());
         let burn_event =  BurnEvent{

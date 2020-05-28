@@ -446,7 +446,7 @@ namespace LIB_NAME
 
         virtual void
         execute_script(uint64_t account_index,
-                       const std::string &script_file,
+                       std::string_view script_file,
                        const std::vector<std::string> &script_args) override
         {
             ScriptArgs args;
@@ -465,7 +465,7 @@ namespace LIB_NAME
             bool ret = violas_execute_script((uint64_t)raw_client_proxy,
                                              tag,
                                              account_index,
-                                             script_file.c_str(),
+                                             script_file.data(),
                                              &args);
             if (!ret)
                 throw runtime_error(
@@ -474,7 +474,7 @@ namespace LIB_NAME
                            "at %s",
                            script_file.data(),
                            account_index,
-                           get_last_error().c_str(),
+                           get_last_error().data(),
                            EXCEPTION_AT.c_str()));
 
             CLOG << format("excuted script file '%s' for account index %d",
@@ -485,7 +485,7 @@ namespace LIB_NAME
         /// execute script with faucet account
         virtual void execute_script(const TypeTag &currency_tag,
                                     uint64_t account_index,
-                                    const std::string &script_file,
+                                    std::string_view script_file,
                                     const std::vector<std::string> &script_args = std::vector<std::string>()) override
         {
             ScriptArgs args;
@@ -504,18 +504,18 @@ namespace LIB_NAME
             bool ret = violas_execute_script((uint64_t)raw_client_proxy,
                                              tag,
                                              account_index,
-                                             script_file.c_str(),
+                                             script_file.data(),
                                              &args);
             if (!ret)
                 throw runtime_error(
                     format("failed to execute script file '%s' for account faucet, "
                            "error : %s, "
                            "at %s",
-                           script_file.c_str(),
+                           script_file.data(),
                            get_last_error().c_str(),
                            EXCEPTION_AT.c_str()));
 
-            CLOG << format("excuted script file '%s' for account faucet", script_file.c_str())
+            CLOG << format("excuted script file '%s' for account faucet", script_file.data())
                  << endl;
         }
         virtual std::pair<std::string, std::string>

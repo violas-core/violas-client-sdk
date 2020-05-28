@@ -65,6 +65,17 @@ namespace LIB_NAME
         std::array<uint8_t, length> m_data;
     };
 
+    struct TypeTag
+    {
+        Address address;
+        std::string module;
+        std::string res_name;
+
+        TypeTag(Address addr, std::string_view mod, std::string_view name) : address(addr), module(mod), res_name(name)
+        {
+        }
+    };
+
     // replace mv with addr
     void replace_mv_with_addr(const std::string &mv_file_name,
                               const std::string &new_file_name,
@@ -147,8 +158,15 @@ namespace LIB_NAME
 
         virtual void publish_module(uint64_t account_index, const std::string &module_file) = 0;
 
+        /// execute script
         virtual void execute_script(uint64_t account_index,
-                                    const std::string & script_file,
+                                    std::string_view script_file,
+                                    const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
+
+        /// execute script with TypeTag
+        virtual void execute_script(const TypeTag &tag,
+                                    uint64_t account_index,
+                                    std::string_view script_file,
                                     const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
         virtual std::pair<std::string, std::string>
@@ -186,23 +204,6 @@ namespace LIB_NAME
 
         virtual uint64_t
         get_account_resource_uint64(const Address &account_addr, const Address &res_path_addr, uint64_t token_index) = 0;
-
-        struct TypeTag
-        {
-            Address address;
-            std::string module;
-            std::string res_name;
-
-            TypeTag(Address addr, std::string_view mod, std::string_view name) : address(addr), module(mod), res_name(name)
-            {
-            }
-        };
-
-        /// execute script with faucet account
-        virtual void execute_script(const TypeTag &tag,
-                                    uint64_t account_index,
-                                    const std::string &script_file,
-                                    const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
         /// register a currency
         virtual void

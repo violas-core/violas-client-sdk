@@ -801,37 +801,44 @@ impl ClientProxy {
     /// Execute custom script with association account
     pub fn execcute_script_ex(
         &mut self,
-        tags : Vec<TypeTag>,
+        tags: Vec<TypeTag>,
         sender_ref_id: u64,
         script_file_name: &str,
         args: &[&str],
     ) -> Result<()> {
-        let sender = if sender_ref_id == u64::MAX {
+        let (sender, sequence_number) = if sender_ref_id == u64::MAX {
             if self.faucet_account.is_none() {
                 bail!("No faucet account loaded");
             }
-            self.faucet_account.as_ref().unwrap()
+            (
+                self.faucet_account.as_ref().unwrap(),
+                self.faucet_account.as_ref().unwrap().sequence_number,
+            )
         } else {
-            self.accounts.get(sender_ref_id as usize).unwrap()
+            let id = sender_ref_id as usize;
+            (
+                self.accounts.get(id).unwrap(),
+                self.accounts.get(id).unwrap().sequence_number,
+            )
         };
-
         let script_bytes = fs::read(script_file_name)?;
         let arguments: Vec<_> = args[0..]
             .iter()
             .filter_map(|arg| parse_as_transaction_argument_for_client(arg).ok())
             .collect();
-
         let program = TransactionPayload::Script(Script::new(script_bytes, tags, arguments));
         let sender_address = sender.address;
         let txn = self.create_txn_to_submit(program, sender, None, None)?;
-        let resp = self
-            .client
-            .submit_transaction(self.faucet_account.as_mut(), txn);
-        self.wait_for_transaction(
-            sender_address,
-            self.faucet_account.as_ref().unwrap().sequence_number,
-        );
 
+        let resp = if sender_ref_id == u64::MAX {
+            self.client
+                .submit_transaction(self.faucet_account.as_mut(), txn)
+        } else {
+            self.client
+                .submit_transaction(self.accounts.get_mut(sender_ref_id as usize), txn)
+        };
+
+        self.wait_for_transaction(sender_address, sequence_number + 1);
         resp
     }
 
@@ -1397,21 +1404,22 @@ impl ClientProxy {
         currency_code: Vec<u8>,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.faucet_account {
-            Some(_) => self.association_transaction_with_local_faucet_account(
-                transaction_builder::encode_add_currency(
-                    type_tag,
-                    exchange_rate_denom,
-                    exchange_rate_num,
-                    is_synthetic,
-                    scaling_factor,
-                    fractional_part,
-                    currency_code,
-                ),
-                is_blocking,
-            ),
-            None => unimplemented!(),
-        }
+        // match &self.faucet_account {
+        //     Some(_) => self.association_transaction_with_local_faucet_account(
+        //         transaction_builder::encode_add_currency(
+        //             type_tag,
+        //             exchange_rate_denom,
+        //             exchange_rate_num,
+        //             is_synthetic,
+        //             scaling_factor,
+        //             fractional_part,
+        //             currency_code,
+        //         ),
+        //         is_blocking,
+        //     ),
+        //     None => unimplemented!(),
+        // }
+        Ok(())
     }
 
     pub fn register_currency(

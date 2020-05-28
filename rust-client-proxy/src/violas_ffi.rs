@@ -976,7 +976,7 @@ pub mod x86_64 {
     #[no_mangle]
     pub extern "C" fn violas_execute_script(
         raw_ptr: u64,
-        tag: ViolasTypeTag,
+        tag: &ViolasTypeTag,
         sender_ref_id: u64,
         in_script_file_name: *const c_char,
         in_script_args: &ScriptArgs,
@@ -985,12 +985,13 @@ pub mod x86_64 {
             unsafe {
                 let client = { &mut *(raw_ptr as *mut ClientProxy) };
                 let script_file_name = { CStr::from_ptr(in_script_file_name).to_str().unwrap() };
-                let type_tags = if tag.module.is_null() {
+                let module_name = CStr::from_ptr(tag.module).to_str().unwrap();
+                let type_tags = if module_name.is_empty() {
                     vec![]
                 } else {
                     vec![currency_type_tag(
                         &AccountAddress::new(tag.address),
-                        CStr::from_ptr(tag.module).to_str().unwrap(),
+                        module_name,
                     )]
                 };
 

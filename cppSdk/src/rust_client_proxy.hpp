@@ -182,8 +182,8 @@ extern "C"
                                const char *script_file,
                                const ScriptArgs *script_args);
 
-    // add a new currency
-    bool violas_add_currency(uint64_t raw_client,
+    //  Register a new currency to blockchain under association account
+    bool violas_register_currency(uint64_t raw_client,
                              const ViolasTypeTag &violas_type_tag,
                              uint64_t exchange_rate_denom,
                              uint64_t exchange_rate_num,
@@ -193,16 +193,12 @@ extern "C"
                              const char *currency_code,
                              uint64_t currency_code_len);
 
-    /// register a currency
-    bool violas_register_currency(uint64_t raw_client,
+    /// add a currency to current account
+    bool violas_add_currency(uint64_t raw_client,
                                   const ViolasTypeTag &violas_type_tag,
                                   uint64_t account_index,
                                   bool is_blocking);
-
-    /// register a currency with association account
-    bool violas_register_currency_with_association_account(uint64_t raw_client,
-                                                           const ViolasTypeTag &violas_type_tag,
-                                                           bool is_blocking);
+   
 
     /// mint coins for a receiver for a speciafied currency
     bool violas_mint_currency(uint64_t raw_client,
@@ -215,7 +211,7 @@ extern "C"
     bool violas_transfer_currency(uint64_t raw_client,
                                   const ViolasTypeTag &violas_type_tag,
                                   uint64_t sender_account_index,
-                                  uint8_t receiver_auth_key[32],
+                                  const uint8_t receiver_auth_key[32],
                                   uint64_t amount,
                                   bool is_blocking);
 

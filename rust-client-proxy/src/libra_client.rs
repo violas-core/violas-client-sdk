@@ -7,10 +7,10 @@ use libra_json_rpc_client::{
     errors::JsonRpcError,
     get_response_from_batch,
     views::{
-        AccountStateWithProofView, AccountView, BlockMetadata, BytesView, EventView,
-        StateProofView, TransactionView,
+        AccountStateWithProofView, AccountView, BlockMetadata, BytesView, CurrencyInfoView,
+        EventView, StateProofView, TransactionView,
     },
-    JsonRpcBatch, JsonRpcClient, JsonRpcResponse, ResponseAsView
+    JsonRpcBatch, JsonRpcClient, JsonRpcResponse, ResponseAsView,
 };
 use libra_logger::prelude::*;
 use libra_types::{
@@ -138,6 +138,34 @@ impl LibraClient {
         }
     }
 
+    pub fn get_account_state_blob(
+        &mut self,
+        account: AccountAddress,
+    ) -> Result<(Option<AccountStateBlob>, Version)> {
+        let mut batch = JsonRpcBatch::new();
+        batch.add_get_account_state_with_proof_request(account, None, None);
+        let responses = self.client.execute(batch)?;
+        match get_response_from_batch(0, &responses)? {
+            Ok(result) => {
+                let account_state_with_proof =
+                    AccountStateWithProofView::from_response(result.clone())?;
+                if let Some(bytes) = account_state_with_proof.blob {
+                    Ok((
+                        Some(lcs::from_bytes(&bytes.into_bytes()?)?),
+                        account_state_with_proof.version,
+                    ))
+                } else {
+                    Ok((None, account_state_with_proof.version))
+                }
+            }
+            Err(e) => bail!(
+                "Failed to get account state blob for account address {} with error: {:?}",
+                account,
+                e
+            ),
+        }
+    }
+
     pub fn get_events(
         &mut self,
         event_key: String,
@@ -163,6 +191,17 @@ impl LibraClient {
         match get_response_from_batch(0, &responses)? {
             Ok(resp) => Ok(BlockMetadata::from_response(resp.clone())?),
             Err(e) => bail!("Failed to get block metadata with error: {:?}", e),
+        }
+    }
+
+    /// Gets the currency info stored on-chain
+    pub fn get_currency_info(&mut self) -> Result<Vec<CurrencyInfoView>> {
+        let mut batch = JsonRpcBatch::new();
+        batch.add_get_currencies_info();
+        let responses = self.client.execute(batch)?;
+        match get_response_from_batch(0, &responses)? {
+            Ok(resp) => Ok(CurrencyInfoView::vec_from_response(resp.clone())?),
+            Err(e) => bail!("Failed to get currencies info with error: {:?}", e),
         }
     }
 
@@ -214,8 +253,7 @@ impl LibraClient {
                 latest_epoch_change_li,
             } => {
                 info!(
-                    "Verified epoch change to epoch: {}, validator set: [{}]",
-                    latest_epoch_change_li.ledger_info().epoch(),
+                    "Verified epoch changed to {}",
                     latest_epoch_change_li
                         .ledger_info()
                         .next_epoch_info()
@@ -234,32 +272,6 @@ impl LibraClient {
             TrustedStateChange::NoChange => (),
         }
         Ok(())
-    }
-
-    /// Get the latest account state blob from validator.
-    pub(crate) fn get_account_blob(
-        &mut self,
-        address: AccountAddress,
-    ) -> Result<Option<AccountStateBlob>> {
-        let version = self.trusted_state.latest_version();
-        let mut batch = JsonRpcBatch::new();
-        batch.add_get_account_state_with_proof_request(address, Some(version), Some(version));
-        let responses = self.client.execute(batch)?;
-
-        match get_response_from_batch(0, &responses)? {
-            Ok(resp) => {
-                let account_state_with_proof =
-                    AccountStateWithProofView::from_response(resp.clone())?;
-                let account_blob = if let Some(blob) = account_state_with_proof.blob {
-                    let account_blob: AccountStateBlob = lcs::from_bytes(&blob.into_bytes()?)?;
-                    Some(account_blob)
-                } else {
-                    None
-                };
-                Ok(account_blob)
-            }
-            Err(e) => bail!("Failed to get account state blob with error: {:?}", e),
-        }
     }
 
     /// LedgerInfo corresponding to the latest epoch change.

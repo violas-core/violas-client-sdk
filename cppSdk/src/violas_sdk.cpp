@@ -39,43 +39,6 @@ namespace LIB_NAME
         return ost;
     }
 
-    template <size_t N>
-    using bytes = array<uint8_t, N>;
-
-    template <size_t N>
-    ostream &operator<<(ostream &os, const bytes<N> &value)
-    {
-        for (auto v : value)
-        {
-            os << std::setfill('0') << std::setw(2) << std::hex << (int)v;
-        }
-
-        os << std::dec;
-
-        return os;
-    }
-
-    template <size_t N>
-    std::ostream &operator>>(std::ostream &os, const bytes<N> &value) { return os; }
-
-    template <size_t N>
-    bytes<N> bytes_from_string(const std::string &str)
-    {
-        bytes<N> addr;
-        auto iter = begin(addr);
-
-        for (size_t i = 0; i < str.size() && i < 64; i += 2)
-        {
-            std::istringstream iss(str.substr(i, 2));
-            uint32_t byte;
-
-            iss >> std::hex >> std::setw(2) >> byte; // std::setfill('0') >> std::setw(2)
-            *iter++ = byte;
-        }
-
-        return addr;
-    }
-
     std::string tx_vec_data(const std::string &data)
     {
         ostringstream oss;
@@ -103,7 +66,7 @@ namespace LIB_NAME
 
     void transform_mv_to_json(const std::string &mv_file_name,
                               const std::string &json_file_name,
-                              const bytes<16> &address)
+                              const Address &address)
     {
         ifstream mv(mv_file_name, ios::binary);
         ofstream ofs(json_file_name);
@@ -121,7 +84,7 @@ namespace LIB_NAME
 
         auto pos = search(begin(buffer), end(buffer), addr, end(addr));
         if (pos != end(buffer))
-            copy((char *)address.data(), (char *)end(address), pos);
+            copy((char *)address.data().data(), (char *)end(address.data()), pos);
 
         //
         //  generate the format likes {"code" : […], "args" : []}
@@ -170,48 +133,8 @@ namespace LIB_NAME
         copy(begin(buffer), end(buffer), ostreambuf_iterator<char>(ofs));
     }
 
-    Address::Address(const uint8_t *data, uint64_t len)
-    {
-        if (len > length)
-            len = length;
+    
 
-        copy(data, data + len, m_data.data());
-    }
-
-    std::string Address::to_string() const
-    {
-        ostringstream oss;
-        oss << m_data;
-
-        return oss.str();
-    }
-
-    Address Address::from_string(const std::string &hex_addr)
-    {
-        Address address;
-        auto data = bytes_from_string<length>(hex_addr);
-
-        copy(begin(data), end(data), begin(address.m_data));
-
-        return address;
-    }
-
-    std::ostream &operator<<(std::ostream &os, const Address &address)
-    {
-        os << address.m_data;
-
-        return os;
-    }
-
-    // std::istream &operator>>(std::istream &is, Address & address)
-    // {
-    //     return is;
-    // }
-
-    bool Address::operator==(const Address &right) const
-    {
-        return m_data == right.m_data;
-    }
     //
     //  ClientImp
     //  the implimentation of interface Clinet
@@ -260,8 +183,11 @@ namespace LIB_NAME
 
         string get_last_error()
         {
+            string error;
             char *last_error = libra_get_last_error();
-            string error = last_error;
+
+            error = last_error;
+
             libra_free_string(last_error);
 
             return error;
@@ -301,7 +227,7 @@ namespace LIB_NAME
                 const auto &_a = all_accounts.data[i];
 
                 a.address = Address(_a.address, ADDRESS_LENGTH);
-                copy(begin(_a.auth_key), end(_a.auth_key), a.auth_key);
+                a.auth_key = AuthenticationKey(_a.auth_key, sizeof(_a.auth_key));
                 a.index = _a.index;
                 a.sequence_number = _a.sequence_number;
                 a.status = _a.status;
@@ -617,7 +543,7 @@ namespace LIB_NAME
                                         &out_last_account_event);
             if (!ret)
             {
-                throw runtime_error(format("failed to get events, errror : %d ",
+                throw runtime_error(format("failed to get events, errror : %s ",
                                            get_last_error().c_str()));
             }
 
@@ -685,59 +611,48 @@ namespace LIB_NAME
             return tag;
         }
 
-        /// register a currency
+        /// add a currency to current account
         virtual void
-        register_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) override
+        add_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) override
         {
             ViolasTypeTag tag = from_type_tag(type_tag);
-            bool ret = violas_register_currency((uint64_t)raw_client_proxy, tag, account_index, is_blocking);
+            bool ret = violas_add_currency((uint64_t)raw_client_proxy, tag, account_index, is_blocking);
 
             if (!ret)
-                throw runtime_error(format("failed to register currency, errror : %d ",
+                throw runtime_error(format("failed to register currency, errror : %s ",
                                            get_last_error().c_str()));
         }
 
-        ///
+        /// register a new currency to blocakchain
         virtual void
-        register_currency_with_association_account(const TypeTag &type_tag, bool is_blocking = true) override
-        {
-            ViolasTypeTag tag = from_type_tag(type_tag);
-            bool ret = violas_register_currency_with_association_account((uint64_t)raw_client_proxy, tag, is_blocking);
-
-            if (!ret)
-                throw runtime_error(format("failed to register currency with association account, errror : %d ",
-                                           get_last_error().c_str()));
-        }
-
-        virtual void
-        add_currency(const TypeTag &type_tag,
-                     uint64_t exchange_rate_denom,
-                     uint64_t exchange_rate_num,
-                     bool is_synthetic,
-                     uint64_t scaling_factor,
-                     uint64_t fractional_part,
-                     std::string_view currency_code) override
+        register_currency(const TypeTag &type_tag,
+                          uint64_t exchange_rate_denom,
+                          uint64_t exchange_rate_num,
+                          bool is_synthetic,
+                          uint64_t scaling_factor,
+                          uint64_t fractional_part,
+                          std::string_view currency_code) override
         {
             ViolasTypeTag tag = from_type_tag(type_tag);
 
-            bool ret = violas_add_currency((uint64_t)raw_client_proxy,
-                                           tag,
-                                           exchange_rate_denom,
-                                           exchange_rate_num,
-                                           is_synthetic,
-                                           scaling_factor,
-                                           fractional_part,
-                                           currency_code.data(),
-                                           currency_code.size());
+            bool ret = violas_register_currency((uint64_t)raw_client_proxy,
+                                                tag,
+                                                exchange_rate_denom,
+                                                exchange_rate_num,
+                                                is_synthetic,
+                                                scaling_factor,
+                                                fractional_part,
+                                                currency_code.data(),
+                                                currency_code.size());
             if (!ret)
-                throw runtime_error(format("failed to add currency, errror : %d ",
+                throw runtime_error(format("failed to add currency, errror : %s ",
                                            get_last_error().c_str()));
         }
 
         /// mint curency for a receiver
         virtual void
         mint_currency(const TypeTag &type_tag,
-                      const uint8_t receiver[32],
+                      const AuthenticationKey &receiver,
                       uint64_t amount,
                       bool is_blocking) override
         {
@@ -745,11 +660,11 @@ namespace LIB_NAME
 
             bool ret = violas_mint_currency((uint64_t)raw_client_proxy,
                                             tag,
-                                            receiver,
+                                            receiver.data().data(),
                                             amount,
                                             is_blocking);
             if (!ret)
-                throw runtime_error(format("failed to mint currency, errror : %d ",
+                throw runtime_error(format("failed to mint currency, errror : %s ",
                                            get_last_error().c_str()));
         }
 
@@ -757,7 +672,7 @@ namespace LIB_NAME
         virtual void
         transfer_currency(const TypeTag &_tag,
                           uint64_t sender_account_index,
-                          uint8_t receiver_auth_key[32],
+                          const AuthenticationKey &receiver_auth_key,
                           uint64_t amount,
                           bool is_blocking) override
         {
@@ -766,11 +681,11 @@ namespace LIB_NAME
             bool ret = violas_transfer_currency((uint64_t)raw_client_proxy,
                                                 tag,
                                                 sender_account_index,
-                                                receiver_auth_key,
+                                                receiver_auth_key.data().data(),
                                                 amount,
                                                 is_blocking);
             if (!ret)
-                throw runtime_error(format("failed to transfer currency, errror : %d ",
+                throw runtime_error(format("failed to transfer currency, errror : %s ",
                                            get_last_error().c_str()));
         }
 
@@ -787,7 +702,7 @@ namespace LIB_NAME
                                                    &balance);
             if (!ret && throw_excption)
             {
-                throw runtime_error(format("failed to get currency balance, errror : %d ",
+                throw runtime_error(format("failed to get currency balance, errror : %s ",
                                            get_last_error().c_str()));
             }
 

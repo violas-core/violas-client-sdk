@@ -12,9 +12,7 @@ pub mod x86_64 {
         account_address::AccountAddress,
         account_config::CORE_CODE_ADDRESS,
         account_config::{
-            //association_address, lbr_type_tag,
-            ACCOUNT_RECEIVED_EVENT_PATH,
-            ACCOUNT_SENT_EVENT_PATH,
+            association_address, lbr_type_tag, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
         },
         account_state::AccountState,
         transaction::authenticator::AuthenticationKey,
@@ -322,6 +320,7 @@ pub mod x86_64 {
                     "mintb",
                     index.to_string().as_str(),
                     num_coins.to_string().as_str(),
+                    "LBR",
                 ],
                 is_blocking,
             )
@@ -365,21 +364,19 @@ pub mod x86_64 {
             let receiver_address = AccountAddress::new(*receiver_addr);
             let receiver_auth_key_prefix: Vec<u8> = vec![];
 
-            client.transfer_coins_int(
+            client.transfer_currency(
+                lbr_type_tag(),
                 sender_account_ref_id,
                 &receiver_address,
                 receiver_auth_key_prefix,
                 micro_coins,
-                match gas_unit_price {
-                    0 => None,
-                    _ => Some(gas_unit_price),
-                },
-                match max_gas_amount {
-                    0 => None,
-                    _ => Some(max_gas_amount),
-                },
                 is_blocking,
-            )
+            )?;
+
+            Ok(IndexAndSequence {
+                account_index: AccountEntry::Index(sender_account_ref_id),
+                sequence_number: 0,
+            })
         });
 
         if ret.is_ok() {
@@ -519,7 +516,7 @@ pub mod x86_64 {
         let mut dependencies = vec![];
         for path in paths {
             if path.address != CORE_CODE_ADDRESS {
-                if let Some(blob) = client.client.get_account_blob(path.address)? {
+                if let (Some(blob), _) = client.client.get_account_state_blob(path.address)? {
                     let account_state = AccountState::try_from(&blob)?;
 
                     if let Some(code) = account_state.get(&path.path) {
@@ -778,7 +775,7 @@ pub mod x86_64 {
                 CStr::from_ptr(account_index_or_addr).to_str().unwrap()
             })?;
 
-            if let Some(blob) = client.client.get_account_blob(address)? {
+            if let (Some(blob), _) = client.client.get_account_state_blob(address)? {
                 let account_state = AccountState::try_from(&blob)?;
                 // debugging
                 // for (movie, review) in &map {
@@ -1007,7 +1004,7 @@ pub mod x86_64 {
                 //
                 //  execute script
                 //
-                client.execcute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
+                client.execute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
             }
         });
 
@@ -1029,7 +1026,7 @@ pub mod x86_64 {
 
     /// add a new currency
     #[no_mangle]
-    pub fn violas_add_currency(
+    pub fn violas_register_currency(
         raw_client: u64,
         violas_type_tag: &ViolasTypeTag,
         exchange_rate_denom: u64,
@@ -1050,7 +1047,7 @@ pub mod x86_64 {
                 );
 
                 //
-                match proxy.add_currency(
+                match proxy.register_currency(
                     type_tag,
                     exchange_rate_denom,
                     exchange_rate_num,
@@ -1078,9 +1075,9 @@ pub mod x86_64 {
         }
     }
 
-    /// register currency for an account
+    /// add currency for an account
     #[no_mangle]
-    pub fn violas_register_currency(
+    pub fn violas_add_currency(
         raw_client: u64,
         violas_type_tag: &ViolasTypeTag,
         account_index: u64,
@@ -1094,47 +1091,10 @@ pub mod x86_64 {
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
                 );
                 // register currency
-                match proxy.register_currency(type_tag, account_index as usize, is_blocking) {
+                match proxy.add_currency(type_tag, account_index, is_blocking) {
                     Ok(_) => true,
                     Err(e) => {
                         set_last_error(format_err!("failed to add currency with error, {}", e));
-                        false
-                    }
-                }
-            });
-            if ret.is_ok() {
-                ret.unwrap()
-            } else {
-                set_last_error(format_err!(
-                    "catch a panic at function 'violas_add_currency' !'"
-                ));
-                false
-            }
-        }
-    }
-
-    /// register currency for an account
-    #[no_mangle]
-    pub fn violas_register_currency_with_association_account(
-        raw_client: u64,
-        violas_type_tag: &ViolasTypeTag,
-        is_blocking: bool,
-    ) -> bool {
-        unsafe {
-            let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
-                let type_tag = currency_type_tag(
-                    &AccountAddress::new(violas_type_tag.address),
-                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
-                );
-                // register currency
-                match proxy.register_currency_with_association_account(type_tag, is_blocking) {
-                    Ok(_) => true,
-                    Err(e) => {
-                        set_last_error(format_err!(
-                            "failed to add currency with association, error : {}",
-                            e
-                        ));
                         false
                     }
                 }

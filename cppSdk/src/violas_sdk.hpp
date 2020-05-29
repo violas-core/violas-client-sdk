@@ -11,7 +11,8 @@
 #include <iostream>
 #include <functional>
 #include <string_view>
-
+//#include <sstream>
+#include <iomanip>
 //
 //  log
 //
@@ -32,38 +33,106 @@ std::string format(const std::string &format, Args... args)
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
+std::string tx_vec_data(const std::string &data);
+
+//
+//  Address
+//
+template <size_t N>
+class Bytes
+{
+public:
+    Bytes()
+    {
+        m_data = {0};
+    }
+
+    Bytes(const uint8_t *data, uint64_t len)
+    {
+        if (len > N)
+            len = N;
+
+        std::copy(data, data + len, m_data.data());
+    }
+
+    Bytes(const Bytes &bytes)
+    {
+        using namespace std;
+        copy(begin(bytes.data()), end(bytes.data()), begin(m_data));
+    }
+
+    Bytes &operator=(const Bytes &bytes)
+    {
+        using namespace std;
+        copy(begin(bytes.data()), end(bytes.data()), begin(m_data));
+
+        return *this;
+    }
+
+    static Bytes from_string(const std::string &hex)
+    {
+        std::array<uint8_t, N> data;
+        auto iter = begin(data);
+
+        for (size_t i = 0; i < hex.size() && i < N * 2; i += 2)
+        {
+            std::istringstream iss(hex.substr(i, 2));
+            uint32_t byte;
+
+            iss >> std::hex >> std::setw(2) >> byte; // std::setfill('0') >> std::setw(2)
+            *iter++ = byte;
+        }
+
+        return Bytes(data.data(), data.size());
+    }
+
+    std::string to_string() const
+    {
+        std::ostringstream oss;
+        oss << *this;
+
+        return oss.str();
+    }
+
+    //friend std::ostream &operator<<(std::ostream &os, const Bytes &address);
+
+    //friend std::istream &operator>>(std::istream &is, Bytes &address);
+
+    bool operator==(const Bytes &right) const
+    {
+        return m_data == right.m_data;
+    }
+
+    static const std::size_t length = N;
+    //using LENGTH = N;
+
+    const auto &data() const { return m_data; };
+
+private:
+    std::array<uint8_t, N> m_data;
+};
+
+template <size_t N>
+std::ostream &operator<<(std::ostream &os, const Bytes<N> &bytes)
+{
+    for (auto v : bytes.data())
+    {
+        os << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+    }
+
+    return os << std::dec;
+}
+
+template <size_t N>
+std::istream &operator>>(std::istream &is, Bytes<N> &address)
+{
+    return is;
+}
+
 namespace LIB_NAME
 {
-
-    std::string tx_vec_data(const std::string &data);
-
-    bool is_valid_balance(uint64_t value);
-    //
-    //  Address
-    //
-    class Address
-    {
-    public:
-        Address()
-        {
-            m_data = {0};
-        }
-        Address(const uint8_t *data, uint64_t len);
-
-        std::string to_string() const;
-        static Address from_string(const std::string &hex_addr);
-
-        friend std::ostream &operator<<(std::ostream &os, const Address &address);
-        friend std::istream &operator>>(std::istream &is, Address &address);
-        bool operator==(const Address &right) const;
-
-        const auto &data() const { return m_data; };
-
-        static const uint64_t length = 16;
-
-    private:
-        std::array<uint8_t, length> m_data;
-    };
+    using Address = Bytes<16>;
+    using AuthenticationKey = Bytes<32>;
 
     struct TypeTag
     {
@@ -71,10 +140,16 @@ namespace LIB_NAME
         std::string module;
         std::string res_name;
 
-        TypeTag(Address addr, std::string_view mod, std::string_view name) : address(addr), module(mod), res_name(name)
+        TypeTag(Address addr,
+                std::string_view mod,
+                std::string_view name) : address(addr),
+                                         module(mod),
+                                         res_name(name)
         {
         }
     };
+
+    bool is_valid_balance(uint64_t value);
 
     // replace mv with addr
     void replace_mv_with_addr(const std::string &mv_file_name,
@@ -112,7 +187,7 @@ namespace LIB_NAME
         {
             uint64_t index;
             Address address;
-            uint8_t auth_key[32];
+            AuthenticationKey auth_key;
             uint64_t sequence_number;
             int64_t status;
 
@@ -205,28 +280,24 @@ namespace LIB_NAME
         virtual uint64_t
         get_account_resource_uint64(const Address &account_addr, const Address &res_path_addr, uint64_t token_index) = 0;
 
-        /// register a currency
+        /// add a currency to current account
         virtual void
-        register_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
+        add_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
 
-        ///
+        /// register a new currency to blockchain
         virtual void
-        register_currency_with_association_account(const TypeTag &type_tag, bool is_blocking = true) = 0;
-
-        /// add a new currency to association account
-        virtual void
-        add_currency(const TypeTag &type_tag,
-                     uint64_t exchange_rate_denom,
-                     uint64_t exchange_rate_num,
-                     bool is_synthetic,
-                     uint64_t scaling_factor,
-                     uint64_t fractional_part,
-                     std::string_view currency_code) = 0;
+        register_currency(const TypeTag &type_tag,
+                          uint64_t exchange_rate_denom,
+                          uint64_t exchange_rate_num,
+                          bool is_synthetic,
+                          uint64_t scaling_factor,
+                          uint64_t fractional_part,
+                          std::string_view currency_code) = 0;
 
         /// mint currency for a receiver
         virtual void
         mint_currency(const TypeTag &tag,
-                      const uint8_t receiver[32],
+                      const AuthenticationKey &receiver_auth_key,
                       uint64_t amount,
                       bool is_blocking = true) = 0;
 
@@ -234,7 +305,7 @@ namespace LIB_NAME
         virtual void
         transfer_currency(const TypeTag &tag,
                           uint64_t sender_account_index,
-                          uint8_t receiver_auth_key[32],
+                          const AuthenticationKey &receiver_auth_key,
                           uint64_t amount,
                           bool is_blocking = true) = 0;
 

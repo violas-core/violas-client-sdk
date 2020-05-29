@@ -99,8 +99,7 @@ void run_test_exchange(const string &url,
                                {"1", to_string(10 * MICRO_COIN), to_string(5 * MICRO_COIN), to_string(deadline)});
         print_txn(accounts[user1].address);
 
-        client->execute_script(currency, user1, remove_liquidity,
-        )
+        //client->execute_script(currency, user1, remove_liquidity,        )
     }
 
     print_all_balance(accounts[0].address);

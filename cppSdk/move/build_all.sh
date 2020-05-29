@@ -34,46 +34,46 @@ echo "build modules/coin_gbp.move"
 ./build.sh modules/coin_gbp.move 0x0 
 mv move_build_output/modules/0_GBP.mv compiled/coin_gbp.mv
 
-echo "build scripts/coin_initialize.move"
-./build.sh scripts/coin_initialize.move 0x0 modules/coin_usd.move modules/coin_eur.move modules/coin_gbp.move
-mv move_build_output/scripts/main.mv compiled/coin_initialize.mv
+echo "build scripts/register_currency.move"
+./build.sh scripts/register_currency.move 0x0
+mv move_build_output/scripts/main.mv compiled/register_currency.mv
 
 
-echo ""
-echo "Build for module Exchange ..."
-echo ""
+# echo ""
+# echo "Build for module Exchange ..."
+# echo ""
 
-echo "build modules/exchange.move"
-./build.sh modules/exchange.move 0x0
-mv move_build_output/modules/0_Exchange.mv compiled/exchange.mv
+# echo "build modules/exchange.move"
+# ./build.sh modules/exchange.move 0x0
+# mv move_build_output/modules/0_Exchange.mv compiled/exchange.mv
 
-echo "build srcripts/exchange_initialize.move"
-./build.sh scripts/exchange_initialize.move 0x0 modules/exchange.move 
-mv move_build_output/scripts/main.mv compiled/exchange_initialize.mv
+# echo "build srcripts/exchange_initialize.move"
+# ./build.sh scripts/exchange_initialize.move 0x0 modules/exchange.move 
+# mv move_build_output/scripts/main.mv compiled/exchange_initialize.mv
 
-echo "build scripts/exchange_publish_reserve.move"
-./build.sh scripts/exchange_publish_reserve.move 0x0 modules/exchange.move
-mv move_build_output/scripts/main.mv compiled/exchange_publish_reserve.mv
+# echo "build scripts/exchange_publish_reserve.move"
+# ./build.sh scripts/exchange_publish_reserve.move 0x0 modules/exchange.move
+# mv move_build_output/scripts/main.mv compiled/exchange_publish_reserve.mv
 
-echo "build scripts/exchange_add_liquidity.move"
-./build.sh scripts/exchange_add_liquidity.move 0x0 modules/exchange.move
-mv move_build_output/scripts/main.mv compiled/exchange_add_liquidity.mv
+# echo "build scripts/exchange_add_liquidity.move"
+# ./build.sh scripts/exchange_add_liquidity.move 0x0 modules/exchange.move
+# mv move_build_output/scripts/main.mv compiled/exchange_add_liquidity.mv
 
-echo "build scripts/exchange_remove_liquidity.move"
-./build.sh scripts/exchange_remove_liquidity.move 0x0 modules/exchange.move
-mv move_build_output/scripts/main.mv compiled/exchange_remove_liquidity.mv
+# echo "build scripts/exchange_remove_liquidity.move"
+# ./build.sh scripts/exchange_remove_liquidity.move 0x0 modules/exchange.move
+# mv move_build_output/scripts/main.mv compiled/exchange_remove_liquidity.mv
 
-echo "build scripts/exchange_token_to_token_swap.move"
-./build.sh scripts/exchange_token_to_token_swap.move 0x0 modules/exchange.move
-mv move_build_output/scripts/main.mv compiled/exchange_token_to_token_swap.mv
+# echo "build scripts/exchange_token_to_token_swap.move"
+# ./build.sh scripts/exchange_token_to_token_swap.move 0x0 modules/exchange.move
+# mv move_build_output/scripts/main.mv compiled/exchange_token_to_token_swap.mv
 
-echo "build scripts/exchange_token_to_violas_swap.move"
-./build.sh scripts/exchange_token_to_violas_swap.move 0x0 modules/exchange.move
-mv move_build_output/scripts/main.mv compiled/exchange_token_to_violas_swap.mv
+# echo "build scripts/exchange_token_to_violas_swap.move"
+# ./build.sh scripts/exchange_token_to_violas_swap.move 0x0 modules/exchange.move
+# mv move_build_output/scripts/main.mv compiled/exchange_token_to_violas_swap.mv
 
-echo "build scripts/exchange_violas_to_token_swap.move"
-./build.sh scripts/exchange_violas_to_token_swap.move 0x0 modules/exchange.move
-mv move_build_output/scripts/main.mv compiled/exchange_violas_to_token_swap.mv
+# echo "build scripts/exchange_violas_to_token_swap.move"
+# ./build.sh scripts/exchange_violas_to_token_swap.move 0x0 modules/exchange.move
+# mv move_build_output/scripts/main.mv compiled/exchange_violas_to_token_swap.mv
 
 echo ""
 echo "done"

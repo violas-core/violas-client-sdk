@@ -379,7 +379,7 @@ jobject jni_get_committed_txn_by_acc_seq(JNIEnv *env, jobject, jlong nativeObj,
 	{
 		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
 
-		auto [txn, event] = client->get_committed_txn_by_acc_seq(account_index, sequence_number);
+		auto txn = client->get_committed_txn_by_acc_seq(account_index, sequence_number);
 
 		jclass pairClass = env->FindClass(PAIR_CLASS_NAME);
 		jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
@@ -388,7 +388,7 @@ jobject jni_get_committed_txn_by_acc_seq(JNIEnv *env, jobject, jlong nativeObj,
 		// Create a new pair object
 		jobject pair = env->NewObject(pairClass, pairConstructor,
 									  env->NewStringUTF(txn.c_str()),
-									  env->NewStringUTF(event.c_str()));
+									  env->NewStringUTF(""));
 
 		return pair;
 	}

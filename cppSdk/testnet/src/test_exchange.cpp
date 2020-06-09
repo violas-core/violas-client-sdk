@@ -36,7 +36,7 @@ void run_test_exchange(const string &url,
 
     auto print_txn = [client](const Address &address) {
         auto seq_num = client->get_sequence_number(address) - 1;
-        auto [txn, event] = client->get_committed_txn_by_acc_seq(address, seq_num);
+        auto txn = client->get_committed_txn_by_acc_seq(address, seq_num);
         cout << "txn = " << txn << endl;
     };
 

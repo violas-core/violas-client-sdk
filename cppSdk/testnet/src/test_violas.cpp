@@ -49,7 +49,7 @@ void run_test_client(
 
     auto print_txn = [client](uint64_t account_index) {
         auto seq_num = client->get_sequence_number(account_index) - 1;
-        auto [txn, event] = client->get_committed_txn_by_acc_seq(account_index, seq_num);
+        auto txn = client->get_committed_txn_by_acc_seq(account_index, seq_num);
         cout << "txn = " << txn << endl;
     };
 
@@ -156,7 +156,7 @@ void run_test_token(const string &url,
 
     auto print_txn = [client](uint64_t account_index) {
         auto seq_num = client->get_sequence_number(account_index) - 1;
-        auto [txn, event] = client->get_committed_txn_by_acc_seq(account_index, seq_num);
+        auto txn = client->get_committed_txn_by_acc_seq(account_index, seq_num);
         cout << "txn = " << txn << endl;
     };
 

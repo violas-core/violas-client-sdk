@@ -615,21 +615,20 @@ pub mod x86_64 {
         raw_ptr: u64,
         address: &[c_uchar; LENGTH],
         sequence_num: u64,
+        fetch_event: bool,
         out_transaction: *mut *mut c_char,
-        out_event: *mut *mut c_char,
     ) -> bool {
         //
-        let result = panic::catch_unwind(|| -> Result<(String, String), Error> {
+        let result = panic::catch_unwind(|| -> Result<String, Error> {
             let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
 
-            match proxy
-                .client
-                .get_txn_by_acc_seq(AccountAddress::new(*address), sequence_num, true)
-            {
+            match proxy.client.get_txn_by_acc_seq(
+                AccountAddress::new(*address),
+                sequence_num,
+                fetch_event,
+            ) {
                 Ok(txn_view) => {
                     let mut txn = String::new();
-                    let events = String::new();
-
                     match txn_view {
                         Some(txn_view) => {
                             txn = format!("{:#?}", txn_view);
@@ -637,7 +636,7 @@ pub mod x86_64 {
                         None => {}
                     };
 
-                    Ok((txn, events))
+                    Ok(txn)
                 }
                 Err(e) => bail!(
                     "Error getting committed transaction by account and sequence number, {}",
@@ -649,13 +648,12 @@ pub mod x86_64 {
         let mut ret = false;
         if result.is_ok() {
             match result.unwrap() {
-                Ok((txn, event)) => {
+                Ok(txn) => {
                     unsafe {
                         //c_char = Box::new(CString::new(txn));
                         *out_transaction = CString::new(txn)
                             .expect("new transaction detail")
                             .into_raw();
-                        *out_event = CString::new(event).expect("new event detail").into_raw();
                     }
                     ret = true
                 }
@@ -663,7 +661,7 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!(
-                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+                "panic at function \"libra_get_committed_txn_by_acc_seq\" !"
             ));
         }
 
@@ -1238,6 +1236,39 @@ pub mod x86_64 {
             } else {
                 set_last_error(format_err!(
                     "catch a panic at function 'violas_add_currency' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// get currency info
+    #[no_mangle]
+    pub fn violas_get_currency_info(raw_client: u64, out_currency_info: *mut *mut c_char) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+
+                // register currency
+                match proxy.client.get_currency_info() {
+                    Ok(currency_info) => {
+                        let txn = format!("{:#?}", currency_info);
+                        *out_currency_info = CString::new(txn)
+                            .expect("new transaction detail")
+                            .into_raw();
+                        true
+                    }
+                    Err(e) => {
+                        set_last_error(format_err!("failed to get_currency_info with error, {}", e));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_get_currency_info' !'"
                 ));
                 false
             }

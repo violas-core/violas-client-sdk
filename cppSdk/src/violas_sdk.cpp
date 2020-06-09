@@ -133,8 +133,6 @@ namespace LIB_NAME
         copy(begin(buffer), end(buffer), ostreambuf_iterator<char>(ofs));
     }
 
-    
-
     //
     //  ClientImp
     //  the implimentation of interface Clinet
@@ -444,24 +442,26 @@ namespace LIB_NAME
             CLOG << format("excuted script file '%s' for account faucet", script_file.data())
                  << endl;
         }
-        virtual std::pair<std::string, std::string>
+        virtual std::string
         get_committed_txn_by_acc_seq(uint64_t account_index,
-                                     uint64_t sequence_num) override
+                                     uint64_t sequence_num,
+                                     bool fetch_event) override
         {
             const auto &address = m_accounts.at(account_index).second;
 
-            return get_committed_txn_by_acc_seq(address, sequence_num);
+            return get_committed_txn_by_acc_seq(address, sequence_num, fetch_event);
         }
 
-        virtual std::pair<std::string, std::string>
-        get_committed_txn_by_acc_seq(Address address, uint64_t sequence_num) override
+        virtual std::string
+        get_committed_txn_by_acc_seq(Address address, uint64_t sequence_num, bool fetch_event) override
         {
-            char *out_txn = nullptr, *events = nullptr;
+            char *out_txn = nullptr;
 
             bool ret = libra_get_committed_txn_by_acc_seq((uint64_t)raw_client_proxy,
                                                           address.data().data(),
                                                           sequence_num,
-                                                          &out_txn, &events);
+                                                          fetch_event,
+                                                          &out_txn);
             if (!ret)
                 throw runtime_error(format("failed to get committed transaction by "
                                            "account index %d and sequence number %d, "
@@ -475,12 +475,11 @@ namespace LIB_NAME
                            address.to_string().c_str(), sequence_num)
                  << endl;
 
-            auto txn_events = make_pair<string, string>(out_txn, events);
+            string txn = out_txn;
 
             libra_free_string(out_txn);
-            libra_free_string(events);
 
-            return txn_events;
+            return txn;
         }
 
         virtual std::vector<std::pair<std::string, std::string>>
@@ -707,6 +706,22 @@ namespace LIB_NAME
             }
 
             return balance;
+        }
+
+        // get currency info
+        virtual std::string get_currency_info() override
+        {
+            char * currency_info = nullptr;
+
+            bool ret = violas_get_currency_info((uint64_t)raw_client_proxy, &currency_info);
+            if(!ret)
+                throw runtime_error(format("failed to get currency info, errror : %s ",
+                                           get_last_error().c_str()));
+            
+            string info = currency_info;
+            libra_free_string(currency_info);
+
+            return info;
         }
     };
 

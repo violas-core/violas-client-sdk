@@ -97,7 +97,7 @@ extern "C"
     //  get committed transaction and events info
     //  note that :  you must call 'libra_free_string' for argumets 'out_txn' and 'events' after calling 'libra_get_committed_txn_by_acc_seq'
     //
-    bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, const uint8_t address[], uint64_t sequence_num, char **out_txn, char **events);
+    bool libra_get_committed_txn_by_acc_seq(uint64_t raw_ptr, const uint8_t address[], uint64_t sequence_num, bool fetch_event, char **out_txn);
 
     struct TxnEvents
     {
@@ -184,21 +184,20 @@ extern "C"
 
     //  Register a new currency to blockchain under association account
     bool violas_register_currency(uint64_t raw_client,
-                             const ViolasTypeTag &violas_type_tag,
-                             uint64_t exchange_rate_denom,
-                             uint64_t exchange_rate_num,
-                             bool is_synthetic,
-                             uint64_t scaling_factor,
-                             uint64_t fractional_part,
-                             const char *currency_code,
-                             uint64_t currency_code_len);
+                                  const ViolasTypeTag &violas_type_tag,
+                                  uint64_t exchange_rate_denom,
+                                  uint64_t exchange_rate_num,
+                                  bool is_synthetic,
+                                  uint64_t scaling_factor,
+                                  uint64_t fractional_part,
+                                  const char *currency_code,
+                                  uint64_t currency_code_len);
 
     /// add a currency to current account
     bool violas_add_currency(uint64_t raw_client,
-                                  const ViolasTypeTag &violas_type_tag,
-                                  uint64_t account_index,
-                                  bool is_blocking);
-   
+                             const ViolasTypeTag &violas_type_tag,
+                             uint64_t account_index,
+                             bool is_blocking);
 
     /// mint coins for a receiver for a speciafied currency
     bool violas_mint_currency(uint64_t raw_client,
@@ -220,6 +219,9 @@ extern "C"
                                      const ViolasTypeTag &violas_type_tag,
                                      const uint8_t address[ADDRESS_LENGTH],
                                      uint64_t *out_balance);
+
+    /// get currency info
+    bool violas_get_currency_info(uint64_t raw_client, char **out_currency_info);
 
 #ifdef __cplusplus
 }

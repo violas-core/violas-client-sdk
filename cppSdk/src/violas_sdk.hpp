@@ -244,11 +244,11 @@ namespace LIB_NAME
                                     std::string_view script_file,
                                     const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
-        virtual std::pair<std::string, std::string>
-        get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num) = 0;
+        virtual std::string
+        get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num, bool fetch_event = true) = 0;
 
-        virtual std::pair<std::string, std::string>
-        get_committed_txn_by_acc_seq(Address address, uint64_t sequence_num) = 0;
+        virtual std::string
+        get_committed_txn_by_acc_seq(Address address, uint64_t sequence_num, bool fetch_event = true) = 0;
 
         virtual std::vector<std::pair<std::string, std::string>>
         get_txn_by_range(uint64_t start_version, uint64_t limit, bool fetch_events) = 0;
@@ -313,6 +313,9 @@ namespace LIB_NAME
         //
         virtual uint64_t
         get_currency_balance(const TypeTag &tag, const Address &address, bool throw_excption = false) = 0;
+
+        // get currency info
+        virtual std::string get_currency_info() = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

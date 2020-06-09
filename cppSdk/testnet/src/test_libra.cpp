@@ -50,7 +50,7 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
 
     auto print_txn = [client](Address address) {
         auto seq_num = client->get_sequence_number(address) - 1;
-        auto [txn, event] = client->get_committed_txn_by_acc_seq(address, seq_num);
+        auto txn = client->get_committed_txn_by_acc_seq(address, seq_num);
         cout << "txn = " << txn << endl;
     };
 
@@ -115,7 +115,7 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
 
         auto currency_code = get<2>(arg);
         try_catch([&]() {
-             client->register_currency(tag, 1, 2, false, 1000000, 100, currency_code);
+            client->register_currency(tag, 1, 2, false, 1000000, 100, currency_code);
         });
         //client->register_currency(tag, 1, 2, false, 1000000, 100, currency_code);
         cout << "registered currency " << module_name << endl;
@@ -146,4 +146,9 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
         balance = client->get_currency_balance(tag, accounts[1].address);
         cout << "Account 1's balance is " << (is_valid_balance(balance) ? to_string(balance) : "N/A") << endl;
     }
+
+    auto info = client->get_currency_info();
+    cout << endl
+         << "All currencies info : " << info
+         << endl;
 }

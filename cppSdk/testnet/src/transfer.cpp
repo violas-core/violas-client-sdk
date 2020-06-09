@@ -214,7 +214,7 @@ void create_token(client_ptr client, string script_files_path)
 
     auto seq_num = client->get_sequence_number(supervisor);
 
-    auto [txn, event] = client->get_committed_txn_by_acc_seq(supervisor, seq_num - 1);
+    auto txn = client->get_committed_txn_by_acc_seq(supervisor, seq_num - 1);
     cout << "The txn for create_token : " << txn << endl;
 
     for (const auto &account : accounts)
@@ -245,7 +245,7 @@ void transfer_token(client_ptr client, string script_files_path)
 
     auto print_txn = [client](uint64_t account_index) {
         auto seq_num = client->get_sequence_number(account_index) - 1;
-        auto [txn, event] = client->get_committed_txn_by_acc_seq(account_index, seq_num);
+        auto txn = client->get_committed_txn_by_acc_seq(account_index, seq_num);
         cout << "txn = " << txn << endl;
     };
 

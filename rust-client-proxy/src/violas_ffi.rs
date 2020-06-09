@@ -8,13 +8,8 @@ pub mod x86_64 {
     use anyhow::{bail, format_err, Error};
     use libra_types::waypoint::Waypoint;
     use libra_types::{
-        access_path::AccessPath,
-        account_address::AccountAddress,
-        account_config::CORE_CODE_ADDRESS,
-        account_config::{
-            association_address, lbr_type_tag, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
-        },
-        account_state::AccountState,
+        access_path::AccessPath, account_address::AccountAddress,
+        account_config::CORE_CODE_ADDRESS, account_config::*, account_state::AccountState,
         transaction::authenticator::AuthenticationKey,
     };
     use std::{

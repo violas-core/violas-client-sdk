@@ -2,6 +2,7 @@ script {
 use 0x0::FixedPoint32;
 use 0x0::Association;
 use 0x0::Libra;
+use 0x0::LibraAccount;
 
 fun main<NewCurrency>(
     account: &signer,
@@ -12,7 +13,7 @@ fun main<NewCurrency>(
     fractional_part: u64,
     currency_code: vector<u8>,
 )  {
-     Association::assert_sender_is_association();
+    Association::assert_is_association(account);
 
     // exchange rate to LBR
     let rate = FixedPoint32::create_from_rational(
@@ -32,6 +33,8 @@ fun main<NewCurrency>(
     Libra::publish_mint_capability(account,  mint_cap);
     
     Libra::publish_burn_capability(account, burn_cap);
+
+    LibraAccount::add_currency_to_account<NewCurrency>(0xFEE);
 }
 
 }

@@ -1,4 +1,4 @@
-address 0xA550C18 {
+address 0x0 {
 
 module EUR {
     use 0x0::Association;
@@ -8,7 +8,7 @@ module EUR {
     struct T { }
 
     public fun initialize(account: &signer): (Libra::MintCapability<T>, Libra::BurnCapability<T>) {
-        Association::assert_sender_is_association();
+        Association::assert_is_association(account);
         // Register the EUR currency.
         Libra::register_currency<T>(
             account,

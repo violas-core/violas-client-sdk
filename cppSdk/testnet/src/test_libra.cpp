@@ -121,8 +121,6 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
         cout << "registered currency " << module_name << endl;
         //print_txn(ASSOCIATION_ADDRESS);
 
-        auto balance = client->get_currency_balance(TypeTag(CORE_CODE_ADDRESS, "LBR", "T"), accounts[0].address);
-
         try_catch([&]() {
             client->add_currency(tag, 0);
         });
@@ -137,18 +135,23 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
         cout << "mint 1000 currency " << module_name << " to account 0" << endl;
 
         client->transfer_currency(tag, 0, accounts[1].auth_key, 500 * MICRO_COIN);
-        cout << "transfer 1000  currency " << module_name << " from account 0 to account 1" << endl;
+        cout << "transfer 500  currency " << module_name << " from account 0 to account 1" << endl;
 
         print_txn(accounts[0].address);
 
-        balance = client->get_currency_balance(tag, accounts[0].address);
-        cout << "Account 0's balance is " << (is_valid_balance(balance) ? to_string(balance) : "N/A") << endl;
+        auto balance = client->get_currency_balance(tag, accounts[0].address);
+        cout << "Account 0's balance for currency '" << currency_code << "' is " << (is_valid_balance(balance) ? to_string(balance) : "N/A") << endl;
         balance = client->get_currency_balance(tag, accounts[1].address);
-        cout << "Account 1's balance is " << (is_valid_balance(balance) ? to_string(balance) : "N/A") << endl;
+        cout << "Account 1's balance for currency '" << currency_code << "' is " << (is_valid_balance(balance) ? to_string(balance) : "N/A") << endl;
     }
 
     auto info = client->get_currency_info();
     cout << endl
          << "All currencies info : " << info
          << endl;
+
+    tie(events, last_status) = client->get_events(0, Client::EventType::sent, 0, 100);
+    cout << "account 0's sent events : " << endl;
+    copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
+    cout << last_status << endl;
 }

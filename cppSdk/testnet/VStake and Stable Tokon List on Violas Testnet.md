@@ -1,9 +1,4 @@
-# VStake and Stable Tokon List on Violas Testnet
-
-
-## 1. Violas Moudle published on addres e1be1ab8360a35a0259f1c93e3eac736
-
-## 1. Violas Tokens Table
+# 1. Violas multi currencies info
 ```json
 All currencies info : [
     CurrencyInfoView {
@@ -38,4 +33,3 @@ All currencies info : [
     },
 ]
 ```
-**Note : Violas Stakes are deployed by the chairman**

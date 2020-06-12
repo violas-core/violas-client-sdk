@@ -1,6 +1,6 @@
 address 0x0 {    //0xA550C18
 
-module GBP {
+module VLSGBP {
     use 0x0::Association;
     use 0x0::Libra;
     use 0x0::FixedPoint32;

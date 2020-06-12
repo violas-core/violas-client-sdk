@@ -159,6 +159,10 @@ extern "C"
                                     const char *account_path_addr,
                                     uint64_t token_index,
                                     uint64_t *balance);
+    //
+    //  enable custome script to run
+    //
+    bool libra_enable_custom_script(uint64_t raw_ptr, bool is_enabled);
 
     //
     //  publish a module with speciafied account index
@@ -222,6 +226,12 @@ extern "C"
 
     /// get currency info
     bool violas_get_currency_info(uint64_t raw_client, char **out_currency_info);
+
+    /// get account state
+    bool violas_get_account_state(uint64_t raw_client,                                     
+                                     const uint8_t address[ADDRESS_LENGTH],
+                                     char **out_account_state,
+                                     uint64_t *out_version);
 
 #ifdef __cplusplus
 }

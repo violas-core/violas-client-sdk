@@ -1,6 +1,6 @@
 address 0x0 {
 
-module EUR {
+module VLSEUR {
     use 0x0::Association;
     use 0x0::Libra;
     use 0x0::FixedPoint32;

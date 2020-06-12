@@ -45,12 +45,13 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt, fs,
+    io::{stdout, Write},
     path::{Path, PathBuf},
     process::Command,
     str::{self, FromStr},
     thread, time,
 };
-use stdlib::transaction_scripts::StdlibScript;
+use stdlib::{transaction_scripts::StdlibScript, StdLibOptions};
 use transaction_builder::encode_register_validator_script;
 
 const CLIENT_WALLET_MNEMONIC_FILE: &str = "client.mnemonic";
@@ -331,11 +332,7 @@ impl ClientProxy {
     }
 
     /// Adds a currency to the sending account. Fails if that currency already exists.
-    pub fn add_currency_org(
-        &mut self,
-        space_delim_strings: &[&str],
-        is_blocking: bool,
-    ) -> Result<()> {
+    pub fn add_currency(&mut self, space_delim_strings: &[&str], is_blocking: bool) -> Result<()> {
         ensure!(
             space_delim_strings.len() >= 3 && space_delim_strings.len() <= 6,
             "Invalid number of arguments for adding currency"
@@ -356,9 +353,22 @@ impl ClientProxy {
         })?;
 
         let gas_unit_price = if space_delim_strings.len() > 3 {
-            Some(space_delim_strings[4].parse::<u64>().map_err(|error| {
+            Some(space_delim_strings[3].parse::<u64>().map_err(|error| {
                 format_parse_data_error(
                     "gas_unit_price",
+                    InputType::UnsignedInt,
+                    space_delim_strings[3],
+                    error,
+                )
+            })?)
+        } else {
+            None
+        };
+
+        let max_gas_amount = if space_delim_strings.len() > 4 {
+            Some(space_delim_strings[4].parse::<u64>().map_err(|error| {
+                format_parse_data_error(
+                    "max_gas_amount",
                     InputType::UnsignedInt,
                     space_delim_strings[4],
                     error,
@@ -368,21 +378,8 @@ impl ClientProxy {
             None
         };
 
-        let max_gas_amount = if space_delim_strings.len() > 4 {
-            Some(space_delim_strings[5].parse::<u64>().map_err(|error| {
-                format_parse_data_error(
-                    "max_gas_amount",
-                    InputType::UnsignedInt,
-                    space_delim_strings[5],
-                    error,
-                )
-            })?)
-        } else {
-            None
-        };
-
         let gas_currency_code = if space_delim_strings.len() > 5 {
-            Some(space_delim_strings[6].to_owned())
+            Some(space_delim_strings[5].to_owned())
         } else {
             None
         };
@@ -449,7 +446,10 @@ impl ClientProxy {
                         num_coins,
                     )
                 };
-                self.association_transaction_with_local_faucet_account(script, is_blocking)
+                self.association_transaction_with_local_faucet_account(
+                    TransactionPayload::Script(script),
+                    is_blocking,
+                )
             }
             None => self.mint_coins_with_faucet_service(
                 receiver_auth_key,
@@ -477,9 +477,9 @@ impl ClientProxy {
         );
         match self.faucet_account {
             Some(_) => self.association_transaction_with_local_faucet_account(
-                transaction_builder::encode_publishing_option_script(
-                    VMPublishingOption::CustomScripts,
-                ),
+                TransactionPayload::Script(transaction_builder::encode_publishing_option_script(
+                    VMPublishingOption::Open,  //VMPublishingOption::CustomScripts,
+                )),
                 is_blocking,
             ),
             None => unimplemented!(),
@@ -503,8 +503,8 @@ impl ClientProxy {
         );
         match self.faucet_account {
             Some(_) => self.association_transaction_with_local_faucet_account(
-                transaction_builder::encode_publishing_option_script(VMPublishingOption::Locked(
-                    StdlibScript::whitelist(),
+                TransactionPayload::Script(transaction_builder::encode_publishing_option_script(
+                    VMPublishingOption::Locked(StdlibScript::whitelist()),
                 )),
                 is_blocking,
             ),
@@ -512,7 +512,34 @@ impl ClientProxy {
         }
     }
 
-    /// Remove a existing validator.
+    /// Only allow executing predefined script in the Move standard library in the network.
+    pub fn upgrade_stdlib(
+        &mut self,
+        space_delim_strings: &[&str],
+        is_blocking: bool,
+    ) -> Result<()> {
+        ensure!(
+            space_delim_strings[0] == "upgrade_stdlib",
+            "inconsistent command '{}' for upgrade_stdlib",
+            space_delim_strings[0]
+        );
+        ensure!(
+            space_delim_strings.len() == 1,
+            "Invalid number of arguments for upgrading_stdlib_transaction"
+        );
+
+        match self.faucet_account {
+            Some(_) => self.association_transaction_with_local_faucet_account(
+                TransactionPayload::WriteSet(
+                    transaction_builder::encode_stdlib_upgrade_transaction(StdLibOptions::Fresh),
+                ),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
+
+    /// Remove an existing validator from Validator Set.
     pub fn remove_validator(
         &mut self,
         space_delim_strings: &[&str],
@@ -524,21 +551,35 @@ impl ClientProxy {
             space_delim_strings[0]
         );
         ensure!(
-            space_delim_strings.len() == 2,
+            space_delim_strings.len() == 3,
             "Invalid number of arguments for removing validator"
         );
         let (account_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
-        match self.faucet_account {
-            Some(_) => self.association_transaction_with_local_faucet_account(
-                transaction_builder::encode_remove_validator_script(account_address),
-                is_blocking,
-            ),
-            None => unimplemented!(),
+        let private_key = Ed25519PrivateKey::from_encoded_string(space_delim_strings[2])?;
+        let program = transaction_builder::encode_remove_validator_script(account_address);
+        let mut sender = Self::get_account_data_from_address(
+            &mut self.client,
+            account_address,
+            true,
+            Some(KeyPair::from(private_key)),
+            None,
+        )?;
+        let txn = self.create_txn_to_submit(
+            TransactionPayload::Script(program),
+            &sender,
+            None,
+            None,
+            None,
+        )?;
+        self.client.submit_transaction(Some(&mut sender), txn)?;
+        if is_blocking {
+            self.wait_for_transaction(sender.address, sender.sequence_number)?;
         }
+        Ok(())
     }
 
-    /// Add a new validator.
+    /// Add a new validator to the Validator Set.
     pub fn add_validator(&mut self, space_delim_strings: &[&str], is_blocking: bool) -> Result<()> {
         ensure!(
             space_delim_strings[0] == "add_validator",
@@ -546,18 +587,32 @@ impl ClientProxy {
             space_delim_strings[0]
         );
         ensure!(
-            space_delim_strings.len() == 2,
+            space_delim_strings.len() == 3,
             "Invalid number of arguments for adding validator"
         );
         let (account_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
-        match self.faucet_account {
-            Some(_) => self.association_transaction_with_local_faucet_account(
-                transaction_builder::encode_add_validator_script(account_address),
-                is_blocking,
-            ),
-            None => unimplemented!(),
+        let private_key = Ed25519PrivateKey::from_encoded_string(space_delim_strings[2])?;
+        let mut sender = Self::get_account_data_from_address(
+            &mut self.client,
+            account_address,
+            true,
+            Some(KeyPair::from(private_key)),
+            None,
+        )?;
+        let program = transaction_builder::encode_add_validator_script(account_address);
+        let txn = self.create_txn_to_submit(
+            TransactionPayload::Script(program),
+            &sender,
+            None,
+            None,
+            None,
+        )?;
+        self.client.submit_transaction(Some(&mut sender), txn)?;
+        if is_blocking {
+            self.wait_for_transaction(sender.address, sender.sequence_number)?;
         }
+        Ok(())
     }
 
     /// Register an account as validator candidate with ValidatorConfig
@@ -621,6 +676,8 @@ impl ClientProxy {
         let mut max_iterations = 1000;
 
         loop {
+            stdout().flush().unwrap();
+
             match self
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
@@ -642,7 +699,7 @@ impl ClientProxy {
             }
             max_iterations -= 1;
             if max_iterations == 0 {
-                //break Err(format_err!("wait_for_transaction timeout"));
+                //panic!("wait_for_transaction timeout");
                 bail!("wait_for_transaction timeout");
             }
             thread::sleep(time::Duration::from_millis(10));
@@ -655,7 +712,6 @@ impl ClientProxy {
         &mut self,
         sender_account_ref_id: usize,
         receiver_address: &AccountAddress,
-        receiver_auth_key_prefix: Vec<u8>,
         num_coins: u64,
         coin_currency: String,
         gas_unit_price: Option<u64>,
@@ -674,8 +730,7 @@ impl ClientProxy {
             })?;
             let program = transaction_builder::encode_transfer_with_metadata_script(
                 type_tag_for_currency_code(currency_code),
-                &receiver_address,
-                receiver_auth_key_prefix,
+                *receiver_address,
                 num_coins,
                 vec![],
                 vec![],
@@ -714,7 +769,6 @@ impl ClientProxy {
         sender_address: AccountAddress,
         sender_sequence_number: u64,
         receiver_address: AccountAddress,
-        receiver_auth_key_prefix: Vec<u8>,
         num_coins: u64,
         coin_currency: String,
         gas_unit_price: Option<u64>,
@@ -725,8 +779,7 @@ impl ClientProxy {
             .map_err(|_| format_err!("Invalid currency code {} specified", coin_currency))?;
         let program = transaction_builder::encode_transfer_with_metadata_script(
             type_tag_for_currency_code(currency_code),
-            &receiver_address,
-            receiver_auth_key_prefix,
+            receiver_address,
             num_coins,
             vec![],
             vec![],
@@ -756,7 +809,7 @@ impl ClientProxy {
 
         let (sender_account_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
-        let (receiver_address, receiver_auth_key_opt) =
+        let (receiver_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[2])?;
 
         let transfer_currency = space_delim_strings[4];
@@ -796,14 +849,10 @@ impl ClientProxy {
         };
 
         let sender_account_ref_id = self.get_account_ref_id(&sender_account_address)?;
-        let receiver_auth_key_prefix = receiver_auth_key_opt.map_or(Vec::new(), |auth_key| {
-            AuthenticationKey::prefix(&auth_key).to_vec()
-        });
 
         self.transfer_coins_int(
             sender_account_ref_id,
             &receiver_address,
-            receiver_auth_key_prefix,
             num_coins,
             transfer_currency.to_owned(),
             gas_unit_price,
@@ -905,7 +954,7 @@ impl ClientProxy {
     }
 
     /// Publish Move module
-    pub fn publish_module_org(&mut self, space_delim_strings: &[&str]) -> Result<()> {
+    pub fn publish_module(&mut self, space_delim_strings: &[&str]) -> Result<()> {
         ensure!(
             space_delim_strings[0] == "publish",
             "inconsistent command '{}' for publish_module",
@@ -1324,19 +1373,13 @@ impl ClientProxy {
 
     fn association_transaction_with_local_faucet_account(
         &mut self,
-        program: Script,
+        payload: TransactionPayload,
         is_blocking: bool,
     ) -> Result<()> {
         ensure!(self.faucet_account.is_some(), "No faucet account loaded");
         let sender = self.faucet_account.as_ref().unwrap();
         let sender_address = sender.address;
-        let txn = self.create_txn_to_submit(
-            TransactionPayload::Script(program),
-            sender,
-            None,
-            None,
-            None,
-        )?;
+        let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
         let mut sender_mut = self.faucet_account.as_mut().unwrap();
         let resp = self.client.submit_transaction(Some(&mut sender_mut), txn);
         if is_blocking {
@@ -1499,9 +1542,10 @@ impl ClientProxy {
             .ok_or_else(|| format_err!("Unable to find account by ref id: {}", account_ref_id))?;
         Ok(account_data)
     }
-    //
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //  the following methods are added for Violas SDK
-    //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /// submit a transaction with specified account index
     fn submit_transction_with_account(
@@ -1547,7 +1591,7 @@ impl ClientProxy {
     /// Publish Move module
     /// if sender ref id is u64::MAX, then publish module with association account
     ///
-    pub fn publish_module(&mut self, sender_ref_id: u64, module_file_name: &str) -> Result<()> {
+    pub fn publish_module_ex(&mut self, sender_ref_id: u64, module_file_name: &str) -> Result<()> {
         let sender = if sender_ref_id == u64::MAX {
             if self.faucet_account.is_none() {
                 bail!("No faucet account loaded");
@@ -1632,8 +1676,32 @@ impl ClientProxy {
         // let script_bytes = fs::read(
         //     "/home/hunter/Projects/work/ViolasClientSdk/cppSdk/move/compiled/register_currency.mv",
         // )?;
-        let script_bytes = vec![0xa1, 0x1c, 0xeb, 0x0b, 0x01, 0x00, 0x09, 0x01, 0x58, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x02, 0x60, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x00, 0x03, 0x6e, 0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00, 0x04, 0x90, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x05, 0x98, 0x00, 0x00, 0x00, 0x4b, 0x00, 0x00, 0x00, 0x07, 0xe3, 0x00, 0x00, 0x00, 0xd1, 0x00, 0x00, 0x00, 0x08, 0xb4, 0x01, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x06, 0xc4, 0x01, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x09, 0xd6, 0x01, 0x00, 0x00, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x01, 0x05, 0x02, 0x00, 0x02, 0x07, 0x01, 0x01, 0x01, 0x02, 0x08, 0x01, 0x01, 0x01, 0x00, 0x04, 0x00, 0x01, 0x00, 0x01, 0x06, 0x02, 0x03, 0x00, 0x02, 0x09, 0x04, 0x01, 0x01, 0x01, 0x02, 0x0a, 0x05, 0x01, 0x01, 0x01, 0x02, 0x0b, 0x06, 0x07, 0x01, 0x01, 0x03, 0x0c, 0x08, 0x01, 0x01, 0x01, 0x04, 0x0b, 0x03, 0x0b, 0x02, 0x0b, 0x05, 0x0b, 0x01, 0x06, 0x0c, 0x00, 0x02, 0x03, 0x03, 0x01, 0x08, 0x00, 0x02, 0x06, 0x0c, 0x0b, 0x01, 0x01, 0x09, 0x00, 0x02, 0x06, 0x0c, 0x0b, 0x02, 0x01, 0x09, 0x00, 0x06, 0x06, 0x0c, 0x08, 0x00, 0x01, 0x03, 0x03, 0x0a, 0x02, 0x02, 0x0b, 0x02, 0x01, 0x09, 0x00, 0x0b, 0x01, 0x01, 0x09, 0x00, 0x01, 0x05, 0x07, 0x06, 0x0c, 0x03, 0x03, 0x01, 0x03, 0x03, 0x0a, 0x02, 0x03, 0x0b, 0x01, 0x01, 0x09, 0x00, 0x0b, 0x02, 0x01, 0x09, 0x00, 0x08, 0x00, 0x01, 0x09, 0x00, 0x0b, 0x41, 0x73, 0x73, 0x6f, 0x63, 0x69, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x0c, 0x46, 0x69, 0x78, 0x65, 0x64, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x33, 0x32, 0x05, 0x4c, 0x69, 0x62, 0x72, 0x61, 0x0c, 0x4c, 0x69, 0x62, 0x72, 0x61, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x15, 0x61, 0x73, 0x73, 0x65, 0x72, 0x74, 0x5f, 0x69, 0x73, 0x5f, 0x61, 0x73, 0x73, 0x6f, 0x63, 0x69, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x01, 0x54, 0x14, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x5f, 0x66, 0x72, 0x6f, 0x6d, 0x5f, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x0e, 0x42, 0x75, 0x72, 0x6e, 0x43, 0x61, 0x70, 0x61, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x0e, 0x4d, 0x69, 0x6e, 0x74, 0x43, 0x61, 0x70, 0x61, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x17, 0x70, 0x75, 0x62, 0x6c, 0x69, 0x73, 0x68, 0x5f, 0x62, 0x75, 0x72, 0x6e, 0x5f, 0x63, 0x61, 0x70, 0x61, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x17, 0x70, 0x75, 0x62, 0x6c, 0x69, 0x73, 0x68, 0x5f, 0x6d, 0x69, 0x6e, 0x74, 0x5f, 0x63, 0x61, 0x70, 0x61, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x11, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x5f, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x63, 0x79, 0x17, 0x61, 0x64, 0x64, 0x5f, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x63, 0x79, 0x5f, 0x74, 0x6f, 0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xee, 0x01, 0x01, 0x09, 0x0a, 0x18, 0x00, 0x0a, 0x00, 0x11, 0x00, 0x0a, 0x01, 0x0a, 0x02, 0x11, 0x01, 0x0c, 0x09, 0x0a, 0x00, 0x0b, 0x09, 0x0a, 0x03, 0x0a, 0x04, 0x0a, 0x05, 0x0b, 0x06, 0x38, 0x00, 0x0c, 0x07, 0x0c, 0x08, 0x0a, 0x00, 0x0b, 0x08, 0x38, 0x01, 0x0b, 0x00, 0x0b, 0x07, 0x38, 0x02, 0x07, 0x00, 0x38, 0x03, 0x02];
-        
+        let script_bytes = vec![
+            161, 28, 235, 11, 1, 0, 9, 1, 88, 0, 0, 0, 8, 0, 0, 0, 2, 96, 0, 0, 0, 14, 0, 0, 0, 3,
+            110, 0, 0, 0, 34, 0, 0, 0, 4, 144, 0, 0, 0, 8, 0, 0, 0, 5, 152, 0, 0, 0, 75, 0, 0, 0,
+            7, 227, 0, 0, 0, 209, 0, 0, 0, 8, 180, 1, 0, 0, 16, 0, 0, 0, 6, 196, 1, 0, 0, 18, 0, 0,
+            0, 9, 214, 1, 0, 0, 53, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 3, 1, 5, 2, 0, 2, 7, 1, 1, 1, 2,
+            8, 1, 1, 1, 0, 4, 0, 1, 0, 1, 6, 2, 3, 0, 2, 9, 4, 1, 1, 1, 2, 10, 5, 1, 1, 1, 2, 11,
+            6, 7, 1, 1, 3, 12, 8, 1, 1, 1, 4, 11, 3, 11, 2, 11, 5, 11, 1, 6, 12, 0, 2, 3, 3, 1, 8,
+            0, 2, 6, 12, 11, 1, 1, 9, 0, 2, 6, 12, 11, 2, 1, 9, 0, 6, 6, 12, 8, 0, 1, 3, 3, 10, 2,
+            2, 11, 2, 1, 9, 0, 11, 1, 1, 9, 0, 1, 5, 7, 6, 12, 3, 3, 1, 3, 3, 10, 2, 3, 11, 1, 1,
+            9, 0, 11, 2, 1, 9, 0, 8, 0, 1, 9, 0, 11, 65, 115, 115, 111, 99, 105, 97, 116, 105, 111,
+            110, 12, 70, 105, 120, 101, 100, 80, 111, 105, 110, 116, 51, 50, 5, 76, 105, 98, 114,
+            97, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117, 110, 116, 21, 97, 115, 115, 101,
+            114, 116, 95, 105, 115, 95, 97, 115, 115, 111, 99, 105, 97, 116, 105, 111, 110, 1, 84,
+            20, 99, 114, 101, 97, 116, 101, 95, 102, 114, 111, 109, 95, 114, 97, 116, 105, 111,
+            110, 97, 108, 14, 66, 117, 114, 110, 67, 97, 112, 97, 98, 105, 108, 105, 116, 121, 14,
+            77, 105, 110, 116, 67, 97, 112, 97, 98, 105, 108, 105, 116, 121, 23, 112, 117, 98, 108,
+            105, 115, 104, 95, 98, 117, 114, 110, 95, 99, 97, 112, 97, 98, 105, 108, 105, 116, 121,
+            23, 112, 117, 98, 108, 105, 115, 104, 95, 109, 105, 110, 116, 95, 99, 97, 112, 97, 98,
+            105, 108, 105, 116, 121, 17, 114, 101, 103, 105, 115, 116, 101, 114, 95, 99, 117, 114,
+            114, 101, 110, 99, 121, 23, 97, 100, 100, 95, 99, 117, 114, 114, 101, 110, 99, 121, 95,
+            116, 111, 95, 97, 99, 99, 111, 117, 110, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 5, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 238, 1, 1, 9, 10, 24, 0, 10,
+            0, 17, 0, 10, 1, 10, 2, 17, 1, 12, 9, 10, 0, 11, 9, 10, 3, 10, 4, 10, 5, 11, 6, 56, 0,
+            12, 7, 12, 8, 10, 0, 11, 8, 56, 1, 11, 0, 11, 7, 56, 2, 7, 0, 56, 3, 2,
+        ];
+
         // costruct register currency script
         let script = Script::new(
             script_bytes,
@@ -1649,12 +1717,15 @@ impl ClientProxy {
         );
 
         match self.faucet_account {
-            Some(_) => self.association_transaction_with_local_faucet_account(script, is_blocking),
+            Some(_) => self.association_transaction_with_local_faucet_account(
+                TransactionPayload::Script(script),
+                is_blocking,
+            ),
             None => unimplemented!(),
         }
     }
 
-    pub fn add_currency(
+    pub fn add_currency_ex(
         &mut self,
         type_tag: TypeTag,
         account_ref_id: u64,
@@ -1662,10 +1733,14 @@ impl ClientProxy {
     ) -> Result<()> {
         if account_ref_id == u64::MAX {
             match &self.faucet_account {
-                Some(_) => self.association_transaction_with_local_faucet_account(
-                    transaction_builder::encode_add_currency_to_account_script(type_tag),
-                    is_blocking,
-                ),
+                Some(_) => {
+                    let script =
+                        transaction_builder::encode_add_currency_to_account_script(type_tag);
+                    self.association_transaction_with_local_faucet_account(
+                        TransactionPayload::Script(script),
+                        is_blocking,
+                    )
+                }
                 None => unimplemented!(),
             }
         } else {
@@ -1709,9 +1784,10 @@ impl ClientProxy {
         };
 
         match &self.faucet_account {
-            Some(_faucet) => {
-                self.association_transaction_with_local_faucet_account(script, is_blocking)
-            }
+            Some(_faucet) => self.association_transaction_with_local_faucet_account(
+                TransactionPayload::Script(script),
+                is_blocking,
+            ),
             None => unimplemented!(),
         }
     }
@@ -1728,8 +1804,7 @@ impl ClientProxy {
     ) -> Result<()> {
         let program = transaction_builder::encode_transfer_with_metadata_script(
             type_tag,
-            &receiver_address,
-            receiver_auth_key_prefix,
+            *receiver_address,
             num_coins,
             vec![],
             vec![],
@@ -1777,10 +1852,13 @@ impl ClientProxy {
     ) -> Result<()> {
         if account_ref_id == u64::MAX {
             match &self.faucet_account {
-                Some(_) => self.association_transaction_with_local_faucet_account(
-                    transaction_builder::encode_register_preburner_script(type_tag),
-                    is_blocking,
-                ),
+                Some(_) => {
+                    let script = transaction_builder::encode_register_preburner_script(type_tag);
+                    self.association_transaction_with_local_faucet_account(
+                        TransactionPayload::Script(script),
+                        is_blocking,
+                    )
+                }
                 None => unimplemented!(),
             }
         } else {
@@ -1804,10 +1882,13 @@ impl ClientProxy {
     ) -> Result<()> {
         if account_ref_id == u64::MAX {
             match &self.faucet_account {
-                Some(_) => self.association_transaction_with_local_faucet_account(
-                    transaction_builder::encode_preburn_script(type_tag, amount),
-                    is_blocking,
-                ),
+                Some(_) => {
+                    let script = transaction_builder::encode_preburn_script(type_tag, amount);
+                    self.association_transaction_with_local_faucet_account(
+                        TransactionPayload::Script(script),
+                        is_blocking,
+                    )
+                }
                 None => unimplemented!(),
             }
         } else {
@@ -1824,18 +1905,25 @@ impl ClientProxy {
     ///  Permanently destroy the `Token`s stored in the oldest burn request under the `Preburn` resource
     pub fn burn(
         &mut self,
-        type_tag: TypeTag,        
+        type_tag: TypeTag,
         account_ref_id: u64,
-        sliding_nonce: u64, 
+        sliding_nonce: u64,
         preburn_address: AccountAddress,
         is_blocking: bool,
     ) -> Result<()> {
         if account_ref_id == u64::MAX {
             match &self.faucet_account {
-                Some(_) => self.association_transaction_with_local_faucet_account(
-                    transaction_builder::encode_burn_script(type_tag, sliding_nonce, preburn_address),
-                    is_blocking,
-                ),
+                Some(_) => {
+                    let script = transaction_builder::encode_burn_script(
+                        type_tag,
+                        sliding_nonce,
+                        preburn_address,
+                    );
+                    self.association_transaction_with_local_faucet_account(
+                        TransactionPayload::Script(script),
+                        is_blocking,
+                    )
+                }
                 None => unimplemented!(),
             }
         } else {

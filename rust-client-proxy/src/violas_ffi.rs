@@ -24,7 +24,6 @@ pub mod x86_64 {
         *,
     };
     use tempdir::TempDir;
-
     pub const LENGTH: usize = 16;
 
     thread_local! {
@@ -541,7 +540,7 @@ pub mod x86_64 {
             let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
 
-            proxy.publish_module(sender_ref_id, module)
+            proxy.publish_module_ex(sender_ref_id, module)
         });
 
         if result.is_ok() {
@@ -1084,7 +1083,7 @@ pub mod x86_64 {
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
                 );
                 // register currency
-                match proxy.add_currency(type_tag, account_index, is_blocking) {
+                match proxy.add_currency_ex(type_tag, account_index, is_blocking) {
                     Ok(_) => true,
                     Err(e) => {
                         set_last_error(format_err!("failed to add currency with error, {}", e));
@@ -1259,7 +1258,60 @@ pub mod x86_64 {
                         true
                     }
                     Err(e) => {
-                        set_last_error(format_err!("failed to get_currency_info with error, {}", e));
+                        set_last_error(format_err!(
+                            "failed to get_currency_info with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_get_currency_info' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// Get account state
+    #[no_mangle]
+    pub fn violas_get_account_state(
+        raw_client: u64,
+        address: &[u8; 16],
+        out_state: *mut *mut c_char,
+        out_version: *mut u64,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+
+                // register currency
+                match proxy
+                    .client
+                    .get_account_state(AccountAddress::new(*address), true)
+                {
+                    Ok((state, version)) => {
+                        *out_version = version;
+                        match state {
+                            Some(view) => {
+                                let json_state = serde_json::to_string(&view).unwrap();
+                                *out_state = CString::new(json_state)
+                                    .expect("new transaction detail")
+                                    .into_raw();
+                                true
+                            }
+                            None => false,
+                        }
+                    }
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to get account state with error, {}",
+                            e
+                        ));
                         false
                     }
                 }

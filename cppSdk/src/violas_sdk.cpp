@@ -595,6 +595,16 @@ namespace LIB_NAME
             return result;
         }
 
+        virtual void
+        enable_custom_script(bool is_enabled) override
+        {
+            bool ret = libra_enable_custom_script((uint64_t)raw_client_proxy, is_enabled);
+
+            if (!ret)
+                throw runtime_error(format("failed to call enable_custom_script, errror : %s ",
+                                           get_last_error().c_str()));
+        }
+
         //
         // multi currency methods
         //
@@ -711,17 +721,34 @@ namespace LIB_NAME
         // get currency info
         virtual std::string get_currency_info() override
         {
-            char * currency_info = nullptr;
+            char *currency_info = nullptr;
 
             bool ret = violas_get_currency_info((uint64_t)raw_client_proxy, &currency_info);
-            if(!ret)
+            if (!ret)
                 throw runtime_error(format("failed to get currency info, errror : %s ",
                                            get_last_error().c_str()));
-            
+
             string info = currency_info;
             libra_free_string(currency_info);
 
             return info;
+        }
+
+        // get account state
+        virtual std::pair<std::string, uint64_t>
+        get_account_state(const Address &addr) override
+        {
+            char *out_state = nullptr;
+            uint64_t version = 0;
+
+            bool ret = violas_get_account_state((uint64_t)raw_client_proxy, addr.data().data(), &out_state, &version);
+            if (!ret)
+                throw runtime_error(format("failed to get account state, errror : %s ",
+                                           get_last_error().c_str()));
+            string state = out_state;
+            libra_free_string(out_state);
+
+            return make_pair<>(state, version);
         }
     };
 

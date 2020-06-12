@@ -93,10 +93,11 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     ////////////////////////////////////////////////////////////////////////////////
 
     //const auto root   = Address::from_string("00000000000000000000000000000000");
-
-    auto args = {make_tuple("coin_usd.mv", "USD", u8"USD"),
-                 make_tuple("coin_eur.mv", "EUR", u8"EUR"),
-                 make_tuple("coin_gbp.mv", "GBP", u8"GBP")};
+    client->enable_custom_script(true);
+    
+    auto args = {make_tuple("coin_usd.mv", "VLSUSD", u8"VLSUSD"),
+                 make_tuple("coin_eur.mv", "VLSEUR", u8"VLSEUR"),
+                 make_tuple("coin_gbp.mv", "VLSGBP", u8"VLSGBP")};
 
     for (const auto &arg : args)
     {
@@ -149,6 +150,9 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     cout << endl
          << "All currencies info : " << info
          << endl;
+
+    auto [state, version] = client->get_account_state(accounts[0].address);
+    cout << "Account 0' state : " << state << endl;
 
     tie(events, last_status) = client->get_events(0, Client::EventType::sent, 0, 100);
     cout << "account 0's sent events : " << endl;

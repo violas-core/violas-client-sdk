@@ -280,6 +280,9 @@ namespace LIB_NAME
         virtual uint64_t
         get_account_resource_uint64(const Address &account_addr, const Address &res_path_addr, uint64_t token_index) = 0;
 
+        virtual void
+        enable_custom_script(bool is_enabled) = 0;
+
         /// add a currency to current account
         virtual void
         add_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
@@ -316,6 +319,10 @@ namespace LIB_NAME
 
         // get currency info
         virtual std::string get_currency_info() = 0;
+
+        // get account state
+        virtual std::pair<std::string, uint64_t>
+        get_account_state(const Address &res_path_addr) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

@@ -1,9 +1,9 @@
-address 0x0 {    //0xA550C18
+address 0x0 {
 
-module USD {
+module VLSUSD {
 
-    struct T { }    
-    
+    struct T { }
+
 }
 
 }

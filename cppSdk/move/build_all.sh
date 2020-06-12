@@ -1,14 +1,14 @@
 echo "build modules/coin_usd.move"
 ./build.sh modules/coin_usd.move 0x0
-mv move_build_output/modules/0_USD.mv compiled/coin_usd.mv
+mv move_build_output/modules/0_VLSUSD.mv compiled/coin_usd.mv
 
 echo "build modules/coin_eur.move"
 ./build.sh modules/coin_eur.move 0x0
-mv move_build_output/modules/0_EUR.mv compiled/coin_eur.mv
+mv move_build_output/modules/0_VLSEUR.mv compiled/coin_eur.mv
 
 echo "build modules/coin_gbp.move"
 ./build.sh modules/coin_gbp.move 0x0 
-mv move_build_output/modules/0_GBP.mv compiled/coin_gbp.mv
+mv move_build_output/modules/0_VLSGBP.mv compiled/coin_gbp.mv
 
 echo "build scripts/register_currency.move"
 ./build.sh scripts/register_currency.move 0x0

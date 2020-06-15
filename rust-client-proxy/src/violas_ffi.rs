@@ -1016,6 +1016,40 @@ pub mod x86_64 {
         }
     }
 
+    /// publish a new module with specialfied currency code
+    #[no_mangle]
+    pub extern "C" fn violas_publish_currency(
+        raw_client: u64,
+        in_module_name: *const c_char,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let module_name = CStr::from_ptr(in_module_name)
+                    .to_str()
+                    .unwrap()
+                    .as_bytes()
+                    .to_owned();
+                // publish currency
+                match proxy.publish_currency(module_name) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!("failed to add currency with error, {}", e));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency' !'"
+                ));
+                false
+            }
+        }
+    }
+
     /// add a new currency
     #[no_mangle]
     pub fn violas_register_currency(

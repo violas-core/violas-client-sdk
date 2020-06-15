@@ -632,6 +632,16 @@ namespace LIB_NAME
                                            get_last_error().c_str()));
         }
 
+        /// pulish a currency module wiht 0x0 address
+        virtual void
+        publish_currency(string_view currency_code) override
+        {
+            bool ret = violas_publish_currency((uint64_t)raw_client_proxy, currency_code.data());
+            if (!ret)
+                throw runtime_error(format("failed to publish a currency module, errror : %s ",
+                                           get_last_error().c_str()));
+        }
+
         /// register a new currency to blocakchain
         virtual void
         register_currency(const TypeTag &type_tag,

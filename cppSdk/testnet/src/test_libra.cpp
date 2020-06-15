@@ -94,10 +94,12 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
 
     //const auto root   = Address::from_string("00000000000000000000000000000000");
     client->enable_custom_script(true);
-    
+
     auto args = {make_tuple("coin_usd.mv", "VLSUSD", u8"VLSUSD"),
                  make_tuple("coin_eur.mv", "VLSEUR", u8"VLSEUR"),
-                 make_tuple("coin_gbp.mv", "VLSGBP", u8"VLSGBP")};
+                 make_tuple("coin_gbp.mv", "VLSGBP", u8"VLSGBP"),
+                 make_tuple("coin_gbp.mv", "VLSJPY", u8"VLSJPY"),
+                 make_tuple("coin_gbp.mv", "VLSSGD", u8"VLSSGD")};
 
     for (const auto &arg : args)
     {
@@ -110,7 +112,8 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
                              faucet);
 
         try_catch([&]() {
-            client->publish_module(ASSOCIATION_ID, contract);
+            //client->publish_module(ASSOCIATION_ID, contract);
+            client->publish_currency(module_name);
         });
         cout << "publish module : " << module_name << endl;
 

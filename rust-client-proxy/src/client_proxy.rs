@@ -478,7 +478,7 @@ impl ClientProxy {
         match self.faucet_account {
             Some(_) => self.association_transaction_with_local_faucet_account(
                 TransactionPayload::Script(transaction_builder::encode_publishing_option_script(
-                    VMPublishingOption::Open,  //VMPublishingOption::CustomScripts,
+                    VMPublishingOption::Open, //VMPublishingOption::CustomScripts,
                 )),
                 is_blocking,
             ),
@@ -1658,7 +1658,31 @@ impl ClientProxy {
         self.wait_for_transaction(sender_address, sequence_number + 1)?;
         resp
     }
+    ///
+    /// pusblis a new module with specified module name
+    ///
+    pub fn publish_currency(&mut self, module_name: Vec<u8>) -> Result<()> {
+        let module_byte_code = vec![
+            161, 28, 235, 11, 1, 0, 6, 1, 61, 0, 0, 0, 2, 0, 0, 0, 2, 63, 0, 0, 0, 4, 0, 0, 0, 7,
+            67, 0, 0, 0, 21, 0, 0, 0, 8, 88, 0, 0, 0, 16, 0, 0, 0, 15, 104, 0, 0, 0, 1, 0, 0, 0,
+            10, 105, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 1, 2, 0, 6, 86, 76, 83, 85, 83, 68, 1, 84, 11,
+            100, 117, 109, 109, 121, 95, 102, 105, 101, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 2, 1, 2, 1,
+        ];
 
+        let position = 0x43; //module_byte_code.
+        let head = &module_byte_code[..position];   //from begin to index 
+        let tail = &module_byte_code[position+6..]; //skip VLSUSD from current to end
+        let new_module_byte_code = [head, &module_name[..], tail].concat();
+
+        match self.faucet_account {
+            Some(_) => self.association_transaction_with_local_faucet_account(
+                TransactionPayload::Module(Module::new(new_module_byte_code)),
+                true,
+            ),
+            None => unimplemented!(),
+        }
+    }
     ///
     /// add a new currency with association account
     ///

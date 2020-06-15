@@ -287,6 +287,10 @@ namespace LIB_NAME
         virtual void
         add_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
 
+        /// pulish a currency module wiht 0x0 address
+        virtual void 
+        publish_currency(std::string_view currency_code) = 0;
+
         /// register a new currency to blockchain
         virtual void
         register_currency(const TypeTag &type_tag,

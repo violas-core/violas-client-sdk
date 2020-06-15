@@ -186,6 +186,9 @@ extern "C"
                                const char *script_file,
                                const ScriptArgs *script_args);
 
+    // publish a currency module with 0x0 address 
+    bool violas_publish_currency(uint64_t raw_client, const char * currency_code);
+    
     //  Register a new currency to blockchain under association account
     bool violas_register_currency(uint64_t raw_client,
                                   const ViolasTypeTag &violas_type_tag,

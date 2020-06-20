@@ -1,4 +1,4 @@
-# 1. Violas multi currencies info
+# 1. Violas multi-currency info
 ```json
 All currencies info : [
     CurrencyInfoView {

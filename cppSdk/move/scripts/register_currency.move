@@ -1,8 +1,8 @@
 script {
-use 0x0::FixedPoint32;
-use 0x0::Association;
-use 0x0::Libra;
-use 0x0::LibraAccount;
+use 0x1::FixedPoint32;
+use 0x1::Association;
+use 0x1::Libra;
+//use 0x1::LibraAccount;
 
 fun main<NewCurrency>(
     account: &signer,
@@ -34,7 +34,7 @@ fun main<NewCurrency>(
     
     Libra::publish_burn_capability(account, burn_cap);
 
-    LibraAccount::add_currency_to_account<NewCurrency>(0xFEE);
+    //LibraAccount::add_currency_by_address<NewCurrency>(account,0xFEE);
 }
 
 }

@@ -25,6 +25,7 @@ Client::Client(std::string_view url, std::string_view mint_key, std::string_view
             c_waypoint : * const c_char as "cosnt char *"]-> *mut ClientProxy as "void *" {
         let client = ClientProxy::new(CStr::from_ptr(c_url).to_str().unwrap(),
                                         CStr::from_ptr(c_mint_key).to_str().unwrap() ,
+                                        CStr::from_ptr(c_mint_key).to_str().unwrap(),
                                         true,
                                         None,
                                         Some(CStr::from_ptr(c_mnemonic).to_str().unwrap().to_owned()),

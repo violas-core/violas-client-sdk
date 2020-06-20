@@ -1,9 +1,9 @@
-address 0x0 {
+address 0x1 {
 
 module VLSEUR {
-    use 0x0::Association;
-    use 0x0::Libra;
-    use 0x0::FixedPoint32;
+    use 0x1::Association;
+    use 0x1::Libra;
+    use 0x1::FixedPoint32;
 
     struct T { }
 

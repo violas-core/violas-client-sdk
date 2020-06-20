@@ -52,9 +52,9 @@ mv move_build_output/scripts/main.mv compiled/register_currency.mv
 # mv move_build_output/scripts/main.mv compiled/exchange_violas_to_token_swap.mv
 
 
-echo "build bank.move"
-./build.sh modules/bank.move 0x0
-mv  move_build_output/modules/0_ViolasBank.mv compiled/ViolasBank.mv
+# echo "build bank.move"
+# ./build.sh modules/bank.move 0x0
+# mv  move_build_output/modules/0_ViolasBank.mv compiled/ViolasBank.mv
 
 # echo "build publish.move"
 # ./build.sh publish.move 0x0 token.move

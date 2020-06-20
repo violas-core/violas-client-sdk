@@ -34,11 +34,11 @@ pub fn account_struct_tag(addr: &AccountAddress) -> StructTag {
     }
 }
 
-pub fn currency_type_tag(addr: &AccountAddress, module_name: &str) -> TypeTag {
+pub fn currency_type_tag(addr: &AccountAddress, currency_code: &str) -> TypeTag {
     TypeTag::Struct(StructTag {
         address: *addr,
-        module: from_currency_code_string(module_name).unwrap(),
-        name: coin_struct_name().to_owned(),
+        module: from_currency_code_string(currency_code).unwrap(),
+        name: from_currency_code_string(currency_code).unwrap(),
         type_params: vec![],
     })
 }

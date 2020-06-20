@@ -70,9 +70,14 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| {
+                let faucet_account_file = CStr::from_ptr(c_mint_key).to_str().unwrap();
+                // Faucet and TreasuryCompliance use the same keypair for now
+                let treasury_compliance_account_file = faucet_account_file.clone();
+
                 let client = ClientProxy::new(
                     CStr::from_ptr(c_url).to_str().unwrap(),
-                    CStr::from_ptr(c_mint_key).to_str().unwrap(),
+                    faucet_account_file,
+                    treasury_compliance_account_file,
                     sync_on_wallet_recovery,
                     Some(CStr::from_ptr(faucet_server).to_str().unwrap().to_owned()),
                     Some(CStr::from_ptr(c_mnemonic).to_str().unwrap().to_owned()),
@@ -347,8 +352,8 @@ pub mod x86_64 {
         sender_account_ref_id: usize,
         receiver_addr: &[u8; 16],
         micro_coins: u64,
-        gas_unit_price: u64,
-        max_gas_amount: u64,
+        _gas_unit_price: u64,
+        _max_gas_amount: u64,
         is_blocking: bool,
         result: &mut IndexAndSeq,
     ) -> bool {
@@ -356,13 +361,11 @@ pub mod x86_64 {
             // convert raw ptr to object client
             let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
             let receiver_address = AccountAddress::new(*receiver_addr);
-            let receiver_auth_key_prefix: Vec<u8> = vec![];
 
             client.transfer_currency(
                 lbr_type_tag(),
                 sender_account_ref_id,
                 &receiver_address,
-                receiver_auth_key_prefix,
                 micro_coins,
                 is_blocking,
             )?;
@@ -1206,7 +1209,6 @@ pub mod x86_64 {
                     type_tag,
                     sender_account_index as usize,
                     &auth_key.derived_address(),
-                    auth_key.prefix().to_vec(),
                     amount,
                     is_blocking,
                 ) {

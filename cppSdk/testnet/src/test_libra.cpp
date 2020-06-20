@@ -94,7 +94,10 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
 
     //const auto root   = Address::from_string("00000000000000000000000000000000");
     client->enable_custom_script(true);
+    cout << "enable publsih custmer script." << endl;
 
+    //return;
+    
     // auto args = {make_tuple("coin_usd.mv", "VLSUSD", u8"VLSUSD"),
     //              make_tuple("coin_eur.mv", "VLSEUR", u8"VLSEUR"),
     //              make_tuple("coin_gbp.mv", "VLSGBP", u8"VLSGBP"),
@@ -106,14 +109,14 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
 
     for (const auto &currency : currencies)
     {
-        TypeTag tag(CORE_CODE_ADDRESS, currency, "T");
+        TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
 
-        // replace_mv_with_addr(string("../../cppSdk/move/compiled/") + contract,
+        // replace_mv_with_addr(string("../../cppSdk/move/compiled/coin_usd.mv"),
         //                      contract,
         //                      faucet);
 
         try_catch([&]() {
-            //client->publish_module(ASSOCIATION_ID, contract);
+            //client->publish_module(ASSOCIATION_ID, "../../cppSdk/move/compiled/coin_usd.mv");
             client->publish_currency(currency);
         });
         cout << "publish module : " << currency << endl;

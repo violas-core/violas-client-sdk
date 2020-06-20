@@ -1,9 +1,9 @@
-address 0x0 {    //0xA550C18
+address 0x1 {    //0xA550C18
 
 module VLSGBP {
-    use 0x0::Association;
-    use 0x0::Libra;
-    use 0x0::FixedPoint32;
+    use 0x1::Association;
+    use 0x1::Libra;
+    use 0x1::FixedPoint32;
 
     struct T { }
 

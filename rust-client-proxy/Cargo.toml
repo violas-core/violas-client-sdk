@@ -33,7 +33,7 @@ cpp = "0.5"
 tempdir = "0.3"
 lazy_static = { version = "1.3.0", default-features = false }
 
-admission-control-proto = { path = "../../libra/admission-control/admission-control-proto", version = "0.1.0" }
+#admission-control-proto = { path = "../../libra/admission-control/admission-control-proto", version = "0.1.0" }
 libra-config = { path = "../../libra/config", version = "0.1.0" }
 generate-key = { path = "../../libra/config/generate-key", version = "0.1.0" }
 crash-handler = { path = "../../libra/common/crash-handler", version = "0.1.0" }
@@ -47,9 +47,9 @@ libra-types = { path = "../../libra/types", version = "0.1.0" }
 libra-temppath = { path = "../../libra/common/temppath/", version = "0.1.0" }
 libra-workspace-hack = { path = "../../libra/common/workspace-hack", version = "0.1.0" }
 libra-network-address = { path = "../../libra/network/network-address", version = "0.1.0" }
-stdlib = { path = "../../libra/language/stdlib", version = "0.1.0" }
-transaction-builder = { path = "../../libra/language/transaction-builder", version = "0.1.0" }
 resource-viewer = { path = "../../libra/language/resource-viewer", version = "0.1.0" }
+compiled-stdlib = { path = "../../libra/language/stdlib/compiled",  version = "0.1.0" }
+transaction-builder = { path = "../../libra/language/transaction-builder", version = "0.1.0" }
 
 move-lang = { path = "../../libra/language/move-lang", version = "0.0.1" }
 move-core-types = { path = "../../libra/language/move-core/types"}

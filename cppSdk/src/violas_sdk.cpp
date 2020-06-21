@@ -691,7 +691,7 @@ namespace LIB_NAME
         virtual void
         transfer_currency(const TypeTag &_tag,
                           uint64_t sender_account_index,
-                          const AuthenticationKey &receiver_auth_key,
+                          const Address &receiver,
                           uint64_t amount,
                           bool is_blocking) override
         {
@@ -700,7 +700,7 @@ namespace LIB_NAME
             bool ret = violas_transfer_currency((uint64_t)raw_client_proxy,
                                                 tag,
                                                 sender_account_index,
-                                                receiver_auth_key.data().data(),
+                                                receiver.data().data(),
                                                 amount,
                                                 is_blocking);
             if (!ret)

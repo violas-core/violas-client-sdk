@@ -159,7 +159,7 @@ namespace LIB_NAME
     const uint64_t MICRO_COIN = 1000000;
     const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
     const Address ASSOCIATION_ADDRESS = Address::from_string("0000000000000000000000000A550C18");
-    const Address CORE_CODE_ADDRESS =   Address::from_string("00000000000000000000000000000001");
+    const Address CORE_CODE_ADDRESS = Address::from_string("00000000000000000000000000000001");
     //
     //  interface Client
     //
@@ -288,7 +288,7 @@ namespace LIB_NAME
         add_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) = 0;
 
         /// pulish a currency module wiht 0x0 address
-        virtual void 
+        virtual void
         publish_currency(std::string_view currency_code) = 0;
 
         /// register a new currency to blockchain
@@ -312,7 +312,7 @@ namespace LIB_NAME
         virtual void
         transfer_currency(const TypeTag &tag,
                           uint64_t sender_account_index,
-                          const AuthenticationKey &receiver_auth_key,
+                          const Address &receiver,
                           uint64_t amount,
                           bool is_blocking = true) = 0;
 

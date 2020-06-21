@@ -141,7 +141,7 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
         client->mint_currency(tag, accounts[0].auth_key, 1000 * MICRO_COIN);
         cout << "mint 1000 currency " << currency << " to account 0" << endl;
 
-        client->transfer_currency(tag, 0, accounts[1].auth_key, 500 * MICRO_COIN);
+        client->transfer_currency(tag, 0, accounts[1].address, 500 * MICRO_COIN);
         cout << "transfer 500  currency " << currency << " from account 0 to account 1" << endl;
 
         print_txn(accounts[0].address);

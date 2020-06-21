@@ -217,7 +217,7 @@ extern "C"
     bool violas_transfer_currency(uint64_t raw_client,
                                   const ViolasTypeTag &violas_type_tag,
                                   uint64_t sender_account_index,
-                                  const uint8_t receiver_auth_key[32],
+                                  const uint8_t receiver[16],
                                   uint64_t amount,
                                   bool is_blocking);
 

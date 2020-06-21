@@ -1190,7 +1190,7 @@ pub mod x86_64 {
         raw_client: u64,
         violas_type_tag: &ViolasTypeTag,
         sender_account_index: u64,
-        receiver: &[c_uchar; 32],
+        receiver: &[c_uchar; 16],
         amount: u64,
         is_blocking: bool,
     ) -> bool {
@@ -1202,13 +1202,11 @@ pub mod x86_64 {
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
                 );
 
-                let auth_key = AuthenticationKey::new(*receiver);
-
                 // register currency
                 match proxy.transfer_currency(
                     type_tag,
                     sender_account_index as usize,
-                    &auth_key.derived_address(),
+                    &AccountAddress::new(*receiver),
                     amount,
                     is_blocking,
                 ) {

@@ -76,9 +76,9 @@ All currencies info : [
 
 # 如何构造TypeTag访问多币种？
      TypeTag::Struct(StructTag {
-        address: 0x0,
-        module: currency_code,  //如"VLSUSD", "VLSEUR", ..... "BTCBTC"
-        name: "T",
+        address: 0x1,
+        module: currency_code,  // for example, "VLSUSD", "VLSEUR", ..... "BTCBTC"
+        name: currency_code,    // same as module name, "VLSUSD", "VLSEUR", ..... "BTCBTC"
         type_params: vec![],
     })
 

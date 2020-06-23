@@ -97,23 +97,17 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     cout << "enable publsih custmer script." << endl;
 
     //return;
-    
-    // auto args = {make_tuple("coin_usd.mv", "VLSUSD", u8"VLSUSD"),
-    //              make_tuple("coin_eur.mv", "VLSEUR", u8"VLSEUR"),
-    //              make_tuple("coin_gbp.mv", "VLSGBP", u8"VLSGBP"),
-    //              make_tuple("coin_gbp.mv", "VLSJPY", u8"VLSJPY"),
-    //              make_tuple("coin_gbp.mv", "VLSSGD", u8"VLSSGD")};
-    auto currencies = {"VLSUSD", "VLSEUR", "VLSGBP", "VLSJPY", "VLSSGD",
-                       "LBRUSD", "LBREUR", "LBRGBP", "LBRJPY", "LBRSGD",
-                       "BTCBTC"};
+
+    auto currencies = {
+        "VLSUSD", "VLSEUR", "VLSGBP", "VLSJPY", "VLSSGD",
+        "LBRUSD", "LBREUR", "LBRGBP", "LBRJPY", "LBRSGD",
+        "BTCBTC",
+        //"Test"
+    };
 
     for (const auto &currency : currencies)
     {
         TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
-
-        // replace_mv_with_addr(string("../../cppSdk/move/compiled/coin_usd.mv"),
-        //                      contract,
-        //                      faucet);
 
         try_catch([&]() {
             //client->publish_module(ASSOCIATION_ID, "../../cppSdk/move/compiled/coin_usd.mv");

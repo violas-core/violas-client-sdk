@@ -15,3 +15,9 @@
 4 Azure-美国西部2 | 13.77.137.84
 域名：ac.testnet.violas.io
 端口：40001
+
+北京节点
+bin/testnet  http://47.93.114.230:50001 mint_beijing.key waypoint "0:d56a77989f9c26437d117f996726574518fb7cd71bf18216a2af3766475bb104"
+
+内部测试链
+bin/testnet http://51.140.241.96:50001  mint_test.key waypoint "0:4e16e966cae7766595a59a2079a1e4c7fc86781a3986bc9b3e70c9855ddf8665" 

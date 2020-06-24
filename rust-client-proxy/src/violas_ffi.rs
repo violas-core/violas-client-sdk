@@ -1360,4 +1360,167 @@ pub mod x86_64 {
             }
         }
     }
+
+    /// Create parent VASP account
+    #[no_mangle]
+    pub fn violas_create_parent_vasp_account(
+        raw_client: u64,
+        in_type_tag: &ViolasTypeTag,
+        in_auth_key: &[u8; 32],
+        in_human_name: *const c_char,
+        in_base_url: *const c_char,
+        in_compliance_pubkey: &[u8; 32],
+        add_all_currencies: bool,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(in_type_tag.address),
+                    CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
+                );
+
+                let auth_key = AuthenticationKey::new(*in_auth_key);
+                let human_name = CStr::from_ptr(in_human_name)
+                    .to_str()
+                    .unwrap()
+                    .as_bytes()
+                    .to_owned();
+                let base_url = CStr::from_ptr(in_base_url)
+                    .to_str()
+                    .unwrap()
+                    .as_bytes()
+                    .to_owned();
+                let compliance_pubkey = in_compliance_pubkey.to_owned().to_vec();
+
+                // register currency
+                match proxy.create_parent_vasp_account(
+                    type_tag,
+                    auth_key.derived_address(),
+                    auth_key.prefix().to_vec(),
+                    human_name,
+                    base_url,
+                    compliance_pubkey,
+                    add_all_currencies,
+                    is_blocking,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to get_currency_info with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_get_currency_info' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// Create child VASP account
+    #[no_mangle]
+    pub fn violas_create_child_vasp_account(
+        raw_client: u64,
+        in_type_tag: &ViolasTypeTag,
+        in_auth_key: &[u8; 32],
+        add_all_currencies: bool,
+        initial_balance: u64,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(in_type_tag.address),
+                    CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
+                );
+
+                let auth_key = AuthenticationKey::new(*in_auth_key);
+
+                // register currency
+                match proxy.create_child_vasp_account(
+                    type_tag,
+                    auth_key.derived_address(),
+                    auth_key.prefix().to_vec(),
+                    add_all_currencies,
+                    initial_balance,
+                    is_blocking,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to create child VASP account with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_create_child_vasp_account' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// Create child VASP account
+    #[no_mangle]
+    pub fn violas_create_designated_dealer_account(
+        raw_client: u64,
+        in_type_tag: &ViolasTypeTag,
+        in_auth_key: &[u8; 32],
+        nonce: u64,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(in_type_tag.address),
+                    CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
+                );
+
+                let auth_key = AuthenticationKey::new(*in_auth_key);
+
+                // register currency
+                match proxy.create_designated_dealer_account(
+                    type_tag,
+                    nonce,
+                    auth_key.derived_address(),
+                    auth_key.prefix().to_vec(),
+                    is_blocking,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to create child VASP account with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_create_child_vasp_account' !'"
+                ));
+                false
+            }
+        }
+    }
 }

@@ -760,6 +760,75 @@ namespace LIB_NAME
 
             return make_pair<>(state, version);
         }
+
+        // create parent VASP account
+        virtual void
+        create_parent_vasp_account(
+            const TypeTag &type_tag,
+            const AuthenticationKey &auth_key,
+            std::string_view human_name,
+            std::string_view base_url,
+            const uint8_t compliance_pubkey[32],
+            bool add_all_currencies,
+            bool is_blocking) override
+        {
+            ViolasTypeTag tag = from_type_tag(type_tag);
+
+            bool ret = violas_create_parent_vasp_account(
+                (uint64_t)raw_client_proxy,
+                tag,
+                auth_key.data().data(),
+                human_name.data(),
+                base_url.data(),
+                compliance_pubkey,
+                add_all_currencies,
+                is_blocking);
+            if (!ret)
+                throw runtime_error(format("failed to create parent VASP account, errror : %s ",
+                                           get_last_error().c_str()));
+        }
+
+        // create child vasp account
+        virtual void
+        create_child_vasp_account(
+            const TypeTag &type_tag,
+            const AuthenticationKey &auth_key,
+            bool add_all_currencies,
+            uint64_t initial_balance,
+            bool is_blocking) override
+        {
+            ViolasTypeTag tag = from_type_tag(type_tag);
+
+            bool ret = violas_create_child_vasp_account((uint64_t)raw_client_proxy,
+                                                        tag,
+                                                        auth_key.data().data(),
+                                                        add_all_currencies,
+                                                        initial_balance,
+                                                        is_blocking);
+            if (!ret)
+                throw runtime_error(format("failed to create child VASP account, errror : %s ",
+                                           get_last_error().c_str()));
+        }
+
+        // create designated dealder account
+        virtual void
+        create_designated_dealer_account(
+            const TypeTag &type_tag,
+            const AuthenticationKey &auth_key,
+            uint64_t nonce,
+            bool is_blocking) override
+        {
+            ViolasTypeTag tag = from_type_tag(type_tag);
+
+            bool ret = violas_create_designated_dealer_account((uint64_t)raw_client_proxy,
+                                                               tag,
+                                                               auth_key.data().data(),
+                                                               nonce,
+                                                               is_blocking);
+            if (!ret)
+                throw runtime_error(format("failed to create designated dealer account, errror : %s ",
+                                           get_last_error().c_str()));
+        }
     };
 
     std::shared_ptr<Client>

@@ -159,3 +159,8 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     copy(begin(events), end(events), ostream_iterator<string>(cout, "\n"));
     cout << last_status << endl;
 }
+
+void test_account_management()
+{
+    
+}

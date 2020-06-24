@@ -1826,7 +1826,7 @@ impl ClientProxy {
         }
     }
 
-    ///
+    /// mint currency with specified type tag
     pub fn mint_currency(
         &mut self,
         type_tag: TypeTag,

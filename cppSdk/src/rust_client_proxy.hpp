@@ -29,6 +29,7 @@ extern "C"
     bool libra_test_validator_connection(uint64_t raw_ptr);
 
     const size_t ADDRESS_LENGTH = 16;
+    const size_t AUTH_KEY_LENGTH = 32;
 
     struct Libra_Address
     {
@@ -186,9 +187,9 @@ extern "C"
                                const char *script_file,
                                const ScriptArgs *script_args);
 
-    // publish a currency module with 0x0 address 
-    bool violas_publish_currency(uint64_t raw_client, const char * currency_code);
-    
+    // publish a currency module with 0x0 address
+    bool violas_publish_currency(uint64_t raw_client, const char *currency_code);
+
     //  Register a new currency to blockchain under association account
     bool violas_register_currency(uint64_t raw_client,
                                   const ViolasTypeTag &violas_type_tag,
@@ -231,10 +232,38 @@ extern "C"
     bool violas_get_currency_info(uint64_t raw_client, char **out_currency_info);
 
     /// get account state
-    bool violas_get_account_state(uint64_t raw_client,                                     
-                                     const uint8_t address[ADDRESS_LENGTH],
-                                     char **out_account_state,
-                                     uint64_t *out_version);
+    bool violas_get_account_state(uint64_t raw_client,
+                                  const uint8_t address[ADDRESS_LENGTH],
+                                  char **out_account_state,
+                                  uint64_t *out_version);
+
+    // create parent VASP account
+    bool violas_create_parent_vasp_account(
+        uint64_t raw_client,
+        const ViolasTypeTag &violas_type_tag,
+        const uint8_t auth_key[AUTH_KEY_LENGTH],
+        const char *human_name,
+        const char *base_url,
+        const uint8_t compliance_pubkey[AUTH_KEY_LENGTH],
+        bool add_all_currencies,
+        bool is_blocking);
+
+    // create child vasp account
+    bool violas_create_child_vasp_account(
+        uint64_t raw_client,
+        const ViolasTypeTag &violas_type_tag,
+        const uint8_t auth_key[AUTH_KEY_LENGTH],
+        bool add_all_currencies,
+        uint64_t initial_balance,
+        bool is_blockings);
+
+    // create designated dealder account
+    bool violas_create_designated_dealer_account(
+        uint64_t raw_client,
+        const ViolasTypeTag &violas_type_tag,
+        const uint8_t auth_key[AUTH_KEY_LENGTH],
+        uint64_t nonce,
+        bool is_blocking);
 
 #ifdef __cplusplus
 }

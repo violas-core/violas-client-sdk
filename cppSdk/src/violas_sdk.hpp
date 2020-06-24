@@ -327,6 +327,34 @@ namespace LIB_NAME
         // get account state
         virtual std::pair<std::string, uint64_t>
         get_account_state(const Address &res_path_addr) = 0;
+
+        // create parent VASP account
+        virtual void
+        create_parent_vasp_account(
+            const TypeTag &tag,
+            const AuthenticationKey &auth_key,
+            std::string_view human_name,
+            std::string_view base_url,
+            const uint8_t compliance_pubkey[32],
+            bool add_all_currencies,
+            bool is_blocking = true) = 0;
+
+        // create child vasp account
+        virtual void
+        create_child_vasp_account(
+            const TypeTag &tag,
+            const AuthenticationKey &auth_key,
+            bool add_all_currencies,
+            uint64_t initial_balance,
+            bool is_blocking = true) = 0;
+
+        // create designated dealder account
+        virtual void
+        create_designated_dealer_account(
+            const TypeTag &tag,
+            const AuthenticationKey &auth_key,
+            uint64_t nonce,
+            bool is_blocking = true) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

@@ -343,6 +343,7 @@ namespace LIB_NAME
         virtual void
         create_child_vasp_account(
             const TypeTag &tag,
+            uint64_t parent_account_index,
             const AuthenticationKey &auth_key,
             bool add_all_currencies,
             uint64_t initial_balance,

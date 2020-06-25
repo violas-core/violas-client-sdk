@@ -1608,18 +1608,24 @@ impl ClientProxy {
         program: Script,
         max_gas_amount: Option<u64>,
         gas_unit_price: Option<u64>,
+        gas_currency_type: Option<TypeTag>,
         is_blocking: bool,
     ) -> Result<()> {
         let sender = self
             .accounts
             .get(account_ref_id)
             .ok_or_else(|| format_err!("Unable to find sender account: {}", account_ref_id))?;
+        let gas_currency_code = match gas_currency_type {
+            Some(TypeTag::Struct(tag)) => Some(tag.module.into_string()),
+            _ => None,
+        };
+
         let txn = self.create_txn_to_submit(
             TransactionPayload::Script(program),
             sender,
             max_gas_amount, /* max_gas_amount */
             gas_unit_price, /* gas_unit_price */
-            None,
+            gas_currency_code,
         )?;
         let sender_mut = self
             .accounts
@@ -1821,6 +1827,7 @@ impl ClientProxy {
                 transaction_builder::encode_add_currency_to_account_script(type_tag),
                 None,
                 None,
+                None,
                 is_blocking,
             )
         }
@@ -1870,7 +1877,7 @@ impl ClientProxy {
         is_blocking: bool,
     ) -> Result<()> {
         let program = transaction_builder::encode_transfer_with_metadata_script(
-            type_tag,
+            type_tag.clone(),
             *receiver_address,
             num_coins,
             vec![],
@@ -1882,6 +1889,7 @@ impl ClientProxy {
             program,
             None,
             None,
+            Some(type_tag),
             is_blocking,
         )?;
 
@@ -1961,9 +1969,10 @@ impl ClientProxy {
         } else {
             self.submit_transction_with_account(
                 account_ref_id as usize,
-                transaction_builder::encode_preburn_script(type_tag, amount),
+                transaction_builder::encode_preburn_script(type_tag.clone(), amount),
                 None,
                 None,
+                Some(type_tag),
                 is_blocking,
             )
         }
@@ -1996,9 +2005,14 @@ impl ClientProxy {
         } else {
             self.submit_transction_with_account(
                 account_ref_id as usize,
-                transaction_builder::encode_burn_script(type_tag, sliding_nonce, preburn_address),
+                transaction_builder::encode_burn_script(
+                    type_tag.clone(),
+                    sliding_nonce,
+                    preburn_address,
+                ),
                 None,
                 None,
+                Some(type_tag),
                 is_blocking,
             )
         }
@@ -2040,28 +2054,34 @@ impl ClientProxy {
     pub fn create_child_vasp_account(
         &mut self,
         type_tag: TypeTag,
+        parent_account_index: u64,
         new_account_address: AccountAddress,
         auth_key_prefix: Vec<u8>,
         add_all_currencies: bool,
         initial_balance: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.assoc_root_account {
-            Some(_) => {
-                let script = transaction_builder::encode_create_child_vasp_account(
-                    type_tag,
-                    new_account_address,
-                    auth_key_prefix,
-                    add_all_currencies,
-                    initial_balance,
-                );
-                self.association_transaction_with_local_assoc_root_account(
-                    TransactionPayload::Script(script),
-                    is_blocking,
-                )
-            }
-            None => unimplemented!(),
-        }
+        // match &self.assoc_root_account {
+        //     Some(_) => {}
+        //     None => unimplemented!(),
+        // }
+
+        let script = transaction_builder::encode_create_child_vasp_account(
+            type_tag.clone(),
+            new_account_address,
+            auth_key_prefix,
+            add_all_currencies,
+            initial_balance,
+        );
+
+        self.submit_transction_with_account(
+            parent_account_index as usize,
+            script,
+            None,
+            None,
+            Some(type_tag),
+            is_blocking,
+        )
     }
 
     /// Create a designed dealer vasp account

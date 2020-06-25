@@ -9,6 +9,7 @@
 #include "terminal.h"
 
 using namespace std;
+using namespace Libra;
 
 template <typename F>
 void try_catch(F f)
@@ -23,9 +24,8 @@ void try_catch(F f)
     }
 }
 
-void run_test_libra(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint)
+client_ptr connect(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint)
 {
-    using namespace Libra;
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
 
@@ -48,6 +48,15 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
              << endl;
     }
 
+    return client;
+}
+
+void run_test_libra(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint)
+{
+    auto client = connect(url, mint_key_file, mnemonic_file, waypoint);
+
+    auto accounts = client->get_all_accounts();
+
     auto print_txn = [client](Address address) {
         auto seq_num = client->get_sequence_number(address) - 1;
         auto txn = client->get_committed_txn_by_acc_seq(address, seq_num);
@@ -61,7 +70,7 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
         cout << "account " << account_index << "' balance is " << coin << endl;
     };
 
-    for (size_t i = 0; i < accounts.size(); i++)
+    for (size_t i = 0; i < accounts.size() && i < 2; i++)
     {
         client->mint_coins(i, 100);
 
@@ -160,7 +169,35 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     cout << last_status << endl;
 }
 
-void test_account_management()
+void run_account_management(const string &url,
+                            const string &mint_key_file,
+                            const string &mnemonic_file,
+                            const string &waypoint)
 {
+    auto client = connect(url, mint_key_file, mnemonic_file, waypoint);
+
+    auto accounts = client->get_all_accounts();
+    string currency = "VLSUSD";
+    TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
+    TypeTag LBR(CORE_CODE_ADDRESS, "LBR", "LBR");
+
+    auto pubkey = Bytes<32>::from_string("b7a3c12dc0c8c748ab07525b701122b88bd78f600c76342d27f25e5f92444cde");
+
+    try_catch([&]() {
+        client->create_parent_vasp_account(tag,
+                                           accounts[2].auth_key,
+                                           "Test3", "www.huntersun.me",
+                                           pubkey.data().data(),
+                                           true);
+    });
+
+    client->mint_currency(tag, accounts[2].auth_key, 10 * MICRO_COIN);
+    //client->mint_currency(LBR, accounts[2].auth_key, 10 * MICRO_COIN);
     
+    auto balance = client->get_currency_balance(tag, accounts[2].address);
+
+    cout << "create VASP account for account 2" << endl;
+
+    client->create_child_vasp_account(tag, 2, accounts[3].auth_key, true, 1 * MICRO_COIN);
+    cout << "Create child VASP account for account 3" << endl;
 }

@@ -792,6 +792,7 @@ namespace LIB_NAME
         virtual void
         create_child_vasp_account(
             const TypeTag &type_tag,
+            uint64_t parent_account_index,
             const AuthenticationKey &auth_key,
             bool add_all_currencies,
             uint64_t initial_balance,
@@ -801,6 +802,7 @@ namespace LIB_NAME
 
             bool ret = violas_create_child_vasp_account((uint64_t)raw_client_proxy,
                                                         tag,
+                                                        parent_account_index,
                                                         auth_key.data().data(),
                                                         add_all_currencies,
                                                         initial_balance,

@@ -252,6 +252,7 @@ extern "C"
     bool violas_create_child_vasp_account(
         uint64_t raw_client,
         const ViolasTypeTag &violas_type_tag,
+        uint64_t parent_account_index,
         const uint8_t auth_key[AUTH_KEY_LENGTH],
         bool add_all_currencies,
         uint64_t initial_balance,

@@ -1393,7 +1393,7 @@ pub mod x86_64 {
                     .as_bytes()
                     .to_owned();
                 let compliance_pubkey = in_compliance_pubkey.to_owned().to_vec();
-
+                
                 // register currency
                 match proxy.create_parent_vasp_account(
                     type_tag,
@@ -1408,7 +1408,7 @@ pub mod x86_64 {
                     Ok(_) => true,
                     Err(e) => {
                         set_last_error(format_err!(
-                            "failed to get_currency_info with error, {}",
+                            "failed to call violas_create_parent_vasp_account, {}",
                             e
                         ));
                         false
@@ -1419,7 +1419,7 @@ pub mod x86_64 {
                 ret.unwrap()
             } else {
                 set_last_error(format_err!(
-                    "catch a panic at function 'violas_get_currency_info' !'"
+                    "catch a panic at function 'violas_create_parent_vasp_account' !'"
                 ));
                 false
             }
@@ -1431,6 +1431,7 @@ pub mod x86_64 {
     pub fn violas_create_child_vasp_account(
         raw_client: u64,
         in_type_tag: &ViolasTypeTag,
+        parent_account_index : u64,
         in_auth_key: &[u8; 32],
         add_all_currencies: bool,
         initial_balance: u64,
@@ -1449,6 +1450,7 @@ pub mod x86_64 {
                 // register currency
                 match proxy.create_child_vasp_account(
                     type_tag,
+                    parent_account_index,
                     auth_key.derived_address(),
                     auth_key.prefix().to_vec(),
                     add_all_currencies,

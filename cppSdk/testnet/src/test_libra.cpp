@@ -38,6 +38,7 @@ client_ptr connect(const string &url, const string &mint_key_file, const string 
     auto o1 = client->create_next_account(true);
     auto u1 = client->create_next_account(true);
     auto u2 = client->create_next_account(true);
+    client->create_next_account(true);
 
     auto accounts = client->get_all_accounts();
     for (const auto &account : accounts)
@@ -177,6 +178,8 @@ void run_account_management(const string &url,
     auto client = connect(url, mint_key_file, mnemonic_file, waypoint);
 
     auto accounts = client->get_all_accounts();
+    assert(accounts.size() >= 5);
+
     string currency = "VLSUSD";
     TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
     TypeTag LBR(CORE_CODE_ADDRESS, "LBR", "LBR");
@@ -190,14 +193,23 @@ void run_account_management(const string &url,
                                            pubkey.data().data(),
                                            true);
     });
+    cout << "create VASP account for account 2" << endl;
 
     client->mint_currency(tag, accounts[2].auth_key, 10 * MICRO_COIN);
     //client->mint_currency(LBR, accounts[2].auth_key, 10 * MICRO_COIN);
-    
+
     auto balance = client->get_currency_balance(tag, accounts[2].address);
 
-    cout << "create VASP account for account 2" << endl;
+    try_catch([&]() {
+        client->create_child_vasp_account(tag, 2, accounts[3].auth_key, true, 1 * MICRO_COIN);
+    });
 
-    client->create_child_vasp_account(tag, 2, accounts[3].auth_key, true, 1 * MICRO_COIN);
     cout << "Create child VASP account for account 3" << endl;
+
+    auto [state, version] = client->get_account_state(accounts[3].address);
+    cout << "Child Account 3's state is " << state << ", at version : " << version << endl;
+
+    client->create_designated_dealer_account(tag, accounts[4].auth_key, 0);
+    tie(state, version) = client->get_account_state(accounts[4].address);
+    cout << "Treasury Compliance Account 4's state is " << state << ", at version : " << version << endl;
 }

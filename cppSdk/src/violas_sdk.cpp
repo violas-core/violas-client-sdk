@@ -179,6 +179,11 @@ namespace LIB_NAME
             raw_client_proxy = 0;
         }
 
+        void *get_raw_client()
+        {
+            return raw_client_proxy;
+        }
+
         string get_last_error()
         {
             string error;
@@ -442,6 +447,45 @@ namespace LIB_NAME
             CLOG << format("excuted script file '%s' for account faucet", script_file.data())
                  << endl;
         }
+
+        // execute script with type tag array
+        virtual void
+        execute_script_ex(const std::vector<TypeTag> &type_tags,
+                          uint64_t sender_ref_id,
+                          string_view script_file,
+                          const std::vector<std::string> &script_args = std::vector<std::string>()) override
+        {
+            ScriptArgs args;
+
+            vector<const char *> args_array;
+            for (auto &arg : script_args)
+            {
+                args_array.push_back(arg.c_str());
+            }
+
+            args.len = script_args.size();
+            args.data = args_array.data();
+
+            ViolasTypeTag v_type_tags[16];
+            for (int i = 0; i < 16 && i < type_tags.size(); i++)
+                v_type_tags[i] = from_type_tag(type_tags[i]);
+
+            bool ret = violas_execute_script_ex((uint64_t)raw_client_proxy,
+                                                v_type_tags,
+                                                type_tags.size(),
+                                                sender_ref_id,
+                                                script_file.data(),
+                                                &args);
+            if (!ret)
+                throw runtime_error(
+                    format("failed to execute script file '%s' for account faucet, "
+                           "error : %s, "
+                           "at %s",
+                           script_file.data(),
+                           get_last_error().c_str(),
+                           EXCEPTION_AT.c_str()));
+        }
+
         virtual std::string
         get_committed_txn_by_acc_seq(uint64_t account_index,
                                      uint64_t sequence_num,
@@ -1052,6 +1096,75 @@ namespace LIB_NAME
                                                        const std::string &temp_path)
     {
         return make_shared<TokenManagerImp>(client, governor_addr, name, init_all_script_fun, temp_path);
+    }
+
+    class ExchangeImp : public Exchange
+    {
+    private:
+        client_ptr m_client;
+
+    public:
+        ExchangeImp(client_ptr client) : m_client(client)
+        {
+        }
+
+        virtual std::string get_currencies(const Address &address) override
+        {
+            auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
+
+            char *json = nullptr;
+            bool ret = violas_get_exchange_currencies((uint64_t)client_imp->get_raw_client(),
+                                                      address.data().data(),
+                                                      &json);
+            if (!ret)
+                throw runtime_error(client_imp->get_last_error().c_str());
+
+            string temp = json;
+            libra_free_string(json);
+
+            return temp;
+        }
+
+        virtual std::string get_reserves(const Address &address) override
+        {
+            auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
+            void *raw_client = client_imp->get_raw_client();
+
+            char *json_reservers_info = nullptr;
+            bool ret = violas_get_exchange_reserves((uint64_t)raw_client,
+                                                    address.data().data(),
+                                                    &json_reservers_info);
+            if (!ret)
+                throw runtime_error(client_imp->get_last_error().c_str());
+
+            string temp = json_reservers_info;
+            libra_free_string(json_reservers_info);
+
+            return temp;
+        }
+
+        virtual std::string
+        get_liquidity_balance(const Address &address) override
+        {
+            auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
+
+            char *json = nullptr;
+            bool ret = violas_get_liquidity_balance((uint64_t)client_imp->get_raw_client(),
+                                                    address.data().data(),
+                                                    &json);
+            if (!ret)
+                throw runtime_error(client_imp->get_last_error().c_str());
+
+            string temp = json;
+            libra_free_string(json);
+
+            return temp;
+        }
+    };
+
+    std::shared_ptr<Exchange> Exchange::create(client_ptr client)
+    {
+        return make_shared<ExchangeImp>(client);
     }
 
 } // namespace LIB_NAME

@@ -1,8 +1,9 @@
-address 0x7257c2417e4d1038e1817c8f283ace2e {
+address 0x1 {
 module ExDep {
     use 0x1::Libra::{Self, Libra};
     use 0x1::LibraAccount;
     use 0x1::Transaction;
+    use 0x1::CoreAddresses;
 
     // A resource that holds the coins stored in this account
     resource struct Balance<Token> {
@@ -37,7 +38,7 @@ module ExDep {
     }
 
     fun singleton_addr(): address {
-        0x7257c2417e4d1038e1817c8f283ace2e
+        CoreAddresses::ASSOCIATION_ROOT_ADDRESS()
     }
 
     public fun extract_withdraw_capability(sender: &signer): WithdrawCapability {

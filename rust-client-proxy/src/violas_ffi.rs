@@ -12,6 +12,7 @@ pub mod x86_64 {
         account_config::CORE_CODE_ADDRESS, account_config::*, account_state::AccountState,
         transaction::authenticator::AuthenticationKey,
     };
+    use move_core_types::{identifier::Identifier, language_storage::StructTag};
     use std::{
         cell::RefCell,
         convert::TryFrom,
@@ -1019,6 +1020,71 @@ pub mod x86_64 {
         }
     }
 
+    /// execute script with currency type tag
+    #[no_mangle]
+    pub extern "C" fn violas_execute_script_ex(
+        raw_ptr: u64,
+        v_t_tags: *const ViolasTypeTag,
+        tag_len: u64,
+        sender_ref_id: u64,
+        in_script_file_name: *const c_char,
+        in_script_args: &ScriptArgs,
+    ) -> bool {
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
+            unsafe {
+                let client = { &mut *(raw_ptr as *mut ClientProxy) };
+                let script_file_name = { CStr::from_ptr(in_script_file_name).to_str().unwrap() };
+                let type_tags = if tag_len == 0 {
+                    vec![]
+                } else {
+                    let slice_tags = std::slice::from_raw_parts(v_t_tags, tag_len as usize);
+                    slice_tags
+                        .iter()
+                        .map(|x| {
+                            let modules = CStr::from_ptr((*x).module).to_str().unwrap();
+                            let _name = CStr::from_ptr((*x).name).to_str().unwrap();
+                            currency_type_tag(&AccountAddress::new((*x).address), modules)
+                        })
+                        .collect()
+                };
+
+                let script_args =
+                    slice::from_raw_parts(in_script_args.data, in_script_args.len as usize);
+                let mut args: Vec<&str> = vec![];
+
+                for i in 0..script_args.len() {
+                    let arg = CStr::from_ptr(script_args[i]).to_str().unwrap();
+                    args.push(arg);
+                }
+
+                // let mut args = script_args
+                //     .iter()
+                //     .map(|x| CStr::from_ptr(*x).to_str().unwrap())
+                //     .collect();
+
+                //
+                //  execute script
+                //
+                client.execute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
+            }
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'violas_execute_script' !"
+            ));
+            false
+        }
+    }
+
     /// publish a new module with specialfied currency code
     #[no_mangle]
     pub extern "C" fn violas_publish_currency(
@@ -1088,7 +1154,10 @@ pub mod x86_64 {
                 ) {
                     Ok(_) => true,
                     Err(e) => {
-                        set_last_error(format_err!("failed to register currency with error, {}", e));
+                        set_last_error(format_err!(
+                            "failed to register currency with error, {}",
+                            e
+                        ));
                         false
                     }
                 }
@@ -1393,7 +1462,6 @@ pub mod x86_64 {
                     .as_bytes()
                     .to_owned();
                 let compliance_pubkey = in_compliance_pubkey.to_owned().to_vec();
-                
                 // register currency
                 match proxy.create_parent_vasp_account(
                     type_tag,
@@ -1431,7 +1499,7 @@ pub mod x86_64 {
     pub fn violas_create_child_vasp_account(
         raw_client: u64,
         in_type_tag: &ViolasTypeTag,
-        parent_account_index : u64,
+        parent_account_index: u64,
         in_auth_key: &[u8; 32],
         add_all_currencies: bool,
         initial_balance: u64,
@@ -1520,6 +1588,176 @@ pub mod x86_64 {
             } else {
                 set_last_error(format_err!(
                     "catch a panic at function 'violas_create_child_vasp_account' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// Get Exchange currencies
+    #[no_mangle]
+    pub fn violas_get_exchange_currencies(
+        raw_client: u64,
+        address: &[u8; 16],
+        out_currencies: *mut *mut c_char, // output json string
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let addr = AccountAddress::new(*address);
+                let tag = StructTag {
+                    address: CORE_CODE_ADDRESS,
+                    module: Identifier::new("Exchange").unwrap(),
+                    name: Identifier::new("RegisteredCurrencies").unwrap(),
+                    type_params: vec![],
+                };
+
+                let ret: Result<Option<exchange::RegisteredCurrencies>, Error> =
+                    proxy.get_account_resource(&addr, &tag);
+
+                match ret {
+                    Ok(opt) => match opt {
+                        Some(view) => {
+                            let json_currencies = serde_json::to_string(&view).unwrap();
+                            *out_currencies = CString::new(json_currencies)
+                                .expect("new reserves detail")
+                                .into_raw();
+                            true
+                        }
+                        None => {
+                            *out_currencies =
+                                CString::new("").expect("new reserves detail").into_raw();
+                            true
+                        }
+                    },
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to get exchagne  reserves with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_get_account_resource' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// Get account resource
+    #[no_mangle]
+    pub fn violas_get_exchange_reserves(
+        raw_client: u64,
+        address: &[u8; 16],
+        //tag_path: ViolasTypeTag,
+        out_reserves_info: *mut *mut c_char, // output json string
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let addr = AccountAddress::new(*address);
+                let tag = StructTag {
+                    address: CORE_CODE_ADDRESS,
+                    module: Identifier::new("Exchange").unwrap(),
+                    name: Identifier::new("Reserves").unwrap(),
+                    type_params: vec![],
+                };
+
+                let ret: Result<Option<exchange::Reserves>, Error> =
+                    proxy.get_account_resource(&addr, &tag);
+
+                match ret {
+                    Ok(opt) => match opt {
+                        Some(view) => {
+                            let json_reserves = serde_json::to_string(&view).unwrap();
+                            *out_reserves_info = CString::new(json_reserves)
+                                .expect("new reserves detail")
+                                .into_raw();
+
+                            true
+                        }
+                        None => false,
+                    },
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to get exchagne  reserves with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_get_account_resource' !'"
+                ));
+                false
+            }
+        }
+    }
+
+    /// Get account resource
+    #[no_mangle]
+    pub fn violas_get_liquidity_balance(
+        raw_client: u64,
+        address: &[u8; 16],
+        //tag_path: ViolasTypeTag,
+        out_tokens: *mut *mut c_char, // output json string
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let addr = AccountAddress::new(*address);
+                let tag = StructTag {
+                    address: CORE_CODE_ADDRESS,
+                    module: Identifier::new("Exchange").unwrap(),
+                    name: Identifier::new("Tokens").unwrap(),
+                    type_params: vec![],
+                };
+
+                let ret: Result<Option<exchange::Tokens>, Error> =
+                    proxy.get_account_resource(&addr, &tag);
+
+                match ret {
+                    Ok(opt) => match opt {
+                        Some(view) => {
+                            let json_reserves = serde_json::to_string(&view).unwrap();
+                            *out_tokens = CString::new(json_reserves)
+                                .expect("new reserves detail")
+                                .into_raw();
+
+                            true
+                        }
+                        None => {
+                            *out_tokens = CString::new("").expect("new reserves detail").into_raw();
+                            false
+                        }
+                    },
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to get exchagne  reserves with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_get_account_resource' !'"
                 ));
                 false
             }

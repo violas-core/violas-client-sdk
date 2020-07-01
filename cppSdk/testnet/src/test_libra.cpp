@@ -11,18 +11,6 @@
 using namespace std;
 using namespace Libra;
 
-template <typename F>
-void try_catch(F f)
-{
-    try
-    {
-        f();
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << '\n';
-    }
-}
 
 client_ptr connect(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint)
 {

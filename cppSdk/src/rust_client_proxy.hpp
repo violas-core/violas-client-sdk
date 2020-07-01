@@ -187,6 +187,14 @@ extern "C"
                                const char *script_file,
                                const ScriptArgs *script_args);
 
+    // execute script with currency type tag
+    bool violas_execute_script_ex(uint64_t raw_ptr,
+                                  const ViolasTypeTag *violas_type_tag,
+                                  uint64_t type_tag_len,
+                                  uint64_t sender_ref_id,
+                                  const char *script_file,
+                                  const ScriptArgs *script_args);
+
     // publish a currency module with 0x0 address
     bool violas_publish_currency(uint64_t raw_client, const char *currency_code);
 
@@ -265,6 +273,24 @@ extern "C"
         const uint8_t auth_key[AUTH_KEY_LENGTH],
         uint64_t nonce,
         bool is_blocking);
+
+    // Get all registered currencies of Exchange     
+    bool violas_get_exchange_currencies(
+        uint64_t raw_client,
+        const uint8_t address[ADDRESS_LENGTH], // the address that Exchange contract was published on
+        char **out_currencies);
+
+    // Get Exchange Reservers resource
+    bool violas_get_exchange_reserves(
+        uint64_t raw_client,
+        const uint8_t address[ADDRESS_LENGTH], // the address that Exchange contract was published on
+        char **out_reserver_infos);
+
+    // Get liquidity balance for an account that has added liqudity
+     bool violas_get_liquidity_balance(
+        uint64_t raw_client,
+        const uint8_t address[ADDRESS_LENGTH], // the address that whoes account has added liquidity 
+        char **out_liquidity_balances);
 
 #ifdef __cplusplus
 }

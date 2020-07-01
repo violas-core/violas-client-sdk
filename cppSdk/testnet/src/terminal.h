@@ -12,4 +12,17 @@ const std::string MAGENTA("\033[0;35m");
 const std::string RESET("\033[0m");
 } // namespace color
 
+template <typename F>
+void try_catch(F f)
+{
+    try
+    {
+        f();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+}
+
 #endif

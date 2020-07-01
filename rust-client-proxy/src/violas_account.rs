@@ -104,3 +104,35 @@ impl TokenView {
         Self { tokens: vec![] }
     }
 }
+
+pub mod exchange {
+    use serde::{Deserialize, Serialize};
+    //
+    #[derive(Clone, Default, Serialize, Debug, Deserialize)]
+    pub struct Token {
+        index: u64,
+        value: u64,
+    }
+    //
+    #[derive(Clone, Default, Serialize, Debug, Deserialize)]
+    pub struct Tokens {
+        tokens: Vec<Token>,
+    }
+    //
+    #[derive(Clone, Default, Serialize, Debug, Deserialize)]
+    pub struct Reserve {
+        liquidity_total_supply: u64,
+        coina: Token,
+        coinb: Token,
+    }
+    // 
+    #[derive(Clone, Default, Serialize, Debug, Deserialize)]
+    pub struct Reserves {
+        reserves: Vec<Reserve>,
+    }
+    //
+    #[derive(Clone, Default, Serialize, Debug, Deserialize)]
+    pub struct RegisteredCurrencies {
+        currency_codes: Vec<Vec<u8>>,
+    }
+}

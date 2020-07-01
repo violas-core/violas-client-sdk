@@ -234,15 +234,24 @@ namespace LIB_NAME
         virtual void publish_module(uint64_t account_index, const std::string &module_file) = 0;
 
         /// execute script
-        virtual void execute_script(uint64_t account_index,
-                                    std::string_view script_file,
-                                    const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
+        virtual void
+        execute_script(uint64_t account_index,
+                       std::string_view script_file,
+                       const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
         /// execute script with TypeTag
-        virtual void execute_script(const TypeTag &tag,
-                                    uint64_t account_index,
-                                    std::string_view script_file,
-                                    const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
+        virtual void
+        execute_script(const TypeTag &tag,
+                       uint64_t account_index,
+                       std::string_view script_file,
+                       const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
+
+        // execute script with type tag array
+        virtual void
+        execute_script_ex(const std::vector<TypeTag> &type_tags,
+                          uint64_t sender_ref_id,
+                          std::string_view script_file,
+                          const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
         virtual std::string
         get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num, bool fetch_event = true) = 0;
@@ -411,6 +420,25 @@ namespace LIB_NAME
 
     using token_manager_ptr = std::shared_ptr<TokenManager>;
 
+    //
+    //  class Exchange implents all method for accessing contracgt Exchange.move
+    //
+    class Exchange
+    {
+    public:
+        static std::shared_ptr<Exchange>
+        create(client_ptr client);
+
+        virtual ~Exchange() {}
+
+        virtual std::string get_currencies(const Address &address) = 0;
+
+        virtual std::string get_reserves(const Address &address) = 0;
+
+        virtual std::string get_liquidity_balance(const Address &address) = 0;
+    };
+
+    using exchange_ptr = std::shared_ptr<Exchange>;
 } // namespace LIB_NAME
 
 #endif

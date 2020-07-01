@@ -1,4 +1,4 @@
-address 0x7257c2417e4d1038e1817c8f283ace2e {
+address 0x1 {
 
 module Exchange {
     use 0x1::Transaction;
@@ -7,7 +7,9 @@ module Exchange {
     use 0x1::Vector;
     use 0x1::LCS;
     use 0x1::Debug;
-    use 0x7257c2417e4d1038e1817c8f283ace2e::ExDep;
+    use 0x1::Association;
+    use 0x1::CoreAddresses;
+    use 0x1::ExDep;
 
     resource struct Reserves {
         reserves: vector<Reserve>,
@@ -37,11 +39,13 @@ module Exchange {
     }
 
     fun singleton_addr(): address {
-        0x7257c2417e4d1038e1817c8f283ace2e
+        CoreAddresses::ASSOCIATION_ROOT_ADDRESS()
     }
 
     public fun initialize(sender: &signer) {
-        assert(Transaction::sender() == singleton_addr(), 5000);
+        //assert(Transaction::sender() == singleton_addr(), 5000);
+        Association::assert_is_association(sender);
+
         move_to_sender(Reserves {
             reserves: Vector::empty()
         });

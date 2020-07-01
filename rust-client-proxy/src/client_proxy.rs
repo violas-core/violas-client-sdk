@@ -35,7 +35,7 @@ use libra_types::{
     waypoint::Waypoint,
 };
 use libra_wallet::{io_utils, WalletLibrary};
-use move_core_types::language_storage::TypeTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 
 use num_traits::{
     cast::{FromPrimitive, ToPrimitive},
@@ -44,6 +44,7 @@ use num_traits::{
 use reqwest::Url;
 use resource_viewer::{AnnotatedAccountStateBlob, MoveValueAnnotator, NullStateView};
 use rust_decimal::Decimal;
+use serde::de::DeserializeOwned;
 use std::{
     collections::HashMap,
     convert::TryFrom,
@@ -2108,6 +2109,23 @@ impl ClientProxy {
                 )
             }
             None => unimplemented!(),
+        }
+    }
+
+    //// Get account resource
+    pub fn get_account_resource<T: DeserializeOwned>(
+        &mut self,
+        address: &AccountAddress,
+        tag_path: &StructTag,
+    ) -> Result<Option<T>> {
+        if let (Some(blob), _) = self.client.get_account_state_blob(address.clone())? {
+            let account_state = AccountState::try_from(&blob)?;
+            let access_path = AccessPath::resource_access_vec(tag_path);
+
+            let resource = account_state.get_resource(&access_path.to_vec())?;
+            Ok(resource)
+        } else {
+            Ok(None)
         }
     }
 }

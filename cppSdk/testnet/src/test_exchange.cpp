@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string_view>
 #include <ctime>
+#include <cmath>
 #include <violas_sdk.hpp>
 #include "terminal.h"
 
@@ -74,28 +75,27 @@ void run_test_exchange(const string &url,
 
         //  initialize module Exchange under association account
         client->execute_script(ASSOCIATION_ID, initialize);
-
-        //
-        //  register all currency to Exchange module under association account
-        //
-
-        for (const auto &currency : currencies)
-        {
-            TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
-
-            try_catch([&]() {
-                client->execute_script(tag, ASSOCIATION_ID, add_currency);
-            });
-
-            try_catch([&]() {
-                client->add_currency(tag, user0);
-                client->add_currency(tag, user1);
-            });
-
-            client->mint_currency(tag, accounts[user0].auth_key, 10 * MICRO_COIN);
-            client->mint_currency(tag, accounts[user1].auth_key, 10 * MICRO_COIN);
-        }
     });
+
+    //
+    //  register all currency to Exchange module under association account
+    //
+
+    for (const auto &currency : currencies)
+    {
+        TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
+
+        try_catch([&]() {
+            client->execute_script(tag, ASSOCIATION_ID, add_currency);
+        });
+
+        try_catch([&]() {
+            client->add_currency(tag, user0);
+            client->add_currency(tag, user1);
+        });
+
+        
+    }
 
     auto print_all_balance = [=, &currencies](const Address &addr) {
         auto fmt_balance = [=](string_view currency) -> string {
@@ -105,8 +105,7 @@ void run_test_exchange(const string &url,
             return is_valid_balance(balance) ? to_string((double)balance / MICRO_COIN) : "N/A";
         };
 
-        cout << "All balance for User --- LBR balance is "
-             << double(client->get_balance(accounts[user1].address)) / MICRO_COIN << ", "
+        cout << "LBR : " << double(client->get_balance(accounts[user1].address)) / MICRO_COIN << ", "
              << "USD : " << fmt_balance(currencies[0]) << ", "
              << "EUR : " << fmt_balance(currencies[1]) << "."
              << endl;
@@ -123,30 +122,45 @@ void run_test_exchange(const string &url,
         TypeTag EUR(CORE_CODE_ADDRESS, "VLSEUR", "VLSEUR");
         TypeTag GBP(CORE_CODE_ADDRESS, "VLSGBP", "VLSGBP");
 
-        // client->execute_script_ex({USD, EUR},
-        //                           user0,
-        //                           add_liquidity,
-        //                           //{"1", to_string(10 * MICRO_COIN), to_string(0 * MICRO_COIN), to_string(0 * MICRO_COIN)});
-        //                           {"1000000", "321432", "0", "0"});
+        client->mint_currency(USD, accounts[user0].auth_key, 1 * MICRO_COIN);
+        client->mint_currency(EUR, accounts[user0].auth_key, 10 * MICRO_COIN);
+        client->mint_currency(GBP, accounts[user0].auth_key, 20 * MICRO_COIN);
 
-        // client->execute_script_ex({USD, GBP},
-        //                           user0,
-        //                           add_liquidity,
-        //                           //{"1", to_string(10 * MICRO_COIN), to_string(0 * MICRO_COIN), to_string(0 * MICRO_COIN)});
-        //                           {"1000000", "321432", "0", "0"});
+        client->mint_currency(USD, accounts[user1].auth_key, 1 * MICRO_COIN);
+
+        //add liquidity for USD -> EUR
+        client->execute_script_ex({USD, EUR},
+                                  user0,
+                                  add_liquidity,
+                                  {to_string(1 * MICRO_COIN), to_string(4 * MICRO_COIN), "0", "0"});
+
+        //add liquidity for EUR -> GBP
+        client->execute_script_ex({EUR, GBP},
+                                  user0,
+                                  add_liquidity,                                  
+                                  {to_string(4 * MICRO_COIN), to_string(16 * MICRO_COIN), "0", "0"});
 
         auto currencies = exchange->get_currencies(ASSOCIATION_ADDRESS);
         cout << currencies << endl;
-        
+
         auto reserve = exchange->get_reserves(ASSOCIATION_ADDRESS);
         cout << reserve << endl;
 
         auto liquidity_balance = exchange->get_liquidity_balance(accounts[0].address);
         cout << "liquidity balance is :" << liquidity_balance << endl;
-        
-        uint64_t remove_amout = (uint64_t)1000000 * 321432 * 0.5;
-        client->execute_script_ex({EUR, USD}, user0, remove_liquidity, {to_string(remove_amout), "0", "0"}); //321432 //1000000
+
+        try_catch([&]() {
+            uint64_t remove_amout = ((uint64_t)1000); // * 321432
+
+            //client->execute_script_ex({USD, EUR}, user0, remove_liquidity, {to_string(remove_amout), "0", "0"}); //321432 //1000000
+        });
+
+        print_all_balance(accounts[0].address);
+
+        client->execute_script_ex({USD, GBP}, user1, swap_currency, {to_string(1 * MICRO_COIN), "0", "b\"000102\""});
+        print_all_balance(accounts[0].address);
     }
 
     print_all_balance(accounts[0].address);
+    print_all_balance(accounts[1].address);
 }

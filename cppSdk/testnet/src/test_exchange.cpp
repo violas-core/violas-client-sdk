@@ -63,7 +63,7 @@ void run_test_exchange(const string &url,
         //"BTCBTC",
     };
 
-    auto exchange = Exchange::create(client);
+    auto exchange = Exchange::create(client, script_path);
 
     //
     //  deploy module Exchange under association account

@@ -1104,11 +1104,34 @@ namespace LIB_NAME
         client_ptr m_client;
 
     public:
-        ExchangeImp(client_ptr client) : m_client(client)
+        ExchangeImp(client_ptr client,
+                    std::string_view exchange_contracts_path)
+            : m_client(client),
+              m_script_path(exchange_contracts_path)
         {
         }
 
-        virtual std::string get_currencies(const Address &address) override
+        virtual void
+        deploy_with_association_account() override
+        {
+            m_client->publish_module(ASSOCIATION_ID, _module_exdep);
+
+            m_client->publish_module(ASSOCIATION_ID, _module_exchange);
+
+            //  initialize module Exchange under association account
+            m_client->execute_script(ASSOCIATION_ID, _script_initialize);
+        }
+
+        virtual void
+        add_currency(std::string_view currency_code) override
+        {
+            TypeTag tag(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            m_client->execute_script(tag, ASSOCIATION_ID, _script_add_currency);
+        }
+
+        virtual std::string
+        get_currencies(const Address &address) override
         {
             auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
 
@@ -1125,7 +1148,8 @@ namespace LIB_NAME
             return temp;
         }
 
-        virtual std::string get_reserves(const Address &address) override
+        virtual std::string
+        get_reserves(const Address &address) override
         {
             auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
             void *raw_client = client_imp->get_raw_client();
@@ -1160,11 +1184,55 @@ namespace LIB_NAME
 
             return temp;
         }
+
+        virtual void
+        add_liquidity(
+            uint64_t account_index,
+            const LiquidityInfo &first,
+            const LiquidityInfo &second) override
+        {
+            m_client->execute_script_ex({first.currency_tag, second.currency_tag},
+                                        account_index,
+                                        _script_add_liquidity,
+                                        {to_string(first.disired_amount),
+                                         to_string(second.disired_amount),
+                                         to_string(first.min_amount),
+                                         to_string(second.min_amount)});
+        }
+
+        // remove liquidity
+        virtual void
+        remove_liquidity(
+            size_t account_index,
+            uint64_t liquidity_amount,
+            TypeTag curentcy_a, uint64_t a_acceptable_min_amount,
+            TypeTag curentcy_b, uint64_t b_acceptable_min_amount) override
+        {
+        }
+
+        // swap currency from A to B
+        virtual void
+        swap(size_t account_index,
+             TypeTag currency_a, uint64_t amount_a,
+             TypeTag currency_b, uint64_t b_acceptable_min_amount) override
+        {
+        }
+
+    private:
+        std::string m_script_path;
+        const std::string _module_exchange = m_script_path + "exchange.mv";
+        const std::string _module_exdep = m_script_path + "exdep.mv";
+        const std::string _script_initialize = m_script_path + "initialize.mv";
+        const std::string _script_add_currency = m_script_path + "add_currency.mv";
+        const std::string _script_add_liquidity = m_script_path + "add_liquidity.mv";
+        const std::string _script_remove_liquidity = m_script_path + "remove_liquidity.mv";
+        const std::string _script_swap_currency = m_script_path + "swap.mv";
     };
 
-    std::shared_ptr<Exchange> Exchange::create(client_ptr client)
+    std::shared_ptr<Exchange> Exchange::create(client_ptr client,
+                                               std::string_view exchange_contracts_path)
     {
-        return make_shared<ExchangeImp>(client);
+        return make_shared<ExchangeImp>(client, exchange_contracts_path);
     }
 
 } // namespace LIB_NAME

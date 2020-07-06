@@ -7,10 +7,10 @@
 
 using namespace std;
 
-void run_test_exchange(const string &url,
-                       const string &mint_key_file,
-                       const string &mnemonic_file,
-                       const string &waypoint)
+void test_exchange(const string &url,
+                   const string &mint_key_file,
+                   const string &mnemonic_file,
+                   const string &waypoint)
 {
     using namespace Violas;
 
@@ -93,8 +93,6 @@ void run_test_exchange(const string &url,
             client->add_currency(tag, user0);
             client->add_currency(tag, user1);
         });
-
-        
     }
 
     auto print_all_balance = [=, &currencies](const Address &addr) {
@@ -137,7 +135,7 @@ void run_test_exchange(const string &url,
         //add liquidity for EUR -> GBP
         client->execute_script_ex({EUR, GBP},
                                   user0,
-                                  add_liquidity,                                  
+                                  add_liquidity,
                                   {to_string(4 * MICRO_COIN), to_string(16 * MICRO_COIN), "0", "0"});
 
         auto currencies = exchange->get_currencies(ASSOCIATION_ADDRESS);
@@ -160,6 +158,106 @@ void run_test_exchange(const string &url,
         client->execute_script_ex({USD, GBP}, user1, swap_currency, {to_string(1 * MICRO_COIN), "0", "b\"000102\""});
         print_all_balance(accounts[0].address);
     }
+
+    print_all_balance(accounts[0].address);
+    print_all_balance(accounts[1].address);
+}
+
+void run_exchange(const string &url,
+                  const string &mint_key_file,
+                  const string &mnemonic_file,
+                  const string &waypoint)
+{
+    using namespace Violas;
+
+    const auto &faucet = ASSOCIATION_ADDRESS;
+
+    cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
+
+    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
+
+    client->test_validator_connection();
+    cout << "succeed to test validator connection ." << endl;
+
+    auto s = client->create_next_account(true);
+    auto o1 = client->create_next_account(true);
+    auto u1 = client->create_next_account(true);
+    auto u2 = client->create_next_account(true);
+
+    TypeTag
+        LBR(CORE_CODE_ADDRESS, "LBR", "LBR"),
+        USD(CORE_CODE_ADDRESS, "VLSUSD", "VLSUSD"),
+        EUR(CORE_CODE_ADDRESS, "VLSEUR", "VLSEUR"),
+        GBP(CORE_CODE_ADDRESS, "VLSGBP", "VLSGBP");
+
+    auto print_all_balance = [&](const Address &addr) {
+        auto fmt_balance = [=](string_view currency) -> string {
+            TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
+
+            auto balance = client->get_currency_balance(tag, addr);
+            return is_valid_balance(balance) ? to_string((double)balance / MICRO_COIN) : "N/A";
+        };
+
+        cout << "LBR : " << double(client->get_balance(addr)) / MICRO_COIN << ", "
+             << "USD : " << fmt_balance("VLSUSD") << ", "
+             << "EUR : " << fmt_balance("VLSEUR") << "."
+             << "GBP : " << fmt_balance("VLSGBP") << "."
+             << endl;
+    };
+
+    auto accounts = client->get_all_accounts();
+    for (const auto &account : accounts)
+    {
+        cout << "Account index : " << account.index
+             << ", address : " << account.address
+             << endl;
+
+        client->mint_coins(account.index, 10 * MICRO_COIN);
+        //client->mint_currency(LBR, account.auth_key, 10 * MICRO_COIN);
+
+        client->add_currency(USD, account.index);
+        client->mint_currency(USD, account.auth_key, 10 * MICRO_COIN);
+
+        client->add_currency(EUR, account.index);
+        client->mint_currency(EUR, account.auth_key, 10 * MICRO_COIN);
+
+        client->add_currency(GBP, account.index);
+        client->mint_currency(GBP, account.auth_key, 10 * MICRO_COIN);
+    }
+
+    print_all_balance(accounts[0].address);
+    print_all_balance(accounts[1].address);
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    size_t user0 = 0, user1 = 1;
+
+    const string script_path = "../../cppSdk/move/exchange/";
+    auto exchange = Exchange::create(client, script_path);
+
+    try_catch([&]() { exchange->deploy_with_association_account(); });
+
+    string currency_codes[] = {"VLSUSD", "VLSEUR", "VLSGBP"};
+
+    for (auto currency : currency_codes)
+    {
+        try_catch([&]() { exchange->add_currency(currency); });
+    }
+
+    exchange->add_liquidity(user0, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 4 * MICRO_COIN, 0});
+
+    exchange->add_liquidity(user0, {currency_codes[1], 1 * MICRO_COIN, 0}, {currency_codes[2], 4 * MICRO_COIN, 0});
+
+    auto currencies = exchange->get_currencies(ASSOCIATION_ADDRESS);
+    cout << currencies << endl;
+
+    auto reserve = exchange->get_reserves(ASSOCIATION_ADDRESS);
+    cout << reserve << endl;
+
+    auto liquidity_balance = exchange->get_liquidity_balance(accounts[user0].address);
+    cout << "liquidity balance is :" << liquidity_balance << endl;
+
+    exchange->swap(user1, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
 
     print_all_balance(accounts[0].address);
     print_all_balance(accounts[1].address);

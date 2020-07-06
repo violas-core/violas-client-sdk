@@ -18,7 +18,7 @@ void run_test_token(const string &url,
                     const string &mnemonic_file,
                     const string &waypoint);
 
-void run_test_exchange(const string &url,
+void run_exchange(const string &url,
                        const string &mint_key_file,
                        const string &mnemonic_file,
                        const string &waypoint);
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
         map<int, handler> handlers = {
             {0, [=]() { run_test_libra(argv[1], argv[2], argv[3], argv[4]); }},
             {1, [=]() { run_test_token(argv[1], argv[2], argv[3], argv[4]); }},
-            {2, [=]() { run_test_exchange(argv[1], argv[2], argv[3], argv[4]); }},
+            {2, [=]() { run_exchange(argv[1], argv[2], argv[3], argv[4]); }},
             {3, [=]() { run_account_management(argv[1], argv[2], argv[3], argv[4]); }},
         };
 

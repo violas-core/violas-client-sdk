@@ -1191,7 +1191,10 @@ namespace LIB_NAME
             const LiquidityInfo &first,
             const LiquidityInfo &second) override
         {
-            m_client->execute_script_ex({first.currency_tag, second.currency_tag},
+            TypeTag currency_a(CORE_CODE_ADDRESS, first.currency_code, first.currency_code);
+            TypeTag currency_b(CORE_CODE_ADDRESS, second.currency_code, second.currency_code);
+
+            m_client->execute_script_ex({currency_a, currency_b},
                                         account_index,
                                         _script_add_liquidity,
                                         {to_string(first.disired_amount),
@@ -1205,19 +1208,38 @@ namespace LIB_NAME
         remove_liquidity(
             size_t account_index,
             uint64_t liquidity_amount,
-            TypeTag curentcy_a, uint64_t a_acceptable_min_amount,
-            TypeTag curentcy_b, uint64_t b_acceptable_min_amount) override
+            std::string_view currency_code_a, uint64_t a_acceptable_min_amount,
+            std::string_view currency_code_b, uint64_t b_acceptable_min_amount) override
         {
+            TypeTag currency_a(CORE_CODE_ADDRESS, currency_code_a, currency_code_a);
+            TypeTag currency_b(CORE_CODE_ADDRESS, currency_code_b, currency_code_b);
+
+            m_client->execute_script_ex({currency_a, currency_b},
+                                        account_index,
+                                        _script_remove_liquidity,
+                                        {to_string(liquidity_amount),
+                                         to_string(a_acceptable_min_amount),
+                                         to_string(b_acceptable_min_amount)});
         }
 
         // swap currency from A to B
         virtual void
         swap(size_t account_index,
-             TypeTag currency_a, uint64_t amount_a,
-             TypeTag currency_b, uint64_t b_acceptable_min_amount) override
+             string_view currency_code_a, uint64_t amount_a,
+             string_view currency_code_b, uint64_t b_acceptable_min_amount) override
         {
+            TypeTag currency_a(CORE_CODE_ADDRESS, currency_code_a, currency_code_a);
+            TypeTag currency_b(CORE_CODE_ADDRESS, currency_code_b, currency_code_b);
+
+            m_client->execute_script_ex({currency_a, currency_b},
+                                        account_index,
+                                        _script_swap_currency,
+                                        {to_string(amount_a),
+                                         to_string(b_acceptable_min_amount),
+                                         "b\"000102\""});
         }
 
+    protected:
     private:
         std::string m_script_path;
         const std::string _module_exchange = m_script_path + "exchange.mv";

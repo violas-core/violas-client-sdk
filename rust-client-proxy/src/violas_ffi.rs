@@ -1237,7 +1237,7 @@ pub mod x86_64 {
                 ) {
                     Ok(_) => true,
                     Err(e) => {
-                        set_last_error(format_err!("failed to add currency with error, {}", e));
+                        set_last_error(format_err!("failed to mint currency with error, {}", e));
                         false
                     }
                 }

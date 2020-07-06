@@ -36,7 +36,6 @@ use libra_types::{
 };
 use libra_wallet::{io_utils, WalletLibrary};
 use move_core_types::language_storage::{StructTag, TypeTag};
-
 use num_traits::{
     cast::{FromPrimitive, ToPrimitive},
     identities::Zero,
@@ -49,13 +48,12 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt, fs,
-    io::{stdout, Write},
     path::{Path, PathBuf},
     process::Command,
     str::{self, FromStr},
     thread, time,
 };
-use transaction_builder::encode_register_validator_script;
+use transaction_builder::encode_set_validator_config_script;
 
 const CLIENT_WALLET_MNEMONIC_FILE: &str = "client.mnemonic";
 const GAS_UNIT_PRICE: u64 = 0;
@@ -576,32 +574,20 @@ impl ClientProxy {
             space_delim_strings[0]
         );
         ensure!(
-            space_delim_strings.len() == 3,
+            space_delim_strings.len() == 2,
             "Invalid number of arguments for removing validator"
         );
         let (account_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
-        let private_key = Ed25519PrivateKey::from_encoded_string(space_delim_strings[2])?;
-        let program = transaction_builder::encode_remove_validator_script(account_address);
-        let mut sender = Self::get_account_data_from_address(
-            &mut self.client,
-            account_address,
-            true,
-            Some(KeyPair::from(private_key)),
-            None,
-        )?;
-        let txn = self.create_txn_to_submit(
-            TransactionPayload::Script(program),
-            &sender,
-            None,
-            None,
-            None,
-        )?;
-        self.client.submit_transaction(Some(&mut sender), txn)?;
-        if is_blocking {
-            self.wait_for_transaction(sender.address, sender.sequence_number)?;
+        match self.assoc_root_account {
+            Some(_) => self.association_transaction_with_local_assoc_root_account(
+                TransactionPayload::Script(transaction_builder::encode_remove_validator_script(
+                    account_address,
+                )),
+                is_blocking,
+            ),
+            None => unimplemented!(),
         }
-        Ok(())
     }
 
     /// Add a new validator to the Validator Set.
@@ -612,32 +598,20 @@ impl ClientProxy {
             space_delim_strings[0]
         );
         ensure!(
-            space_delim_strings.len() == 3,
+            space_delim_strings.len() == 2,
             "Invalid number of arguments for adding validator"
         );
         let (account_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
-        let private_key = Ed25519PrivateKey::from_encoded_string(space_delim_strings[2])?;
-        let mut sender = Self::get_account_data_from_address(
-            &mut self.client,
-            account_address,
-            true,
-            Some(KeyPair::from(private_key)),
-            None,
-        )?;
-        let program = transaction_builder::encode_add_validator_script(account_address);
-        let txn = self.create_txn_to_submit(
-            TransactionPayload::Script(program),
-            &sender,
-            None,
-            None,
-            None,
-        )?;
-        self.client.submit_transaction(Some(&mut sender), txn)?;
-        if is_blocking {
-            self.wait_for_transaction(sender.address, sender.sequence_number)?;
+        match self.assoc_root_account {
+            Some(_) => self.association_transaction_with_local_assoc_root_account(
+                TransactionPayload::Script(transaction_builder::encode_add_validator_script(
+                    account_address,
+                )),
+                is_blocking,
+            ),
+            None => unimplemented!(),
         }
-        Ok(())
     }
 
     /// Register an account as validator candidate with ValidatorConfig
@@ -671,7 +645,8 @@ impl ClientProxy {
             Some(KeyPair::from(private_key)),
             None,
         )?;
-        let program = encode_register_validator_script(
+        let program = encode_set_validator_config_script(
+            address,
             consensus_public_key.to_bytes().to_vec(),
             network_identity_key.to_bytes(),
             network_address.into(),
@@ -700,8 +675,6 @@ impl ClientProxy {
     ) -> Result<()> {
         let mut max_iterations = 5000;
         loop {
-            stdout().flush().unwrap();
-
             match self
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
@@ -1141,8 +1114,7 @@ impl ClientProxy {
                 account_data
                     .authentication_key
                     .clone()
-                    .map(|bytes| AuthenticationKey::try_from(bytes).ok())
-                    .flatten(),
+                    .and_then(|bytes| AuthenticationKey::try_from(bytes).ok()),
             ))
         }
     }
@@ -1761,25 +1733,12 @@ impl ClientProxy {
         //     "/home/hunter/Projects/work/ViolasClientSdk/cppSdk/move/currencies/register_currency.mv",
         // )?;
         let script_bytes = vec![
-            161, 28, 235, 11, 1, 0, 7, 1, 0, 8, 2, 8, 14, 3, 22, 22, 4, 44, 4, 5, 48, 70, 7, 118,
-            190, 1, 8, 180, 2, 16, 0, 0, 0, 1, 0, 2, 0, 3, 1, 1, 2, 0, 2, 6, 1, 1, 1, 2, 7, 1, 1,
-            1, 0, 4, 0, 1, 0, 1, 5, 2, 3, 0, 2, 8, 4, 5, 1, 1, 3, 9, 6, 1, 1, 1, 2, 9, 3, 9, 1, 6,
-            12, 0, 2, 3, 3, 1, 8, 0, 6, 6, 12, 8, 0, 1, 3, 3, 10, 2, 2, 11, 2, 1, 9, 0, 11, 1, 1,
-            9, 0, 3, 6, 12, 11, 2, 1, 9, 0, 11, 1, 1, 9, 0, 7, 6, 12, 3, 3, 1, 3, 3, 10, 2, 3, 11,
-            1, 1, 9, 0, 11, 2, 1, 9, 0, 8, 0, 1, 9, 0, 11, 65, 115, 115, 111, 99, 105, 97, 116,
-            105, 111, 110, 12, 70, 105, 120, 101, 100, 80, 111, 105, 110, 116, 51, 50, 5, 76, 105,
-            98, 114, 97, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117, 110, 116, 21, 97, 115,
-            115, 101, 114, 116, 95, 105, 115, 95, 97, 115, 115, 111, 99, 105, 97, 116, 105, 111,
-            110, 20, 99, 114, 101, 97, 116, 101, 95, 102, 114, 111, 109, 95, 114, 97, 116, 105,
-            111, 110, 97, 108, 14, 66, 117, 114, 110, 67, 97, 112, 97, 98, 105, 108, 105, 116, 121,
-            14, 77, 105, 110, 116, 67, 97, 112, 97, 98, 105, 108, 105, 116, 121, 17, 114, 101, 103,
-            105, 115, 116, 101, 114, 95, 99, 117, 114, 114, 101, 110, 99, 121, 54, 97, 100, 100,
-            95, 99, 117, 114, 114, 101, 110, 99, 121, 95, 99, 97, 112, 97, 98, 105, 108, 105, 116,
-            121, 95, 116, 111, 95, 116, 114, 101, 97, 115, 117, 114, 121, 95, 99, 111, 109, 112,
-            108, 105, 97, 110, 99, 101, 95, 97, 99, 99, 111, 117, 110, 116, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 7, 8, 20, 10, 0, 17, 0, 10, 1, 10, 2, 17, 1, 12, 9, 10,
-            0, 11, 9, 10, 3, 10, 4, 10, 5, 11, 6, 56, 0, 12, 7, 12, 8, 11, 0, 11, 8, 11, 7, 56, 1,
-            2,
+            161, 28, 235, 11, 1, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 14, 7, 24, 47, 8, 71, 16,
+            0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 7, 6, 12, 3, 3, 1, 3, 3, 10, 2, 0, 1, 9, 0, 12, 76, 105,
+            98, 114, 97, 65, 99, 99, 111, 117, 110, 116, 33, 114, 101, 103, 105, 115, 116, 101,
+            114, 95, 99, 117, 114, 114, 101, 110, 99, 121, 95, 119, 105, 116, 104, 95, 116, 99, 95,
+            97, 99, 99, 111, 117, 110, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+            0, 1, 9, 11, 0, 10, 1, 10, 2, 10, 3, 10, 4, 10, 5, 11, 6, 56, 0, 2,
         ];
 
         // costruct register currency script
@@ -1850,7 +1809,12 @@ impl ClientProxy {
         };
 
         let script = if module == "LBR" {
-            transaction_builder::encode_mint_lbr(amount)
+            transaction_builder::encode_mint_script(
+                type_tag,
+                &receiver,
+                receiver_auth_key_prefix,
+                amount,
+            )
         } else {
             transaction_builder::encode_mint_script(
                 type_tag,
@@ -1919,35 +1883,6 @@ impl ClientProxy {
             bail!("No data for {:?}", address);
         }
     }
-
-    /// register preburn for a currency
-    // pub fn register_preburner(
-    //     &mut self,
-    //     type_tag: TypeTag,
-    //     account_ref_id: u64,
-    //     is_blocking: bool,
-    // ) -> Result<()> {
-    //     if account_ref_id == u64::MAX {
-    //         match &self.assoc_root_account {
-    //             Some(_) => {
-    //                 let script = transaction_builder::encode_register_preburner_script(type_tag);
-    //                 self.association_transaction_with_local_assoc_root_account(
-    //                     TransactionPayload::Script(script),
-    //                     is_blocking,
-    //                 )
-    //             }
-    //             None => unimplemented!(),
-    //         }
-    //     } else {
-    //         self.submit_transction_with_account(
-    //             account_ref_id as usize,
-    //             transaction_builder::encode_register_preburner_script(type_tag),
-    //             None,
-    //             None,
-    //             is_blocking,
-    //         )
-    //     }
-    // }
     /// Preburn `amount` `Token(type_tag)`s from `account`.
     /// This will only succeed if `account` has already registerred preburner resource.
     pub fn preburn(

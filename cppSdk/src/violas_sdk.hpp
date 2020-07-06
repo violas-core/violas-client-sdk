@@ -443,7 +443,7 @@ namespace LIB_NAME
 
         struct LiquidityInfo
         {
-            TypeTag currency_tag;
+            std::string currency_code;
             uint64_t disired_amount;
             uint64_t min_amount;
         };
@@ -469,14 +469,14 @@ namespace LIB_NAME
         remove_liquidity(
             size_t account_index,
             uint64_t liquidity_amount,
-            TypeTag curentcy_a, uint64_t a_min_amount,
-            TypeTag curentcy_b, uint64_t b_min_amount) = 0;
+            std::string_view currency_code_a, uint64_t a_min_amount,
+            std::string_view currency_code_b, uint64_t b_min_amount) = 0;
 
         // swap currency from A to B
         virtual void
         swap(size_t account_index, 
-            TypeTag currency_a, uint64_t amount_a, 
-            TypeTag currency_b, uint64_t b_acceptable_min_amount) = 0;
+            std::string_view currency_code_a, uint64_t amount_a, 
+            std::string_view currency_code_b, uint64_t b_acceptable_min_amount) = 0;
             
     }; // namespace LIB_NAME
 

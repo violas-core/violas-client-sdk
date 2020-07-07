@@ -2,6 +2,10 @@ echo "build modules/coin_usd.move"
 ./build.sh currencies/vls_usd.move 0x0
 mv move_build_output/modules/0_VLSUSD.mv currencies/vls_usd.mv
 
+echo "build modules/vls.move"
+./build.sh currencies/vls.move 0x0
+mv move_build_output/modules/0_VLS.mv currencies/vls.mv
+
 # echo "build modules/coin_eur.move"
 # ./build.sh modules/coin_eur.move 0x0
 # mv move_build_output/modules/0_VLSEUR.mv compiled/coin_eur.mv

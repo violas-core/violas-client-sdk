@@ -1692,20 +1692,36 @@ impl ClientProxy {
         resp
     }
     ///
-    /// pusblis a new module with specified module name
+    /// publish a new module with specified module name
     ///
     pub fn publish_currency(&mut self, module_name: Vec<u8>) -> Result<()> {
-        let mut module_byte_code = vec![
-            161, 28, 235, 11, 1, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 19, 8, 25, 16, 10, 41, 5, 0, 0, 0,
-            0, 2, 0, 6, 86, 76, 83, 85, 83, 68, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101,
-            108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0,
-        ];
+        let new_module_byte_code = if module_name.len() == 3 {
+            let mut module_byte_code = vec![
+                161, 28, 235, 11, 1, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 16, 8, 22, 16, 10, 38, 5, 0, 0,
+                0, 0, 2, 0, 3, 86, 76, 83, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101, 108,
+                100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0,
+            ];
 
-        let position = 0x1D; //module_byte_code.
-        module_byte_code[position - 1] = module_name.len() as u8;
-        let head = &module_byte_code[..position]; //from begin to index
-        let tail = &module_byte_code[position + 6..]; //skip VLSUSD from current to end
-        let new_module_byte_code = [head, &module_name[..], tail].concat();
+            let position = 0x1D; //module_byte_code.
+            module_byte_code[position - 1] = module_name.len() as u8;
+            let head = &module_byte_code[..position]; //from begin to index
+            let tail = &module_byte_code[position + 3..]; //skip VLS from current to end
+            [head, &module_name[..], tail].concat()
+        } else if module_name.len() == 6 {
+            let mut module_byte_code = vec![
+                161, 28, 235, 11, 1, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 19, 8, 25, 16, 10, 41, 5, 0, 0,
+                0, 0, 2, 0, 6, 86, 76, 83, 85, 83, 68, 11, 100, 117, 109, 109, 121, 95, 102, 105,
+                101, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0,
+            ];
+
+            let position = 0x1D; //module_byte_code.
+            module_byte_code[position - 1] = module_name.len() as u8;
+            let head = &module_byte_code[..position]; //from begin to index
+            let tail = &module_byte_code[position + 6..]; //skip VLSUSD from current to end
+            [head, &module_name[..], tail].concat()
+        } else {
+            bail!("The length of module name must be 3 or 6 bytes.");
+        };
 
         match self.assoc_root_account {
             Some(_) => self.association_transaction_with_local_assoc_root_account(

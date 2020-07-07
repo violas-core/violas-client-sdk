@@ -11,11 +11,11 @@
 using namespace std;
 using namespace Libra;
 
-
 client_ptr connect(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint)
 {
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
+    cout << color::RED << "connecting to " << url << color::RESET << endl;
 
     auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
 
@@ -97,10 +97,16 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     //return;
 
     auto currencies = {
-        "VLSUSD", "VLSEUR", "VLSGBP", "VLSJPY", "VLSSGD",
-        "LBRUSD", "LBREUR", "LBRGBP", "LBRJPY", "LBRSGD",
-        "BTCBTC",
-        //"Test"
+        "VLSUSD",
+        "VLSEUR",
+        "VLSGBP",
+        "VLSSGD",
+        "VLS",
+        "USD",
+        "EUR",
+        "GBP",
+        "SGD",
+        "BTC",
     };
 
     for (const auto &currency : currencies)

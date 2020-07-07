@@ -1,10 +1,10 @@
 bin_PROGRAMS    = testnet test_jni transfer #test_rust_cpp
 
 if DEBUG
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/lib -L$(top_srcdir)/rust-client-proxy/target/debug
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/debug
     CLIENT_PROXY = -lclient_proxy 
 else
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/lib -L$(top_srcdir)/rust-client-proxy/target/release
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/release
     CLIENT_PROXY =  -lclient_proxy 
 endif
 

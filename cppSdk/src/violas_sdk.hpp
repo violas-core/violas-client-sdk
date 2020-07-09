@@ -474,10 +474,11 @@ namespace LIB_NAME
 
         // swap currency from A to B
         virtual void
-        swap(size_t account_index, 
-            std::string_view currency_code_a, uint64_t amount_a, 
-            std::string_view currency_code_b, uint64_t b_acceptable_min_amount) = 0;
-            
+        swap(size_t account_index,
+             const Address &receiver,
+             std::string_view currency_code_a, uint64_t amount_a,
+             std::string_view currency_code_b, uint64_t b_acceptable_min_amount) = 0;
+
     }; // namespace LIB_NAME
 
     using exchange_ptr = std::shared_ptr<Exchange>;

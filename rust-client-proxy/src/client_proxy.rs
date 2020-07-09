@@ -1899,6 +1899,14 @@ impl ClientProxy {
             bail!("No data for {:?}", address);
         }
     }
+
+    // get currency info ex
+    // pub fn get_currency_detail(&self) -> CurrencyInfoViewEx {
+    //     let currency_info_res : CurrencyInfoResource = self.get_account_resource(CORE_ADD, tag_path: &StructTag);
+
+    //     CurrencyInfoViewEx::from() 
+    // }
+
     /// Preburn `amount` `Token(type_tag)`s from `account`.
     /// This will only succeed if `account` has already registerred preburner resource.
     pub fn preburn(
@@ -2118,168 +2126,3 @@ impl fmt::Display for AccountEntry {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::client_proxy::{parse_bool, AddressAndIndex, ClientProxy};
-    use libra_temppath::TempPath;
-    use libra_types::{ledger_info::LedgerInfo, on_chain_config::ValidatorSet, waypoint::Waypoint};
-    use libra_wallet::io_utils;
-    use proptest::prelude::*;
-
-    fn generate_accounts_from_wallet(count: usize) -> (ClientProxy, Vec<AddressAndIndex>) {
-        let mut accounts = Vec::new();
-        accounts.reserve(count);
-        let file = TempPath::new();
-        let mnemonic_path = file.path().to_str().unwrap().to_string();
-        let waypoint =
-            Waypoint::new_epoch_boundary(&LedgerInfo::mock_genesis(Some(ValidatorSet::empty())))
-                .unwrap();
-
-        // Note: `client_proxy` won't actually connect to URL - it will be used only to
-        // generate random accounts
-        let mut client_proxy = ClientProxy::new(
-            "http://localhost:8080",
-            &"",
-            &"",
-            false,
-            None,
-            Some(mnemonic_path),
-            waypoint,
-        )
-        .unwrap();
-        for _ in 0..count {
-            accounts.push(client_proxy.create_next_account(false).unwrap());
-        }
-
-        (client_proxy, accounts)
-    }
-
-    #[test]
-    fn test_parse_bool() {
-        assert!(parse_bool("true").unwrap());
-        assert!(parse_bool("True").unwrap());
-        assert!(parse_bool("TRue").unwrap());
-        assert!(parse_bool("TRUE").unwrap());
-        assert!(!parse_bool("false").unwrap());
-        assert!(!parse_bool("False").unwrap());
-        assert!(!parse_bool("FaLSe").unwrap());
-        assert!(!parse_bool("FALSE").unwrap());
-        assert!(parse_bool("1").is_err());
-        assert!(parse_bool("0").is_err());
-        assert!(parse_bool("2").is_err());
-        assert!(parse_bool("1adf").is_err());
-        assert!(parse_bool("ad13").is_err());
-        assert!(parse_bool("ad1f").is_err());
-    }
-
-    #[test]
-    fn test_micro_libra_conversion() {
-        assert!(ClientProxy::convert_to_scaled_representation("", 1_000_000, 1_000_000).is_err());
-        assert!(
-            ClientProxy::convert_to_scaled_representation("-11", 1_000_000, 1_000_000).is_err()
-        );
-        assert!(
-            ClientProxy::convert_to_scaled_representation("abc", 1_000_000, 1_000_000).is_err()
-        );
-        assert!(ClientProxy::convert_to_scaled_representation(
-            "11111112312321312321321321",
-            1_000_000,
-            1_000_000
-        )
-        .is_err());
-        assert!(ClientProxy::convert_to_scaled_representation("100000.0", 1, 1).is_err());
-        assert!(ClientProxy::convert_to_scaled_representation("0", 1_000_000, 1_000_000).is_ok());
-        assert!(ClientProxy::convert_to_scaled_representation("0", 1_000_000, 1_000_000).is_ok());
-        assert!(ClientProxy::convert_to_scaled_representation("1", 1_000_000, 1_000_000).is_ok());
-        assert!(ClientProxy::convert_to_scaled_representation("0.1", 1_000_000, 1_000_000).is_ok());
-        assert!(ClientProxy::convert_to_scaled_representation("1.1", 1_000_000, 1_000_000).is_ok());
-        // Max of micro libra is u64::MAX (18446744073709551615).
-        assert!(ClientProxy::convert_to_scaled_representation(
-            "18446744073709.551615",
-            1_000_000,
-            1_000_000
-        )
-        .is_ok());
-        assert!(ClientProxy::convert_to_scaled_representation(
-            "184467440737095.51615",
-            1_000_000,
-            1_000_000
-        )
-        .is_err());
-        assert!(ClientProxy::convert_to_scaled_representation(
-            "18446744073709.551616",
-            1_000_000,
-            1_000_000
-        )
-        .is_err());
-    }
-
-    #[test]
-    fn test_scaled_represenation() {
-        assert_eq!(
-            ClientProxy::convert_to_scaled_representation("10", 1_000_000, 100).unwrap(),
-            10 * 1_000_000
-        );
-        assert_eq!(
-            ClientProxy::convert_to_scaled_representation("10.", 1_000_000, 100).unwrap(),
-            10 * 1_000_000
-        );
-        assert_eq!(
-            ClientProxy::convert_to_scaled_representation("10.20", 1_000_000, 100).unwrap(),
-            (10.20 * 1_000_000f64) as u64
-        );
-        assert!(ClientProxy::convert_to_scaled_representation("10.201", 1_000_000, 100).is_err());
-        assert_eq!(
-            ClientProxy::convert_to_scaled_representation("10.991", 1_000_000, 1000).unwrap(),
-            (10.991 * 1_000_000f64) as u64
-        );
-        assert_eq!(
-            ClientProxy::convert_to_scaled_representation("100.99", 1000, 100).unwrap(),
-            (100.99 * 1000f64) as u64
-        );
-        assert_eq!(
-            ClientProxy::convert_to_scaled_representation("100000", 1, 1).unwrap(),
-            100_000
-        );
-    }
-
-    #[test]
-    fn test_generate() {
-        let num = 1;
-        let (_, accounts) = generate_accounts_from_wallet(num);
-        assert_eq!(accounts.len(), num);
-    }
-
-    #[test]
-    fn test_write_recover() {
-        let num = 100;
-        let (client, accounts) = generate_accounts_from_wallet(num);
-        assert_eq!(accounts.len(), num);
-
-        let file = TempPath::new();
-        let path = file.path();
-        io_utils::write_recovery(&client.wallet, &path).expect("failed to write to file");
-
-        let wallet = io_utils::recover(&path).expect("failed to load from file");
-
-        assert_eq!(client.wallet.mnemonic(), wallet.mnemonic());
-    }
-
-    proptest! {
-        // Proptest is used to verify that the conversion will not panic with random input.
-        #[test]
-        fn test_micro_libra_conversion_random_string(req in any::<String>()) {
-            let _res = ClientProxy::convert_to_scaled_representation(&req, 1_000_000, 1_000_000);
-        }
-        #[test]
-        fn test_micro_libra_conversion_random_f64(req in any::<f64>()) {
-            let req_str = req.to_string();
-            let _res = ClientProxy::convert_to_scaled_representation(&req_str, 1_000_000, 1_000_000);
-        }
-        #[test]
-        fn test_micro_libra_conversion_random_u64(req in any::<u64>()) {
-            let req_str = req.to_string();
-            let _res = ClientProxy::convert_to_scaled_representation(&req_str, 1_000_000, 1_000_000);
-        }
-    }
-}

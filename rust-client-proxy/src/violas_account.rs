@@ -1,7 +1,8 @@
 use anyhow::{bail, Error, Result}; //format_err
 
 use libra_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_config::*,
+    access_path::AccessPath, account_address::AccountAddress,
+    account_config::currency_info::CurrencyInfoResource, account_config::*,
     account_state::AccountState,
 };
 use move_core_types::{
@@ -105,6 +106,30 @@ impl TokenView {
     }
 }
 
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct CurrencyInfoViewEx {
+    total_value: u128,
+    preburn_value: u64,
+    pub code: String,
+    pub scaling_factor: u64,
+    pub fractional_part: u64,
+    pub to_lbr_exchange_rate: f32,
+}
+
+impl From<CurrencyInfoResource> for CurrencyInfoViewEx {
+    fn from(info: CurrencyInfoResource) -> CurrencyInfoViewEx {
+        CurrencyInfoViewEx {
+            total_value : info.total_value(),
+            preburn_value : info.preburn_value(),
+            code: info.currency_code().to_string(),
+            scaling_factor: info.scaling_factor(),
+            fractional_part: info.fractional_part(),
+            to_lbr_exchange_rate: info.exchange_rate(),
+        }
+    }
+}
+
 pub mod exchange {
     use serde::{Deserialize, Serialize};
     //
@@ -125,7 +150,7 @@ pub mod exchange {
         coina: Token,
         coinb: Token,
     }
-    // 
+    //
     #[derive(Clone, Default, Serialize, Debug, Deserialize)]
     pub struct Reserves {
         reserves: Vec<Reserve>,

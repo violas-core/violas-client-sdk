@@ -7,6 +7,7 @@
 #include <vector>
 #include <iterator>
 #include <functional>
+#include "json.hpp"
 
 #if __cplusplus >= 201703L
 #include <filesystem>
@@ -22,6 +23,7 @@ namespace fs = boost::filesystem;
 #include "rust_client_proxy.hpp"
 
 using namespace std;
+using json = nlohmann::json;
 
 #define EXCEPTION_AT \
     format(", exception at (%s:%s:%d)", __FILE__, __func__, __LINE__)
@@ -1145,6 +1147,12 @@ namespace LIB_NAME
             string temp = json;
             libra_free_string(json);
 
+            // json currency_codes = json::parse(temp);
+            // for(const auto & code : currency_codes)
+            // {
+            //     cout << code << endl;
+            // }
+
             return temp;
         }
 
@@ -1225,7 +1233,9 @@ namespace LIB_NAME
         // swap currency from A to B
         virtual void
         swap(size_t account_index,
-             string_view currency_code_a, uint64_t amount_a,
+             const Address &receiver,
+             string_view currency_code_a,
+             uint64_t amount_a,
              string_view currency_code_b, uint64_t b_acceptable_min_amount) override
         {
             TypeTag currency_a(CORE_CODE_ADDRESS, currency_code_a, currency_code_a);
@@ -1234,9 +1244,11 @@ namespace LIB_NAME
             m_client->execute_script_ex({currency_a, currency_b},
                                         account_index,
                                         _script_swap_currency,
-                                        {to_string(amount_a),
+                                        {receiver.to_string(),
+                                         to_string(amount_a),
                                          to_string(b_acceptable_min_amount),
-                                         "b\"000102\""});
+                                         "b\"000102\"",
+                                         "b\"00\""});
         }
 
     protected:

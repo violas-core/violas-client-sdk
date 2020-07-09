@@ -94,8 +94,7 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     client->enable_custom_script(true);
     cout << "enable publsih custmer script." << endl;
 
-    //return;
-
+    
     auto currencies = {
         "VLSUSD",
         "VLSEUR",

@@ -10,7 +10,7 @@ endif
 
 libviolas_sdk_la_SOURCES = violas_sdk.cpp
 #libcppSdk_la_HEADERS = violas_sdk.hpp
-libviolas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17
+libviolas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 
 libviolas_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
 libviolas_sdk_la_LIBADD = $(CLIENT_PROXY) 
 

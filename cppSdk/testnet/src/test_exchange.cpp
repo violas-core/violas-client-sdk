@@ -184,6 +184,22 @@ void run_exchange(const string &url,
     auto u1 = client->create_next_account(true);
     auto u2 = client->create_next_account(true);
 
+    auto currencies_info = client->get_currency_info();
+    cout << currencies_info << endl;
+
+    string currency_codes[] = {
+        "VLSUSD",
+        "VLSEUR",
+        "VLSGBP",
+        "VLSSGD",
+        "VLS",
+        "USD",
+        "EUR",
+        "GBP",
+        "SGD",
+        "BTC",
+    };
+
     TypeTag
         LBR(CORE_CODE_ADDRESS, "LBR", "LBR"),
         USD(CORE_CODE_ADDRESS, "VLSUSD", "VLSUSD"),
@@ -213,16 +229,14 @@ void run_exchange(const string &url,
              << endl;
 
         client->mint_coins(account.index, 10 * MICRO_COIN);
-        //client->mint_currency(LBR, account.auth_key, 10 * MICRO_COIN);
 
-        client->add_currency(USD, account.index);
-        client->mint_currency(USD, account.auth_key, 10 * MICRO_COIN);
+        for (const auto &currency_code : currency_codes)
+        {
+            TypeTag currency_tag(CORE_CODE_ADDRESS, currency_code, currency_code);
 
-        client->add_currency(EUR, account.index);
-        client->mint_currency(EUR, account.auth_key, 10 * MICRO_COIN);
-
-        client->add_currency(GBP, account.index);
-        client->mint_currency(GBP, account.auth_key, 10 * MICRO_COIN);
+            //client->add_currency(currency_tag, account.index);
+            client->mint_currency(currency_tag, account.auth_key, 10 * MICRO_COIN);
+        }
     }
 
     print_all_balance(accounts[0].address);
@@ -237,8 +251,6 @@ void run_exchange(const string &url,
 
     try_catch([&]() { exchange->deploy_with_association_account(); });
 
-    string currency_codes[] = {"VLSUSD", "VLSEUR", "VLSGBP"};
-
     for (auto currency : currency_codes)
     {
         try_catch([&]() { exchange->add_currency(currency); });
@@ -247,6 +259,10 @@ void run_exchange(const string &url,
     exchange->add_liquidity(user0, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 4 * MICRO_COIN, 0});
 
     exchange->add_liquidity(user0, {currency_codes[1], 1 * MICRO_COIN, 0}, {currency_codes[2], 4 * MICRO_COIN, 0});
+
+    exchange->add_liquidity(user0, {currency_codes[2], 1 * MICRO_COIN, 0}, {currency_codes[3], 4 * MICRO_COIN, 0});
+
+    //exchange->add_liquidity(user0, {currency_codes[3], 1 * MICRO_COIN, 0}, {currency_codes[4], 4 * MICRO_COIN, 0});
 
     auto currencies = exchange->get_currencies(ASSOCIATION_ADDRESS);
     cout << currencies << endl;
@@ -257,7 +273,7 @@ void run_exchange(const string &url,
     auto liquidity_balance = exchange->get_liquidity_balance(accounts[user0].address);
     cout << "liquidity balance is :" << liquidity_balance << endl;
 
-    exchange->swap(user1, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
+    //exchange->swap(user1, accounts[user1].address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
 
     print_all_balance(accounts[0].address);
     print_all_balance(accounts[1].address);

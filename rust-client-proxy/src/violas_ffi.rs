@@ -1353,9 +1353,9 @@ pub mod x86_64 {
 
                 // register currency
                 match proxy.client.get_currency_info() {
-                    Ok(currency_info) => {
-                        let txn = format!("{:#?}", currency_info);
-                        *out_currency_info = CString::new(txn)
+                    Ok(view) => {
+                        let currency_info = serde_json::to_string(&view).unwrap(); 
+                        *out_currency_info = CString::new(currency_info)
                             .expect("new transaction detail")
                             .into_raw();
                         true

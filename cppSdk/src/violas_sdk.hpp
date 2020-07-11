@@ -438,7 +438,7 @@ namespace LIB_NAME
         virtual void
         add_currency(std::string_view currency_code) = 0;
 
-        virtual std::string
+        virtual std::vector<std::string>
         get_currencies(const Address &address) = 0;
 
         struct LiquidityInfo

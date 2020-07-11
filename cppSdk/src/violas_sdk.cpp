@@ -5,6 +5,9 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <map>
+#include <tuple>
+#include <queue>
 #include <iterator>
 #include <functional>
 #include "json.hpp"
@@ -1132,28 +1135,40 @@ namespace LIB_NAME
             m_client->execute_script(tag, ASSOCIATION_ID, _script_add_currency);
         }
 
-        virtual std::string
+        virtual std::vector<std::string>
         get_currencies(const Address &address) override
         {
             auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
 
-            char *json = nullptr;
+            char *out_currencie_codes = nullptr;
             bool ret = violas_get_exchange_currencies((uint64_t)client_imp->get_raw_client(),
                                                       address.data().data(),
-                                                      &json);
+                                                      &out_currencie_codes);
             if (!ret)
                 throw runtime_error(client_imp->get_last_error().c_str());
 
-            string temp = json;
-            libra_free_string(json);
+            //string temp = out_currencie_codes;
+            json currency_codes = json::parse(out_currencie_codes);
+            libra_free_string(out_currencie_codes);
 
-            // json currency_codes = json::parse(temp);
-            // for(const auto & code : currency_codes)
-            // {
-            //     cout << code << endl;
-            // }
+            if (currency_codes.empty())
+                throw runtime_error("The Exchange currency codes are empty");
 
-            return temp;
+            vector<string> codes;
+
+            for (const auto &currency_code : currency_codes["currency_codes"])
+            {
+                string code;
+
+                for (auto c : currency_code)
+                    code += char(c.get<int>());
+
+                codes.push_back(code);
+            }
+
+            cout << " the size of codes is " << codes.size() << endl;
+
+            return codes;
         }
 
         virtual std::string
@@ -1236,22 +1251,102 @@ namespace LIB_NAME
              const Address &receiver,
              string_view currency_code_a,
              uint64_t amount_a,
-             string_view currency_code_b, uint64_t b_acceptable_min_amount) override
+             string_view currency_code_b,
+             uint64_t b_acceptable_min_amount) override
         {
-            TypeTag currency_a(CORE_CODE_ADDRESS, currency_code_a, currency_code_a);
-            TypeTag currency_b(CORE_CODE_ADDRESS, currency_code_b, currency_code_b);
+            TypeTag currency_tag_a(CORE_CODE_ADDRESS, currency_code_a, currency_code_a);
+            TypeTag currency_tag_b(CORE_CODE_ADDRESS, currency_code_b, currency_code_b);
+            string path = find_swap_path(currency_code_a, amount_a, currency_code_b);
 
-            m_client->execute_script_ex({currency_a, currency_b},
+            m_client->execute_script_ex({currency_tag_a, currency_tag_b},
                                         account_index,
                                         _script_swap_currency,
                                         {receiver.to_string(),
                                          to_string(amount_a),
                                          to_string(b_acceptable_min_amount),
-                                         "b\"000102\"",
-                                         "b\"00\""});
+                                         path,        //path
+                                         "b\"00\""}); //data
         }
 
     protected:
+        std::string
+        find_swap_path(std::string_view currency_code_a, uint64_t currency_a_amount, std::string_view currency_code_b)
+        {
+            using vertex = pair<size_t, uint64_t>; // index and the requested value
+            using edge = tuple<size_t, uint64_t, size_t, uint64_t>;
+
+            vertex dist_to[32] = {{0, 0}};
+            uint64_t edge_to[32] = {0};
+
+            map<size_t, vector<edge>> v_to_e; //vertex index maps to edges
+            auto vertex_comp = [](const vertex &a, const vertex &b) { return a.second > b.second; };
+            priority_queue<vertex, vector<vertex>, decltype(vertex_comp)> minpq(vertex_comp);
+            auto relax = [&](const vertex &v, const edge &e) -> void {
+                size_t coin_a = get<0>(e);
+                uint64_t coin_a_value = get<1>(e);
+                size_t coin_b = get<2>(e);
+                uint64_t coin_b_value = get<3>(e);
+                uint64_t available_value = v.second * coin_b_value / coin_a_value;
+
+                if (coin_a_value >= v.second && //coin a have enought liquidity
+                    dist_to[coin_b].second < available_value)
+                {
+                    dist_to[coin_b].second = available_value;
+                    edge_to[coin_b] = coin_a;
+
+                    minpq.push(make_pair<>(coin_b, available_value));
+                }
+            };
+
+            vector<uint8_t> path;
+
+            auto currency_codes = get_currencies(ASSOCIATION_ADDRESS);
+            size_t currency_a_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_a));
+            size_t currency_b_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_b));
+
+            //
+            //  initialize all vertex and edge
+            //
+            json reserves = json::parse(get_reserves(ASSOCIATION_ADDRESS));
+
+            for (const auto &reserve : reserves["reserves"])
+            {
+                cout << reserve << endl;
+
+                int coin_a_index = reserve["coina"]["index"].get<int>();
+                uint64_t coin_a_value = reserve["coina"]["value"].get<uint64_t>();
+                int coin_b_index = reserve["coinb"]["index"].get<int>();
+                uint64_t coin_b_value = reserve["coinb"]["value"].get<double>();
+
+                v_to_e[coin_a_index].push_back(make_tuple(coin_a_index,
+                                                          coin_b_value,
+                                                          coin_b_index,
+                                                          coin_a_value));
+            }
+            //
+            //  search the most value path
+            //
+            minpq.push(make_pair<>(currency_a_index, currency_a_amount));
+
+            while (!minpq.empty())
+            {
+                vertex v = minpq.top();
+                minpq.pop();
+
+                for (auto e : v_to_e[v.first])
+                {
+                    relax(v, e);
+                }
+            }
+
+            for (size_t i = 0; i < currency_b_index; i++)
+            {
+                cout << dist_to[i].first << dist_to[i].second << endl;
+            }
+
+            return "b\"000102\"";
+        }
+
     private:
         std::string m_script_path;
         const std::string _module_exchange = m_script_path + "exchange.mv";

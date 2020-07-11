@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string_view>
+#include <iterator>
 #include <ctime>
 #include <cmath>
 #include <violas_sdk.hpp>
@@ -139,7 +140,7 @@ void test_exchange(const string &url,
                                   {to_string(4 * MICRO_COIN), to_string(16 * MICRO_COIN), "0", "0"});
 
         auto currencies = exchange->get_currencies(ASSOCIATION_ADDRESS);
-        cout << currencies << endl;
+        //cout << currencies << endl;
 
         auto reserve = exchange->get_reserves(ASSOCIATION_ADDRESS);
         cout << reserve << endl;
@@ -181,8 +182,8 @@ void run_exchange(const string &url,
 
     auto s = client->create_next_account(true);
     auto o1 = client->create_next_account(true);
-    auto u1 = client->create_next_account(true);
-    auto u2 = client->create_next_account(true);
+    //auto u1 = client->create_next_account(true);
+    //auto u2 = client->create_next_account(true);
 
     auto currencies_info = client->get_currency_info();
     cout << currencies_info << endl;
@@ -234,7 +235,7 @@ void run_exchange(const string &url,
         {
             TypeTag currency_tag(CORE_CODE_ADDRESS, currency_code, currency_code);
 
-            //client->add_currency(currency_tag, account.index);
+            try_catch([&]() { client->add_currency(currency_tag, account.index); });
             client->mint_currency(currency_tag, account.auth_key, 10 * MICRO_COIN);
         }
     }
@@ -265,7 +266,8 @@ void run_exchange(const string &url,
     //exchange->add_liquidity(user0, {currency_codes[3], 1 * MICRO_COIN, 0}, {currency_codes[4], 4 * MICRO_COIN, 0});
 
     auto currencies = exchange->get_currencies(ASSOCIATION_ADDRESS);
-    cout << currencies << endl;
+    copy(begin(currencies), end(currencies), ostream_iterator<string>(cout, ", "));
+    cout << endl;
 
     auto reserve = exchange->get_reserves(ASSOCIATION_ADDRESS);
     cout << reserve << endl;
@@ -273,7 +275,7 @@ void run_exchange(const string &url,
     auto liquidity_balance = exchange->get_liquidity_balance(accounts[user0].address);
     cout << "liquidity balance is :" << liquidity_balance << endl;
 
-    //exchange->swap(user1, accounts[user1].address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
+    exchange->swap(user1, accounts[user1].address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
 
     print_all_balance(accounts[0].address);
     print_all_balance(accounts[1].address);

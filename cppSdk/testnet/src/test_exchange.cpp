@@ -231,13 +231,15 @@ void run_exchange(const string &url,
 
         client->mint_coins(account.index, 10 * MICRO_COIN);
 
-        for (const auto &currency_code : currency_codes)
-        {
-            TypeTag currency_tag(CORE_CODE_ADDRESS, currency_code, currency_code);
+        try_catch([&]() {
+            for (const auto &currency_code : currency_codes)
+            {
+                TypeTag currency_tag(CORE_CODE_ADDRESS, currency_code, currency_code);
 
-            try_catch([&]() { client->add_currency(currency_tag, account.index); });
-            client->mint_currency(currency_tag, account.auth_key, 10 * MICRO_COIN);
-        }
+                client->add_currency(currency_tag, account.index);
+                client->mint_currency(currency_tag, account.auth_key, 100 * MICRO_COIN);
+            }
+        });
     }
 
     print_all_balance(accounts[0].address);
@@ -252,16 +254,18 @@ void run_exchange(const string &url,
 
     try_catch([&]() { exchange->deploy_with_association_account(); });
 
-    for (auto currency : currency_codes)
-    {
-        try_catch([&]() { exchange->add_currency(currency); });
-    }
+    try_catch([&]() {
+        for (auto currency : currency_codes)
+        {
+            exchange->add_currency(currency);
+        }
+    });
 
-    exchange->add_liquidity(user0, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 4 * MICRO_COIN, 0});
+    exchange->add_liquidity(user0, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 2 * MICRO_COIN, 0});
 
-    exchange->add_liquidity(user0, {currency_codes[1], 1 * MICRO_COIN, 0}, {currency_codes[2], 4 * MICRO_COIN, 0});
+    exchange->add_liquidity(user0, {currency_codes[1], 2 * MICRO_COIN, 0}, {currency_codes[2], 4 * MICRO_COIN, 0});
 
-    exchange->add_liquidity(user0, {currency_codes[2], 1 * MICRO_COIN, 0}, {currency_codes[3], 4 * MICRO_COIN, 0});
+    exchange->add_liquidity(user0, {currency_codes[2], 4 * MICRO_COIN, 0}, {currency_codes[3], 8 * MICRO_COIN, 0});
 
     //exchange->add_liquidity(user0, {currency_codes[3], 1 * MICRO_COIN, 0}, {currency_codes[4], 4 * MICRO_COIN, 0});
 
@@ -274,7 +278,7 @@ void run_exchange(const string &url,
 
     auto liquidity_balance = exchange->get_liquidity_balance(accounts[user0].address);
     cout << "liquidity balance is :" << liquidity_balance << endl;
-
+    
     exchange->swap(user1, accounts[user1].address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
 
     print_all_balance(accounts[0].address);

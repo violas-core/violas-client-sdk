@@ -8,6 +8,7 @@
 #include <map>
 #include <tuple>
 #include <queue>
+#include <stack>
 #include <iterator>
 #include <functional>
 #include "json.hpp"
@@ -1257,6 +1258,8 @@ namespace LIB_NAME
             TypeTag currency_tag_a(CORE_CODE_ADDRESS, currency_code_a, currency_code_a);
             TypeTag currency_tag_b(CORE_CODE_ADDRESS, currency_code_b, currency_code_b);
             string path = find_swap_path(currency_code_a, amount_a, currency_code_b);
+            path = find_swap_path("VLSUSD", 100000, "VLSSGD");
+            path = find_swap_path("VLSSGD", 100000, "VLSUSD");
 
             m_client->execute_script_ex({currency_tag_a, currency_tag_b},
                                         account_index,
@@ -1272,11 +1275,14 @@ namespace LIB_NAME
         std::string
         find_swap_path(std::string_view currency_code_a, uint64_t currency_a_amount, std::string_view currency_code_b)
         {
+            auto currency_codes = get_currencies(ASSOCIATION_ADDRESS);
+            size_t currency_a_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_a));
+            size_t currency_b_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_b));
+
             using vertex = pair<size_t, uint64_t>; // index and the requested value
             using edge = tuple<size_t, uint64_t, size_t, uint64_t>;
 
             vertex dist_to[32] = {{0, 0}};
-            uint64_t edge_to[32] = {0};
 
             map<size_t, vector<edge>> v_to_e; //vertex index maps to edges
             auto vertex_comp = [](const vertex &a, const vertex &b) { return a.second > b.second; };
@@ -1291,18 +1297,12 @@ namespace LIB_NAME
                 if (coin_a_value >= v.second && //coin a have enought liquidity
                     dist_to[coin_b].second < available_value)
                 {
-                    dist_to[coin_b].second = available_value;
-                    edge_to[coin_b] = coin_a;
+                    dist_to[coin_b].first = coin_a;           //pre vertex
+                    dist_to[coin_b].second = available_value; //most value
 
                     minpq.push(make_pair<>(coin_b, available_value));
                 }
             };
-
-            vector<uint8_t> path;
-
-            auto currency_codes = get_currencies(ASSOCIATION_ADDRESS);
-            size_t currency_a_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_a));
-            size_t currency_b_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_b));
 
             //
             //  initialize all vertex and edge
@@ -1318,10 +1318,22 @@ namespace LIB_NAME
                 int coin_b_index = reserve["coinb"]["index"].get<int>();
                 uint64_t coin_b_value = reserve["coinb"]["value"].get<double>();
 
-                v_to_e[coin_a_index].push_back(make_tuple(coin_a_index,
-                                                          coin_b_value,
-                                                          coin_b_index,
-                                                          coin_a_value));
+                if (currency_a_index < currency_b_index)
+                {
+                    // forward path
+                    v_to_e[coin_a_index].push_back(make_tuple(coin_a_index,
+                                                              coin_a_value,
+                                                              coin_b_index,
+                                                              coin_b_value));
+                }
+                else
+                {
+                    // backward path
+                    v_to_e[coin_b_index].push_back(make_tuple(coin_b_index,
+                                                              coin_b_value,
+                                                              coin_a_index,
+                                                              coin_a_value));
+                }
             }
             //
             //  search the most value path
@@ -1339,12 +1351,26 @@ namespace LIB_NAME
                 }
             }
 
-            for (size_t i = 0; i < currency_b_index; i++)
+            stack<size_t> path;
+            for (size_t i = currency_b_index;
+                 i != currency_a_index;
+                 i = dist_to[i].first)
             {
-                cout << dist_to[i].first << dist_to[i].second << endl;
+                path.push(i);
             }
+            path.push(currency_a_index);
 
-            return "b\"000102\"";
+            ostringstream oss;
+            oss << "b\"";
+            while (!path.empty())
+            {
+                oss << std::setw(2) << std::hex << path.top();
+                path.pop();
+            }
+            oss << "\"";
+
+            cout << oss.str() << endl;
+            return oss.str();
         }
 
     private:
@@ -1364,6 +1390,85 @@ namespace LIB_NAME
         return make_shared<ExchangeImp>(client, exchange_contracts_path);
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////
+    //  BankImp
+    //  Implementation for Bank interface
+    /////////////////////////////////////////////////////////////////////////////////////
+    class BankImp : public Bank
+    {
+    public:
+        BankImp(client_ptr client,
+                std::string_view bank_contracts_path) :
+                m_client(client),
+                m_bank_path(bank_contracts_path)
+        {
+        }
+
+        virtual ~BankImp() {}
+
+        virtual void
+        deploy_with_association_account() override
+        {
+        }
+
+        virtual void
+        add_currency(std::string_view currency_code) override
+        {
+        }
+
+        virtual void
+        update_currency_price() override
+        {
+        }
+
+        virtual void
+        enter_bank() override
+        {
+        }
+
+        virtual void
+        exit_bank() override
+        {
+        }
+
+        virtual void
+        lock() override
+        {
+        }
+
+        virtual void
+        redeem() override
+        {
+        }
+
+        virtual void
+        borrow() override
+        {
+        }
+
+        virtual void
+        repay_borrow() override
+        {
+        }
+
+        virtual void
+        liquidate_borrow() override
+        {
+        }
+    private:
+        client_ptr m_client;
+        string m_bank_path;
+        const string bank_module = "bank.mv";
+        const string borrow_script = "borrow.mv";
+         
+    }; // Bank
+
+    std::shared_ptr<Bank>
+    create_bank(client_ptr client,
+                std::string_view bank_contracts_path)
+    {
+        return make_shared<BankImp>(client, bank_contracts_path);
+    }
 } // namespace LIB_NAME
 
 #ifdef PYTHON

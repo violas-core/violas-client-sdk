@@ -479,9 +479,55 @@ namespace LIB_NAME
              std::string_view currency_code_a, uint64_t amount_a,
              std::string_view currency_code_b, uint64_t b_acceptable_min_amount) = 0;
 
-    }; // namespace LIB_NAME
+    }; // Exchange
 
     using exchange_ptr = std::shared_ptr<Exchange>;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Bank
+    {
+    public:
+        static std::shared_ptr<Bank>
+        create_bank(client_ptr client,
+                    std::string_view bank_contracts_path);
+
+        virtual ~Bank() {}
+
+        virtual void
+        deploy_with_association_account() = 0;
+
+        virtual void
+        add_currency(std::string_view currency_code) = 0;
+
+        virtual void
+        update_currency_price() = 0;
+
+        virtual void
+        enter_bank() = 0;
+
+        virtual void
+        exit_bank() = 0;
+
+        virtual void
+        lock() = 0;
+
+        virtual void
+        redeem() = 0;
+
+        virtual void
+        borrow() = 0;
+
+        virtual void
+        repay_borrow() = 0;
+
+        virtual void
+        liquidate_borrow() = 0;
+
+    }; // Bank
+
+    using bank_ptr = std::shared_ptr<Bank>;
+
 } // namespace LIB_NAME
 
 #endif

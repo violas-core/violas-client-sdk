@@ -1691,6 +1691,40 @@ impl ClientProxy {
         self.wait_for_transaction(sender_address, sequence_number + 1)?;
         resp
     }
+    /// execute script with json format
+    pub fn execute_script_json(
+        &mut self,
+        sender_ref_id: u64,
+        script_file_name: &str,
+        tags: Vec<TypeTag>,
+        script_arguments: Vec<TransactionArgument>,
+    ) -> Result<()> {
+        let sender = if sender_ref_id == u64::MAX {
+            if self.assoc_root_account.is_none() {
+                bail!("No faucet account loaded");
+            }
+            self.assoc_root_account.as_ref().unwrap()
+        } else {
+            self.accounts.get(sender_ref_id as usize).unwrap()
+        };
+
+        let script_bytes = fs::read(script_file_name)?;        
+        let program = TransactionPayload::Script(Script::new(script_bytes, tags, script_arguments));
+        let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
+        let sender_address = sender.address;
+        let sequence_number = sender.sequence_number;
+        let resp = if sender_ref_id == u64::MAX {
+            self.client
+                .submit_transaction(self.assoc_root_account.as_mut(), txn)
+        } else {
+            self.client
+                .submit_transaction(self.accounts.get_mut(sender_ref_id as usize), txn)
+        };
+
+        self.wait_for_transaction(sender_address, sequence_number + 1)?;
+        resp
+    }
+
     ///
     /// publish a new module with specified module name
     ///
@@ -1904,7 +1938,7 @@ impl ClientProxy {
     // pub fn get_currency_detail(&self) -> CurrencyInfoViewEx {
     //     let currency_info_res : CurrencyInfoResource = self.get_account_resource(CORE_ADD, tag_path: &StructTag);
 
-    //     CurrencyInfoViewEx::from() 
+    //     CurrencyInfoViewEx::from()
     // }
 
     /// Preburn `amount` `Token(type_tag)`s from `account`.
@@ -2125,4 +2159,3 @@ impl fmt::Display for AccountEntry {
         }
     }
 }
-

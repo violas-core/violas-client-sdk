@@ -71,7 +71,6 @@ impl std::cmp::PartialEq for Token {
 }
 
 #[derive(Default, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct ViolasAccountResource {
     pub tokens: Vec<Token>,
 }

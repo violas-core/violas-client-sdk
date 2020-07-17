@@ -1085,6 +1085,71 @@ pub mod x86_64 {
         }
     }
 
+    /// execute script with currency type tag
+    #[no_mangle]
+    pub extern "C" fn violas_execute_script_json(
+        raw_ptr: u64,
+        v_t_tags: *const ViolasTypeTag,
+        tag_len: u64,
+        sender_ref_id: u64,
+        in_script_file_name: *const c_char,
+        in_script_args: &ScriptArgs,
+    ) -> bool {
+        let ret = panic::catch_unwind(|| -> Result<(), Error> {
+            unsafe {
+                let client = { &mut *(raw_ptr as *mut ClientProxy) };
+                let script_file_name = { CStr::from_ptr(in_script_file_name).to_str().unwrap() };
+                let type_tags = if tag_len == 0 {
+                    vec![]
+                } else {
+                    let slice_tags = std::slice::from_raw_parts(v_t_tags, tag_len as usize);
+                    slice_tags
+                        .iter()
+                        .map(|x| {
+                            let modules = CStr::from_ptr((*x).module).to_str().unwrap();
+                            let _name = CStr::from_ptr((*x).name).to_str().unwrap();
+                            currency_type_tag(&AccountAddress::new((*x).address), modules)
+                        })
+                        .collect()
+                };
+
+                let script_args =
+                    slice::from_raw_parts(in_script_args.data, in_script_args.len as usize);
+                let mut args: Vec<&str> = vec![];
+
+                for i in 0..script_args.len() {
+                    let arg = CStr::from_ptr(script_args[i]).to_str().unwrap();
+                    args.push(arg);
+                }
+
+                // let mut args = script_args
+                //     .iter()
+                //     .map(|x| CStr::from_ptr(*x).to_str().unwrap())
+                //     .collect();
+
+                //
+                //  execute script
+                //
+                client.execute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
+            }
+        });
+
+        if ret.is_ok() {
+            match ret.unwrap() {
+                Ok(_) => true,
+                Err(err) => {
+                    set_last_error(err);
+                    false
+                }
+            }
+        } else {
+            set_last_error(format_err!(
+                "catch panic at function 'violas_execute_script' !"
+            ));
+            false
+        }
+    }
+
     /// publish a new module with specialfied currency code
     #[no_mangle]
     pub extern "C" fn violas_publish_currency(
@@ -1762,5 +1827,18 @@ pub mod x86_64 {
                 false
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+
+    #[test]
+    fn say_hello() {
+        print!("hello");
     }
 }

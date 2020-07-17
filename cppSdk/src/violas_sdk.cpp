@@ -1303,7 +1303,6 @@ namespace LIB_NAME
                     minpq.push(make_pair<>(coin_b, available_value));
                 }
             };
-
             //
             //  initialize all vertex and edge
             //
@@ -1398,9 +1397,8 @@ namespace LIB_NAME
     {
     public:
         BankImp(client_ptr client,
-                std::string_view bank_contracts_path) :
-                m_client(client),
-                m_bank_path(bank_contracts_path)
+                std::string_view bank_contracts_path) : m_client(client),
+                                                        m_bank_path(bank_contracts_path)
         {
         }
 
@@ -1409,31 +1407,71 @@ namespace LIB_NAME
         virtual void
         deploy_with_association_account() override
         {
+            m_client->publish_module(ASSOCIATION_ID, _module_bank);
         }
 
         virtual void
-        add_currency(std::string_view currency_code) override
+        publish(size_t account_index) override
+        {
+            m_client->execute_script_ex({}, account_index, _script_publish, {"b\"00\""});
+        }
+
+        virtual void
+        add_currency(std::string_view currency_code,
+                     const Address &owner,
+                     uint64_t collateral_factor) override
+        {
+            TypeTag type_tag(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            //{owner.to_string(), to_string(collateral_factor), "b\"00\""}
+            m_client->execute_script_json(_script_register_libra_token,
+                                          ASSOCIATION_ID,
+                                          {type_tag},
+                                          // script arguments
+                                          owner, collateral_factor, vector<uint8_t>());
+        }
+
+        virtual void
+        update_currency_price(std::string_view currency_code, uint64_t price) override
+        {
+            TypeTag currency(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            m_client->execute_script_json(_scirpt_update_price,
+                                          ASSOCIATION_ID,
+                                          {currency},
+                                          // script arguments
+                                          price);
+        }
+
+        virtual void
+        enter(size_t account_index, std::string_view currency_code, uint64_t amount) override
+        {
+            TypeTag currency(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            m_client->execute_script_json(_script_enter_bank,
+                                          account_index,
+                                          {currency},
+                                          // script arguments
+                                          amount);
+        }
+
+        virtual void
+        exit() override
         {
         }
 
         virtual void
-        update_currency_price() override
+        lock(size_t account_index,
+             std::string_view currency_code,
+             uint64_t amount) override
         {
-        }
+            TypeTag currency(CORE_CODE_ADDRESS, currency_code, currency_code);
 
-        virtual void
-        enter_bank() override
-        {
-        }
-
-        virtual void
-        exit_bank() override
-        {
-        }
-
-        virtual void
-        lock() override
-        {
+            m_client->execute_script_json(_script_lock,
+                                          account_index,
+                                          {currency},
+                                          // script arguments
+                                          amount, vector<uint8_t>());
         }
 
         virtual void
@@ -1442,8 +1480,17 @@ namespace LIB_NAME
         }
 
         virtual void
-        borrow() override
+        borrow(size_t account_index,
+               std::string_view currency_code,
+               uint64_t amount) override
         {
+            TypeTag currency(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            m_client->execute_script_json(_script_borrow,
+                                          account_index,
+                                          {currency},
+                                          // script arguments
+                                          amount, vector<uint8_t>());
         }
 
         virtual void
@@ -1455,17 +1502,29 @@ namespace LIB_NAME
         liquidate_borrow() override
         {
         }
+
     private:
         client_ptr m_client;
         string m_bank_path;
-        const string bank_module = "bank.mv";
-        const string borrow_script = "borrow.mv";
-         
+        const string _module_bank = m_bank_path + "bank.mv";
+        const string _script_borrow = m_bank_path + "borrow.mv";
+        const string _script_create_token = m_bank_path + "create_token.mv";
+        const string _script_enter_bank = m_bank_path + "enter_bank.mv";
+        const string _script_exit_bank = m_bank_path + "exit_bank.mv";
+        const string _script_liquidate_borrow = m_bank_path + "liquidate_borrow.mv";
+        const string _script_lock = m_bank_path + "lock.mv";
+        const string _script_mint = m_bank_path + "mint.mv";
+        const string _script_publish = m_bank_path + "publish.mv";
+        const string _script_redeem = m_bank_path + "redeem.mv";
+        const string _script_register_libra_token = m_bank_path + "register_libra_token.mv";
+        const string _script_repay_borrow = m_bank_path + "repay_borrow,mv";
+        const string _script_update_collateral_factor = m_bank_path + "update_collateral_factor.mv";
+        const string _scirpt_update_price = m_bank_path + "update_price.mv";
     }; // Bank
 
     std::shared_ptr<Bank>
-    create_bank(client_ptr client,
-                std::string_view bank_contracts_path)
+    Bank::create_bank(client_ptr client,
+                      std::string_view bank_contracts_path)
     {
         return make_shared<BankImp>(client, bank_contracts_path);
     }

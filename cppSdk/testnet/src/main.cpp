@@ -23,6 +23,11 @@ void run_exchange(const string &url,
                        const string &mnemonic_file,
                        const string &waypoint);
 
+void run_test_bank(const string &url,
+                   const string &mint_key_file,
+                   const string &mnemonic_file,
+                   const string &waypoint);
+
 void run_account_management(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint);
 
 int main(int argc, char *argv[])
@@ -44,6 +49,7 @@ int main(int argc, char *argv[])
             {1, [=]() { run_test_token(argv[1], argv[2], argv[3], argv[4]); }},
             {2, [=]() { run_exchange(argv[1], argv[2], argv[3], argv[4]); }},
             {3, [=]() { run_account_management(argv[1], argv[2], argv[3], argv[4]); }},
+            {4, [=]() { run_test_bank(argv[1], argv[2], argv[3], argv[4]); } },
         };
 
         cout << "input index\n"
@@ -51,6 +57,7 @@ int main(int argc, char *argv[])
                 "1 for testing Token \n"
                 "2 for testing Exchange \n"
                 "3 for testing Account Management.\n"
+                "4 for testing Bank \n"
                 "Please input index : ";
              //<< endl;
 

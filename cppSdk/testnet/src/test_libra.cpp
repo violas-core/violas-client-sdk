@@ -37,6 +37,8 @@ client_ptr connect(const string &url, const string &mint_key_file, const string 
              << endl;
     }
 
+    //client->execute_script_json("", 0, {}, uint8_t(0), uint64_t(1), 2, true, ASSOCIATION_ADDRESS, vector<uint8_t>({0, 2, 3}));
+
     return client;
 }
 
@@ -94,7 +96,6 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
     client->enable_custom_script(true);
     cout << "enable publsih custmer script." << endl;
 
-    
     auto currencies = {
         "VLSUSD",
         "VLSEUR",

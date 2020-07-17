@@ -253,6 +253,51 @@ namespace LIB_NAME
                           std::string_view script_file,
                           const std::vector<std::string> &script_args = std::vector<std::string>()) = 0;
 
+        union TransactionAugment
+        {
+            uint8_t u8;
+            uint64_t u64;
+            __uint128_t u128;
+            Address address;
+            std::vector<uint8_t> vec_u8;
+            bool boolean;
+        };
+
+        template <typename... T>
+        void execute_script_json(std::string_view script_file,
+                                 size_t account_index,
+                                 const std::vector<TypeTag> &type_tags,
+                                 const T &... args)
+        {
+            using namespace std;
+
+            vector<string> str_args;
+            auto parse_arg = [&](const auto &arg) {
+                if constexpr (is_same<decltype(arg), const vector<uint8_t> &>::value)
+                {
+                    ostringstream oss;
+                    oss << "b\"";
+                    for (uint8_t byte : arg)
+                    {
+                        oss << hex << setw(2) << setfill('0') << (uint32_t)byte;
+                    }
+                    oss << "\"";
+
+                    str_args.push_back(oss.str());
+                }
+                else if constexpr (is_same<decltype(arg), const Address &>::value)
+                {
+                    str_args.push_back(arg.to_string());
+                }
+                else
+                    str_args.push_back(to_string(arg));
+            };
+
+            ((parse_arg(args)), ...);
+
+            execute_script_ex(type_tags, account_index, script_file, str_args);
+        }
+
         virtual std::string
         get_committed_txn_by_acc_seq(uint64_t account_index, uint64_t sequence_num, bool fetch_event = true) = 0;
 
@@ -498,25 +543,36 @@ namespace LIB_NAME
         deploy_with_association_account() = 0;
 
         virtual void
-        add_currency(std::string_view currency_code) = 0;
+        publish(size_t account_index) = 0;
 
         virtual void
-        update_currency_price() = 0;
+        add_currency(std::string_view currency_code,
+                     const Address &owner,
+                     uint64_t collateral_factor) = 0;
 
         virtual void
-        enter_bank() = 0;
+        update_currency_price(std::string_view currency_code, uint64_t price) = 0;
 
         virtual void
-        exit_bank() = 0;
+        enter(size_t account_index,
+              std::string_view currency_code,
+              uint64_t amount) = 0;
 
         virtual void
-        lock() = 0;
+        exit() = 0;
+
+        virtual void
+        lock(size_t account_index,
+             std::string_view currency_code,
+             uint64_t amount) = 0;
 
         virtual void
         redeem() = 0;
 
         virtual void
-        borrow() = 0;
+        borrow(size_t account_index,
+               std::string_view currency_code,
+               uint64_t amount) = 0;
 
         virtual void
         repay_borrow() = 0;

@@ -151,7 +151,8 @@ namespace LIB_NAME
         vector<pair<uint64_t, Address>> m_accounts;
 
     public:
-        ClientImp(const std::string &url,
+        ClientImp(uint8_t chain_id,
+                  const std::string &url,
                   const std::string &mint_key_file_name,
                   bool sync_on_wallet_recovery,
                   const std::string &faucet_server,
@@ -159,7 +160,8 @@ namespace LIB_NAME
                   const std::string &waypoint)
         {
 
-            bool ret = (void *)violas_create_client(url.data(),
+            bool ret = (void *)violas_create_client(chain_id,
+                                                    url.data(),
                                                     mint_key_file_name.data(),
                                                     sync_on_wallet_recovery,
                                                     faucet_server.data(),
@@ -484,10 +486,11 @@ namespace LIB_NAME
                                                 &args);
             if (!ret)
                 throw runtime_error(
-                    format("failed to execute script file '%s' for account faucet, "
+                    format("failed to execute script file '%s' for account %d, "
                            "error : %s, "
                            "at %s",
                            script_file.data(),
+                           sender_ref_id,
                            get_last_error().c_str(),
                            EXCEPTION_AT.c_str()));
         }
@@ -670,18 +673,6 @@ namespace LIB_NAME
             return tag;
         }
 
-        /// add a currency to current account
-        virtual void
-        add_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) override
-        {
-            ViolasTypeTag tag = from_type_tag(type_tag);
-            bool ret = violas_add_currency((uint64_t)raw_client_proxy, tag, account_index, is_blocking);
-
-            if (!ret)
-                throw runtime_error(format("failed to register currency, errror : %s ",
-                                           get_last_error().c_str()));
-        }
-
         /// pulish a currency module wiht 0x0 address
         virtual void
         publish_currency(string_view currency_code) override
@@ -718,19 +709,49 @@ namespace LIB_NAME
                                            get_last_error().c_str()));
         }
 
-        /// mint curency for a receiver
+        /// register a new currency for designated dealer
         virtual void
-        mint_currency(const TypeTag &type_tag,
-                      const AuthenticationKey &receiver,
-                      uint64_t amount,
-                      bool is_blocking) override
+        add_currency_for_designated_dealer(const TypeTag &type_tag,
+                                                const Address &dd_address,
+                                                bool is_blocking) override
+        {
+            bool ret = violas_add_currency_for_designated_dealer((uint64_t)raw_client_proxy,
+                                                                      from_type_tag(type_tag),
+                                                                      dd_address.data().data(),
+                                                                      is_blocking);
+
+            if (!ret)
+                throw runtime_error(format("failed to register currency for designated dealer, errror : %s ",
+                                           get_last_error().c_str()));
+        }
+
+        /// add a currency to current account
+        virtual void
+        add_currency(const TypeTag &type_tag, uint64_t account_index, bool is_blocking = true) override
         {
             ViolasTypeTag tag = from_type_tag(type_tag);
+            bool ret = violas_add_currency((uint64_t)raw_client_proxy, tag, account_index, is_blocking);
 
+            if (!ret)
+                throw runtime_error(format("failed to register currency, errror : %s ",
+                                           get_last_error().c_str()));
+        }
+
+        /// mint currency for a designated dealer account
+        virtual void
+        mint_currency(const TypeTag &tag,
+                      uint64_t sliding_nonce,
+                      const Address &dd_address, ////address of the designated dealer account
+                      uint64_t amount,
+                      uint64_t tier_index,
+                      bool is_blocking = true) override
+        {
             bool ret = violas_mint_currency((uint64_t)raw_client_proxy,
-                                            tag,
-                                            receiver.data().data(),
+                                            from_type_tag(tag),
+                                            sliding_nonce,
+                                            dd_address.data().data(),
                                             amount,
+                                            tier_index,
                                             is_blocking);
             if (!ret)
                 throw runtime_error(format("failed to mint currency, errror : %s ",
@@ -811,28 +832,43 @@ namespace LIB_NAME
             return make_pair<>(state, version);
         }
 
+        // Create a testing account
+        virtual void
+        create_testing_account(const TypeTag &type_tag,
+                               const AuthenticationKey &auth_key,
+                               bool add_all_currencies,
+                               bool is_blocking = true) override
+        {
+            bool ret = violas_create_testing_account((uint64_t)raw_client_proxy,
+                                                     from_type_tag(type_tag),
+                                                     auth_key.data().data(),
+                                                     add_all_currencies,
+                                                     is_blocking);
+            if (!ret)
+                throw runtime_error(format("failed to create parent VASP account, errror : %s ",
+                                           get_last_error().c_str()));
+        }
+
         // create parent VASP account
         virtual void
-        create_parent_vasp_account(
-            const TypeTag &type_tag,
-            const AuthenticationKey &auth_key,
-            std::string_view human_name,
-            std::string_view base_url,
-            const uint8_t compliance_pubkey[32],
-            bool add_all_currencies,
-            bool is_blocking) override
+        create_parent_vasp_account(const TypeTag &type_tag,
+                                   const AuthenticationKey &auth_key,
+                                   std::string_view human_name,
+                                   std::string_view base_url,
+                                   const uint8_t compliance_pubkey[32],
+                                   bool add_all_currencies,
+                                   bool is_blocking) override
         {
             ViolasTypeTag tag = from_type_tag(type_tag);
 
-            bool ret = violas_create_parent_vasp_account(
-                (uint64_t)raw_client_proxy,
-                tag,
-                auth_key.data().data(),
-                human_name.data(),
-                base_url.data(),
-                compliance_pubkey,
-                add_all_currencies,
-                is_blocking);
+            bool ret = violas_create_parent_vasp_account((uint64_t)raw_client_proxy,
+                                                         tag,
+                                                         auth_key.data().data(),
+                                                         human_name.data(),
+                                                         base_url.data(),
+                                                         compliance_pubkey,
+                                                         add_all_currencies,
+                                                         is_blocking);
             if (!ret)
                 throw runtime_error(format("failed to create parent VASP account, errror : %s ",
                                            get_last_error().c_str()));
@@ -884,14 +920,16 @@ namespace LIB_NAME
     };
 
     std::shared_ptr<Client>
-    Client::create(const std::string &url,
+    Client::create(uint8_t chain_id,
+                   const std::string &url,
                    const std::string &mint_key_file_name,
                    bool sync_on_wallet_recovery,
                    const std::string &faucet_server,
                    const std::string &mnemonic_file_name,
                    const std::string &waypoint)
     {
-        return make_shared<ClientImp>(url,
+        return make_shared<ClientImp>(chain_id,
+                                      url,
                                       mint_key_file_name,
                                       sync_on_wallet_recovery,
                                       faucet_server,
@@ -1257,22 +1295,19 @@ namespace LIB_NAME
         {
             TypeTag currency_tag_a(CORE_CODE_ADDRESS, currency_code_a, currency_code_a);
             TypeTag currency_tag_b(CORE_CODE_ADDRESS, currency_code_b, currency_code_b);
-            string path = find_swap_path(currency_code_a, amount_a, currency_code_b);
-            path = find_swap_path("VLSUSD", 100000, "VLSSGD");
-            path = find_swap_path("VLSSGD", 100000, "VLSUSD");
+            auto path = find_swap_path(currency_code_a, amount_a, currency_code_b);
+            // path = find_swap_path("VLSUSD", 100000, "VLSSGD");
+            // path = find_swap_path("VLSSGD", 100000, "VLSUSD");
 
-            m_client->execute_script_ex({currency_tag_a, currency_tag_b},
-                                        account_index,
-                                        _script_swap_currency,
-                                        {receiver.to_string(),
-                                         to_string(amount_a),
-                                         to_string(b_acceptable_min_amount),
-                                         path,        //path
-                                         "b\"00\""}); //data
+            m_client->execute_script_json(_script_swap_currency,
+                                          account_index,
+                                          {currency_tag_a, currency_tag_b},
+                                          //arguments
+                                          receiver, amount_a, b_acceptable_min_amount, path, VecU8());
         }
 
     protected:
-        std::string
+        vector<uint8_t>
         find_swap_path(std::string_view currency_code_a, uint64_t currency_a_amount, std::string_view currency_code_b)
         {
             auto currency_codes = get_currencies(ASSOCIATION_ADDRESS);
@@ -1350,7 +1385,7 @@ namespace LIB_NAME
                 }
             }
 
-            stack<size_t> path;
+            stack<uint8_t> path;
             for (size_t i = currency_b_index;
                  i != currency_a_index;
                  i = dist_to[i].first)
@@ -1359,17 +1394,16 @@ namespace LIB_NAME
             }
             path.push(currency_a_index);
 
-            ostringstream oss;
-            oss << "b\"";
+            vector<uint8_t> forward_path;
             while (!path.empty())
             {
-                oss << std::setw(2) << std::hex << path.top();
+                uint8_t v = path.top();
                 path.pop();
-            }
-            oss << "\"";
 
-            cout << oss.str() << endl;
-            return oss.str();
+                forward_path.push_back(v);
+            }
+
+            return forward_path;
         }
 
     private:
@@ -1413,13 +1447,21 @@ namespace LIB_NAME
         virtual void
         publish(size_t account_index) override
         {
-            m_client->execute_script_ex({}, account_index, _script_publish, {"b\"00\""});
+            //m_client->execute_script_ex({}, account_index, _script_publish, {"b\"00\""});
+            m_client->execute_script_json(_script_publish,
+                                          account_index,
+                                          {},
+                                          VecU8({0}));
         }
 
         virtual void
         add_currency(std::string_view currency_code,
                      const Address &owner,
-                     uint64_t collateral_factor) override
+                     uint64_t collateral_factor,
+                     uint64_t base_rate,
+                     uint64_t rate_multiplier,
+                     uint64_t rate_jump_multiplier,
+                     uint64_t rate_kink) override
         {
             TypeTag type_tag(CORE_CODE_ADDRESS, currency_code, currency_code);
 
@@ -1428,7 +1470,13 @@ namespace LIB_NAME
                                           ASSOCIATION_ID,
                                           {type_tag},
                                           // script arguments
-                                          owner, collateral_factor, vector<uint8_t>());
+                                          owner,
+                                          collateral_factor,
+                                          base_rate,
+                                          rate_multiplier,
+                                          rate_jump_multiplier,
+                                          rate_kink,
+                                          VecU8());
         }
 
         virtual void
@@ -1456,8 +1504,15 @@ namespace LIB_NAME
         }
 
         virtual void
-        exit() override
+        exit(size_t account_index, std::string_view currency_code, uint64_t amount) override
         {
+            TypeTag currency(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            m_client->execute_script_json(_script_exit_bank,
+                                          account_index,
+                                          {currency},
+                                          // script arguments
+                                          amount);
         }
 
         virtual void
@@ -1471,12 +1526,21 @@ namespace LIB_NAME
                                           account_index,
                                           {currency},
                                           // script arguments
-                                          amount, vector<uint8_t>());
+                                          amount, VecU8());
         }
 
         virtual void
-        redeem() override
+        redeem(size_t account_index,
+               std::string_view currency_code,
+               uint64_t amount) override
         {
+            TypeTag currency(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            m_client->execute_script_json(_script_redeem,
+                                          account_index,
+                                          {currency},
+                                          // script arguments
+                                          amount, VecU8());
         }
 
         virtual void
@@ -1490,17 +1554,38 @@ namespace LIB_NAME
                                           account_index,
                                           {currency},
                                           // script arguments
-                                          amount, vector<uint8_t>());
+                                          amount, VecU8());
         }
 
         virtual void
-        repay_borrow() override
+        repay_borrow(size_t account_index,
+                     std::string_view currency_code,
+                     uint64_t amount) override
         {
+            TypeTag currency(CORE_CODE_ADDRESS, currency_code, currency_code);
+
+            m_client->execute_script_json(_script_repay_borrow,
+                                          account_index,
+                                          {currency},
+                                          // script arguments
+                                          amount, VecU8());
         }
 
         virtual void
-        liquidate_borrow() override
+        liquidate_borrow(size_t account_index,
+                         std::string_view borrowed_currency_code,
+                         const Address &liquidated_user_addr,
+                         uint64_t amount,
+                         std::string_view liquidated_currency_code) override
         {
+            TypeTag borrowed_currency(CORE_CODE_ADDRESS, borrowed_currency_code, borrowed_currency_code);
+            TypeTag liquidated_currency(CORE_CODE_ADDRESS, liquidated_currency_code, liquidated_currency_code);
+
+            m_client->execute_script_json(_script_liquidate_borrow,
+                                          account_index,
+                                          {borrowed_currency, liquidated_currency},
+                                          // script arguments
+                                          liquidated_user_addr, amount, VecU8());
         }
 
     private:
@@ -1517,7 +1602,7 @@ namespace LIB_NAME
         const string _script_publish = m_bank_path + "publish.mv";
         const string _script_redeem = m_bank_path + "redeem.mv";
         const string _script_register_libra_token = m_bank_path + "register_libra_token.mv";
-        const string _script_repay_borrow = m_bank_path + "repay_borrow,mv";
+        const string _script_repay_borrow = m_bank_path + "repay_borrow.mv";
         const string _script_update_collateral_factor = m_bank_path + "update_collateral_factor.mv";
         const string _scirpt_update_price = m_bank_path + "update_price.mv";
     }; // Bank

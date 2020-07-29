@@ -1,16 +1,16 @@
 //#[cfg(target_arch = "x86_64")]
 #[allow(non_snake_case)]
 pub mod x86_64 {
-    use crate::client_proxy::{AccountEntry, ClientProxy, IndexAndSequence};
+    use crate::libra_client_proxy::{AccountEntry, IndexAndSequence};
     //use crate::move_compiler;
     use crate::violas_account::*;
+    use crate::violas_client::ViolasClient;
     use crate::AccountStatus;
     use anyhow::{bail, format_err, Error};
-    use libra_types::waypoint::Waypoint;
     use libra_types::{
         access_path::AccessPath, account_address::AccountAddress,
         account_config::CORE_CODE_ADDRESS, account_config::*, account_state::AccountState,
-        transaction::authenticator::AuthenticationKey,
+        chain_id::ChainId, transaction::authenticator::AuthenticationKey, waypoint::Waypoint,
     };
     use move_core_types::{identifier::Identifier, language_storage::StructTag};
     use std::{
@@ -25,6 +25,7 @@ pub mod x86_64 {
         *,
     };
     use tempdir::TempDir;
+
     pub const LENGTH: usize = 16;
 
     thread_local! {
@@ -61,6 +62,7 @@ pub mod x86_64 {
     //
     #[no_mangle]
     pub extern "C" fn violas_create_client(
+        chain_id: u8,
         c_url: *const c_char,
         c_mint_key: *const c_char,
         sync_on_wallet_recovery: bool,
@@ -75,7 +77,8 @@ pub mod x86_64 {
                 // Faucet and TreasuryCompliance use the same keypair for now
                 let treasury_compliance_account_file = faucet_account_file.clone();
 
-                let client = ClientProxy::new(
+                let client = ViolasClient::new(
+                    ChainId::new(chain_id),
                     CStr::from_ptr(c_url).to_str().unwrap(),
                     faucet_account_file,
                     treasury_compliance_account_file,
@@ -101,19 +104,18 @@ pub mod x86_64 {
     }
 
     ///
-    /// Destory the raw ClientProxy pointer
+    /// Destory the raw ViolasClient pointer
     ///
     #[no_mangle]
     pub extern "C" fn libra_destory_client_proxy(raw_ptr: u64) {
         if raw_ptr != 0 {
-            let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ClientProxy) };
-            //println!("x86_64.rs: destory_native_client_proxy enters ...");
+            let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ViolasClient) };
         }
     }
 
     #[no_mangle]
     pub extern "C" fn libra_test_validator_connection(raw_ptr: u64) -> bool {
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
         let ret = client.test_validator_connection();
         //return the boolean result
         match ret {
@@ -124,7 +126,7 @@ pub mod x86_64 {
 
     #[no_mangle]
     pub extern "C" fn libra_create_next_address(_raw_ptr: u64, _sync_with_validator: bool) -> bool {
-        // let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        // let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
         // let (address, _) = client.wallet.new_address().unwrap();
 
@@ -142,7 +144,7 @@ pub mod x86_64 {
         raw_ptr: u64,
         sync_with_validator: bool,
     ) -> AccountAndIndex {
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
         let accountAndIndex = client
             .create_next_account(sync_with_validator)
@@ -184,7 +186,7 @@ pub mod x86_64 {
     #[no_mangle]
     pub extern "C" fn libra_get_all_accounts(raw_ptr: u64) -> Accounts {
         //
-        let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+        let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
         let mut accounts: Vec<Account> = Vec::new();
 
         for (i, ref acc) in client.accounts.iter().enumerate() {
@@ -241,15 +243,23 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 // convert raw ptr to object client
-                let proxy = &mut *(raw_ptr as *mut ClientProxy);
-                let ret = proxy.get_account_resource_and_update(AccountAddress::new(*address));
+                let proxy = &mut *(raw_ptr as *mut ViolasClient);
+                let ret = proxy
+                    .client
+                    .get_account(AccountAddress::new(*address), true);
                 match ret {
-                    Ok(account_view) => {
-                        *out_balance = account_view.balances[0].amount;
-                        true
-                    }
+                    Ok(account) => match account.0 {
+                        Some(account_view) => {
+                            *out_balance = account_view.balances[2].amount; //LBR balance
+                            true
+                        }
+                        None => {
+                            set_last_error(format_err!("get_account error, no account data"));
+                            false
+                        }
+                    },
                     Err(e) => {
-                        set_last_error(format_err!("get_account_resource_and_update, {}", e));
+                        set_last_error(format_err!("get_account error, {}", e));
                         false
                     }
                 }
@@ -273,11 +283,11 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<u64, Error> {
             // convert raw ptr to object client
-            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
             let account_state = proxy
                 .client
-                .get_account_state(AccountAddress::new(*address), true)?;
+                .get_account(AccountAddress::new(*address), true)?;
             if let Some(view) = account_state.0 {
                 Ok(view.sequence_number)
             } else {
@@ -313,7 +323,7 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             // convert raw ptr to object client
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
             client.mint_coins(
                 &[
@@ -360,7 +370,7 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<IndexAndSequence, Error> {
             // convert raw ptr to object client
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
             let receiver_address = AccountAddress::new(*receiver_addr);
 
             client.transfer_currency(
@@ -411,7 +421,7 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             // convert raw ptr to object client
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
             let (address, _) = client.get_account_address_from_parameter(unsafe {
                 CStr::from_ptr(account_index_or_addr).to_str().unwrap()
             })?;
@@ -484,7 +494,7 @@ pub mod x86_64 {
     }
 
     fn handle_dependencies(
-        client: &mut ClientProxy,
+        client: &mut ViolasClient,
         _address: String,
         source_path: path::PathBuf,
         _is_module: bool,
@@ -541,7 +551,7 @@ pub mod x86_64 {
         module_file_name: *const c_char,
     ) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
-            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
             let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
 
             proxy.publish_module_ex(sender_ref_id, module)
@@ -579,7 +589,7 @@ pub mod x86_64 {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             // convert raw ptr to object client
 
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
             let index = account_index.to_string();
             let script = unsafe { CStr::from_ptr(script_file).to_str().unwrap() };
             let mut args = vec!["execute", index.as_str(), script];
@@ -623,7 +633,7 @@ pub mod x86_64 {
     ) -> bool {
         //
         let result = panic::catch_unwind(|| -> Result<String, Error> {
-            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
             match proxy.client.get_txn_by_acc_seq(
                 AccountAddress::new(*address),
@@ -693,7 +703,7 @@ pub mod x86_64 {
         out_all_txn_events: *mut all_txn_events,
     ) -> bool {
         let result = panic::catch_unwind(|| {
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
             match client
                 .client
@@ -766,7 +776,7 @@ pub mod x86_64 {
         balance: &mut u64,
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<u64, Error> {
-            let client = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
             let (address, _) = client.get_account_address_from_parameter(unsafe {
                 CStr::from_ptr(account_index_or_addr).to_str().unwrap()
             })?;
@@ -821,7 +831,7 @@ pub mod x86_64 {
     #[no_mangle]
     pub fn libra_enable_custom_script(raw_ptr: u64) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
-            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
             proxy.enable_custom_script(&["enable_custom_script"], true)
         });
@@ -846,7 +856,7 @@ pub mod x86_64 {
     #[no_mangle]
     pub fn libra_disable_custom_script(raw_ptr: u64) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
-            let proxy = unsafe { &mut *(raw_ptr as *mut ClientProxy) };
+            let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
             proxy.disable_custom_script(&["disble_custom_script"], true)
         });
@@ -906,7 +916,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let path = if event_type {
                     ACCOUNT_SENT_EVENT_PATH.to_vec()
                 } else {
@@ -976,7 +986,7 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             unsafe {
-                let client = { &mut *(raw_ptr as *mut ClientProxy) };
+                let client = { &mut *(raw_ptr as *mut ViolasClient) };
                 let script_file_name = { CStr::from_ptr(in_script_file_name).to_str().unwrap() };
                 let module_name = CStr::from_ptr(tag.module).to_str().unwrap();
                 let type_tags = if module_name.is_empty() {
@@ -1032,7 +1042,7 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             unsafe {
-                let client = { &mut *(raw_ptr as *mut ClientProxy) };
+                let client = { &mut *(raw_ptr as *mut ViolasClient) };
                 let script_file_name = { CStr::from_ptr(in_script_file_name).to_str().unwrap() };
                 let type_tags = if tag_len == 0 {
                     vec![]
@@ -1097,7 +1107,7 @@ pub mod x86_64 {
     ) -> bool {
         let ret = panic::catch_unwind(|| -> Result<(), Error> {
             unsafe {
-                let client = { &mut *(raw_ptr as *mut ClientProxy) };
+                let client = { &mut *(raw_ptr as *mut ViolasClient) };
                 let script_file_name = { CStr::from_ptr(in_script_file_name).to_str().unwrap() };
                 let type_tags = if tag_len == 0 {
                     vec![]
@@ -1158,7 +1168,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let module_name = CStr::from_ptr(in_module_name)
                     .to_str()
                     .unwrap()
@@ -1199,7 +1209,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let data = slice::from_raw_parts(currency_code, currency_code_len as usize);
                 let type_tag = currency_type_tag(
                     &AccountAddress::new(violas_type_tag.address),
@@ -1238,6 +1248,48 @@ pub mod x86_64 {
         }
     }
 
+    /// publish currenty for the designated dealer account
+    #[no_mangle]
+    pub fn violas_add_currency_for_designated_dealer(
+        raw_client: u64,
+        violas_type_tag: &ViolasTypeTag,
+        dd_address: &[c_uchar; 16],
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ViolasClient);
+                let currency = currency_type_tag(
+                    &AccountAddress::new(violas_type_tag.address),
+                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                );
+                // register currency
+                match proxy.add_currency_for_designated_dealer(
+                    currency,
+                    AccountAddress::new(*dd_address),
+                    is_blocking,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to violas add currency to designated dealer with error, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_add_currency_for_designated_dealer' !'"
+                ));
+                false
+            }
+        }
+    }
+
     /// add currency for an account
     #[no_mangle]
     pub fn violas_add_currency(
@@ -1248,7 +1300,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let type_tag = currency_type_tag(
                     &AccountAddress::new(violas_type_tag.address),
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
@@ -1278,26 +1330,27 @@ pub mod x86_64 {
     pub fn violas_mint_currency(
         raw_client: u64,
         violas_type_tag: &ViolasTypeTag,
-        receiver: &[c_uchar; 32],
+        sliding_nonce: u64,
+        dd_address: &[c_uchar; 16],
         amount: u64,
+        tier_index: u64,
         is_blocking: bool,
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let type_tag = currency_type_tag(
                     &AccountAddress::new(violas_type_tag.address),
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
                 );
 
-                let auth_key = AuthenticationKey::new(*receiver);
-
                 // register currency
                 match proxy.mint_currency(
                     type_tag,
-                    &auth_key.derived_address(),
-                    auth_key.prefix().to_vec(),
+                    sliding_nonce,
+                    AccountAddress::new(*dd_address),
                     amount,
+                    tier_index,
                     is_blocking,
                 ) {
                     Ok(_) => true,
@@ -1330,7 +1383,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let type_tag = currency_type_tag(
                     &AccountAddress::new(violas_type_tag.address),
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
@@ -1372,7 +1425,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> Option<u64> {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let tag = currency_type_tag(
                     &AccountAddress::new(violas_type_tag.address),
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
@@ -1414,12 +1467,12 @@ pub mod x86_64 {
     pub fn violas_get_currency_info(raw_client: u64, out_currency_info: *mut *mut c_char) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
 
                 // register currency
                 match proxy.client.get_currency_info() {
                     Ok(view) => {
-                        let currency_info = serde_json::to_string(&view).unwrap(); 
+                        let currency_info = serde_json::to_string(&view).unwrap();
                         *out_currency_info = CString::new(currency_info)
                             .expect("new transaction detail")
                             .into_raw();
@@ -1455,12 +1508,12 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
 
                 // register currency
                 match proxy
                     .client
-                    .get_account_state(AccountAddress::new(*address), true)
+                    .get_account(AccountAddress::new(*address), true)
                 {
                     Ok((state, version)) => {
                         *out_version = version;
@@ -1494,7 +1547,52 @@ pub mod x86_64 {
             }
         }
     }
+    /// Create a testnet account
+    #[no_mangle]
+    pub fn violas_create_testing_account(
+        raw_client: u64,
+        in_type_tag: &ViolasTypeTag,
+        in_auth_key: &[u8; 32],
+        add_all_currencies: bool,
+        is_blocking: bool,
+    ) -> bool {
+        unsafe {
+            let ret = panic::catch_unwind(|| -> bool {
+                let proxy = &mut *(raw_client as *mut ViolasClient);
+                let type_tag = currency_type_tag(
+                    &AccountAddress::new(in_type_tag.address),
+                    CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
+                );
 
+                let auth_key = AuthenticationKey::new(*in_auth_key);
+                // register currency
+                match proxy.create_testing_account(
+                    type_tag,
+                    auth_key.derived_address(),
+                    auth_key.prefix().to_vec(),
+                    add_all_currencies,
+                    is_blocking,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        set_last_error(format_err!(
+                            "failed to call violas_create_parent_vasp_account, {}",
+                            e
+                        ));
+                        false
+                    }
+                }
+            });
+            if ret.is_ok() {
+                ret.unwrap()
+            } else {
+                set_last_error(format_err!(
+                    "catch a panic at function 'violas_create_parent_vasp_account' !'"
+                ));
+                false
+            }
+        }
+    }
     /// Create parent VASP account
     #[no_mangle]
     pub fn violas_create_parent_vasp_account(
@@ -1509,7 +1607,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let type_tag = currency_type_tag(
                     &AccountAddress::new(in_type_tag.address),
                     CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
@@ -1572,7 +1670,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let type_tag = currency_type_tag(
                     &AccountAddress::new(in_type_tag.address),
                     CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
@@ -1618,17 +1716,32 @@ pub mod x86_64 {
         in_type_tag: &ViolasTypeTag,
         in_auth_key: &[u8; 32],
         nonce: u64,
+        in_human_name: *const c_char,
+        in_base_url: *const c_char,
+        in_compliance_pubkey: &[u8; 32],
+        add_all_currencies: bool,
         is_blocking: bool,
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let type_tag = currency_type_tag(
                     &AccountAddress::new(in_type_tag.address),
                     CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
                 );
 
                 let auth_key = AuthenticationKey::new(*in_auth_key);
+                let human_name = CStr::from_ptr(in_human_name)
+                    .to_str()
+                    .unwrap()
+                    .as_bytes()
+                    .to_owned();
+                let base_url = CStr::from_ptr(in_base_url)
+                    .to_str()
+                    .unwrap()
+                    .as_bytes()
+                    .to_owned();
+                let compliance_pubkey = in_compliance_pubkey.to_owned().to_vec();
 
                 // register currency
                 match proxy.create_designated_dealer_account(
@@ -1636,6 +1749,10 @@ pub mod x86_64 {
                     nonce,
                     auth_key.derived_address(),
                     auth_key.prefix().to_vec(),
+                    human_name,
+                    base_url,
+                    compliance_pubkey,
+                    add_all_currencies,
                     is_blocking,
                 ) {
                     Ok(_) => true,
@@ -1668,7 +1785,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let addr = AccountAddress::new(*address);
                 let tag = StructTag {
                     address: CORE_CODE_ADDRESS,
@@ -1726,7 +1843,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let addr = AccountAddress::new(*address);
                 let tag = StructTag {
                     address: CORE_CODE_ADDRESS,
@@ -1781,7 +1898,7 @@ pub mod x86_64 {
     ) -> bool {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
-                let proxy = &mut *(raw_client as *mut ClientProxy);
+                let proxy = &mut *(raw_client as *mut ViolasClient);
                 let addr = AccountAddress::new(*address);
                 let tag = StructTag {
                     address: CORE_CODE_ADDRESS,

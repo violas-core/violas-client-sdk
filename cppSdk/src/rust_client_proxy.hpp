@@ -16,7 +16,8 @@ extern "C"
     //
     //  crete a Violas client proxy pointer
     //
-    bool violas_create_client(const char *url,
+    bool violas_create_client(uint8_t chain_id,
+                              const char *url,
                               const char *mint_key_file_name,
                               bool sync_on_wallet_recovery,
                               const char *faucet_server,
@@ -209,6 +210,13 @@ extern "C"
                                   const char *currency_code,
                                   uint64_t currency_code_len);
 
+    // Register currency for designated dealer account
+    // note : request Treasury Compliance privilege
+    bool violas_add_currency_for_designated_dealer(uint64_t raw_client,
+                                                        const ViolasTypeTag &violas_type_tag,
+                                                        const uint8_t dd_address[16], //address of the designated dealer account
+                                                        bool is_blocking);
+
     /// add a currency to current account
     bool violas_add_currency(uint64_t raw_client,
                              const ViolasTypeTag &violas_type_tag,
@@ -218,8 +226,10 @@ extern "C"
     /// mint coins for a receiver for a speciafied currency
     bool violas_mint_currency(uint64_t raw_client,
                               const ViolasTypeTag &violas_type_tag,
-                              const uint8_t receiver_auth_key[32],
+                              uint64_t sliding_nonce,
+                              const uint8_t dd_address[16], //address of the designated dealer account
                               uint64_t amount,
+                              uint64_t tier_index,
                               bool is_blocking);
 
     /// transfer currency from payer to payee
@@ -244,6 +254,14 @@ extern "C"
                                   const uint8_t address[ADDRESS_LENGTH],
                                   char **out_account_state,
                                   uint64_t *out_version);
+
+    // create testing account
+    bool violas_create_testing_account(
+        uint64_t raw_client,
+        const ViolasTypeTag &violas_type_tag,
+        const uint8_t auth_key[AUTH_KEY_LENGTH],
+        bool add_all_currencies,
+        bool is_blocking);
 
     // create parent VASP account
     bool violas_create_parent_vasp_account(
@@ -274,7 +292,7 @@ extern "C"
         uint64_t nonce,
         bool is_blocking);
 
-    // Get all registered currencies of Exchange     
+    // Get all registered currencies of Exchange
     bool violas_get_exchange_currencies(
         uint64_t raw_client,
         const uint8_t address[ADDRESS_LENGTH], // the address that Exchange contract was published on
@@ -287,9 +305,9 @@ extern "C"
         char **out_reserver_infos);
 
     // Get liquidity balance for an account that has added liqudity
-     bool violas_get_liquidity_balance(
+    bool violas_get_liquidity_balance(
         uint64_t raw_client,
-        const uint8_t address[ADDRESS_LENGTH], // the address that whoes account has added liquidity 
+        const uint8_t address[ADDRESS_LENGTH], // the address that whoes account has added liquidity
         char **out_liquidity_balances);
 
 #ifdef __cplusplus

@@ -133,6 +133,7 @@ namespace LIB_NAME
 {
     using Address = Bytes<16>;
     using AuthenticationKey = Bytes<32>;
+    using VecU8 = std::vector<uint8_t>;
 
     struct TypeTag
     {
@@ -159,7 +160,9 @@ namespace LIB_NAME
     const uint64_t MICRO_COIN = 1000000;
     const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
     const Address ASSOCIATION_ADDRESS = Address::from_string("0000000000000000000000000A550C18");
+    const Address TESTNET_DD_ADDRESS = Address::from_string("000000000000000000000000000000DD");
     const Address CORE_CODE_ADDRESS = Address::from_string("00000000000000000000000000000001");
+
     //
     //  interface Client
     //
@@ -167,7 +170,8 @@ namespace LIB_NAME
     {
     public:
         static std::shared_ptr<Client>
-        create(const std::string &url,
+        create(uint8_t chain_id,
+               const std::string &url,
                const std::string &mint_key_file_name,
                bool sync_on_wallet_recovery,
                const std::string &faucet_server,
@@ -355,11 +359,19 @@ namespace LIB_NAME
                           uint64_t fractional_part,
                           std::string_view currency_code) = 0;
 
+        /// register a new currency for designated dealer
+        virtual void
+        add_currency_for_designated_dealer(const TypeTag &type_tag,
+                                                const Address &dd_address,
+                                                bool is_blocking = true) = 0;
+
         /// mint currency for a receiver
         virtual void
         mint_currency(const TypeTag &tag,
-                      const AuthenticationKey &receiver_auth_key,
+                      uint64_t sliding_nonce,
+                      const Address &dd_address, ////address of the designated dealer account
                       uint64_t amount,
+                      uint64_t tier_index,
                       bool is_blocking = true) = 0;
 
         /// transfer currency to a receiver
@@ -381,6 +393,14 @@ namespace LIB_NAME
         // get account state
         virtual std::pair<std::string, uint64_t>
         get_account_state(const Address &res_path_addr) = 0;
+
+        // Create a testing account
+        virtual void
+        create_testing_account(
+            const TypeTag &tag,
+            const AuthenticationKey &auth_key,
+            bool add_all_currencies,
+            bool is_blocking = true) = 0;
 
         // create parent VASP account
         virtual void
@@ -533,6 +553,8 @@ namespace LIB_NAME
     class Bank
     {
     public:
+        static const uint64_t MANTISSA_1_0 = std::numeric_limits<uint32_t>::max();
+
         static std::shared_ptr<Bank>
         create_bank(client_ptr client,
                     std::string_view bank_contracts_path);
@@ -548,7 +570,11 @@ namespace LIB_NAME
         virtual void
         add_currency(std::string_view currency_code,
                      const Address &owner,
-                     uint64_t collateral_factor) = 0;
+                     uint64_t collateral_factor,
+                     uint64_t base_rate,
+                     uint64_t rate_multiplier,
+                     uint64_t rate_jump_multiplier,
+                     uint64_t rate_kink) = 0;
 
         virtual void
         update_currency_price(std::string_view currency_code, uint64_t price) = 0;
@@ -559,7 +585,7 @@ namespace LIB_NAME
               uint64_t amount) = 0;
 
         virtual void
-        exit() = 0;
+        exit(size_t account_index, std::string_view currency_code, uint64_t amount) = 0;
 
         virtual void
         lock(size_t account_index,
@@ -567,7 +593,9 @@ namespace LIB_NAME
              uint64_t amount) = 0;
 
         virtual void
-        redeem() = 0;
+        redeem(size_t account_index,
+               std::string_view currency_code,
+               uint64_t amount) = 0;
 
         virtual void
         borrow(size_t account_index,
@@ -575,10 +603,16 @@ namespace LIB_NAME
                uint64_t amount) = 0;
 
         virtual void
-        repay_borrow() = 0;
+        repay_borrow(size_t account_index,
+                     std::string_view currency_code,
+                     uint64_t amount) = 0;
 
         virtual void
-        liquidate_borrow() = 0;
+        liquidate_borrow(size_t account_index,
+                         std::string_view borrowed_currency_code,
+                         const Address &liquidated_user,
+                         uint64_t amount,
+                         std::string_view liquidated_currency_code) = 0;
 
     }; // Bank
 

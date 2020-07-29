@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
         string faucet_key;
         string waypoint;
         string scripts_path = "../../cppSdk/scripts";
+        uint8_t chain_id = 0;
 
         if (argc >= 2)
             url = argv[1];
@@ -70,9 +71,12 @@ int main(int argc, char *argv[])
         if (argc >= 6)
             scripts_path = argv[5];
 
+        if (argc >= 7)
+            chain_id = stoi(argv[6]);
+
         cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
 
-        auto client = Client::create(url, faucet_key, true, "", mnemonic, waypoint);
+        auto client = Client::create(chain_id, url, faucet_key, true, "", mnemonic, waypoint);
 
         client->test_validator_connection();
         cout << "succeed to test validator connection." << endl;

@@ -8,16 +8,16 @@
 
 using namespace std;
 
-void run_test_client(
-    const string &url,
-    const string &mnemonic_file,
-    const string &mint_key_file,
-    const string &waypoint,
-    const string &script_files_path)
+void run_test_client(uint8_t chain_id,
+                     const string &url,
+                     const string &mnemonic_file,
+                     const string &mint_key_file,
+                     const string &waypoint,
+                     const string &script_files_path)
 {
     using namespace Violas;
 
-    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
+    auto client = Client::create(chain_id, url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -126,13 +126,14 @@ void run_test_client(
 void run_test_token(const string &url,
                     const string &mint_key_file,
                     const string &mnemonic_file,
-                    const string &waypoint)
+                    const string &waypoint,
+                    uint8_t chain_id)
 {
     using namespace Violas;
 
     cout << color::RED << "running test for violas sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
+    auto client = Client::create(chain_id, url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;

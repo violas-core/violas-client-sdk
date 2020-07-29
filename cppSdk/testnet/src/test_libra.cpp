@@ -11,13 +11,13 @@
 using namespace std;
 using namespace Libra;
 
-client_ptr connect(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint)
+client_ptr connect(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint, uint8_t chain_id)
 {
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
     cout << color::RED << "connecting to " << url << color::RESET << endl;
 
-    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
+    auto client = Client::create(chain_id, url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -42,9 +42,9 @@ client_ptr connect(const string &url, const string &mint_key_file, const string 
     return client;
 }
 
-void run_test_libra(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint)
+void run_test_libra(const string &url, const string &mint_key_file, const string &mnemonic_file, const string &waypoint, uint8_t chain_id)
 {
-    auto client = connect(url, mint_key_file, mnemonic_file, waypoint);
+    auto client = connect(url, mint_key_file, mnemonic_file, waypoint, chain_id);
 
     auto accounts = client->get_all_accounts();
 
@@ -63,17 +63,23 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
 
     for (size_t i = 0; i < accounts.size() && i < 2; i++)
     {
-        client->mint_coins(i, 100);
+        TypeTag LBR(CORE_CODE_ADDRESS, "LBR", "LBR");
+
+        try_catch([&]() {
+            client->create_testing_account(LBR, accounts[i].auth_key, true);
+        });
+
+        //client->mint_coins(i, 100);
 
         //client->mint_currency(TypeTag(Address(), "LBR", "T"), accounts[i].auth_key, 100 * MICRO_COIN);
         //client->mint_currency(TypeTag(Address(), "Coin1", "T"), accounts[i].auth_key, 100 * MICRO_COIN);
     }
 
-    print_account_balance(0);
-    print_account_balance(1);
-    client->transfer_coins_int(0, accounts[1].address, 100000);
-    print_account_balance(0);
-    print_account_balance(1);
+    // print_account_balance(0);
+    // print_account_balance(1);
+    // client->transfer_coins_int(0, accounts[1].address, 100000);
+    // print_account_balance(0);
+    // print_account_balance(1);
 
     //print account 0's all sent events
     auto [events, last_status] = client->get_events(0, Client::EventType::sent, 0, 100);
@@ -114,17 +120,28 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
         TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
 
         try_catch([&]() {
-            //client->publish_module(ASSOCIATION_ID, "../../cppSdk/move/compiled/coin_usd.mv");
             client->publish_currency(currency);
+            cout << "publish currency : " << color::GREEN << currency << color::RESET << endl;
         });
-        cout << "publish module : " << currency << endl;
 
         try_catch([&]() {
             client->register_currency(tag, 1, 2, false, 1000000, 100, currency);
+            cout << "register currency : " << color::GREEN << currency << color::RESET << endl;
         });
-        //client->register_currency(tag, 1, 2, false, 1000000, 100, currency_code);
-        cout << "registered currency " << currency << endl;
-        //print_txn(ASSOCIATION_ADDRESS);
+
+        try_catch([&]() {
+            client->add_currency_for_designated_dealer(tag, TESTNET_DD_ADDRESS);
+            cout << "added currency "
+                 << color::GREEN << currency << color::RESET
+                 << " to account testnet dd account" << endl;
+        });
+
+        uint64_t sliding_nonce = 0;
+        uint64_t tiered_index = 3;
+        client->mint_currency(tag, sliding_nonce, TESTNET_DD_ADDRESS, 1000000 * MICRO_COIN, tiered_index);
+        cout << "mint 1,000,000 currency "
+             << color::GREEN << currency << color::RESET
+             << " to account 0" << endl;
 
         try_catch([&]() {
             client->add_currency(tag, 0);
@@ -136,10 +153,7 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
         });
         cout << "added currency " << currency << " to account 1" << endl;
 
-        client->mint_currency(tag, accounts[0].auth_key, 1000 * MICRO_COIN);
-        cout << "mint 1000 currency " << currency << " to account 0" << endl;
-
-        client->transfer_currency(tag, 0, accounts[1].address, 500 * MICRO_COIN);
+        //client->transfer_currency(tag, 0, accounts[1].address, 1000 * MICRO_COIN);
         cout << "transfer 500  currency " << currency << " from account 0 to account 1" << endl;
 
         print_txn(accounts[0].address);
@@ -167,9 +181,10 @@ void run_test_libra(const string &url, const string &mint_key_file, const string
 void run_account_management(const string &url,
                             const string &mint_key_file,
                             const string &mnemonic_file,
-                            const string &waypoint)
+                            const string &waypoint,
+                            uint8_t chain_id)
 {
-    auto client = connect(url, mint_key_file, mnemonic_file, waypoint);
+    auto client = connect(url, mint_key_file, mnemonic_file, waypoint, chain_id);
 
     auto accounts = client->get_all_accounts();
     assert(accounts.size() >= 5);
@@ -189,7 +204,10 @@ void run_account_management(const string &url,
     });
     cout << "create VASP account for account 2" << endl;
 
-    client->mint_currency(tag, accounts[2].auth_key, 10 * MICRO_COIN);
+    uint64_t sliding_nonce = 0;
+    uint64_t tiered_index = 0;
+    client->mint_currency(tag, sliding_nonce, accounts[2].address, 10 * MICRO_COIN, tiered_index);
+
     //client->mint_currency(LBR, accounts[2].auth_key, 10 * MICRO_COIN);
 
     auto balance = client->get_currency_balance(tag, accounts[2].address);

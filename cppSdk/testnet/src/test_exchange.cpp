@@ -11,7 +11,8 @@ using namespace std;
 void test_exchange(const string &url,
                    const string &mint_key_file,
                    const string &mnemonic_file,
-                   const string &waypoint)
+                   const string &waypoint,
+                   uint8_t chain_id)
 {
     using namespace Violas;
 
@@ -19,7 +20,7 @@ void test_exchange(const string &url,
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
+    auto client = Client::create(chain_id, url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -121,11 +122,14 @@ void test_exchange(const string &url,
         TypeTag EUR(CORE_CODE_ADDRESS, "VLSEUR", "VLSEUR");
         TypeTag GBP(CORE_CODE_ADDRESS, "VLSGBP", "VLSGBP");
 
-        client->mint_currency(USD, accounts[user0].auth_key, 1 * MICRO_COIN);
-        client->mint_currency(EUR, accounts[user0].auth_key, 10 * MICRO_COIN);
-        client->mint_currency(GBP, accounts[user0].auth_key, 20 * MICRO_COIN);
+        uint64_t sliding_nonce = 0;
+        uint64_t tiered_index = 0;
 
-        client->mint_currency(USD, accounts[user1].auth_key, 1 * MICRO_COIN);
+        client->mint_currency(USD, sliding_nonce, accounts[user0].address, 1 * MICRO_COIN, tiered_index);
+        client->mint_currency(EUR, sliding_nonce, accounts[user0].address, 10 * MICRO_COIN, tiered_index);
+        client->mint_currency(GBP, sliding_nonce, accounts[user0].address, 20 * MICRO_COIN, tiered_index);
+
+        client->mint_currency(USD, sliding_nonce, accounts[user1].address, 1 * MICRO_COIN, tiered_index);
 
         //add liquidity for USD -> EUR
         client->execute_script_ex({USD, EUR},
@@ -167,7 +171,8 @@ void test_exchange(const string &url,
 void run_exchange(const string &url,
                   const string &mint_key_file,
                   const string &mnemonic_file,
-                  const string &waypoint)
+                  const string &waypoint,
+                  uint8_t chain_id)
 {
     using namespace Violas;
 
@@ -175,7 +180,7 @@ void run_exchange(const string &url,
 
     cout << color::RED << "running test for libra sdk ..." << color::RESET << endl;
 
-    auto client = Client::create(url, mint_key_file, true, "", mnemonic_file, waypoint);
+    auto client = Client::create(chain_id, url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
     cout << "succeed to test validator connection ." << endl;
@@ -236,8 +241,10 @@ void run_exchange(const string &url,
             {
                 TypeTag currency_tag(CORE_CODE_ADDRESS, currency_code, currency_code);
 
+                uint64_t sliding_nonce = 0;
+                uint64_t tiered_index = 0;
                 client->add_currency(currency_tag, account.index);
-                client->mint_currency(currency_tag, account.auth_key, 100 * MICRO_COIN);
+                client->mint_currency(currency_tag, sliding_nonce, account.address, 100 * MICRO_COIN, tiered_index);
             }
         });
     }
@@ -278,7 +285,7 @@ void run_exchange(const string &url,
 
     auto liquidity_balance = exchange->get_liquidity_balance(accounts[user0].address);
     cout << "liquidity balance is :" << liquidity_balance << endl;
-    
+
     exchange->swap(user1, accounts[user1].address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
 
     print_all_balance(accounts[0].address);

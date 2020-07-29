@@ -11,7 +11,7 @@ class Client
     void *internal;
 
 public:
-    Client(std::string_view url, std::string_view mint_key, std::string_view mnemonic, std::string_view waypoint);
+    Client(uint8_t chain_id, std::string_view url, std::string_view mint_key, std::string_view mnemonic, std::string_view waypoint);
 
     ~Client();
 
@@ -26,4 +26,4 @@ public:
     Account create_next_account();
 };
 
-#endif 
+#endif

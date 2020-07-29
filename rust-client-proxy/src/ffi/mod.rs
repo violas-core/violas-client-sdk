@@ -1,6 +1,6 @@
-use crate::client_proxy::ClientProxy;
+use crate::libra_client_proxy::ClientProxy;
 use cpp::cpp;
-use libra_types::waypoint::Waypoint;
+use libra_types::{chain_id::ChainId, waypoint::Waypoint};
 use std::{ffi::CStr, os::raw::c_char, str::FromStr};
 
 cpp! {{
@@ -11,7 +11,7 @@ cpp! {{
 
 using namespace std;
 
-Client::Client(std::string_view url, std::string_view mint_key, std::string_view mnemonic, std::string_view waypoint)
+Client::Client(uint8_t chain_id, std::string_view url, std::string_view mint_key, std::string_view mnemonic, std::string_view waypoint)
 {
     auto c_url = url.data();
     auto c_mint_key = mint_key.data();
@@ -19,11 +19,14 @@ Client::Client(std::string_view url, std::string_view mint_key, std::string_view
     auto c_waypoint = waypoint.data();
 
     this->internal = rust!(Client_constructor [
+            chain_id : u8 as "uint8_t",
             c_url : * const c_char as "const char *",
             c_mint_key : * const c_char as "const char *",
             c_mnemonic : * const c_char as "const char *",
             c_waypoint : * const c_char as "cosnt char *"]-> *mut ClientProxy as "void *" {
-        let client = ClientProxy::new(CStr::from_ptr(c_url).to_str().unwrap(),
+        let client = ClientProxy::new(
+            ChainId::new(chain_id),
+            CStr::from_ptr(c_url).to_str().unwrap(),
                                         CStr::from_ptr(c_mint_key).to_str().unwrap() ,
                                         CStr::from_ptr(c_mint_key).to_str().unwrap(),
                                         true,

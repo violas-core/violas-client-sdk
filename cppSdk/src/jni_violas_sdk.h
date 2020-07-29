@@ -11,7 +11,8 @@
 //	Create native clinet
 //
 jlong createNativeClient(JNIEnv *env, jobject,
-						 jstring url,						 
+						 jint chain_id,
+						 jstring url,
 						 jstring faucetKey,
 						 jboolean syncWithWallet,
 						 jstring faucetServer,
@@ -104,56 +105,56 @@ jobjectArray jni_get_txn_by_range(JNIEnv *env, jobject, jlong nativeObj, jlong s
 
 namespace JniTokenManager
 {
-uint64_t jni_create_totken_manager(JNIEnv *env, jobject,
-								   jlong native_client, jbyteArray publisher_address,
-								   jstring token_name, jstring script_files_path, jstring temp_path);
+	uint64_t jni_create_totken_manager(JNIEnv *env, jobject,
+									   jlong native_client, jbyteArray publisher_address,
+									   jstring token_name, jstring script_files_path, jstring temp_path);
 
-uint64_t jni_create_totken_manager(JNIEnv *env,
-								   jobject obj,
-								   jlong native_client,
-								   jbyteArray publisher_address,
-								   jstring token_name,
-								   std::function<void(const std::string &)> const &init_all_script_fun,
-								   jstring temp_path);
+	uint64_t jni_create_totken_manager(JNIEnv *env,
+									   jobject obj,
+									   jlong native_client,
+									   jbyteArray publisher_address,
+									   jstring token_name,
+									   std::function<void(const std::string &)> const &init_all_script_fun,
+									   jstring temp_path);
 
-jstring jni_name(JNIEnv *env, jobject,
-				 long naitve_token_manager);
+	jstring jni_name(JNIEnv *env, jobject,
+					 long naitve_token_manager);
 
-jbyteArray jni_address(JNIEnv *env, jobject,
-					   long native_token_manager);
+	jbyteArray jni_address(JNIEnv *env, jobject,
+						   long native_token_manager);
 
-void jni_deploy(JNIEnv *env, jobject, jlong native_token_manager, jlong account_index);
+	void jni_deploy(JNIEnv *env, jobject, jlong native_token_manager, jlong account_index);
 
-void jni_create_token(JNIEnv *env, jobject obj,
-					  jlong native_token_manager,
-					  jlong supervisor_account_index,
-					  jbyteArray ownor_address,
-					  jstring token_name);
+	void jni_create_token(JNIEnv *env, jobject obj,
+						  jlong native_token_manager,
+						  jlong supervisor_account_index,
+						  jbyteArray ownor_address,
+						  jstring token_name);
 
-void jni_publish(JNIEnv *env, jobject, jlong native_token_manager, jlong account_index);
+	void jni_publish(JNIEnv *env, jobject, jlong native_token_manager, jlong account_index);
 
-void jni_mint(JNIEnv *env, jobject obj,
-			  jlong native_token_manager,
-			  jlong token_index,
-			  jlong account_index,
-			  jbyteArray receiver_address,
-			  jlong amount_micro_coins);
-
-void jni_transfer(JNIEnv *env, jobject obj,
+	void jni_mint(JNIEnv *env, jobject obj,
 				  jlong native_token_manager,
 				  jlong token_index,
 				  jlong account_index,
 				  jbyteArray receiver_address,
 				  jlong amount_micro_coins);
 
-jlong jni_get_balance(JNIEnv *env, jobject obj,
+	void jni_transfer(JNIEnv *env, jobject obj,
 					  jlong native_token_manager,
 					  jlong token_index,
-					  jlong account_index);
+					  jlong account_index,
+					  jbyteArray receiver_address,
+					  jlong amount_micro_coins);
 
-jlong jni_get_balance(JNIEnv *env, jobject obj,
-					  jlong native_token_manager,
-					  jlong token_index,
-					  jbyteArray address);
+	jlong jni_get_balance(JNIEnv *env, jobject obj,
+						  jlong native_token_manager,
+						  jlong token_index,
+						  jlong account_index);
+
+	jlong jni_get_balance(JNIEnv *env, jobject obj,
+						  jlong native_token_manager,
+						  jlong token_index,
+						  jbyteArray address);
 } // namespace JniTokenManager
 #endif //VIOLAS_JNI_VIOLAS_SDK_H

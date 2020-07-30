@@ -3,25 +3,54 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [               
-
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch test_rust_cpp",
+            "program": "${workspaceFolder}/build/debug/bin/test_rust_cpp",
+            "args": [
+                "http://localhost:34165",
+                "/tmp/libra/mint.key",
+                "waypoint",
+                "0:4376b86378505d6ee3ba83ff4c3d8cbc3c847098b71448f191f476152c1368af",
+                "4"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
         {
             "type": "lldb",
             "request": "launch",
             "name": "Launch testnet",
             "program": "${workspaceFolder}/build/debug/bin/testnet",
-            "args": ["http://localhost:33113", "/tmp/libra/mint.key", "waypoint", "0:e0b92d890c104ad5b76d1116d301a325ea2006c41b25687fb99573b368d50a2d", "4"],
+            "args": [
+                "http://localhost:33113",
+                "/tmp/libra/mint.key",
+                "waypoint",
+                "0:e0b92d890c104ad5b76d1116d301a325ea2006c41b25687fb99573b368d50a2d",
+                "4"
+            ],
             //"args": ["http://51.140.241.96:50001", "/home/hunter/mint_test.key", "governor","0:2f4d2b3f414fe799f8a13003311fcff9b1c5dd073c3a5e84fcfbc534d5fccbc2"],
             //"args": ["http://47.93.114.230:50001", "/home/hunter/Documents/node/mint_beijing.key", "governor","0:f462b02303dfe9e6db7d15523451155989f604f27fe20cd65a4700e0060e7238"],
             "cwd": "${workspaceFolder}/build/debug"
         },
-
         {
             "name": "Java Launch jni",
             "type": "cppdbg",
             "request": "launch",
             "program": " /usr/bin/java",
-            "args": ["--module-path", "/usr/share/openjfx/lib/", "--add-modules=javafx.base", "-cp", "../bin/violas.jar", "Demo.java", "localhost", "33809", "/tmp/bc471173615e33d98a71c41f8a132c89/mint.key", "mnemonic"],
+            "args": [
+                "--module-path",
+                "/usr/share/openjfx/lib/",
+                "--add-modules=javafx.base",
+                "-cp",
+                "../bin/violas.jar",
+                "Demo.java",
+                "localhost",
+                "33809",
+                "/tmp/bc471173615e33d98a71c41f8a132c89/mint.key",
+                "mnemonic"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/Java/test",
             "environment": [],

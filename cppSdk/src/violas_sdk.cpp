@@ -619,13 +619,13 @@ namespace LIB_NAME
             uint64_t result = 0;
             string path_addr = "0x" + res_path_addr.to_string();
 
-            bool ret = libra_get_account_resource(
-                (uint64_t)raw_client_proxy, to_string(account_index).c_str(),
-                path_addr.c_str(), token_index, &result);
-            if (!ret)
-                throw runtime_error(
-                    format("failed to get get resource for account index %d ", account_index) +
-                    EXCEPTION_AT);
+            // bool ret = libra_get_account_resource(
+            //     (uint64_t)raw_client_proxy, to_string(account_index).c_str(),
+            //     path_addr.c_str(), token_index, &result);
+            // if (!ret)
+            //     throw runtime_error(
+            //         format("failed to get get resource for account index %d ", account_index) +
+            //         EXCEPTION_AT);
 
             return result;
         }
@@ -638,12 +638,12 @@ namespace LIB_NAME
             string path_addr = "0x" + res_path_addr.to_string();
             auto addr = account_addr.to_string();
 
-            bool ret = libra_get_account_resource(
-                (uint64_t)raw_client_proxy, addr.c_str(), path_addr.c_str(), token_index, &result);
-            if (!ret)
-                throw runtime_error(
-                    format("failed to get get resource for account address %s ", addr.c_str()) +
-                    EXCEPTION_AT);
+            // bool ret = libra_get_account_resource(
+            //     (uint64_t)raw_client_proxy, addr.c_str(), path_addr.c_str(), token_index, &result);
+            // if (!ret)
+            //     throw runtime_error(
+            //         format("failed to get get resource for account address %s ", addr.c_str()) +
+            //         EXCEPTION_AT);
 
             return result;
         }

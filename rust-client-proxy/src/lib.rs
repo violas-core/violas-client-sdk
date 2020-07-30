@@ -1,3 +1,13 @@
+#![recursion_limit = "512"]
+
+pub mod ffi;
+mod libra_client;
+pub mod libra_client_proxy;
+pub mod move_compiler;
+pub mod violas_account;
+pub mod violas_client;
+pub mod violas_ffi;
+
 use libra_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
@@ -6,16 +16,7 @@ use libra_crypto::{
 use libra_types::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
 
-#[macro_use]
-extern crate cpp;
-
-pub mod ffi;
-pub mod libra_client;
-pub mod libra_client_proxy;
-pub mod move_compiler;
-pub mod violas_account;
-pub mod violas_client;
-pub mod violas_ffi;
+//extern crate cpp;
 
 /// Struct used to store data for each created account.  We track the sequence number
 /// so we can create new transactions easily

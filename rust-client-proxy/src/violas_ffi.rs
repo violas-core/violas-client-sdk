@@ -767,65 +767,65 @@ pub mod x86_64 {
         }
     }
 
-    #[no_mangle]
-    pub extern "C" fn libra_get_account_resource(
-        raw_ptr: u64,
-        account_index_or_addr: *const c_char,
-        c_account_path_addr: *const c_char,
-        token_index: u64,
-        balance: &mut u64,
-    ) -> bool {
-        let ret = panic::catch_unwind(|| -> Result<u64, Error> {
-            let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
-            let (address, _) = client.get_account_address_from_parameter(unsafe {
-                CStr::from_ptr(account_index_or_addr).to_str().unwrap()
-            })?;
+    // #[no_mangle]
+    // pub extern "C" fn libra_get_account_resource(
+    //     raw_ptr: u64,
+    //     account_index_or_addr: *const c_char,
+    //     c_account_path_addr: *const c_char,
+    //     token_index: u64,
+    //     balance: &mut u64,
+    // ) -> bool {
+    //     let ret = panic::catch_unwind(|| -> Result<u64, Error> {
+    //         let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
+    //         let (address, _) = client.get_account_address_from_parameter(unsafe {
+    //             CStr::from_ptr(account_index_or_addr).to_str().unwrap()
+    //         })?;
 
-            if let (Some(blob), _) = client.client.get_account_state_blob(address)? {
-                let account_state = AccountState::try_from(&blob)?;
-                // debugging
-                // for (movie, review) in &map {
-                //     println!("{:?}: \"{:?}\"", movie, review);
-                // }
-                let account_path_addr =
-                    unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
-                let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
+    //         if let (Some(blob), _) = client.client.get_account_state_blob(address)? {
+    //             let account_state = AccountState::try_from(&blob)?;
+    //             // debugging
+    //             // for (movie, review) in &map {
+    //             //     println!("{:?}: \"{:?}\"", movie, review);
+    //             // }
+    //             let account_path_addr =
+    //                 unsafe { CStr::from_ptr(c_account_path_addr).to_str().unwrap() };
+    //             let addr = AccountAddress::from_hex_literal(account_path_addr).unwrap();
 
-                let ar = ViolasAccountResource::make_from(&addr, &account_state)?;
+    //             let ar = ViolasAccountResource::make_from(&addr, &account_state)?;
 
-                let index: usize = token_index as usize;
-                if index >= ar.tokens.len() {
-                    bail!(format!(
-                        "token index {} is more than token length {}",
-                        index,
-                        ar.tokens.len()
-                    ));
-                }
+    //             let index: usize = token_index as usize;
+    //             if index >= ar.tokens.len() {
+    //                 bail!(format!(
+    //                     "token index {} is more than token length {}",
+    //                     index,
+    //                     ar.tokens.len()
+    //                 ));
+    //             }
 
-                return Ok(ar.tokens[index].balance);
-            }
+    //             return Ok(ar.tokens[index].balance);
+    //         }
 
-            bail!("Account hasn't published the module")
-        });
+    //         bail!("Account hasn't published the module")
+    //     });
 
-        *balance = u64::max_value(); //set invalid balance;
+    //     *balance = u64::max_value(); //set invalid balance;
 
-        if ret.is_ok() {
-            match ret.unwrap() {
-                Ok(value) => {
-                    *balance = value;
-                    true
-                }
-                Err(err) => {
-                    set_last_error(err);
-                    true
-                }
-            }
-        } else {
-            set_last_error(format_err!("panic at libra_get_account_resource()"));
-            false
-        }
-    }
+    //     if ret.is_ok() {
+    //         match ret.unwrap() {
+    //             Ok(value) => {
+    //                 *balance = value;
+    //                 true
+    //             }
+    //             Err(err) => {
+    //                 set_last_error(err);
+    //                 true
+    //             }
+    //         }
+    //     } else {
+    //         set_last_error(format_err!("panic at libra_get_account_resource()"));
+    //         false
+    //     }
+    // }
 
     ///  Allow executing arbitrary script in the network.
     #[no_mangle]

@@ -1,12 +1,14 @@
-use crate::libra_client_proxy::{
-    parse_transaction_argument_for_client,
-    ClientProxy, //AccountEntry, IndexAndSequence,
+use crate::{
+    libra_client_proxy::{parse_transaction_argument_for_client, ClientProxy},
+    AccountData,
 };
-use anyhow::{bail, format_err, Result}; //ensure, Error
+use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
+use libra_crypto::test_utils::KeyPair;
+use libra_json_rpc_client::views::VMStatusView;
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::BalanceResource,
+    account_config::{treasury_compliance_account_address, BalanceResource},
     account_state::AccountState,
     chain_id::ChainId,
     //on_chain_config::VMPublishingOption,
@@ -26,12 +28,17 @@ use std::{
     fs,
     ops::{Deref, DerefMut},
     str::{self},
+    thread, time,
 };
+use transaction_builder;
+
 ///
 /// struct ViolasClient
 ///
 pub struct ViolasClient {
     libra_client_proxy: ClientProxy,
+    /// Account used TreasuryCompliance operations (e.g., minting)
+    pub treasury_compliance_account: Option<AccountData>,
 }
 
 impl Deref for ViolasClient {
@@ -60,18 +67,101 @@ impl ViolasClient {
         mnemonic_file: Option<String>,
         waypoint: Waypoint,
     ) -> Result<Self> {
+        let mut libra_client_proxy = ClientProxy::new(
+            chain_id,
+            url,
+            libra_root_account_file,
+            testnet_designated_dealer_account_file,
+            sync_on_wallet_recovery,
+            faucet_server,
+            mnemonic_file,
+            waypoint,
+        )?;
+
+        let treasury_compliance_account = if libra_root_account_file.is_empty() {
+            None
+        } else {
+            let treasury_compliance_account_key = generate_key::load_key(libra_root_account_file);
+            let treasury_compliance_account_data = ClientProxy::get_account_data_from_address(
+                &mut libra_client_proxy.client,
+                treasury_compliance_account_address(),
+                true,
+                Some(KeyPair::from(treasury_compliance_account_key)),
+                None,
+            )?;
+            Some(treasury_compliance_account_data)
+        };
+
         Ok(ViolasClient {
-            libra_client_proxy: ClientProxy::new(
-                chain_id,
-                url,
-                libra_root_account_file,
-                testnet_designated_dealer_account_file,
-                sync_on_wallet_recovery,
-                faucet_server,
-                mnemonic_file,
-                waypoint,
-            )?,
+            libra_client_proxy,
+            treasury_compliance_account,
         })
+    }
+
+    pub fn association_transaction_with_local_treasury_compliance_account(
+        &mut self,
+        payload: TransactionPayload,
+        is_blocking: bool,
+    ) -> Result<()> {
+        ensure!(
+            self.treasury_compliance_account.is_some(),
+            "No treasury compliance account loaded"
+        );
+        //  create txn to submit
+        let sender = self.treasury_compliance_account.as_ref().unwrap();
+        let sender_address = sender.address;
+        let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
+
+        // submit txn
+        let mut sender_mut = self.treasury_compliance_account.as_mut().unwrap();
+        let resp = self
+            .libra_client_proxy
+            .client
+            .submit_transaction(Some(&mut sender_mut), txn);
+        let sequence_number = sender_mut.sequence_number;
+
+        // wait for txn
+        if is_blocking {
+            self.wait_for_transaction(sender_address, sequence_number)?;
+        }
+        resp
+    }
+
+    /// Waits for the next transaction for a specific address and prints it
+    pub fn wait_for_transaction(
+        &mut self,
+        account: AccountAddress,
+        sequence_number: u64,
+    ) -> Result<()> {
+        let mut max_iterations = 5000;
+        loop {
+            match self
+                .client
+                .get_txn_by_acc_seq(account, sequence_number - 1, true)
+            {
+                Ok(Some(txn_view)) => {
+                    if txn_view.vm_status == VMStatusView::Executed {
+                        break Ok(());
+                    } else {
+                        break Err(format_err!(
+                            "transaction failed to execute, status: {:?}!",
+                            txn_view.vm_status
+                        ));
+                    }
+                }
+                Err(e) => {
+                    bail!("Response with error: {:?}", e);
+                }
+                _ => {
+                    //print!(".");
+                }
+            }
+            max_iterations -= 1;
+            if max_iterations == 0 {
+                bail!("wait_for_transaction timeout");
+            }
+            thread::sleep(time::Duration::from_millis(10));
+        }
     }
 
     /// submit a transaction with specified account index
@@ -79,8 +169,8 @@ impl ViolasClient {
         &mut self,
         account_ref_id: usize,
         program: Script,
-        max_gas_amount: Option<u64>,
         gas_unit_price: Option<u64>,
+        max_gas_amount: Option<u64>,
         gas_currency_type: Option<TypeTag>,
         is_blocking: bool,
     ) -> Result<()> {
@@ -443,6 +533,9 @@ impl ViolasClient {
         sender_account_ref_id: usize,
         receiver_address: &AccountAddress,
         num_coins: u64,
+        gas_unit_price: Option<u64>,        
+        max_gas_amount: Option<u64>,
+        gas_currency_tag: Option<TypeTag>,
         is_blocking: bool,
     ) -> Result<()> {
         let program = transaction_builder::encode_peer_to_peer_with_metadata_script(
@@ -456,9 +549,9 @@ impl ViolasClient {
         self.submit_transction_with_account(
             sender_account_ref_id,
             program,
-            None,
-            None,
-            Some(type_tag),
+            gas_unit_price,
+            max_gas_amount,
+            gas_currency_tag,
             is_blocking,
         )?;
 
@@ -704,6 +797,28 @@ impl ViolasClient {
             Ok(resource)
         } else {
             Ok(None)
+        }
+    }
+
+    /// excute testnet_mint script
+    pub fn mint_for_testnet(
+        &mut self,
+        currency_tag: TypeTag,
+        receiver: AccountAddress,
+        amount: u64,
+        is_blocking: bool,
+    ) -> Result<()> {
+        match &self.libra_root_account {
+            Some(_) => {
+                let script =
+                    transaction_builder::encode_testnet_mint_script(currency_tag, receiver, amount);
+
+                self.association_transaction_with_local_testnet_dd_account(
+                    TransactionPayload::Script(script),
+                    is_blocking,
+                )
+            }
+            None => unimplemented!(),
         }
     }
 }

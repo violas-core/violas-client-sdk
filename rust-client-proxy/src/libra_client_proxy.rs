@@ -1,7 +1,10 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{libra_client::LibraClient, AccountData, AccountStatus};
+use crate::{
+    libra_client::LibraClient,
+    AccountData, AccountStatus,
+};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use compiled_stdlib::{transaction_scripts::StdlibScript, StdLibOptions};
 use libra_crypto::{
@@ -25,14 +28,8 @@ use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{
-        from_currency_code_string,
-        libra_root_address,
-        testnet_dd_account_address,
-        treasury_compliance_account_address,
-        type_tag_for_currency_code, //BalanceResource,
-        ACCOUNT_RECEIVED_EVENT_PATH,
-        ACCOUNT_SENT_EVENT_PATH,
-        LBR_NAME,
+        from_currency_code_string, libra_root_address, testnet_dd_account_address,
+        type_tag_for_currency_code, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH, LBR_NAME,
     },
     account_state::AccountState,
     chain_id::ChainId,
@@ -47,7 +44,6 @@ use libra_types::{
     waypoint::Waypoint,
 };
 use libra_wallet::{io_utils, WalletLibrary};
-//use move_core_types::language_storage::{StructTag, TypeTag};
 use num_traits::{
     cast::{FromPrimitive, ToPrimitive},
     identities::Zero,
@@ -55,17 +51,17 @@ use num_traits::{
 use reqwest::Url;
 use resource_viewer::{AnnotatedAccountStateBlob, MoveValueAnnotator, NullStateView};
 use rust_decimal::Decimal;
-//use serde::de::DeserializeOwned;
 use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt, fs,
+    io::{stdout, Write},
     path::{Path, PathBuf},
     process::Command,
     str::{self, FromStr},
     thread, time,
 };
-use transaction_builder::encode_set_validator_config_script;
+use transaction_builder::encode_register_validator_config_script;
 
 const CLIENT_WALLET_MNEMONIC_FILE: &str = "client.mnemonic";
 const GAS_UNIT_PRICE: u64 = 0;
@@ -81,6 +77,7 @@ pub fn is_address(data: &str) -> bool {
 pub fn is_authentication_key(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AuthenticationKey::LENGTH)
 }
+
 
 /// Enum used for error formatting.
 #[derive(Debug)]
@@ -131,8 +128,6 @@ pub struct ClientProxy {
     pub libra_root_account: Option<AccountData>,
     /// Account used for "minting" operations
     pub testnet_designated_dealer_account: Option<AccountData>,
-    /// Account used TreasuryCompliance operations (e.g., minting)
-    pub treasury_compliance_account: Option<AccountData>,
     /// Wallet library managing user accounts.
     wallet: WalletLibrary,
     /// Whether to sync with validator on wallet recovery.
@@ -186,19 +181,6 @@ impl ClientProxy {
             )?;
             Some(dd_account_data)
         };
-        let tc_account = if libra_root_account_file.is_empty() {
-            None
-        } else {
-            let treasury_compliance_account_key = generate_key::load_key(libra_root_account_file);
-            let treasury_compliance_account_data = Self::get_account_data_from_address(
-                &mut client,
-                treasury_compliance_account_address(),
-                true,
-                Some(KeyPair::from(treasury_compliance_account_key)),
-                None,
-            )?;
-            Some(treasury_compliance_account_data)
-        };
 
         let faucet_server = match faucet_server {
             Some(server) => server,
@@ -222,7 +204,6 @@ impl ClientProxy {
             faucet_server,
             libra_root_account,
             testnet_designated_dealer_account: dd_account,
-            treasury_compliance_account: tc_account,
             wallet: Self::get_libra_wallet(mnemonic_file)?,
             sync_on_wallet_recovery,
             temp_files: vec![],
@@ -475,7 +456,7 @@ impl ClientProxy {
         let (receiver, receiver_auth_key_opt) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
         let receiver_auth_key = receiver_auth_key_opt.ok_or_else(|| {
-            format_err!("Need authentication key to create new account via minting")
+            format_err!("Need authentication key to create new account via minting from facuet")
         })?;
         let mint_currency = space_delim_strings[3];
         let use_base_units = space_delim_strings
@@ -490,7 +471,10 @@ impl ClientProxy {
         let currency_code = from_currency_code_string(mint_currency)
             .map_err(|_| format_err!("Invalid currency code {} provided to mint", mint_currency))?;
 
-        ensure!(num_coins > 0, "Invalid number of coins to mint.");
+        ensure!(
+            num_coins > 0,
+            "Invalid number of coins to transfer from faucet."
+        );
 
         if self.libra_root_account.is_some() {
             let script = transaction_builder::encode_create_testing_account_script(
@@ -507,6 +491,7 @@ impl ClientProxy {
             {
                 let status = &self.accounts.get(pos).unwrap().status;
                 if &AccountStatus::Local == status {
+                    println!(">> Creating recipient account before minting from faucet");
                     // This needs to be blocking since the mint can't happen until it completes
                     self.association_transaction_with_local_libra_root_account(
                         TransactionPayload::Script(script),
@@ -524,6 +509,7 @@ impl ClientProxy {
             } // else, the account has already been created -- do nothing
         }
 
+        println!(">> Sending coins from faucet");
         match self.testnet_designated_dealer_account {
             Some(_) => {
                 let script = transaction_builder::encode_testnet_mint_script(
@@ -564,7 +550,7 @@ impl ClientProxy {
             Some(_) => self.association_transaction_with_local_libra_root_account(
                 TransactionPayload::Script(
                     transaction_builder::encode_modify_publishing_option_script(
-                        VMPublishingOption::open(),
+                        VMPublishingOption::custom_scripts(),
                     ),
                 ),
                 is_blocking,
@@ -647,9 +633,13 @@ impl ClientProxy {
             self.get_account_address_from_parameter(space_delim_strings[1])?;
         match self.libra_root_account {
             Some(_) => self.association_transaction_with_local_libra_root_account(
-                TransactionPayload::Script(transaction_builder::encode_remove_validator_script(
-                    account_address,
-                )),
+                TransactionPayload::Script(
+                    transaction_builder::encode_remove_validator_and_reconfigure_script(
+                        self.libra_root_account.as_ref().unwrap().sequence_number,
+                        vec![],
+                        account_address,
+                    ),
+                ),
                 is_blocking,
             ),
             None => unimplemented!(),
@@ -671,9 +661,13 @@ impl ClientProxy {
             self.get_account_address_from_parameter(space_delim_strings[1])?;
         match self.libra_root_account {
             Some(_) => self.association_transaction_with_local_libra_root_account(
-                TransactionPayload::Script(transaction_builder::encode_add_validator_script(
-                    account_address,
-                )),
+                TransactionPayload::Script(
+                    transaction_builder::encode_add_validator_and_reconfigure_script(
+                        self.libra_root_account.as_ref().unwrap().sequence_number,
+                        vec![],
+                        account_address,
+                    ),
+                ),
                 is_blocking,
             ),
             None => unimplemented!(),
@@ -727,7 +721,7 @@ impl ClientProxy {
         );
         let raw_enc_network_address = RawEncNetworkAddress::try_from(&enc_network_address)?;
 
-        let program = encode_set_validator_config_script(
+        let program = encode_register_validator_config_script(
             address,
             consensus_public_key.to_bytes().to_vec(),
             network_identity_key.to_bytes(),
@@ -750,6 +744,55 @@ impl ClientProxy {
     }
 
     /// Waits for the next transaction for a specific address and prints it
+    pub fn _wait_for_transaction(
+        &mut self,
+        account: AccountAddress,
+        sequence_number: u64,
+    ) -> Result<()> {
+        let mut max_iterations = 5000;
+        println!(
+            "waiting for {} with sequence number {}",
+            account, sequence_number
+        );
+        loop {
+            stdout().flush().unwrap();
+
+            match self
+                .client
+                .get_txn_by_acc_seq(account, sequence_number - 1, true)
+            {
+                Ok(Some(txn_view)) => {
+                    println!();
+                    if txn_view.vm_status == VMStatusView::Executed {
+                        println!("transaction executed!");
+                        if txn_view.events.is_empty() {
+                            println!("no events emitted");
+                        }
+                        break Ok(());
+                    } else {
+                        break Err(format_err!(
+                            "transaction failed to execute; status: {:?}!",
+                            txn_view.vm_status
+                        ));
+                    }
+                }
+                Err(e) => {
+                    println!();
+                    println!("Response with error: {:?}", e);
+                }
+                _ => {
+                    print!(".");
+                }
+            }
+            max_iterations -= 1;
+            if max_iterations == 0 {
+                panic!("wait_for_transaction timeout");
+            }
+            thread::sleep(time::Duration::from_millis(10));
+        }
+    }
+
+    /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(
         &mut self,
         account: AccountAddress,
@@ -762,13 +805,11 @@ impl ClientProxy {
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
             {
                 Ok(Some(txn_view)) => {
-                    println!();
                     if txn_view.vm_status == VMStatusView::Executed {
-                        if txn_view.events.is_empty() {}
                         break Ok(());
                     } else {
                         break Err(format_err!(
-                            "transaction failed to execute; status: {:?}!",
+                            "transaction failed to execute, status: {:?}!",
                             txn_view.vm_status
                         ));
                     }
@@ -787,7 +828,7 @@ impl ClientProxy {
             thread::sleep(time::Duration::from_millis(10));
         }
     }
-
+    
     /// Transfer num_coins from sender account to receiver. If is_blocking = true,
     /// it will keep querying validator till the sequence number is bumped up in validator.
     pub fn transfer_coins_int(
@@ -1359,7 +1400,7 @@ impl ClientProxy {
     /// Get account using specific address.
     /// Sync with validator for account sequence number in case it is already created on chain.
     /// This assumes we have a very low probability of mnemonic word conflict.
-    fn get_account_data_from_address(
+    pub fn get_account_data_from_address(
         client: &mut LibraClient,
         address: AccountAddress,
         sync_with_validator: bool,
@@ -1497,32 +1538,6 @@ impl ClientProxy {
             )?;
         }
         Ok(())
-    }
-
-    pub fn association_transaction_with_local_treasury_compliance_account(
-        &mut self,
-        payload: TransactionPayload,
-        is_blocking: bool,
-    ) -> Result<()> {
-        ensure!(
-            self.treasury_compliance_account.is_some(),
-            "No treasury compliance account loaded"
-        );
-        let sender = self.treasury_compliance_account.as_ref().unwrap();
-        let sender_address = sender.address;
-        let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
-        let mut sender_mut = self.treasury_compliance_account.as_mut().unwrap();
-        let resp = self.client.submit_transaction(Some(&mut sender_mut), txn);
-        if is_blocking {
-            self.wait_for_transaction(
-                sender_address,
-                self.treasury_compliance_account
-                    .as_ref()
-                    .unwrap()
-                    .sequence_number,
-            )?;
-        }
-        resp
     }
 
     fn mint_coins_with_faucet_service(

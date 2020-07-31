@@ -13,7 +13,7 @@ const std::string RESET("\033[0m");
 } // namespace color
 
 template <typename F>
-void try_catch(F f)
+void try_catch(F f, bool showing_exp = true)
 {
     try
     {
@@ -21,7 +21,8 @@ void try_catch(F f)
     }
     catch (const std::exception &e)
     {
-        std::cerr << e.what() << '\n';
+        if(showing_exp)
+            std::cerr << e.what() << '\n';
     }
 }
 

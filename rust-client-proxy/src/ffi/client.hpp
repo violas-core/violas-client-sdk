@@ -5,6 +5,8 @@
 #include <array>
 #include <vector>
 #include <string_view>
+#include <limits>
+#include <optional>
 
 namespace violas
 {
@@ -33,6 +35,28 @@ namespace violas
         AccountStatus status;
     };
 
+    struct CurrencyTag
+    {
+        Address address;
+        std::string module_name;
+        std::string resource_name;
+
+        CurrencyTag(Address addr,
+                    std::string_view mod,
+                    std::string_view res)
+            : address(addr),
+              module_name(mod),
+              resource_name(res)
+        {
+        }
+    };
+
+    const uint64_t MICRO_COIN = 1000000;
+    const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
+    const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
+    const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
+    const Address CORE_CODE_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01};
+
     class Client
     {
     public:
@@ -53,9 +77,27 @@ namespace violas
 
         virtual std::vector<Account>
         get_all_accounts() = 0;
+
+        virtual void
+        create_testnet_account(const CurrencyTag &type_tag,
+                               const AuthenticationKey &auth_key) = 0;
+
+        virtual void
+        mint_for_testnet(const CurrencyTag &currency_tag,
+                         const Address &receiver,
+                         uint64_t amount) = 0;
+
+        virtual void
+        transfer(const CurrencyTag &currency_tag,
+                 size_t account_ref_id,
+                 const Address &receiver,
+                 uint64_t amount,
+                 std::option<uint64_t> gas_unit_price = std::nullopt,
+                 std::option<uint64_t> max_gas_amount = std::nullopt,
+                 const std::option<CurrencyTag> &gas_currency_tag = std::nullopt) = 0;
     };
 
-    //using client_ptr = std::shared_ptr<Client>;
+    using client_ptr = std::shared_ptr<Client>;
 } //namespace violas
 
 #endif

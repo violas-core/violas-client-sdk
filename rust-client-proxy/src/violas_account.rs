@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 //     }
 // }
 
-pub fn currency_type_tag(addr: &AccountAddress, currency_code: &str) -> TypeTag {
+pub fn make_currency_tag(addr: &AccountAddress, currency_code: &str) -> TypeTag {
     TypeTag::Struct(StructTag {
         address: *addr,
         module: from_currency_code_string(currency_code).unwrap(),

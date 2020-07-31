@@ -10,13 +10,13 @@
             "name": "Launch test_rust_cpp",
             "program": "${workspaceFolder}/build/debug/bin/test_rust_cpp",
             "args": [
-                "http://localhost:32889",
+                "http://localhost:41105",
                 "/tmp/libra/mint.key",
                 "waypoint",
-                "0:956d9e325e7c99de3986d06812c597f93c947c7aee9fa9748ed7ee18eb6a3fda",
+                "0:f63d8e02e06624d4d963be644e17f170355a997e50f404ac8df7dd84ece3332a",
                 "4"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/build/debug"
         },
         {
             "type": "lldb",

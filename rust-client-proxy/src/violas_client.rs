@@ -528,10 +528,10 @@ impl ViolasClient {
 
     /// transfer currency
     pub fn transfer_currency(
-        &mut self,
-        type_tag: TypeTag,
+        &mut self,        
         sender_account_ref_id: usize,
         receiver_address: &AccountAddress,
+        currency_tag: TypeTag,
         num_coins: u64,
         gas_unit_price: Option<u64>,        
         max_gas_amount: Option<u64>,
@@ -539,7 +539,7 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         let program = transaction_builder::encode_peer_to_peer_with_metadata_script(
-            type_tag.clone(),
+            currency_tag.clone(),
             *receiver_address,
             num_coins,
             vec![],

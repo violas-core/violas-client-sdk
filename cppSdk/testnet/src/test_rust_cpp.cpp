@@ -60,21 +60,22 @@ void initialize_testnet(client_ptr client)
 void run_test_case(client_ptr client)
 {
     auto accounts = client->get_all_accounts();
+    CurrencyTag LBR(CORE_CODE_ADDRESS, "LBR", "LBR");
 
     for (const auto &account : accounts)
     {
-        CurrencyTag tag(CORE_CODE_ADDRESS, "LBR", "LBR");
-
         try_catch([&]() {
-            client->create_testnet_account(tag, account.auth_key);
+            client->create_testnet_account(LBR, account.auth_key);
         },
                   false);
 
-        client->mint_for_testnet(tag, account.address, 100 * MICRO_COIN);
+        client->mint_for_testnet(LBR, account.address, 100 * MICRO_COIN);
 
         cout << "Address : " << account.address
              << ", Auth Key :" << account.auth_key
              << ", Sequence Number : " << account.sequence_number
              << endl;
     }
+
+    client->transfer(0, accounts[1].address, LBR, 5 * MICRO_COIN, 1);
 }

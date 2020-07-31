@@ -296,15 +296,64 @@ namespace violas
         }
 
         virtual void
-        transfer(const CurrencyTag &currency_tag,
-                 size_t account_ref_id,
-                 const Address &receiver,
-                 uint64_t amount,
-                 std::option<uint64_t> gas_unit_price = std::nullopt,
-                 std::option<uint64_t> max_gas_amount = std::nullopt,
-                 const std::option<CurrencyTag> &gas_currency_tag = std::nullopt) override
-                 {
-                 }
+        transfer(size_t sender_account_ref_id,
+                const Address &receiver_address,
+                const CurrencyTag &currency_tag,
+                uint64_t amount,
+                uint64_t gas_unit_price,
+                uint64_t max_gas_amount,
+                const CurrencyTag & gas_currency_tag) override
+        {
+            CCurrencyTag c_currency_tag(currency_tag);
+            CCurrencyTag c_gas_curren_tag(gas_currency_tag);
+
+            auto c_currency_tag_ref = &c_currency_tag;
+            auto c_gas_currency_tag_ref = &c_gas_curren_tag;
+            auto in_receiver_address = receiver_address.data();
+
+            bool ret = rust!(
+                client_transfer_currency [
+                    rust_violas_client : &mut ViolasClient as "void *",
+                    sender_account_ref_id : usize as "size_t",
+                    in_receiver_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                    c_currency_tag_ref : &RustCurrencyTag as "const CCurrencyTag *",
+                    amount : u64 as "uint64_t",
+                    gas_unit_price : u64 as "uint64_t",
+                    max_gas_amount : u64 as "uint64_t",
+                    c_gas_currency_tag_ref : &RustCurrencyTag as "const CCurrencyTag *"
+                ] -> bool as "bool" {
+                    let currency_tag = make_currency_tag(
+                        &AccountAddress::new(c_currency_tag_ref.address),
+                        CStr::from_ptr(c_currency_tag_ref.module_name).to_str().unwrap(),
+                    );
+                    let gas_currency_tag = make_currency_tag(
+                        &AccountAddress::new(c_gas_currency_tag_ref.address),
+                        CStr::from_ptr(c_gas_currency_tag_ref.module_name).to_str().unwrap(),
+                    );
+
+                    let ret = rust_violas_client.transfer_currency(
+                            sender_account_ref_id,
+                            &AccountAddress::new(*in_receiver_address),
+                            currency_tag,
+                            amount,
+                            Some(gas_unit_price),
+                            Some(max_gas_amount),
+                            Some(gas_currency_tag),
+                            true);
+
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::transfer, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+                }
+            );
+
+            check_result(ret);
+        }
     };
 
     std::shared_ptr<Client>

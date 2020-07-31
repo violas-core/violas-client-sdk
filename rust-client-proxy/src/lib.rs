@@ -1,4 +1,4 @@
-#![recursion_limit = "512"]
+#![recursion_limit = "1024"]
 
 pub mod ffi;
 mod libra_client;

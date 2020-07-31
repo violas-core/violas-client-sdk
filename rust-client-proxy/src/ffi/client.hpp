@@ -88,13 +88,13 @@ namespace violas
                          uint64_t amount) = 0;
 
         virtual void
-        transfer(const CurrencyTag &currency_tag,
-                 size_t account_ref_id,
-                 const Address &receiver,
+        transfer(size_t sender_account_ref_id,
+                 const Address &receiver_address,
+                 const CurrencyTag &currency_tag,
                  uint64_t amount,
-                 std::option<uint64_t> gas_unit_price = std::nullopt,
-                 std::option<uint64_t> max_gas_amount = std::nullopt,
-                 const std::option<CurrencyTag> &gas_currency_tag = std::nullopt) = 0;
+                 uint64_t gas_unit_price = 0,
+                 uint64_t max_gas_amount = 1000000,
+                 const CurrencyTag & gas_currency_tag = CurrencyTag(CORE_CODE_ADDRESS, "LBR", "LBR")) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

@@ -374,10 +374,13 @@ pub mod x86_64 {
             let receiver_address = AccountAddress::new(*receiver_addr);
 
             client.transfer_currency(
-                lbr_type_tag(),
                 sender_account_ref_id,
                 &receiver_address,
+                lbr_type_tag(),
                 micro_coins,
+                None,
+                None,
+                None,
                 is_blocking,
             )?;
 
@@ -1391,10 +1394,13 @@ pub mod x86_64 {
 
                 // register currency
                 match proxy.transfer_currency(
-                    type_tag,
                     sender_account_index as usize,
                     &AccountAddress::new(*receiver),
+                    type_tag,
                     amount,
+                    None,
+                    None,
+                    None,
                     is_blocking,
                 ) {
                     Ok(_) => true,

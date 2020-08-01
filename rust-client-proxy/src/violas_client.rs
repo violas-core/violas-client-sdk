@@ -420,7 +420,7 @@ impl ViolasClient {
         }
     }
 
-    /// register currency for the designated dealer account
+    /// add currency for the designated dealer account
     pub fn add_currency_for_designated_dealer(
         &mut self,
         currency: TypeTag,
@@ -459,13 +459,13 @@ impl ViolasClient {
         }
     }
 
-    pub fn add_currency_ex(
+    pub fn add_currency(
         &mut self,
+        account_ref_id: usize,
         type_tag: TypeTag,
-        account_ref_id: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        if account_ref_id == u64::MAX {
+        if account_ref_id == usize::MAX {
             match &self.libra_root_account {
                 Some(_) => {
                     let script =
@@ -528,12 +528,12 @@ impl ViolasClient {
 
     /// transfer currency
     pub fn transfer_currency(
-        &mut self,        
+        &mut self,
         sender_account_ref_id: usize,
         receiver_address: &AccountAddress,
         currency_tag: TypeTag,
         num_coins: u64,
-        gas_unit_price: Option<u64>,        
+        gas_unit_price: Option<u64>,
         max_gas_amount: Option<u64>,
         gas_currency_tag: Option<TypeTag>,
         is_blocking: bool,

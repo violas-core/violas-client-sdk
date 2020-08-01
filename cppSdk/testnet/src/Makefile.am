@@ -1,4 +1,4 @@
-bin_PROGRAMS    = testnet test_jni transfer test_rust_cpp
+bin_PROGRAMS    = testnet test_jni transfer violas_client
 
 if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/debug
@@ -30,7 +30,7 @@ transfer_LDADD = -lviolas_sdk $(CLIENT_PROXY) -lstdc++fs
 RUST_CPP_CLIENT = $(top_srcdir)/rust-client-proxy/target/debug/build/client-proxy-4e68faaf80b33c94/out/rust_cpp/cpp_closures.o
 # for release $(top_srcdir)/rust-client-proxy/target/release/build/client-proxy-f60ce46fb23ec7a6/out/rust_cpp/cpp_closures.o
 
-test_rust_cpp_SOURCES = test_rust_cpp.cpp 
-test_rust_cpp_CXXFLAGS = -std=c++17 -I$(top_srcdir)/rust-client-proxy/src/ffi
-test_rust_cpp_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib $(CLIENT_PROXY_PATH)
-test_rust_cpp_LDADD = $(CLIENT_PROXY) $(RUST_CPP_CLIENT)
+violas_client_SOURCES = violas_client.cpp 
+violas_client_CXXFLAGS = -std=c++17 -I$(top_srcdir)/rust-client-proxy/src/ffi
+violas_client_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib $(CLIENT_PROXY_PATH)
+violas_client_LDADD = $(CLIENT_PROXY) $(RUST_CPP_CLIENT)

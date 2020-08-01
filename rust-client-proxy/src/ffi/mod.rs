@@ -1,11 +1,10 @@
-use crate::{
-    violas_account::make_currency_tag, violas_client::ViolasClient, AccountAddress, AccountStatus,
-};
+use crate::{violas_account, violas_client::ViolasClient, AccountAddress, AccountStatus};
 use anyhow::{format_err, Error};
 use cpp::cpp;
 use libra_types::{
     chain_id::ChainId, transaction::authenticator::AuthenticationKey, waypoint::Waypoint,
 };
+use move_core_types::language_storage::TypeTag;
 use std::{
     cell::RefCell,
     ffi::{CStr, CString},
@@ -47,6 +46,13 @@ pub struct RustCurrencyTag {
     address: [c_uchar; ADDRESS_LENGTH],
     module_name: *const c_char,
     resource_name: *const c_char,
+}
+
+fn make_currency_tag(currency_code: *const c_char) -> TypeTag {
+    unsafe {
+        let code = CStr::from_ptr(currency_code).to_str().unwrap();
+        violas_account::make_currency_tag(code)
+    }
 }
 
 cpp! {{
@@ -219,26 +225,21 @@ namespace violas
         }
 
         virtual void
-        create_testnet_account( const CurrencyTag &currency_tag,
+        create_testnet_account( std::string_view currency_code,
                                 const AuthenticationKey &auth_key) override
         {
-            CCurrencyTag tag(currency_tag);
-
+            auto in_currency_code = currency_code.data();
             auto in_auth_key = auth_key.data();
-            auto in_tag_ref = &tag;
 
             bool ret = rust!( client_create_testnet_account [
                             rust_violas_client : &mut ViolasClient as "void *",
-                            in_tag_ref : &RustCurrencyTag as "const CCurrencyTag *",
+                            in_currency_code : *const c_char as "const char *",
                             in_auth_key : &[u8;AUTH_KEY_LENGTH] as "const uint8_t *"
                             ] -> bool as "bool" {
-                                let type_tag = make_currency_tag(
-                                    &AccountAddress::new(in_tag_ref.address),
-                                    CStr::from_ptr(in_tag_ref.module_name).to_str().unwrap(),
-                                );
                                 let auth_key = AuthenticationKey::new(*in_auth_key);
 
-                                let ret = rust_violas_client.create_testing_account(type_tag,
+                                let ret = rust_violas_client.create_testing_account(
+                                                make_currency_tag(in_currency_code),
                                                 auth_key.derived_address(),
                                                 auth_key.prefix().to_vec(),
                                                 false,
@@ -257,29 +258,23 @@ namespace violas
         }
 
         virtual void
-        mint_for_testnet(   const CurrencyTag &currency_tag,
-                            const Address &receiver,
+        mint_for_testnet(   std::string_view currency_code,
+                            const Address &receiver_address,
                             uint64_t amount) override
         {
-            CCurrencyTag tag(currency_tag);
-
-            auto in_tag_ref = &tag;
-            auto in_receiver = receiver.data();
+            auto in_currency_code = currency_code.data();
+            auto in_receiver_address = receiver_address.data();
 
             bool ret = rust!( client_mint_for_testnet [
                                 rust_violas_client : &mut ViolasClient as "void *",
-                                in_tag_ref : &RustCurrencyTag as "const CCurrencyTag *",
-                                in_receiver : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                                in_currency_code : *const c_char as "const char *",
+                                in_receiver_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
                                 amount : u64 as "uint64_t"
                             ] -> bool as "bool" {
-                                let type_tag = make_currency_tag(
-                                    &AccountAddress::new(in_tag_ref.address),
-                                    CStr::from_ptr(in_tag_ref.module_name).to_str().unwrap(),
-                                );
 
                                 let ret = rust_violas_client.mint_for_testnet(
-                                                type_tag,
-                                                AccountAddress::new(*in_receiver),
+                                                make_currency_tag(in_currency_code),
+                                                AccountAddress::new(*in_receiver_address),
                                                 amount,
                                                 true);
                                 match ret {
@@ -298,17 +293,14 @@ namespace violas
         virtual void
         transfer(size_t sender_account_ref_id,
                 const Address &receiver_address,
-                const CurrencyTag &currency_tag,
+                std::string_view currency_code,
                 uint64_t amount,
                 uint64_t gas_unit_price,
                 uint64_t max_gas_amount,
-                const CurrencyTag & gas_currency_tag) override
+                std::string_view gas_currency_code) override
         {
-            CCurrencyTag c_currency_tag(currency_tag);
-            CCurrencyTag c_gas_curren_tag(gas_currency_tag);
-
-            auto c_currency_tag_ref = &c_currency_tag;
-            auto c_gas_currency_tag_ref = &c_gas_curren_tag;
+            auto in_currency_tag = currency_code.data();
+            auto in_gas_currency_tag = gas_currency_code.data();
             auto in_receiver_address = receiver_address.data();
 
             bool ret = rust!(
@@ -316,29 +308,20 @@ namespace violas
                     rust_violas_client : &mut ViolasClient as "void *",
                     sender_account_ref_id : usize as "size_t",
                     in_receiver_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
-                    c_currency_tag_ref : &RustCurrencyTag as "const CCurrencyTag *",
+                    in_currency_tag : *const c_char as "const char *",
                     amount : u64 as "uint64_t",
                     gas_unit_price : u64 as "uint64_t",
                     max_gas_amount : u64 as "uint64_t",
-                    c_gas_currency_tag_ref : &RustCurrencyTag as "const CCurrencyTag *"
+                    in_gas_currency_tag : *const c_char as "const char *"
                 ] -> bool as "bool" {
-                    let currency_tag = make_currency_tag(
-                        &AccountAddress::new(c_currency_tag_ref.address),
-                        CStr::from_ptr(c_currency_tag_ref.module_name).to_str().unwrap(),
-                    );
-                    let gas_currency_tag = make_currency_tag(
-                        &AccountAddress::new(c_gas_currency_tag_ref.address),
-                        CStr::from_ptr(c_gas_currency_tag_ref.module_name).to_str().unwrap(),
-                    );
-
                     let ret = rust_violas_client.transfer_currency(
                             sender_account_ref_id,
                             &AccountAddress::new(*in_receiver_address),
-                            currency_tag,
+                            make_currency_tag(in_currency_tag),
                             amount,
                             Some(gas_unit_price),
                             Some(max_gas_amount),
-                            Some(gas_currency_tag),
+                            Some(make_currency_tag(in_gas_currency_tag)),
                             true);
 
                     match ret {
@@ -351,6 +334,186 @@ namespace violas
                     }
                 }
             );
+
+            check_result(ret);
+        }
+
+        /// Add a currency to current account
+        virtual void
+        add_currency(   size_t sender_account_ref_id,
+                        std::string_view currency_code) override
+        {
+            auto in_currency_code = currency_code.data();
+
+            bool ret = rust!( client_add_currency [
+                                rust_violas_client : &mut ViolasClient as "void *",
+                                sender_account_ref_id : usize as "size_t",
+                                in_currency_code : *const c_char as "const char *"
+                            ] -> bool as "bool" {
+
+                                let ret = rust_violas_client.add_currency(
+                                    sender_account_ref_id,
+                                    make_currency_tag(in_currency_code),
+                                    true);
+                                match ret {
+                                    Ok(_) => true,
+                                    Err(e) => {
+                                        let err = format_err!("ffi::add_currency, {}",e);
+                                        set_last_error(err);
+                                        false
+                                    }
+                                }
+                        });
+
+            check_result(ret);
+        }
+
+        // Call this method with root association privilege
+        virtual void
+        publish_curency(std::string_view currency_code) override
+        {
+            auto in_currency_code = currency_code.data();
+
+            bool ret = rust!( client_publish_currency [
+                                rust_violas_client : &mut ViolasClient as "void *",
+                                in_currency_code : *const c_char as "const char *"
+                            ] -> bool as "bool" {
+
+                                let ret = rust_violas_client.publish_currency(
+                                    CStr::from_ptr(in_currency_code)
+                                        .to_str()
+                                        .unwrap()
+                                        .as_bytes()
+                                        .to_owned()
+                                    );
+                                match ret {
+                                    Ok(_) => true,
+                                    Err(e) => {
+                                        let err = format_err!("ffi::publish_curency, {}",e);
+                                        set_last_error(err);
+                                        false
+                                    }
+                                }
+                        });
+
+            check_result(ret);
+        }
+
+        // Register currency with association root account
+        virtual void
+        register_currency(std::string_view currency_code,
+                           uint64_t exchange_rate_denom,
+                           uint64_t exchange_rate_num,
+                           bool is_synthetic,
+                           uint64_t scaling_factor,
+                           uint64_t fractional_part) override
+        {
+            auto in_currency_code = currency_code.data();
+
+            bool ret = rust!(
+                client_register_currency [
+                    rust_violas_client : &mut ViolasClient as "void *",
+                    in_currency_code : *const c_char as "const char *",
+                    exchange_rate_denom : u64 as "uint64_t",
+                    exchange_rate_num : u64 as "uint64_t",
+                    is_synthetic : bool as "bool",
+                    scaling_factor : u64 as "uint64_t",
+                    fractional_part : u64 as "uint64_t"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.register_currency(
+                        make_currency_tag(in_currency_code),
+                        exchange_rate_denom,
+                        exchange_rate_num,
+                        is_synthetic,
+                        scaling_factor,
+                        fractional_part,
+                        CStr::from_ptr(in_currency_code).to_str().unwrap().as_bytes().to_owned(),
+                        true);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::register_currency, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+                }
+            );
+
+            check_result(ret);
+        }
+
+        /// add currency for the designated dealer account
+        virtual void
+        add_currency_for_designated_dealer(
+            std::string_view currency_code,
+            const Address &dd_address) override
+        {
+            auto in_currency_code = currency_code.data();
+            auto in_dd_address = dd_address.data();
+
+            bool ret = rust!(
+                client_add_currency_for_designated_dealer [
+                    rust_violas_client : &mut ViolasClient as "void *",
+                    in_currency_code : *const c_char as "const char *",
+                    in_dd_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *"
+                    ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.add_currency_for_designated_dealer(
+                                    make_currency_tag(in_currency_code),
+                                    AccountAddress::new(*in_dd_address),
+                                    true);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::add_currency_for_designated_dealer, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+        }
+
+        /// mint currency for dd account
+        virtual void
+        mint_currency_for_designated_dealer(
+            std::string_view currency_code,
+            uint64_t sliding_nonce,
+            const Address &dd_address,
+            uint64_t amount,
+            uint64_t tier_index) override
+        {
+            auto in_currency_code = currency_code.data();
+            auto in_dd_address = dd_address.data();
+
+            bool ret = rust!( client_mint_currency_for_designated_dealer [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_currency_code : *const c_char as "const char *",
+                sliding_nonce : u64 as "uint64_t",
+                in_dd_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                amount : u64 as "uint64_t",
+                tier_index : u64 as "uint64_t"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.mint_currency(
+                                    make_currency_tag(in_currency_code),
+                                    sliding_nonce,
+                                    AccountAddress::new(*in_dd_address),
+                                    amount,
+                                    tier_index,
+                                    true);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::add_currency_for_designated_dealer, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
 
             check_result(ret);
         }

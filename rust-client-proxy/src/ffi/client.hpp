@@ -1,12 +1,15 @@
 #ifndef VIOLAS_CLIENT
 #define VIOLAS_CLIENT
 
+#if __cplusplus < 201703
+#error complier must be than c++17
+#endif
+
 #include <memory>
 #include <array>
 #include <vector>
 #include <string_view>
 #include <limits>
-#include <optional>
 
 namespace violas
 {
@@ -79,22 +82,61 @@ namespace violas
         get_all_accounts() = 0;
 
         virtual void
-        create_testnet_account(const CurrencyTag &type_tag,
+        create_testnet_account(std::string_view currency_code,
                                const AuthenticationKey &auth_key) = 0;
 
         virtual void
-        mint_for_testnet(const CurrencyTag &currency_tag,
+        mint_for_testnet(std::string_view currency_code,
                          const Address &receiver,
                          uint64_t amount) = 0;
-
+        //
+        /// transfer
+        //
         virtual void
         transfer(size_t sender_account_ref_id,
                  const Address &receiver_address,
-                 const CurrencyTag &currency_tag,
+                 std::string_view currency_code,
                  uint64_t amount,
                  uint64_t gas_unit_price = 0,
                  uint64_t max_gas_amount = 1000000,
-                 const CurrencyTag & gas_currency_tag = CurrencyTag(CORE_CODE_ADDRESS, "LBR", "LBR")) = 0;
+                 std::string_view gas_currency_code = "LBR") = 0;
+
+        /// Add a currency to current account
+        virtual void
+        add_currency(size_t sender_account_ref_id,
+                     std::string_view currency_code) = 0;
+
+        ///////////////////////////////////////////////////////
+        // multi-currency method
+        ///////////////////////////////////////////////////////
+
+        // Call this method with root association privilege
+        virtual void
+        publish_curency(std::string_view currency_code) = 0;
+
+        // Register currency with association root account
+        virtual void
+        register_currency(std::string_view currency_code,
+                          uint64_t exchange_rate_denom,
+                          uint64_t exchange_rate_num,
+                          bool is_synthetic,
+                          uint64_t scaling_factor,
+                          uint64_t fractional_part) = 0;
+
+        /// add currency for the designated dealer account
+        virtual void
+        add_currency_for_designated_dealer(
+            std::string_view currency_code,
+            const Address &dd_address) = 0;
+
+        /// mint currency for dd account
+        virtual void
+        mint_currency_for_designated_dealer(
+            std::string_view currency_code,
+            uint64_t sliding_nonce,
+            const Address &dd_address,
+            uint64_t amount,
+            uint64_t tier_index) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

@@ -10,6 +10,7 @@
 #include <vector>
 #include <string_view>
 #include <limits>
+#include <variant>
 
 namespace violas
 {
@@ -75,6 +76,9 @@ namespace violas
         virtual void
         test_connection() = 0;
 
+        ////////////////////////////////////////////////////////////////
+        //  wallet methods
+        ////////////////////////////////////////////////////////////////
         virtual AddressAndIndex
         create_next_account() = 0;
 
@@ -101,10 +105,63 @@ namespace violas
                  uint64_t max_gas_amount = 1000000,
                  std::string_view gas_currency_code = "LBR") = 0;
 
-        /// Add a currency to current account
+        ////////////////////////////////////////////////////////////////
+        //  management methods
+        ////////////////////////////////////////////////////////////////
+        enum VMPublishingOption
+        {
+            locked,
+            open,
+            custom_script
+        };
+        //
+        //  Modify VM publishing option
+        //  note that calling method needs association privilege
         virtual void
-        add_currency(size_t sender_account_ref_id,
-                     std::string_view currency_code) = 0;
+        modify_VM_publishing_option(VMPublishingOption option) = 0;
+
+        //
+        //  publish a module file
+        //  if account_index is ASSOCIATION_ID then publish module with association root account
+        virtual void
+        publish_module(size_t account_index,
+                       std::string_view module_file_name) = 0;
+
+        using TransactionAugment = std::variant<uint8_t,
+                                                uint64_t,
+                                                __uint128_t,
+                                                Address,
+                                                std::vector<uint8_t>,
+                                                bool>;
+
+        //
+        //  Execute script file with specified arguments
+        //
+        virtual void
+        execute_script(size_t account_index,
+                       std::string_view module_file_name,
+                       const std::vector<TransactionAugment> &arguments) = 0;
+
+        //
+        //  Execute script file with specified arguments
+        //
+        template <typename... Args>
+        void execute_script(size_t account_index,
+                            std::string_view script_file_name,
+                            const Args &... args)
+        {
+            using namespace std;
+
+            std::vector<TransactionAugment> txn_args;
+            auto parse_arg = [&](const auto &arg) {
+                txn_args.push_back(arg);
+            };
+
+            ((parse_arg(args)), ...);
+            //(args.push_back(std::forward<TransactionAugment>(args)), ...);
+
+            execute_script(account_index, script_file_name, txn_args);
+        }
 
         ///////////////////////////////////////////////////////
         // multi-currency method
@@ -128,6 +185,11 @@ namespace violas
         add_currency_for_designated_dealer(
             std::string_view currency_code,
             const Address &dd_address) = 0;
+
+        /// Add a currency to current account
+        virtual void
+        add_currency(size_t account_index,
+                     std::string_view currency_code) = 0;
 
         /// mint currency for dd account
         virtual void

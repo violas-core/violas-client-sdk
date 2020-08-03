@@ -11,7 +11,7 @@ use libra_types::{
     account_config::{treasury_compliance_account_address, BalanceResource},
     account_state::AccountState,
     chain_id::ChainId,
-    //on_chain_config::VMPublishingOption,
+    on_chain_config::VMPublishingOption,
     transaction::{
         //authenticator::AuthenticationKey,
         Module,
@@ -53,6 +53,13 @@ impl DerefMut for ViolasClient {
     fn deref_mut(&mut self) -> &mut ClientProxy {
         &mut self.libra_client_proxy
     }
+}
+
+//#[repr(C)]
+pub enum PublishingOption {
+    //locked,
+    Open,
+    CustomScript,
 }
 
 impl ViolasClient {
@@ -213,11 +220,34 @@ impl ViolasClient {
         // })
     }
 
+    /// Modify VM publishing option
+    pub fn modify_vm_publishing_option(
+        &mut self,
+        publishing_option: &PublishingOption,
+        is_blocking: bool,
+    ) -> Result<()> {
+        let option = match publishing_option {
+            //locked => VMPublishingOption::locked(),
+            PublishingOption::Open => VMPublishingOption::open(),
+            PublishingOption::CustomScript => VMPublishingOption::custom_scripts(),
+        };
+
+        match self.libra_root_account {
+            Some(_) => self.association_transaction_with_local_libra_root_account(
+                TransactionPayload::Script(
+                    transaction_builder::encode_modify_publishing_option_script(option),
+                ),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
+
     /// Publish Move module
     /// if sender ref id is u64::MAX, then publish module with association account
     ///
-    pub fn publish_module_ex(&mut self, sender_ref_id: u64, module_file_name: &str) -> Result<()> {
-        let sender = if sender_ref_id == u64::MAX {
+    pub fn publish_module(&mut self, sender_ref_id: usize, module_file_name: &str) -> Result<()> {
+        let sender = if sender_ref_id as u64 == u64::MAX {
             if self.libra_root_account.is_none() {
                 bail!("No faucet account loaded");
             }
@@ -234,7 +264,7 @@ impl ViolasClient {
         let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
         let proxy = &mut self.libra_client_proxy;
 
-        let resp = if sender_ref_id == u64::MAX {
+        let resp = if sender_ref_id as u64 == u64::MAX {
             proxy
                 .client
                 .submit_transaction(proxy.libra_root_account.as_mut(), txn)

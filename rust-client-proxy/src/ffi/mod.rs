@@ -1,4 +1,8 @@
-use crate::{violas_account, violas_client::ViolasClient, AccountAddress, AccountStatus};
+use crate::{
+    violas_account,
+    violas_client::{PublishingOption, ViolasClient},
+    AccountAddress, AccountStatus,
+};
 use anyhow::{format_err, Error};
 use cpp::cpp;
 use libra_types::{
@@ -56,6 +60,10 @@ fn make_currency_tag(currency_code: *const c_char) -> TypeTag {
 }
 
 cpp! {{
+
+#include <sstream>
+#include <iomanip>
+#include <string>
 #include "client.hpp"
 
 using namespace std;
@@ -75,6 +83,17 @@ namespace violas
             resource_name = currency_tag.resource_name.data();
         }
     };
+
+    template <size_t N>
+    std::ostream &operator<<(std::ostream &os, const array<uint8_t, N> &bytes)
+    {
+        for (auto v : bytes)
+        {
+            os << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+        }
+
+        return os << std::dec;
+    }
 
     class ClientImp : public Client
     {
@@ -338,21 +357,170 @@ namespace violas
             check_result(ret);
         }
 
+        //
+        //  Modify VM publishing option
+        //
+        virtual void
+        modify_VM_publishing_option( VMPublishingOption option) override
+        {
+            bool ret = rust!( client_modify_publishing_option [
+                                rust_violas_client : &mut ViolasClient as "void *",
+                                option : &PublishingOption as "VMPublishingOption"
+                            ] -> bool as "bool" {
+
+                                let ret = rust_violas_client.modify_vm_publishing_option(
+                                                option,
+                                                true);
+                                match ret {
+                                    Ok(_) => true,
+                                    Err(e) => {
+                                        let err = format_err!("ffi::add_currency, {}",e);
+                                        set_last_error(err);
+                                        false
+                                    }
+                                }
+                        });
+
+            check_result(ret);
+        }
+
+        //
+        //  publish a module file
+        //  if account_index is ASSOCIATION_ID then publish module with association root account
+        virtual void
+        publish_module(size_t account_index,
+                       std::string_view module_file_name) override
+        {
+            auto in_module_file_name = module_file_name.data();
+
+            bool ret = rust!( client_publish_module [
+                rust_violas_client : &mut ViolasClient as "void *",
+                account_index : usize as "size_t",
+                in_module_file_name : *const c_char as "const char *"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.publish_module(
+                                account_index,
+                                CStr::from_ptr(in_module_file_name).to_str().unwrap());
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::publish_module, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+        }
+        //
+        //  Execute script file with specified arguments
+        //
+        virtual void
+        execute_script(size_t account_index,
+                       std::string_view script_file_name,
+                       const std::vector<TransactionAugment> & arguments) override
+        {
+            auto in_script_file_name = script_file_name.data();
+
+            vector<string> str_args;
+            for(const auto & arg : arguments)
+            {
+                std::visit([&](auto&& var) {
+                    using T = std::decay_t<decltype(var)>;
+                    if constexpr (std::is_same_v<T,  vector<uint8_t> >)
+                    {
+                        ostringstream oss;
+                        oss << "b\"";
+                        for (uint8_t byte : var)
+                        {
+                            oss << hex << setw(2) << setfill('0') << (uint32_t)byte;
+                        }
+                        oss << "\"";
+                        str_args.push_back(oss.str());
+                    }
+                    else if constexpr (std::is_same_v<T, Address>)
+                    {
+                        ostringstream oss;
+                        oss << var;
+
+                        str_args.push_back(oss.str());
+                    }
+                    else if constexpr (std::is_same_v<T, __uint128_t>)
+                    {
+                        auto str128 = to_string((uint64_t)(var >> 64)) + to_string((uint64_t)var);
+                        str_args.push_back(str128);
+                    }
+                    else
+                    {
+                        str_args.push_back(to_string(var));
+                    }
+                }, arg);
+            }
+
+            // vector<string> str_args;
+            // for(const auto &arg : arguments)
+            // {
+            //     if constexpr (is_same<decltype(arg), const vector<uint8_t> &>::value)
+            //     {
+            //         ostringstream oss;
+            //         oss << "b\"";
+            //         for (uint8_t byte : arg.vec_u8)
+            //         {
+            //             oss << hex << setw(2) << setfill('0') << (uint32_t)byte;
+            //         }
+            //         oss << "\"";
+
+            //         str_args.push_back(oss.str());
+            //     }
+            //     else if constexpr (is_same<decltype(arg), const Address &>::value)
+            //     {
+            //         str_args.push_back(arg.address.to_string());
+            //     }
+            //     else
+            //         str_args.push_back(to_string(arg));
+            // };
+
+            bool ret = rust!( client_execute_script [
+                rust_violas_client : &mut ViolasClient as "void *",
+                account_index : usize as "size_t",
+                in_script_file_name : *const c_char as "const char *"
+                ] -> bool as "bool" {
+
+                    // let ret = rust_violas_client.execute_script_ex(
+                    //             account_index,
+                    //             CStr::from_ptr(in_script_file_name).to_str().unwrap());
+                    // match ret {
+                    //     Ok(_) => true,
+                    //     Err(e) => {
+                    //         let err = format_err!("ffi::publish_module, {}",e);
+                    //         set_last_error(err);
+                    //         false
+                    //     }
+                    // }
+
+                    true
+            });
+
+            check_result(ret);
+        }
+
         /// Add a currency to current account
         virtual void
-        add_currency(   size_t sender_account_ref_id,
+        add_currency(   size_t account_index,
                         std::string_view currency_code) override
         {
             auto in_currency_code = currency_code.data();
 
             bool ret = rust!( client_add_currency [
                                 rust_violas_client : &mut ViolasClient as "void *",
-                                sender_account_ref_id : usize as "size_t",
+                                account_index : usize as "size_t",
                                 in_currency_code : *const c_char as "const char *"
                             ] -> bool as "bool" {
 
                                 let ret = rust_violas_client.add_currency(
-                                    sender_account_ref_id,
+                                    account_index,
                                     make_currency_tag(in_currency_code),
                                     true);
                                 match ret {

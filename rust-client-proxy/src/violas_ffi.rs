@@ -550,14 +550,14 @@ pub mod x86_64 {
     #[no_mangle]
     pub fn violas_publish_module(
         raw_ptr: u64,
-        sender_ref_id: u64,
+        sender_ref_id: usize,
         module_file_name: *const c_char,
     ) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
             let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
             let module = unsafe { CStr::from_ptr(module_file_name).to_str().unwrap() };
 
-            proxy.publish_module_ex(sender_ref_id, module)
+            proxy.publish_module(sender_ref_id, module)
         });
 
         if result.is_ok() {

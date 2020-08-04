@@ -282,9 +282,9 @@ impl ViolasClient {
     /// if sender ref id is u64::MAX, then execute module with association account
     pub fn execute_script_ex(
         &mut self,
-        tags: Vec<TypeTag>,
         sender_ref_id: u64,
         script_file_name: &str,
+        tags: Vec<TypeTag>,
         args: &[&str],
     ) -> Result<()> {
         let sender = if sender_ref_id == u64::MAX {

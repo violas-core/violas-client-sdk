@@ -998,6 +998,7 @@ pub mod x86_64 {
                     vec![make_type_tag(
                         &AccountAddress::new(tag.address),
                         module_name,
+                        CStr::from_ptr(tag.name).to_str().unwrap(),
                     )]
                 };
 
@@ -1013,7 +1014,7 @@ pub mod x86_64 {
                 //
                 //  execute script
                 //
-                client.execute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
+                client.execute_script_ex(sender_ref_id, script_file_name, type_tags, &args)
             }
         });
 
@@ -1055,8 +1056,8 @@ pub mod x86_64 {
                         .iter()
                         .map(|x| {
                             let modules = CStr::from_ptr((*x).module).to_str().unwrap();
-                            let _name = CStr::from_ptr((*x).name).to_str().unwrap();
-                            make_type_tag(&AccountAddress::new((*x).address), modules)
+                            let name = CStr::from_ptr((*x).name).to_str().unwrap();
+                            make_type_tag(&AccountAddress::new((*x).address), modules, name)
                         })
                         .collect()
                 };
@@ -1078,7 +1079,7 @@ pub mod x86_64 {
                 //
                 //  execute script
                 //
-                client.execute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
+                client.execute_script_ex(sender_ref_id, script_file_name, type_tags, &args)
             }
         });
 
@@ -1115,13 +1116,12 @@ pub mod x86_64 {
                 let type_tags = if tag_len == 0 {
                     vec![]
                 } else {
-                    let slice_tags = std::slice::from_raw_parts(v_t_tags, tag_len as usize);
-                    slice_tags
+                    std::slice::from_raw_parts(v_t_tags, tag_len as usize)
                         .iter()
                         .map(|x| {
                             let modules = CStr::from_ptr((*x).module).to_str().unwrap();
-                            let _name = CStr::from_ptr((*x).name).to_str().unwrap();
-                            make_type_tag(&AccountAddress::new((*x).address), modules)
+                            let name = CStr::from_ptr((*x).name).to_str().unwrap();
+                            make_type_tag(&AccountAddress::new((*x).address), modules, name)
                         })
                         .collect()
                 };
@@ -1143,7 +1143,7 @@ pub mod x86_64 {
                 //
                 //  execute script
                 //
-                client.execute_script_ex(type_tags, sender_ref_id, script_file_name, &args)
+                client.execute_script_ex(sender_ref_id, script_file_name, type_tags, &args)
             }
         });
 
@@ -1217,6 +1217,7 @@ pub mod x86_64 {
                 let type_tag = make_type_tag(
                     &AccountAddress::new(violas_type_tag.address),
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                    CStr::from_ptr(violas_type_tag.name).to_str().unwrap(),
                 );
 
                 //
@@ -1265,6 +1266,7 @@ pub mod x86_64 {
                 let currency = make_type_tag(
                     &AccountAddress::new(violas_type_tag.address),
                     CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
+                    CStr::from_ptr(violas_type_tag.name).to_str().unwrap(),
                 );
                 // register currency
                 match proxy.add_currency_for_designated_dealer(
@@ -1304,10 +1306,8 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let type_tag = make_type_tag(
-                    &AccountAddress::new(violas_type_tag.address),
-                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
-                );
+                let type_tag =
+                    make_currency_tag(CStr::from_ptr(violas_type_tag.module).to_str().unwrap());
                 // register currency
                 match proxy.add_currency(account_index, type_tag, is_blocking) {
                     Ok(_) => true,
@@ -1342,10 +1342,8 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let type_tag = make_type_tag(
-                    &AccountAddress::new(violas_type_tag.address),
-                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
-                );
+                let type_tag =
+                    make_currency_tag(CStr::from_ptr(violas_type_tag.module).to_str().unwrap());
 
                 // register currency
                 match proxy.mint_currency(
@@ -1387,10 +1385,8 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let type_tag = make_type_tag(
-                    &AccountAddress::new(violas_type_tag.address),
-                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
-                );
+                let type_tag =
+                    make_currency_tag(CStr::from_ptr(violas_type_tag.module).to_str().unwrap());
 
                 // register currency
                 match proxy.transfer_currency(
@@ -1432,10 +1428,8 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> Option<u64> {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let tag = make_type_tag(
-                    &AccountAddress::new(violas_type_tag.address),
-                    CStr::from_ptr(violas_type_tag.module).to_str().unwrap(),
-                );
+                let tag =
+                    make_currency_tag(CStr::from_ptr(violas_type_tag.module).to_str().unwrap());
 
                 match proxy.get_balance_of_currency(tag, AccountAddress::new(*addr)) {
                     Ok(balance) => Some(balance),
@@ -1565,10 +1559,8 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let type_tag = make_type_tag(
-                    &AccountAddress::new(in_type_tag.address),
-                    CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
-                );
+                let type_tag =
+                    make_currency_tag(CStr::from_ptr(in_type_tag.module).to_str().unwrap());
 
                 let auth_key = AuthenticationKey::new(*in_auth_key);
                 // register currency
@@ -1614,10 +1606,8 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let type_tag = make_type_tag(
-                    &AccountAddress::new(in_type_tag.address),
-                    CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
-                );
+                let type_tag =
+                    make_currency_tag(CStr::from_ptr(in_type_tag.module).to_str().unwrap());
 
                 let auth_key = AuthenticationKey::new(*in_auth_key);
                 let human_name = CStr::from_ptr(in_human_name)
@@ -1680,6 +1670,7 @@ pub mod x86_64 {
                 let type_tag = make_type_tag(
                     &AccountAddress::new(in_type_tag.address),
                     CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
+                    CStr::from_ptr(in_type_tag.name).to_str().unwrap(),
                 );
 
                 let auth_key = AuthenticationKey::new(*in_auth_key);
@@ -1731,10 +1722,8 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let type_tag = make_type_tag(
-                    &AccountAddress::new(in_type_tag.address),
-                    CStr::from_ptr(in_type_tag.module).to_str().unwrap(),
-                );
+                let type_tag =
+                    make_currency_tag(CStr::from_ptr(in_type_tag.module).to_str().unwrap());
 
                 let auth_key = AuthenticationKey::new(*in_auth_key);
                 let human_name = CStr::from_ptr(in_human_name)

@@ -13,6 +13,7 @@ use std::{
     cell::RefCell,
     ffi::{CStr, CString},
     os::raw::{c_char, c_uchar},
+    slice,
     str::FromStr,
 };
 
@@ -46,7 +47,7 @@ fn free_string(s: *mut c_char) {
 
 // for Rust
 #[repr(C)]
-pub struct RustCurrencyTag {
+pub struct RustTypeTag {
     address: [c_uchar; ADDRESS_LENGTH],
     module_name: *const c_char,
     resource_name: *const c_char,
@@ -56,6 +57,18 @@ fn make_currency_tag(currency_code: *const c_char) -> TypeTag {
     unsafe {
         let code = CStr::from_ptr(currency_code).to_str().unwrap();
         violas_account::make_currency_tag(code)
+    }
+}
+
+fn make_type_tag(rust_type_tag: &RustTypeTag) -> TypeTag {
+    unsafe {
+        violas_account::make_type_tag(
+            &AccountAddress::new(rust_type_tag.address),
+            CStr::from_ptr(rust_type_tag.module_name).to_str().unwrap(),
+            CStr::from_ptr(rust_type_tag.resource_name)
+                .to_str()
+                .unwrap(),
+        )
     }
 }
 
@@ -71,12 +84,12 @@ using namespace std;
 namespace violas
 {
     // currency tag for C
-    struct CCurrencyTag {
+    struct CTypeTag {
         uint8_t address[ADDRESS_LENGTH];
         const char* module_name;
         const char* resource_name;
 
-        CCurrencyTag(const CurrencyTag & currency_tag)
+        CTypeTag(const TypeTag & currency_tag)
         {
             copy(begin(currency_tag.address), end(currency_tag.address), address);
             module_name = currency_tag.module_name.data();
@@ -420,9 +433,16 @@ namespace violas
         virtual void
         execute_script(size_t account_index,
                        std::string_view script_file_name,
+                       const std::vector<TypeTag> &type_tags,
                        const std::vector<TransactionAugment> & arguments) override
         {
             auto in_script_file_name = script_file_name.data();
+
+            vector<CTypeTag> c_type_tags;
+            for(const auto & type_tag : type_tags)
+            {
+                c_type_tags.push_back(CTypeTag(type_tag));
+            }
 
             vector<string> str_args;
             for(const auto & arg : arguments)
@@ -458,49 +478,49 @@ namespace violas
                     }
                 }, arg);
             }
+            vector<const char*> args;
+            for(const auto & arg : str_args)
+                args.push_back(arg.data());
 
-            // vector<string> str_args;
-            // for(const auto &arg : arguments)
-            // {
-            //     if constexpr (is_same<decltype(arg), const vector<uint8_t> &>::value)
-            //     {
-            //         ostringstream oss;
-            //         oss << "b\"";
-            //         for (uint8_t byte : arg.vec_u8)
-            //         {
-            //             oss << hex << setw(2) << setfill('0') << (uint32_t)byte;
-            //         }
-            //         oss << "\"";
-
-            //         str_args.push_back(oss.str());
-            //     }
-            //     else if constexpr (is_same<decltype(arg), const Address &>::value)
-            //     {
-            //         str_args.push_back(arg.address.to_string());
-            //     }
-            //     else
-            //         str_args.push_back(to_string(arg));
-            // };
+            auto in_c_type_tags = c_type_tags.data();
+            auto in_c_type_tags_len = c_type_tags.size();
+            auto in_args = args.data();
+            auto in_args_len = args.size();
 
             bool ret = rust!( client_execute_script [
                 rust_violas_client : &mut ViolasClient as "void *",
                 account_index : usize as "size_t",
-                in_script_file_name : *const c_char as "const char *"
+                in_script_file_name : *const c_char as "const char *",
+                in_c_type_tags : *const RustTypeTag as "const CTypeTag *",
+                in_c_type_tags_len : usize as "size_t",
+                in_args : *const *const c_char as "const char * *",
+                in_args_len : usize as "size_t"
                 ] -> bool as "bool" {
 
-                    // let ret = rust_violas_client.execute_script_ex(
-                    //             account_index,
-                    //             CStr::from_ptr(in_script_file_name).to_str().unwrap());
-                    // match ret {
-                    //     Ok(_) => true,
-                    //     Err(e) => {
-                    //         let err = format_err!("ffi::publish_module, {}",e);
-                    //         set_last_error(err);
-                    //         false
-                    //     }
-                    // }
+                    let type_tags : Vec<TypeTag> = slice::from_raw_parts(in_c_type_tags, in_c_type_tags_len)
+                                                            .iter()
+                                                            .map(|x| make_type_tag(x))
+                                                            .collect();
 
-                    true
+                    let args : Vec<&str> = slice::from_raw_parts(in_args, in_args_len)
+                                        .iter()
+                                        .map( |x| CStr::from_ptr(*x).to_str().unwrap() )
+                                        .collect();
+
+                    let ret = rust_violas_client.execute_script_ex(
+                                account_index as u64,
+                                CStr::from_ptr(in_script_file_name).to_str().unwrap(),
+                                type_tags,
+                                &args);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::publish_module, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+
             });
 
             check_result(ret);

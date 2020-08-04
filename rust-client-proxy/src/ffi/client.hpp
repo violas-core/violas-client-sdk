@@ -39,15 +39,15 @@ namespace violas
         AccountStatus status;
     };
 
-    struct CurrencyTag
+    struct TypeTag
     {
         Address address;
         std::string module_name;
         std::string resource_name;
 
-        CurrencyTag(Address addr,
-                    std::string_view mod,
-                    std::string_view res)
+        TypeTag(Address addr,
+                std::string_view mod,
+                std::string_view res)
             : address(addr),
               module_name(mod),
               resource_name(res)
@@ -127,12 +127,13 @@ namespace violas
         publish_module(size_t account_index,
                        std::string_view module_file_name) = 0;
 
-        using TransactionAugment = std::variant<uint8_t,
-                                                uint64_t,
-                                                __uint128_t,
-                                                Address,
-                                                std::vector<uint8_t>,
-                                                bool>;
+        using TransactionAugment = std::variant<
+            uint8_t,
+            uint64_t,
+            __uint128_t,
+            Address,
+            std::vector<uint8_t>,
+            bool>;
 
         //
         //  Execute script file with specified arguments
@@ -140,6 +141,7 @@ namespace violas
         virtual void
         execute_script(size_t account_index,
                        std::string_view module_file_name,
+                       const std::vector<TypeTag> &type_tags,
                        const std::vector<TransactionAugment> &arguments) = 0;
 
         //
@@ -148,6 +150,7 @@ namespace violas
         template <typename... Args>
         void execute_script(size_t account_index,
                             std::string_view script_file_name,
+                            const std::vector<TypeTag> &type_tags,
                             const Args &... args)
         {
             using namespace std;
@@ -160,7 +163,7 @@ namespace violas
             ((parse_arg(args)), ...);
             //(args.push_back(std::forward<TransactionAugment>(args)), ...);
 
-            execute_script(account_index, script_file_name, txn_args);
+            execute_script(account_index, script_file_name, type_tags, txn_args);
         }
 
         ///////////////////////////////////////////////////////

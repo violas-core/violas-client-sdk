@@ -550,7 +550,7 @@ impl ClientProxy {
             Some(_) => self.association_transaction_with_local_libra_root_account(
                 TransactionPayload::Script(
                     transaction_builder::encode_modify_publishing_option_script(
-                        VMPublishingOption::custom_scripts(),
+                        VMPublishingOption::open(),
                     ),
                 ),
                 is_blocking,

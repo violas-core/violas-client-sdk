@@ -2,9 +2,9 @@ echo "build oracle.move"
 ../build.sh oracle.move 0x0
 mv move_build_output/modules/0_Oracle.mv oracle.mv
 
-# echo "build modules/vls.move"
-# ../build.sh vls.move 0x0
-# mv move_build_output/modules/0_VLS.mv vls.mv
+echo "build update_exchange_rate.move"
+../build.sh update_exchange_rate.move 0x0 oracle.move
+mv move_build_output/scripts/main.mv update_exchange_rate.mv
 
 # echo "build add_currency_for_designated_dealer.move"
 # ../build.sh add_currency_for_designated_dealer.move 0x0

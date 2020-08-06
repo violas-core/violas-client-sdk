@@ -55,7 +55,7 @@ namespace violas
         }
     };
 
-    const uint64_t MICRO_COIN = 1000000;
+    const uint64_t MICRO_COIN = 1E+6;
     const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
     const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};

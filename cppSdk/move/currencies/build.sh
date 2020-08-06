@@ -13,3 +13,5 @@ mv move_build_output/scripts/main.mv add_currency_for_designated_dealer.mv
 echo "build currencies/register_currency.move"
 ../build.sh register_currency.move 0x0
 mv move_build_output/scripts/main.mv register_currency.mv
+
+rm -rf move_build_output

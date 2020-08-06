@@ -376,23 +376,24 @@ namespace violas
         virtual void
         modify_VM_publishing_option( VMPublishingOption option) override
         {
-            bool ret = rust!( client_modify_publishing_option [
-                                rust_violas_client : &mut ViolasClient as "void *",
-                                option : &PublishingOption as "VMPublishingOption"
-                            ] -> bool as "bool" {
+            bool ret = rust!( client_modify_publishing_option 
+                [
+                    rust_violas_client : &mut ViolasClient as "void *",
+                    option : &PublishingOption as "VMPublishingOption"
+                ] -> bool as "bool" {
 
-                                let ret = rust_violas_client.modify_vm_publishing_option(
-                                                option,
-                                                true);
-                                match ret {
-                                    Ok(_) => true,
-                                    Err(e) => {
-                                        let err = format_err!("ffi::add_currency, {}",e);
-                                        set_last_error(err);
-                                        false
-                                    }
-                                }
-                        });
+                        let ret = rust_violas_client.modify_vm_publishing_option(
+                                        option,
+                                        true);
+                        match ret {
+                            Ok(_) => true,
+                            Err(e) => {
+                                let err = format_err!("ffi::add_currency, {}",e);
+                                set_last_error(err);
+                                false
+                            }
+                        }
+                });
 
             check_result(ret);
         }
@@ -452,12 +453,14 @@ namespace violas
                     if constexpr (std::is_same_v<T,  vector<uint8_t> >)
                     {
                         ostringstream oss;
+
                         oss << "b\"";
                         for (uint8_t byte : var)
                         {
                             oss << hex << setw(2) << setfill('0') << (uint32_t)byte;
                         }
                         oss << "\"";
+                        
                         str_args.push_back(oss.str());
                     }
                     else if constexpr (std::is_same_v<T, Address>)

@@ -1,10 +1,10 @@
 lib_LTLIBRARIES = libviolas_sdk_jni.la
 
 if DEBUG
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/debug
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/client-proxy/target/debug
     CLIENT_PROXY = -lclient_proxy
 else
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust-client-proxy/target/release
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/client-proxy/target/release
     CLIENT_PROXY = -lclient_proxy
 endif
 

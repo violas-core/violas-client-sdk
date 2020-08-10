@@ -1596,6 +1596,7 @@ pub mod x86_64 {
     pub fn violas_create_parent_vasp_account(
         raw_client: u64,
         in_type_tag: &ViolasTypeTag,
+        sliding_nonce : u64,
         in_auth_key: &[u8; 32],
         in_human_name: *const c_char,
         in_base_url: *const c_char,
@@ -1624,6 +1625,7 @@ pub mod x86_64 {
                 // register currency
                 match proxy.create_parent_vasp_account(
                     type_tag,
+                    sliding_nonce,
                     auth_key.derived_address(),
                     auth_key.prefix().to_vec(),
                     human_name,

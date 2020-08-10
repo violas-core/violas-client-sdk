@@ -279,11 +279,10 @@ impl LibraClient {
         self.latest_epoch_change_li.as_ref()
     }
 
-    /// Latest trusted state
-    #[allow(dead_code)]    
-    pub(crate) fn trusted_state(&self) -> TrustedState {
-        self.trusted_state.clone()
-    }
+    /// Latest trusted state    
+    // pub(crate) fn trusted_state(&self) -> TrustedState {
+    //     self.trusted_state.clone()
+    // }
 
     /// Get transaction from validator by account and sequence number.
     pub fn get_txn_by_acc_seq(

@@ -717,6 +717,7 @@ impl ViolasClient {
     pub fn create_parent_vasp_account(
         &mut self,
         type_tag: TypeTag,
+        sliding_nonce: u64,
         new_account_address: AccountAddress,
         auth_key_prefix: Vec<u8>,
         human_name: Vec<u8>,
@@ -729,6 +730,7 @@ impl ViolasClient {
             Some(_) => {
                 let script = transaction_builder::encode_create_parent_vasp_account_script(
                     type_tag,
+                    sliding_nonce,
                     new_account_address,
                     auth_key_prefix,
                     human_name,

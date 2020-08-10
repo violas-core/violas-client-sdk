@@ -1,10 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    libra_client::LibraClient,
-    AccountData, AccountStatus,
-};
+use crate::{libra_client::LibraClient, AccountData, AccountStatus};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use compiled_stdlib::{transaction_scripts::StdlibScript, StdLibOptions};
 use libra_crypto::{
@@ -78,7 +75,6 @@ pub fn is_authentication_key(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AuthenticationKey::LENGTH)
 }
 
-
 /// Enum used for error formatting.
 #[derive(Debug)]
 enum InputType {
@@ -123,7 +119,7 @@ pub struct ClientProxy {
     /// Address to account_ref_id map.
     address_to_ref_id: HashMap<AccountAddress, usize>,
     /// Host that operates a faucet service
-    faucet_server: String,
+    faucet_url: Url,
     /// Account used for Libra Root operations (e.g., adding a new transaction script)
     pub libra_root_account: Option<AccountData>,
     /// Account used for "minting" operations
@@ -145,7 +141,7 @@ impl ClientProxy {
         libra_root_account_file: &str,
         testnet_designated_dealer_account_file: &str,
         sync_on_wallet_recovery: bool,
-        faucet_server: Option<String>,
+        faucet_url: Option<String>,
         mnemonic_file: Option<String>,
         waypoint: Waypoint,
     ) -> Result<Self> {
@@ -182,13 +178,11 @@ impl ClientProxy {
             Some(dd_account_data)
         };
 
-        let faucet_server = match faucet_server {
-            Some(server) => server,
-            None => url
-                .host_str()
-                .ok_or_else(|| format_err!("Missing host in URL"))?
-                .replace("client", "faucet"),
-        };
+        let faucet_url = Url::parse(&faucet_url.unwrap_or(format!(
+            "http://{}",
+            url.host_str().unwrap().replace("client", "faucet").as_str()
+        )))
+        .expect("Invalid faucet URL");
 
         let address_to_ref_id = accounts
             .iter()
@@ -201,7 +195,7 @@ impl ClientProxy {
             client,
             accounts,
             address_to_ref_id,
-            faucet_server,
+            faucet_url,
             libra_root_account,
             testnet_designated_dealer_account: dd_account,
             wallet: Self::get_libra_wallet(mnemonic_file)?,
@@ -550,7 +544,7 @@ impl ClientProxy {
             Some(_) => self.association_transaction_with_local_libra_root_account(
                 TransactionPayload::Script(
                     transaction_builder::encode_modify_publishing_option_script(
-                        VMPublishingOption::open(),
+                        VMPublishingOption::custom_scripts(),
                     ),
                 ),
                 is_blocking,
@@ -744,55 +738,6 @@ impl ClientProxy {
     }
 
     /// Waits for the next transaction for a specific address and prints it
-    pub fn _wait_for_transaction(
-        &mut self,
-        account: AccountAddress,
-        sequence_number: u64,
-    ) -> Result<()> {
-        let mut max_iterations = 5000;
-        println!(
-            "waiting for {} with sequence number {}",
-            account, sequence_number
-        );
-        loop {
-            stdout().flush().unwrap();
-
-            match self
-                .client
-                .get_txn_by_acc_seq(account, sequence_number - 1, true)
-            {
-                Ok(Some(txn_view)) => {
-                    println!();
-                    if txn_view.vm_status == VMStatusView::Executed {
-                        println!("transaction executed!");
-                        if txn_view.events.is_empty() {
-                            println!("no events emitted");
-                        }
-                        break Ok(());
-                    } else {
-                        break Err(format_err!(
-                            "transaction failed to execute; status: {:?}!",
-                            txn_view.vm_status
-                        ));
-                    }
-                }
-                Err(e) => {
-                    println!();
-                    println!("Response with error: {:?}", e);
-                }
-                _ => {
-                    print!(".");
-                }
-            }
-            max_iterations -= 1;
-            if max_iterations == 0 {
-                panic!("wait_for_transaction timeout");
-            }
-            thread::sleep(time::Duration::from_millis(10));
-        }
-    }
-
-    /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(
         &mut self,
         account: AccountAddress,
@@ -828,7 +773,7 @@ impl ClientProxy {
             thread::sleep(time::Duration::from_millis(10));
         }
     }
-    
+
     /// Transfer num_coins from sender account to receiver. If is_blocking = true,
     /// it will keep querying validator till the sequence number is bumped up in validator.
     pub fn transfer_coins_int(
@@ -1550,7 +1495,7 @@ impl ClientProxy {
         let client = reqwest::blocking::ClientBuilder::new().build()?;
 
         let url = Url::parse_with_params(
-            format!("http://{}", self.faucet_server).as_str(),
+            self.faucet_url.as_str(),
             &[
                 ("amount", num_coins.to_string().as_str()),
                 ("auth_key", &hex::encode(receiver)),

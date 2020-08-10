@@ -10,10 +10,10 @@
             "name": "Launch violas_client",
             "program": "${workspaceFolder}/build/debug/bin/violas_client",
             "args": [
-                "http://localhost:44187",
+                "http://localhost:39521",
                 "/tmp/libra/mint.key",
                 "waypoint",
-                "0:42f66f4b67e09cfe16c3acb3a6dead515f8ed5ba12c1aa01863a1501f519119d",
+                "0:de90e17cbc9a2918a26df3e3316894ccc10c93dc0657bb60c41496450fe13d29",
                 "4"
             ],
             "cwd": "${workspaceFolder}/build/debug"

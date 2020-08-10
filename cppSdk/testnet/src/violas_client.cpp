@@ -73,8 +73,7 @@ int main(int argc, const char *argv[])
                 "Please input index : ";
 
         int index;
-        cin >> index;
-        cout << endl;
+        cin >> index;        
 
         handlers[index]();
     }
@@ -88,27 +87,35 @@ int main(int argc, const char *argv[])
 
 void initialize_all_currencies(client_ptr client)
 {
+    cout << color::RED << "initialize all currencies ..." << color::RESET << endl;
+
     auto accounts = client->get_all_accounts();
 
     for (auto currency_code : currency_codes)
     {
+        cout << color::GREEN << currency_code << color::RESET << "\t: " ;
+        
         client->publish_curency(currency_code);
-
+        cout << "published, "; 
+        
         client->register_currency(currency_code,
                                   1,
                                   2,
                                   false,
                                   1000000,
                                   100);
+        cout << "registered, ";
 
         client->add_currency_for_designated_dealer(currency_code,
                                                    TESTNET_DD_ADDRESS);
+        cout << "added currency for DD account, ";
 
         client->mint_currency_for_designated_dealer(currency_code,
                                                     0,
                                                     TESTNET_DD_ADDRESS,
                                                     1000000 * MICRO_COIN,
                                                     3);
+        cout << "minted 1,00,000 coins to DD account " << endl;
     }
 }
 

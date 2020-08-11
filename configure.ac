@@ -63,7 +63,7 @@ AM_SILENT_RULES([yes])
 LT_INIT
 
 AC_CONFIG_FILES([Makefile
-                cppSdk/src/Makefile               
-                cppSdk/testnet/src/Makefile
-                Java/src/jni/Makefile])
+                cpp/src/Makefile               
+                cpp/testnet/src/Makefile
+                java/src/jni/Makefile])
 AC_OUTPUT

@@ -9,19 +9,19 @@ else
 endif
 
 testnet_SOURCES = test_violas.cpp test_libra.cpp test_exchange.cpp test_bank.cpp main.cpp
-testnet_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cppSdk/src
+testnet_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cpp/src
 testnet_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib \
-                  -L$(top_builddir)/cppSdk/src/.libs $(CLIENT_PROXY_PATH) 
+                  -L$(top_builddir)/cpp/src/.libs $(CLIENT_PROXY_PATH) 
 testnet_LDADD = -lviolas_sdk -llibra_sdk $(CLIENT_PROXY) -lstdc++fs
 
 test_jni_SOURCES = test_violas.cpp test_libra.cpp test_exchange.cpp test_bank.cpp main.cpp
-test_jni_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cppSdk/src
+test_jni_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cpp/src
 test_jni_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib \
                   -L../../src/.libs -L../../../lib $(CLIENT_PROXY_PATH)                  
 test_jni_LDADD = -lviolas_sdk_jni -lviolas_sdk -llibra_sdk $(CLIENT_PROXY) -lstdc++fs
 
 transfer_SOURCES = transfer.cpp
-transfer_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cppSdk/src
+transfer_CXXFLAGS= -std=c++17 -I$(top_srcdir)/cpp/src
 transfer_LDFLAGS = -Wl,-rpath=./bin,-rpath=../bin,-rpath=/usr/local/lib \
                   -L../../src/.libs $(CLIENT_PROXY_PATH) 
 transfer_LDADD = -lviolas_sdk $(CLIENT_PROXY) -lstdc++fs

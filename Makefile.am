@@ -1,4 +1,4 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS =   cppSdk/src \
-            Java/src/jni \
-            cppSdk/testnet/src
+SUBDIRS =   cpp/src \
+            java/src/jni \
+            cpp/testnet/src

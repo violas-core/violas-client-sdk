@@ -13,12 +13,11 @@ use 0x1::Event::{ Self, EventHandle };
     struct UpdateEvent {
         value : FixedPoint32,
         timestamp : u64,
-        currency_code1 : vector<u8>,
-        currency_code2 : vector<u8>,
+        currency_code : vector<u8>        
     }
 
     /// Exchange rate for a pair of currencies, such as  EUR / USD
-    resource struct ExchangeRate<CoinType1, CoinType2> { 
+    resource struct ExchangeRate<CoinType> { 
         value : FixedPoint32,
         timestamp : u64,    //Unix time in microseconds
         /// Event stream for updating exchange rate and where `update_exchange_rate`s will be emitted.
@@ -28,21 +27,20 @@ use 0x1::Event::{ Self, EventHandle };
     const EINVALID_SINGLETON_ADDRESS: u64 = 0;
     const ENOT_A_REGISTERED_CURRENCY: u64 = 1;
 
-    fun emit_updating_events<CoinType1, CoinType2>( exchange_rate: &mut ExchangeRate<CoinType1, CoinType2>)
+    fun emit_updating_events<CoinType>( exchange_rate: &mut ExchangeRate<CoinType>)
     {
         Event::emit_event(
                 &mut exchange_rate.update_events,                
                 UpdateEvent {                    
                     value : *& exchange_rate.value,
                     timestamp : exchange_rate.timestamp,
-                    currency_code1 : Libra::currency_code<CoinType1>(),
-                    currency_code2 : Libra::currency_code<CoinType2>(),
+                    currency_code : Libra::currency_code<CoinType>()                    
                 }
             );
     }
 
     /// update exchange rate, if the curreny pair doesn't exist the create it 
-    public fun update_exchange_rate<CoinType1, CoinType2>(
+    public fun update_exchange_rate<CoinType>(
         lr_account : &signer, 
         numerator : u64, 
         denominator: u64
@@ -52,11 +50,10 @@ use 0x1::Event::{ Self, EventHandle };
             EINVALID_SINGLETON_ADDRESS
         );        
 
-        assert(Libra::is_currency<CoinType1>(), ENOT_A_REGISTERED_CURRENCY);
-        assert(Libra::is_currency<CoinType2>(), ENOT_A_REGISTERED_CURRENCY);
+        assert(Libra::is_currency<CoinType>(), ENOT_A_REGISTERED_CURRENCY);        
 
-        if(!exists<ExchangeRate<CoinType1, CoinType2>>(CoreAddresses::LIBRA_ROOT_ADDRESS())) {
-            let exchange_rate = ExchangeRate<CoinType1, CoinType2> {
+        if(!exists<ExchangeRate<CoinType>>(CoreAddresses::LIBRA_ROOT_ADDRESS())) {
+            let exchange_rate = ExchangeRate<CoinType> {
                 value : FixedPoint32::create_from_rational(numerator, denominator), 
                 timestamp : LibraTimestamp::now_microseconds(),
                 update_events : Event::new_event_handle<UpdateEvent>(lr_account)
@@ -70,7 +67,7 @@ use 0x1::Event::{ Self, EventHandle };
                 );
         }
         else {
-            let exchange_rate = borrow_global_mut<ExchangeRate<CoinType1, CoinType2>>(CoreAddresses::LIBRA_ROOT_ADDRESS());
+            let exchange_rate = borrow_global_mut<ExchangeRate<CoinType>>(CoreAddresses::LIBRA_ROOT_ADDRESS());
 
             exchange_rate.value = FixedPoint32::create_from_rational(numerator, denominator);
             exchange_rate.timestamp = LibraTimestamp::now_microseconds();
@@ -80,12 +77,11 @@ use 0x1::Event::{ Self, EventHandle };
         
     }
 
-    public fun get_exchange_rate<CoinType1, CoinType2>() : (FixedPoint32, u64) acquires ExchangeRate    
+    public fun get_exchange_rate<CoinType>() : (FixedPoint32, u64) acquires ExchangeRate    
     {
-        assert(Libra::is_currency<CoinType1>(), ENOT_A_REGISTERED_CURRENCY);
-        assert(Libra::is_currency<CoinType2>(), ENOT_A_REGISTERED_CURRENCY);
+        assert(Libra::is_currency<CoinType>(), ENOT_A_REGISTERED_CURRENCY);        
 
-        let exchange_rate = borrow_global<ExchangeRate<CoinType1, CoinType2>>(CoreAddresses::LIBRA_ROOT_ADDRESS());
+        let exchange_rate = borrow_global<ExchangeRate<CoinType>>(CoreAddresses::LIBRA_ROOT_ADDRESS());
 
         (*&exchange_rate.value, exchange_rate.timestamp)
     }

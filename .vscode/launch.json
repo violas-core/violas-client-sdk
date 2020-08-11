@@ -7,6 +7,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "oracle-service",
+            "program": "${workspaceFolder}/rust/oracle-service/target/debug/oracle-service",
+            "args": [
+                "publish",
+                "-u",
+                "http://localhost:8080",
+                "-m",
+                "/tmp/libra/mint.key",
+                "--waypoint",
+                "0:466c8d398da5292daaa29f028ee300f5b0458a7faa16792e3b5cf16caf5a58a7",
+                "--chain-id",
+                "4"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Launch violas_client",
             "program": "${workspaceFolder}/build/debug/bin/violas_client",
             "args": [

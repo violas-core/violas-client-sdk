@@ -853,4 +853,58 @@ impl ViolasClient {
             None => unimplemented!(),
         }
     }
+
+    /// publish oracle move module
+    pub fn publish_oracle(&mut self) -> Result<()> {
+        let module_bytecode = fs::read(
+            "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/oracle.mv",
+        )?;
+        // let module_bytecode = vec![
+        //     161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 16, 8, 22, 16, 10, 38, 5, 0,
+        //     0, 0, 0, 2, 0, 3, 86, 76, 83, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101, 108, 100,
+        //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0,
+        // ];
+
+        match self.libra_root_account {
+            Some(_) => self
+                .libra_client_proxy
+                .association_transaction_with_local_libra_root_account(
+                    TransactionPayload::Module(Module::new(module_bytecode)),
+                    true,
+                ),
+            None => unimplemented!(),
+        }
+    }
+
+    /// update oracle currency exchange rate
+    pub fn update_oracle_exchange_rate(
+        &mut self,
+        currency: TypeTag,
+        exchange_rate: f64,
+        is_blocking: bool,
+    ) -> Result<()> {
+        let script_bytecode = fs::read(
+            "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
+        )?;
+        //let script_bytecode = vec![];
+        let numerator = (exchange_rate * 1E+18_f64) as u64;
+        let denominator = 1E+18 as u64;
+
+        let script = Script::new(
+            script_bytecode,
+            vec![currency],
+            vec![
+                TransactionArgument::U64(numerator),
+                TransactionArgument::U64(denominator),
+            ],
+        );
+
+        match self.libra_root_account {
+            Some(_) => self.association_transaction_with_local_libra_root_account(
+                TransactionPayload::Script(script),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
 }

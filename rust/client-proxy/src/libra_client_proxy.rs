@@ -52,7 +52,6 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt, fs,
-    io::{stdout, Write},
     path::{Path, PathBuf},
     process::Command,
     str::{self, FromStr},

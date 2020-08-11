@@ -75,6 +75,8 @@ int main(int argc, const char *argv[])
         int index;
         cin >> index;        
 
+        client->modify_VM_publishing_option(Client::PublishingOption::open);
+
         handlers[index]();
     }
     catch (const std::exception &e)
@@ -115,7 +117,7 @@ void initialize_all_currencies(client_ptr client)
                                                     TESTNET_DD_ADDRESS,
                                                     1000000 * MICRO_COIN,
                                                     3);
-        cout << "minted 1,00,000 coins to DD account " << endl;
+        cout << "minted 1,000,000 coins to DD account " << endl;
     }
 }
 

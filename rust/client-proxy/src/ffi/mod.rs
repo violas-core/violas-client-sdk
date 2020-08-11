@@ -374,16 +374,18 @@ namespace violas
         //  Modify VM publishing option
         //
         virtual void
-        modify_VM_publishing_option( VMPublishingOption option) override
+        modify_VM_publishing_option(PublishingOption option) override
         {
+            const auto in_option = &option;
+
             bool ret = rust!( client_modify_publishing_option 
                 [
                     rust_violas_client : &mut ViolasClient as "void *",
-                    option : &PublishingOption as "VMPublishingOption"
+                    in_option : *const PublishingOption as "const PublishingOption*"
                 ] -> bool as "bool" {
 
                         let ret = rust_violas_client.modify_vm_publishing_option(
-                                        option,
+                                        &*in_option,
                                         true);
                         match ret {
                             Ok(_) => true,

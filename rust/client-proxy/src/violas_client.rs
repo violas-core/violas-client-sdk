@@ -55,7 +55,7 @@ impl DerefMut for ViolasClient {
     }
 }
 
-//#[repr(C)]
+#[repr(C)]
 pub enum PublishingOption {
     //locked,
     Open,

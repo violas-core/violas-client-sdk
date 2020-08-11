@@ -1,5 +1,3 @@
-天津 IP：125.39.5.57   port：40001
-
 内部测试节点   端口：40001
 0 Azure-英国西部-线上  | 51.140.241.96
 1 Azure-美国东部-线上  | 13.68.141.242
@@ -21,3 +19,6 @@ bin/testnet  http://47.93.114.230:50001 mint_beijing.key waypoint "0:d56a77989f9
 
 内部测试链
 bin/testnet http://51.140.241.96:50001  mint_test.key waypoint "0:4e16e966cae7766595a59a2079a1e4c7fc86781a3986bc9b3e70c9855ddf8665" 
+
+Debug
+bin/violas_client http://localhost:8080 /tmp/libra/mint.key waypoint 0:466c8d398da5292daaa29f028ee300f5b0458a7faa16792e3b5cf16caf5a58a7 4

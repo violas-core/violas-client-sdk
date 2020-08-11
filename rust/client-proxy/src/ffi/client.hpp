@@ -108,9 +108,9 @@ namespace violas
         ////////////////////////////////////////////////////////////////
         //  management methods
         ////////////////////////////////////////////////////////////////
-        enum VMPublishingOption
+        enum PublishingOption
         {
-            locked,
+            //locked,
             open,
             custom_script
         };
@@ -118,7 +118,7 @@ namespace violas
         //  Modify VM publishing option
         //  note that calling method needs association privilege
         virtual void
-        modify_VM_publishing_option(VMPublishingOption option) = 0;
+        modify_VM_publishing_option(PublishingOption option) = 0;
 
         //
         //  publish a module file

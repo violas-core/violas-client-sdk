@@ -16,7 +16,7 @@ use 0x1::Event::{ Self, EventHandle };
         currency_code : vector<u8>        
     }
 
-    /// Exchange rate for a pair of currencies, such as  EUR / USD
+    /// Exchange rate for a currency / USD
     resource struct ExchangeRate<CoinType> { 
         value : FixedPoint32,
         timestamp : u64,    //Unix time in microseconds

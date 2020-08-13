@@ -7,10 +7,10 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "oracle-service",
-            "program": "${workspaceFolder}/rust/oracle-service/target/debug/oracle-service",
+            "name": "violas-oracle",
+            "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle",
             "args": [
-                "service",
+                "test",
                 "-u",
                 "http://localhost:8080",
                 "-m",

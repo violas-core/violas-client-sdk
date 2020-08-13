@@ -47,8 +47,13 @@ enum Command {
         help = "publish Oracle Move contract to Violas blockchain."
     )]
     Publish(Args),
+    /// update
     #[structopt(name = "update")]
     Update(Args),
+    /// test
+    #[structopt(name = "test")]
+    Test(Args),
+    /// service
     #[structopt(name = "service")]
     Service(Args),
 }
@@ -98,17 +103,20 @@ async fn main() -> Result<()> {
                 update_oracle_exchange_rates(&mut client, rates)
             })?;
         }
-        Command::Service(args) => {
+        Command::Test(args) => {
             //task
             task::block_in_place(|| -> Result<()> {
                 let mut client = create_client(args)?;
 
                 //curl https://api.coinbase.com/v2/exchange-rates?currency=EUR | grep GBP
-                run_test_exchange(&mut client, "EUR", 1_000, "GBP", 904)?;
+                run_test_exchange(&mut client, "EUR", 100_000_000, "GBP")?;
 
-                oracle_view_exchange(&mut client, "BTC")
+                oracle_view_exchange(&mut client, "BTC")?;
+
+                Ok(())
             })?;
         }
+        Command::Service(_args) => {}
     }
 
     Ok(())
@@ -163,7 +171,7 @@ struct ExchangeRateReource {
     update_events: EventHandle,
 }
 
-fn oracle_view_exchange(client: &mut ViolasClient, currency_code: &str) -> Result<()> {
+fn oracle_view_exchange(client: &mut ViolasClient, currency_code: &str) -> Result<Option<f64>> {
     let ex_rate: Option<ExchangeRateReource> = client.get_account_resource(
         &libra_root_address(),
         &make_struct_tag(
@@ -174,16 +182,14 @@ fn oracle_view_exchange(client: &mut ViolasClient, currency_code: &str) -> Resul
         ),
     )?;
 
-    match ex_rate {
-        Some(rate) => println!(
-            "{} : {}",
-            currency_code,
-            (rate.fixed_point32 as f64) / (0x100000000_u64 as f64)
-        ),
-        None => println!("EUR {:?}", ex_rate),
-    }
+    let rate: Option<f64> = match ex_rate {
+        Some(rate) => Some((rate.fixed_point32 as f64) / (0x100000000_u64 as f64)),
+        None => None,
+    };
 
-    Ok(())
+    println!("{} : {}", currency_code, rate.unwrap());
+
+    Ok(rate)
 }
 
 fn run_test_exchange(
@@ -191,11 +197,13 @@ fn run_test_exchange(
     currency_code1: &str,
     amount_crc1: u64,
     currency_code2: &str,
-    amount_crc2: u64,
+    //amount_crc2: u64,
 ) -> Result<()> {
+    let rate1 = oracle_view_exchange(client, currency_code1)?.unwrap();
+    let rate2 = oracle_view_exchange(client, currency_code2)?.unwrap();
 
-    oracle_view_exchange(client, currency_code1)?;
-    oracle_view_exchange(client, currency_code2)?;
+    let amount_crc2 = (amount_crc1 as f64 * rate1 / rate2) as u64;
+    println!("The exchanged amount of coin2 is {}", amount_crc2);
 
     client.execute_script_json(
         u64::MAX,

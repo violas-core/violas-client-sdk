@@ -1,5 +1,5 @@
 [package]
-name = "oracle-service"
+name = "violas-oracle"
 version = "0.1.0"
 authors = ["HunterSun2018 <sht@palliums.org>"]
 edition = "2018"

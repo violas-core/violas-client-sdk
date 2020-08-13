@@ -29,17 +29,34 @@ use serde::{Deserialize, Serialize};
 //     }
 // }
 
-pub fn make_type_tag(addr: &AccountAddress, currency_code: &str, res_name: &str) -> TypeTag {
-    TypeTag::Struct(StructTag {
+/// make struct tag
+pub fn make_struct_tag(
+    addr: &AccountAddress,
+    module: &str,
+    resource: &str,
+    type_params: Vec<TypeTag>,
+) -> StructTag {
+    StructTag {
         address: *addr,
-        module: from_currency_code_string(currency_code).unwrap(),
-        name: from_currency_code_string(res_name).unwrap(),
-        type_params: vec![],
-    })
+        module: from_currency_code_string(module).unwrap(),
+        name: from_currency_code_string(resource).unwrap(),
+        type_params,
+    }
 }
 
+/// make type tag
+pub fn make_type_tag(addr: &AccountAddress, module: &str, resource: &str) -> TypeTag {
+    TypeTag::Struct(make_struct_tag(addr, module, resource, vec![]))
+}
+
+/// make currency tag
 pub fn make_currency_tag(currency_code: &str) -> TypeTag {
-    make_type_tag(&CORE_CODE_ADDRESS, currency_code, currency_code)
+    TypeTag::Struct(make_struct_tag(
+        &CORE_CODE_ADDRESS,
+        currency_code,
+        currency_code,
+        vec![],
+    ))
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

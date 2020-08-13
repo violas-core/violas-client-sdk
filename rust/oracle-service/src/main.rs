@@ -1,13 +1,23 @@
-//#[macro_use]
-//extern crate serde_derive;
-
+use anyhow::Result; //bail, ensure, format_err,
 use bytes::buf::BufExt as _;
-use client_proxy::{violas_account::make_currency_tag, violas_client::ViolasClient};
+use client_proxy::{
+    violas_account::{make_currency_tag, make_struct_tag},
+    violas_client::ViolasClient,
+};
 use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
-use libra_types::{chain_id::ChainId, waypoint::Waypoint};
+//use libra_json_rpc::views::BytesView;
+use libra_types::{
+    account_config::{libra_root_address, CORE_CODE_ADDRESS},
+    chain_id::ChainId,
+    event::EventHandle,
+    transaction::TransactionArgument,
+    waypoint::Waypoint,
+};
+use serde::{Deserialize, Serialize};
 use std::{str::FromStr, string::String, time::Duration};
 use structopt::StructOpt;
+use tokio::task;
 
 #[derive(Clone, Debug, StructOpt)]
 struct Args {
@@ -43,7 +53,7 @@ enum Command {
     Service(Args),
 }
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+//type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 //
 // main
@@ -73,26 +83,33 @@ async fn main() -> Result<()> {
 
     match command {
         Command::Publish(args) => {
-            let client = create_client(args)?;
-            publish_oracle(client).await?;
+            //let client = create_client(args)?;
+            task::block_in_place(|| -> Result<()> {
+                let mut client = create_client(args)?;
+                client.publish_oracle()
+            })?;
         }
         Command::Update(args) => {
-            let ret = gather_exchange_rate_from_coinbase().await;
-            match ret {
-                Ok(rates) => {
-                    //println!("{:?}", rates.await);
-                    let client = create_client(args)?;
-                    update_oracle_exchange_rates(client, rates).await?;
-                }
-                Err(e) => {
-                    println! {"failed to gather data from coinbase, {}", e};
-                }
-            }
+            let rates = gather_exchange_rate_from_coinbase().await?;
+
+            task::block_in_place(|| -> Result<()> {
+                let mut client = create_client(args)?;
+
+                update_oracle_exchange_rates(&mut client, rates)
+            })?;
         }
         Command::Service(args) => {
-            let _client = create_client(args);
+            //task
+            task::block_in_place(|| -> Result<()> {
+                let mut client = create_client(args)?;
+
+                //curl https://api.coinbase.com/v2/exchange-rates?currency=EUR | grep GBP
+                run_test_exchange(&mut client, "EUR", 1_000, "GBP", 904)?;
+
+                oracle_view_exchange(&mut client, "BTC")
+            })?;
         }
-    }    
+    }
 
     Ok(())
 }
@@ -109,7 +126,7 @@ async fn gather_exchange_rate_from_coinbase() -> Result<Vec<(String, f64)>> {
 
     let data: serde_json::Value = serde_json::from_reader(body.reader())?;
 
-    let syms = vec!["BTC", "EUR", "GBP", "SGD", "JPY", "CNY"];
+    let syms = vec!["BTC", "USD", "EUR", "GBP", "SGD"]; //"JPY", "CNY"
 
     let rates: Vec<(String, f64)> = syms
         .iter()
@@ -127,23 +144,76 @@ async fn gather_exchange_rate_from_coinbase() -> Result<Vec<(String, f64)>> {
     Ok(rates)
 }
 
-async fn update_oracle_exchange_rates(
-    mut client: ViolasClient,
+fn update_oracle_exchange_rates(
+    client: &mut ViolasClient,
     crc_code_rates: Vec<(String, f64)>,
 ) -> Result<()> {
     for code_rate in crc_code_rates {
         let (currency_code, rate) = code_rate;
-        client.update_oracle_exchange_rate(
-            make_currency_tag(currency_code.as_str()),
-            rate,
-            true,
-        )?;
+        client.update_oracle_exchange_rate(make_currency_tag(currency_code.as_str()), rate, true)?
     }
 
     Ok(())
 }
 
-async fn publish_oracle(mut client: ViolasClient) -> Result<()> {
-    client.publish_oracle()?;
+#[derive(Serialize, Debug, Deserialize)]
+struct ExchangeRateReource {
+    pub fixed_point32: u64,
+    pub timestamp: u64,
+    update_events: EventHandle,
+}
+
+fn oracle_view_exchange(client: &mut ViolasClient, currency_code: &str) -> Result<()> {
+    let ex_rate: Option<ExchangeRateReource> = client.get_account_resource(
+        &libra_root_address(),
+        &make_struct_tag(
+            &CORE_CODE_ADDRESS,
+            "Oracle",
+            "ExchangeRate",
+            vec![make_currency_tag(currency_code)],
+        ),
+    )?;
+
+    match ex_rate {
+        Some(rate) => println!(
+            "{} : {}",
+            currency_code,
+            (rate.fixed_point32 as f64) / (0x100000000_u64 as f64)
+        ),
+        None => println!("EUR {:?}", ex_rate),
+    }
+
+    Ok(())
+}
+
+fn run_test_exchange(
+    client: &mut ViolasClient,
+    currency_code1: &str,
+    amount_crc1: u64,
+    currency_code2: &str,
+    amount_crc2: u64,
+) -> Result<()> {
+
+    oracle_view_exchange(client, currency_code1)?;
+    oracle_view_exchange(client, currency_code2)?;
+
+    client.execute_script_json(
+        u64::MAX,
+        "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/test_exchange_rate.mv",
+        vec![
+            make_currency_tag(currency_code1),
+            make_currency_tag(currency_code2),
+        ],
+        vec![
+            TransactionArgument::U64(amount_crc1),
+            TransactionArgument::U64(amount_crc2),
+        ],
+    )?;
+
+    println!(
+        "{}({}) -> {}({})",
+        currency_code1, amount_crc1, currency_code2, amount_crc2
+    );
+
     Ok(())
 }

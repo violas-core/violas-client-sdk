@@ -19,6 +19,7 @@ serde_derive = "1.0"
 structopt = "0.3"
 client-proxy = { path = "../client-proxy", version = "0.1.0" }
 libra-types = { path = "../../../libra/types", version = "0.1.0" }
+#libra-json-rpc = { path = "../../../libra/json-rpc", version = "0.1.0"}
 
 [profile.release]
 panic = 'abort'

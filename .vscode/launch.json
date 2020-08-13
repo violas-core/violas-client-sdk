@@ -10,14 +10,14 @@
             "name": "oracle-service",
             "program": "${workspaceFolder}/rust/oracle-service/target/debug/oracle-service",
             "args": [
-                "publish",
+                "service",
                 "-u",
                 "http://localhost:8080",
                 "-m",
                 "/tmp/libra/mint.key",
-                "--waypoint",
+                "-w",
                 "0:466c8d398da5292daaa29f028ee300f5b0458a7faa16792e3b5cf16caf5a58a7",
-                "--chain-id",
+                "-c",
                 "4"
             ],
             "cwd": "${workspaceFolder}"

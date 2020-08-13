@@ -378,7 +378,7 @@ namespace violas
         {
             const auto in_option = &option;
 
-            bool ret = rust!( client_modify_publishing_option 
+            bool ret = rust!( client_modify_publishing_option
                 [
                     rust_violas_client : &mut ViolasClient as "void *",
                     in_option : *const PublishingOption as "const PublishingOption*"
@@ -462,7 +462,6 @@ namespace violas
                             oss << hex << setw(2) << setfill('0') << (uint32_t)byte;
                         }
                         oss << "\"";
-                        
                         str_args.push_back(oss.str());
                     }
                     else if constexpr (std::is_same_v<T, Address>)

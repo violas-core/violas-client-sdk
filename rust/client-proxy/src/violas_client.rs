@@ -887,8 +887,8 @@ impl ViolasClient {
             "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
         )?;
         //let script_bytecode = vec![];
-        let numerator = (exchange_rate * 1E+18_f64) as u64;
-        let denominator = 1E+18 as u64;
+        let numerator = (exchange_rate * 1E+9_f64) as u64;
+        let denominator = 1E+9 as u64;
 
         let script = Script::new(
             script_bytecode,

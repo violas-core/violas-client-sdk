@@ -39,7 +39,7 @@ use 0x1::Event::{ Self, EventHandle };
             );
     }
 
-    /// update exchange rate, if the curreny pair doesn't exist the create it 
+    /// update exchange rate, if the exchange rate for CoinType doesn't exist then create it 
     public fun update_exchange_rate<CoinType>(
         lr_account : &signer, 
         numerator : u64, 
@@ -77,6 +77,7 @@ use 0x1::Event::{ Self, EventHandle };
         
     }
 
+    /// get exchange rate for CoinType
     public fun get_exchange_rate<CoinType>() : (FixedPoint32, u64) acquires ExchangeRate    
     {
         assert(Libra::is_currency<CoinType>(), ENOT_A_REGISTERED_CURRENCY);        

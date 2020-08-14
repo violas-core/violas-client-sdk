@@ -32,6 +32,8 @@ use std::{
 };
 use transaction_builder;
 
+pub const VIOLAS_ROOT_ACCOUNT_ID: u64 = u64::MAX;
+
 ///
 /// struct ViolasClient
 ///
@@ -321,10 +323,22 @@ impl ViolasClient {
         resp
     }
     /// execute script with json format
-    pub fn execute_script_json(
+    pub fn execute_script_file(
         &mut self,
         sender_ref_id: u64,
         script_file_name: &str,
+        tags: Vec<TypeTag>,
+        args: Vec<TransactionArgument>,
+    ) -> Result<()> {
+        let script_bytecode = fs::read(script_file_name)?;
+        self.execute_script_raw(sender_ref_id, script_bytecode, tags, args)
+    }
+
+    /// execute script with json format
+    pub fn execute_script_raw(
+        &mut self,
+        sender_ref_id: u64,
+        script_bytecode: Vec<u8>,
         tags: Vec<TypeTag>,
         script_arguments: Vec<TransactionArgument>,
     ) -> Result<()> {
@@ -337,8 +351,8 @@ impl ViolasClient {
             self.accounts.get(sender_ref_id as usize).unwrap()
         };
 
-        let script_bytes = fs::read(script_file_name)?;
-        let program = TransactionPayload::Script(Script::new(script_bytes, tags, script_arguments));
+        let program =
+            TransactionPayload::Script(Script::new(script_bytecode, tags, script_arguments));
         let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
         let sender_address = sender.address;
         let sequence_number = sender.sequence_number;
@@ -856,9 +870,8 @@ impl ViolasClient {
 
     /// publish oracle move module
     pub fn publish_oracle(&mut self) -> Result<()> {
-        let module_bytecode = fs::read(
-            "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/oracle.mv",
-        )?;
+        let module_bytecode =
+            fs::read("/home/hunter/Projects/work/ViolasClientSdk/move/oracle/oracle.mv")?;
         // let module_bytecode = vec![
         //     161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 16, 8, 22, 16, 10, 38, 5, 0,
         //     0, 0, 0, 2, 0, 3, 86, 76, 83, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101, 108, 100,
@@ -883,10 +896,16 @@ impl ViolasClient {
         exchange_rate: f64,
         is_blocking: bool,
     ) -> Result<()> {
-        let script_bytecode = fs::read(
-            "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
-        )?;
-        //let script_bytecode = vec![];
+        // let script_bytecode = fs::read(
+        //     "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
+        // )?;
+        let script_bytecode = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 9, 7, 19, 28, 8, 47,
+            16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 3, 6, 12, 3, 3, 0, 1, 9, 0, 6, 79, 114, 97, 99, 108,
+            101, 20, 117, 112, 100, 97, 116, 101, 95, 101, 120, 99, 104, 97, 110, 103, 101, 95,
+            114, 97, 116, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 5, 11,
+            0, 10, 1, 10, 2, 56, 0, 2,
+        ];
         let numerator = (exchange_rate * 1E+9_f64) as u64;
         let denominator = 1E+9 as u64;
 

@@ -10,7 +10,7 @@
             "name": "violas-oracle",
             "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle",
             "args": [
-                "test",
+                "publish",
                 "-u",
                 "http://localhost:8080",
                 "-m",

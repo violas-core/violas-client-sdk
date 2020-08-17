@@ -79,17 +79,14 @@ async fn main() -> Result<()> {
         Command::Publish(args) => {
             //let client = create_client(args)?;
             task::block_in_place(|| -> Result<()> {
-                println!("Pleae input Oracle module path and file name : ");
+                println!("Pleae input module path and file name : ");
                 let mut oracle_module_file = String::new();
                 std::io::stdin().read_line(&mut oracle_module_file)?;
                 // remove char '\n'
-                oracle_module_file.trim(); //(oracle_module_file.len()-1);
+                oracle_module_file.remove(oracle_module_file.len() - 1);
 
                 let mut oracle = create_oracle(args)?;
 
-                // oracle_module_file = String::from_str(
-                //     "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/oracle.mv",
-                // )?;
                 oracle.publish(oracle_module_file.as_str())
             })?;
         }

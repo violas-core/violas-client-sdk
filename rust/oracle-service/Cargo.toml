@@ -17,6 +17,7 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 structopt = "0.3"
+daemonize = "0.4"
 client-proxy = { path = "../client-proxy", version = "0.1.0" }
 libra-types = { path = "../../../libra/types", version = "0.1.0" }
 #libra-json-rpc = { path = "../../../libra/json-rpc", version = "0.1.0"}

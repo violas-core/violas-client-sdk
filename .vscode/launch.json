@@ -6,11 +6,23 @@
     "configurations": [
         {
             "type": "lldb",
+            "request": "attach",
+            "name": "Attach by name",
+            "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle"
+        },
+        {
+            "type": "lldb",
+            "request": "attach",
+            "name": "Attach",
+            "pid": "${command:pickMyProcess}" // use ${command:pickProcess} to pick other users' processes
+        },
+        {
+            "type": "lldb",
             "request": "launch",
             "name": "violas-oracle",
             "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle",
             "args": [
-                "publish",
+                "service",
                 "-u",
                 "http://localhost:8080",
                 "-m",

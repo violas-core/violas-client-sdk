@@ -6,7 +6,11 @@ use hyper_tls::HttpsConnector;
 use libra_types::{chain_id::ChainId, waypoint::Waypoint};
 use std::{str::FromStr, string::String, time::Duration};
 use structopt::StructOpt;
-use tokio::task;
+use tokio::{
+    runtime::Runtime,
+    task,
+    time::{self, Instant, Interval},
+};
 mod oracle;
 use oracle::Oracle;
 
@@ -52,8 +56,9 @@ enum Command {
 //
 // main
 //
-#[tokio::main]
-async fn main() -> Result<()> {
+//#[tokio::main]
+//async fn main() -> Result<()>
+fn main() -> Result<()> {
     let command = Command::from_args();
     //println!("{:?}", command);
 
@@ -77,35 +82,30 @@ async fn main() -> Result<()> {
 
     match command {
         Command::Publish(args) => {
-            //let client = create_client(args)?;
-            task::block_in_place(|| -> Result<()> {
-                println!("Pleae input module path and file name : ");
-                let mut oracle_module_file = String::new();
-                std::io::stdin().read_line(&mut oracle_module_file)?;
-                // remove char '\n'
-                oracle_module_file.remove(oracle_module_file.len() - 1);
+            println!("Pleae input module path and file name : ");
+            let mut oracle_module_file = String::new();
+            std::io::stdin().read_line(&mut oracle_module_file)?;
+            // remove char '\n'
+            oracle_module_file.remove(oracle_module_file.len() - 1);
 
-                let mut oracle = create_oracle(args)?;
+            let mut oracle = create_oracle(args)?;
 
-                oracle.publish(oracle_module_file.as_str())
-            })?;
+            oracle.publish(oracle_module_file.as_str())?
         }
         Command::Update(args) => {
-            let currency_rates = gather_exchange_rate_from_coinbase().await?;
+            let mut rt = Runtime::new()?;
 
-            task::block_in_place(|| -> Result<()> {
-                let mut oracle = create_oracle(args)?;
+            let currency_rates =
+                rt.block_on(async { gather_exchange_rate_from_coinbase().await })?;
 
-                for currency_rate in currency_rates {
-                    let (currency, ex_rate) = currency_rate;
-                    oracle.update_exchange_rate(currency.as_str(), ex_rate)?;
-                }
+            let mut oracle = create_oracle(args)?;
 
-                Ok(())
-            })?;
+            for currency_rate in currency_rates {
+                let (currency, ex_rate) = currency_rate;
+                oracle.update_exchange_rate(currency.as_str(), ex_rate)?;
+            }
         }
         Command::Test(args) => {
-            //task
             task::block_in_place(|| -> Result<()> {
                 let mut oracle = create_oracle(args)?;
 
@@ -117,7 +117,34 @@ async fn main() -> Result<()> {
                 Ok(())
             })?;
         }
-        Command::Service(_args) => {}
+        Command::Service(args) => {
+            daemon()?;
+
+            let mut rt = Runtime::new()?;
+
+            loop {
+                let currency_rates = rt.block_on(async {
+                    //let mut interval = time::interval(Duration::from_secs(60));
+                    //interval.tick().await;
+                    time::delay_for(Duration::from_secs(60)).await;
+                    gather_exchange_rate_from_coinbase().await
+                })?;
+
+                let mut oracle = create_oracle(args.clone())?;
+
+                println!("udpate Oracle exchange rates, {:?}", time::Instant::now());
+
+                for currency_rate in currency_rates {
+                    let (currency, ex_rate) = currency_rate;
+                    oracle.update_exchange_rate(currency.as_str(), ex_rate)?;
+                }
+
+                println!(
+                    "finished udpating Oracle exchange rates, {:?}",
+                    time::Instant::now()
+                );
+            }
+        }
     }
 
     Ok(())
@@ -151,4 +178,33 @@ async fn gather_exchange_rate_from_coinbase() -> Result<Vec<(String, f64)>> {
         .collect();
 
     Ok(rates)
+}
+
+use std::fs::File;
+
+use daemonize::Daemonize;
+
+fn daemon() -> Result<()> {
+    let stdout = File::create("/tmp/violas-oracle.out").unwrap();
+    let stderr = File::create("/tmp/violas-oracle.err").unwrap();
+
+    let daemonize = Daemonize::new()
+        //.pid_file("/tmp/daemon.pid") // Every method except `new` and `start`
+        .chown_pid_file(true) // is optional, see `Daemonize` documentation
+        .working_directory("/tmp") // for default behaviour.
+        //.user("hunter")
+        //.group("daemon") // Group name
+        //.group(2)        // or group id.
+        .umask(0o777) // Set umask, `0o027` by default.
+        .stdout(stdout) // Redirect stdout to `/tmp/daemon.out`.
+        .stderr(stderr) // Redirect stderr to `/tmp/daemon.err`.
+        .exit_action(|| println!("Executed before master process exits"))
+        .privileged_action(|| "Executed before drop privileges");
+
+    match daemonize.start() {
+        Ok(_) => println!("Success, daemonized"),
+        Err(e) => eprintln!("Error, {}", e),
+    }
+
+    Ok(())
 }

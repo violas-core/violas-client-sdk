@@ -5,29 +5,10 @@ use libra_types::{
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::{Deserialize, Serialize};
 
-// #[derive(Default, Serialize, Deserialize)]
-// pub struct ViolasAccountResource {
-//     pub tokens: Vec<Token>,
-// }
-
-// impl ViolasAccountResource {
-//     // #[allow(dead_code)]
-//     // pub fn new(index : u64, balance: u64) -> Self {
-//     //     ViolasAccountResource { balance }
-//     // }
-
-//     /// Given an account map (typically from storage) retrieves the Account resource associated.
-//     pub fn make_from(
-//         path_addr: &AccountAddress,
-//         account_state: &AccountState,
-//     ) -> Result<Self, Error> {
-//         let ap = account_resource_path(path_addr);
-//         match account_state.get(&ap) {
-//             Some(bytes) => lcs::from_bytes(bytes).map_err(Into::into),
-//             None => bail!("No data for {:?}", ap),
-//         }
-//     }
-// }
+pub fn bank_administrator_account_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0x62616E6B")  //00000000000000000000000062616E6B, 
+        .expect("Parsing valid hex literal should always succeed")
+}
 
 /// make struct tag
 pub fn make_struct_tag(

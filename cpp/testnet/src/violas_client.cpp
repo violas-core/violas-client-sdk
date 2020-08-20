@@ -73,7 +73,7 @@ int main(int argc, const char *argv[])
                 "Please input index : ";
 
         int index;
-        cin >> index;        
+        cin >> index;
 
         client->modify_VM_publishing_option(Client::PublishingOption::open);
 
@@ -95,11 +95,11 @@ void initialize_all_currencies(client_ptr client)
 
     for (auto currency_code : currency_codes)
     {
-        cout << color::GREEN << currency_code << color::RESET << "\t: " ;
-        
+        cout << color::GREEN << currency_code << color::RESET << "\t: ";
+
         client->publish_curency(currency_code);
-        cout << "published, "; 
-        
+        cout << "published, ";
+
         client->register_currency(currency_code,
                                   1,
                                   2,
@@ -131,14 +131,14 @@ void run_test_case(client_ptr client)
     {
         try_catch([&]() {
             client->create_testnet_account(LBR, account.auth_key);
+            for (auto currency_code : currency_codes)
+            {
+                client->add_currency(i, currency_code);
 
-            client->add_currency(i, Coin1);
+                client->mint_for_testnet(currency_code, account.address, 100 * MICRO_COIN);
+            }
         },
                   false);
-
-        client->mint_for_testnet(LBR, account.address, 100 * MICRO_COIN);
-
-        client->mint_for_testnet(Coin1, account.address, 10 * MICRO_COIN);
 
         cout << "Address : " << account.address
              << ", Auth Key :" << account.auth_key

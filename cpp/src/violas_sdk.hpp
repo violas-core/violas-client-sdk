@@ -159,6 +159,8 @@ namespace LIB_NAME
 
     const uint64_t MICRO_COIN = 1000000;
     const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
+    const uint64_t TREASURY_COMPLIANCE_ID = ASSOCIATION_ID -1;
+    const uint64_t BANK_ADMINISTRATOR_ID = ASSOCIATION_ID - 2;
     const Address ASSOCIATION_ADDRESS = Address::from_string("0000000000000000000000000A550C18");
     const Address TESTNET_DD_ADDRESS = Address::from_string("000000000000000000000000000000DD");
     const Address CORE_CODE_ADDRESS = Address::from_string("00000000000000000000000000000001");

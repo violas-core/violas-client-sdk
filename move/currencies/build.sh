@@ -14,4 +14,8 @@ echo "build currencies/register_currency.move"
 ../build.sh register_currency.move 0x0
 mv move_build_output/scripts/main.mv register_currency.mv
 
+echo "build create_violas_system_account.move"
+../build.sh create_violas_system_account.move 0x0
+mv move_build_output/scripts/main.mv create_violas_system_account.mv
+
 rm -rf move_build_output

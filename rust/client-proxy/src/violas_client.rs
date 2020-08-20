@@ -1,6 +1,7 @@
 use crate::{
     libra_client_proxy::{parse_transaction_argument_for_client, ClientProxy},
-    AccountData,
+    violas_account::{bank_administrator_account_address, make_currency_tag},
+    AccountData, AccountStatus,
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
 use libra_crypto::test_utils::KeyPair;
@@ -13,11 +14,7 @@ use libra_types::{
     chain_id::ChainId,
     on_chain_config::VMPublishingOption,
     transaction::{
-        //authenticator::AuthenticationKey,
-        Module,
-        Script,
-        TransactionArgument,
-        TransactionPayload,
+        authenticator::AuthenticationKey, Module, Script, TransactionArgument, TransactionPayload,
     },
     waypoint::Waypoint,
 };
@@ -33,6 +30,8 @@ use std::{
 use transaction_builder;
 
 pub const VIOLAS_ROOT_ACCOUNT_ID: u64 = u64::MAX;
+pub const VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 1;
+pub const VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 2;
 
 ///
 /// struct ViolasClient
@@ -41,6 +40,7 @@ pub struct ViolasClient {
     libra_client_proxy: ClientProxy,
     /// Account used TreasuryCompliance operations (e.g., minting)
     pub treasury_compliance_account: Option<AccountData>,
+    pub bank_administrator_account: Option<AccountData>,
 }
 
 impl Deref for ViolasClient {
@@ -87,25 +87,128 @@ impl ViolasClient {
             waypoint,
         )?;
 
-        let treasury_compliance_account = if libra_root_account_file.is_empty() {
-            None
+        let (treasury_compliance_account, bank_administrator_account) = if libra_root_account_file
+            .is_empty()
+        {
+            (None, None)
         } else {
             let treasury_compliance_account_key = generate_key::load_key(libra_root_account_file);
+            let key_pair = KeyPair::from(treasury_compliance_account_key);
+
             let treasury_compliance_account_data = ClientProxy::get_account_data_from_address(
                 &mut libra_client_proxy.client,
                 treasury_compliance_account_address(),
                 true,
-                Some(KeyPair::from(treasury_compliance_account_key)),
+                Some(key_pair),
                 None,
             )?;
-            Some(treasury_compliance_account_data)
+            let bank_administrator_account_key = generate_key::load_key(libra_root_account_file);
+            let key_pair = KeyPair::from(bank_administrator_account_key);
+            let auth_key = AuthenticationKey::ed25519(&key_pair.public_key);
+
+            let bank_administrator_account_data = ClientProxy::get_account_data_from_address(
+                &mut libra_client_proxy.client,
+                bank_administrator_account_address(),
+                true,
+                Some(key_pair),
+                Some(auth_key.to_vec()),
+            )?;
+
+            (
+                Some(treasury_compliance_account_data),
+                Some(bank_administrator_account_data),
+            )
         };
 
-        Ok(ViolasClient {
+        let mut client = ViolasClient {
             libra_client_proxy,
             treasury_compliance_account,
-        })
+            bank_administrator_account,
+        };
+
+        client.create_bank_administrator_account()?;
+
+        Ok(client)
     }
+
+    fn create_bank_administrator_account(&mut self) -> Result<()> {
+        
+        //let ba_account = self.bank_administrator_account.clone();
+
+        match &mut self.bank_administrator_account {
+            Some(bank_manager) => {
+                if bank_manager.status == AccountStatus::Local {
+                    // let mut auth_key = [0u8; 32];
+                    // auth_key.copy_from_slice(&bank_manager.authentication_key.clone().unwrap());
+
+                    self.create_violas_system_account(
+                        "LBR",
+                        bank_manager.address.clone(),
+                        bank_manager.authentication_key.clone().unwrap(),
+                    )?;
+
+                    // let compliance_public_key = bank_manager
+                    //     .key_pair
+                    //     .as_ref()
+                    //     .unwrap()
+                    //     .public_key
+                    //     .to_bytes()
+                    //     .to_vec();
+
+                    // //bank_manager.address = AuthenticationKey::new(auth_key).derived_address();
+                    // let address = bank_manager.address.clone();
+                    // self.create_parent_vasp_account(
+                    //     make_currency_tag("LBR"),
+                    //     0,
+                    //     //AuthenticationKey::new(auth_key).derived_address(),
+                    //     bank_administrator_account_address(),
+                    //     AuthenticationKey::new(auth_key).prefix().to_vec(),
+                    //     "bank administrator".as_bytes().to_owned(),
+                    //     "http://www.violas.io".as_bytes().to_owned(),
+                    //     compliance_public_key,
+                    //     false,
+                    //     true,
+                    // )?;
+
+                    // self.mint_for_testnet(
+                    //     make_currency_tag("LBR"),
+                    //     bank_manager.address.clone(),
+                    //     10 * 1_000_000,
+                    //     true,
+                    // )?;
+
+                    // self.mint_for_testnet(
+                    //     make_currency_tag("Coin1"),
+                    //     address.clone(),
+                    //     10 * 1_000_000,
+                    //     true,
+                    // )?;
+
+                    // let script = transaction_builder::encode_rotate_authentication_key_script(
+                    //     auth_key.to_vec(),
+                    // );
+
+                    // let script = transaction_builder::encode_add_currency_to_account_script(
+                    //     make_currency_tag("Coin2"),
+                    // );
+
+                    // self.association_transaction_with_bank_administrator_account(
+                    //     //association_transaction_with_bank_administrator_account
+                    //     TransactionPayload::Script(script),
+                    //     true,
+                    // )?;
+                }
+            }
+            None => {}
+        }
+
+        Ok(())
+    }
+
+    // pub fn add_all_currencies_for_account(&mut self, account: &AccountData) -> Result<()> {
+    //     let view = self.client.get_currency_info()?;
+    //     Ok(())
+    // }
 
     pub fn association_transaction_with_local_treasury_compliance_account(
         &mut self,
@@ -126,14 +229,43 @@ impl ViolasClient {
         let resp = self
             .libra_client_proxy
             .client
-            .submit_transaction(Some(&mut sender_mut), txn);
+            .submit_transaction(Some(&mut sender_mut), txn)?;
         let sequence_number = sender_mut.sequence_number;
 
         // wait for txn
         if is_blocking {
             self.wait_for_transaction(sender_address, sequence_number)?;
         }
-        resp
+        Ok(resp)
+    }
+
+    pub fn association_transaction_with_bank_administrator_account(
+        &mut self,
+        payload: TransactionPayload,
+        is_blocking: bool,
+    ) -> Result<()> {
+        ensure!(
+            self.bank_administrator_account.is_some(),
+            "No treasury compliance account loaded"
+        );
+        //  create txn to submit
+        let sender = self.bank_administrator_account.as_ref().unwrap();
+        let sender_address = sender.address;
+        let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
+
+        // submit txn
+        let mut sender_mut = self.bank_administrator_account.as_mut().unwrap();
+        let resp = self
+            .libra_client_proxy
+            .client
+            .submit_transaction(Some(&mut sender_mut), txn)?;
+        let sequence_number = sender_mut.sequence_number;
+
+        // wait for txn
+        if is_blocking {
+            self.wait_for_transaction(sender_address, sequence_number)?;
+        }
+        Ok(resp)
     }
 
     /// Waits for the next transaction for a specific address and prints it
@@ -289,13 +421,17 @@ impl ViolasClient {
         tags: Vec<TypeTag>,
         args: &[&str],
     ) -> Result<()> {
-        let sender = if sender_ref_id == u64::MAX {
-            if self.libra_root_account.is_none() {
-                bail!("No faucet account loaded");
+        let sender = match sender_ref_id {
+            VIOLAS_ROOT_ACCOUNT_ID => {
+                if self.libra_root_account.is_none() {
+                    bail!("No faucet account loaded");
+                }
+                self.libra_root_account.as_ref().unwrap()
             }
-            self.libra_root_account.as_ref().unwrap()
-        } else {
-            self.accounts.get(sender_ref_id as usize).unwrap()
+            VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID => {
+                self.bank_administrator_account.as_ref().unwrap()
+            }
+            _ => self.accounts.get(sender_ref_id as usize).unwrap(),
         };
 
         let script_bytes = fs::read(script_file_name)?;
@@ -309,10 +445,14 @@ impl ViolasClient {
         let sequence_number = sender.sequence_number;
         let proxy = &mut self.libra_client_proxy;
 
-        let resp = if sender_ref_id == u64::MAX {
+        let resp = if sender_ref_id == VIOLAS_ROOT_ACCOUNT_ID {
             proxy
                 .client
                 .submit_transaction(proxy.libra_root_account.as_mut(), txn)
+        } else if sender_ref_id == VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID {
+            proxy
+                .client
+                .submit_transaction(self.bank_administrator_account.as_mut(), txn)
         } else {
             proxy
                 .client
@@ -702,6 +842,33 @@ impl ViolasClient {
             )
         }
     }
+
+    /// create system account
+    pub fn create_violas_system_account(
+        &mut self,
+        currency_code: &str,
+        address: AccountAddress,
+        auth_key: Vec<u8>,
+    ) -> Result<()> {
+        let script_bytes = fs::read(
+            "/home/hunter/Projects/work/ViolasClientSdk/move/currencies/create_violas_system_account.mv",
+        )?;
+
+        let script = Script::new(
+            script_bytes,
+            vec![make_currency_tag(currency_code)],
+            vec![
+                TransactionArgument::Address(address),
+                TransactionArgument::U8Vector(auth_key),
+            ],
+        );
+
+        self.association_transaction_with_local_libra_root_account(
+            TransactionPayload::Script(script),
+            true,
+        )
+    }
+
     /// Create a testnet account
     pub fn create_testing_account(
         self: &mut Self,
@@ -808,7 +975,7 @@ impl ViolasClient {
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.libra_root_account {
+        match &self.treasury_compliance_account {
             Some(_) => {
                 let script = transaction_builder::encode_create_designated_dealer_script(
                     type_tag,
@@ -820,7 +987,7 @@ impl ViolasClient {
                     compliance_public_key,
                     add_all_currencies,
                 );
-                self.association_transaction_with_local_libra_root_account(
+                self.association_transaction_with_local_treasury_compliance_account(
                     TransactionPayload::Script(script),
                     is_blocking,
                 )

@@ -66,7 +66,7 @@ pub mod x86_64 {
         c_url: *const c_char,
         c_mint_key: *const c_char,
         sync_on_wallet_recovery: bool,
-        faucet_server: *const c_char,
+        _faucet_server: *const c_char,
         c_mnemonic: *const c_char,
         in_waypoint: *const c_char,
         out_clinet_ptr: *mut u64,
@@ -83,7 +83,7 @@ pub mod x86_64 {
                     faucet_account_file,
                     treasury_compliance_account_file,
                     sync_on_wallet_recovery,
-                    Some(CStr::from_ptr(faucet_server).to_str().unwrap().to_owned()),
+                    None, //Some(CStr::from_ptr(faucet_server).to_str().unwrap().to_owned()),
                     Some(CStr::from_ptr(c_mnemonic).to_str().unwrap().to_owned()),
                     Waypoint::from_str(CStr::from_ptr(in_waypoint).to_str().unwrap()).unwrap(),
                 )

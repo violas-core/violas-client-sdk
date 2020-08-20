@@ -20,6 +20,8 @@ void run_test_bank(const string &url,
     auto client = Client::create(chain_id, url, mint_key_file, true, "", mnemonic_file, waypoint);
 
     client->test_validator_connection();
+    client->enable_custom_script(true);
+
     cout << "succeed to test validator connection ." << endl;
 
     client->create_next_account(true);
@@ -50,15 +52,16 @@ void run_test_bank(const string &url,
         // "BTC",
     };
 
-    auto bank = Bank::create_bank(client, "../../cppSdk/move/bank/");
+    auto bank = Bank::create_bank(client, "../../move/bank/");
     //
     //  initialize
     //
     try_catch([=]() {
-        bank->deploy_with_association_account();
+        //bank->deploy_with_association_account();
         cout << "deployed bank module successfully." << endl;
 
-        bank->publish(ASSOCIATION_ID);
+        bank->publish(0);   //BANK_ADMINISTRATOR_ID
+
         bank->publish(user0);
         bank->publish(user1);
 
@@ -74,9 +77,9 @@ void run_test_bank(const string &url,
                                Bank::MANTISSA_1_0 / 2,       // 50%
                                Bank::MANTISSA_1_0 * 8 / 10); // 80%
         }
-
-        cout << "Initialized data for Bank module" << endl;
     });
+
+    cout << "Initialized data for Bank module" << endl;
 
     // try_catch([=]() {
     // });

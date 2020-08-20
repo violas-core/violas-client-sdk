@@ -12,6 +12,7 @@ use tokio::{
     time::{self, Instant, Interval},
 };
 mod oracle;
+use chrono::prelude::*;
 use oracle::Oracle;
 
 #[derive(Clone, Debug, StructOpt)]
@@ -132,7 +133,7 @@ fn main() -> Result<()> {
 
                 let mut oracle = create_oracle(args.clone())?;
 
-                println!("udpate Oracle exchange rates, {:?}", time::Instant::now());
+                println!("udpate Oracle exchange rates, {}", Local::now());
 
                 for currency_rate in currency_rates {
                     let (currency, ex_rate) = currency_rate;
@@ -141,7 +142,7 @@ fn main() -> Result<()> {
 
                 println!(
                     "finished udpating Oracle exchange rates, {:?}",
-                    time::Instant::now()
+                    Local::now()
                 );
             }
         }

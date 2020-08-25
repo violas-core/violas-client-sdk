@@ -57,7 +57,7 @@ void run_test_bank(const string &url,
     //  initialize
     //
     try_catch([=]() {
-        //bank->deploy_with_association_account();
+        bank->deploy_with_association_account();
         cout << "deployed bank module successfully." << endl;
 
         bank->publish(0);   //BANK_ADMINISTRATOR_ID

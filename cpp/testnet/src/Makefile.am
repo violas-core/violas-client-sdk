@@ -27,7 +27,7 @@ transfer_LDFLAGS = -Wl,-rpath=./bin,-rpath=../bin,-rpath=/usr/local/lib \
 transfer_LDADD = -lviolas_sdk $(CLIENT_PROXY) -lstdc++fs
 
 # file cpp_closures.o compiled by rust 
-RUST_CPP_CLIENT = $(top_srcdir)/rust/client-proxy/target/debug/build/client-proxy-2cbbb9b5fffd816c/out/rust_cpp/cpp_closures.o
+RUST_CPP_CLIENT = $(top_srcdir)/rust/client-proxy/target/debug/build/client-proxy-73287701f79bfd7f/out/rust_cpp/cpp_closures.o
 # for release $(top_srcdir)/rust/client-proxy/target/release/build/client-proxy-f60ce46fb23ec7a6/out/rust_cpp/cpp_closures.o
 
 violas_client_SOURCES = violas_client.cpp 

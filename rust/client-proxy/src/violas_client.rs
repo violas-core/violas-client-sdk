@@ -120,29 +120,27 @@ impl ViolasClient {
             )
         };
 
-        let mut client = ViolasClient {
+        let client = ViolasClient {
             libra_client_proxy,
             treasury_compliance_account,
             bank_administrator_account,
         };
 
-        client.create_bank_administrator_account()?;
+        //client.create_bank_administrator_account()?;
 
         Ok(client)
     }
 
-    fn create_bank_administrator_account(&mut self) -> Result<()> {
-        
-        if self.bank_administrator_account.is_some() {
-            let bank_administrator = self.bank_administrator_account.as_ref().unwrap();
-            if bank_administrator.status == AccountStatus::Local {
-                self.create_violas_system_account(
-                    "LBR",
-                    bank_administrator.address.clone(),
-                    bank_administrator.authentication_key.clone().unwrap(),
-                )?;
-            }
-        }
+    pub fn create_bank_administrator_account(&mut self) -> Result<()> {
+        // if let Some(bank_administrator) = &self.bank_administrator_account {
+        //     if bank_administrator.status == AccountStatus::Local {
+        //         self.create_system_account(
+        //             "LBR",
+        //             bank_administrator.address.clone(),
+        //             //bank_administrator.authentication_key.clone().unwrap(),
+        //         )?;
+        //     }
+        // }
 
         // match &mut self.bank_administrator_account {
         //     Some(bank_manager) => {
@@ -853,29 +851,35 @@ impl ViolasClient {
     }
 
     /// create system account
-    pub fn create_violas_system_account(
+    pub fn update_account_authentication_key(
         &mut self,
-        currency_code: &str,
         address: AccountAddress,
-        auth_key: Vec<u8>,
+        //auth_key: Vec<u8>,
     ) -> Result<()> {
         let script_bytes = fs::read(
-            "/home/hunter/Projects/work/ViolasClientSdk/move/currencies/create_violas_system_account.mv",
+            "/home/hunter/Projects/work/ViolasClientSdk/move/currencies/update_account_authentication_key.mv",
         )?;
 
-        let script = Script::new(
-            script_bytes,
-            vec![make_currency_tag(currency_code)],
-            vec![
-                TransactionArgument::Address(address),
-                TransactionArgument::U8Vector(auth_key),
-            ],
-        );
+        if let Some(libra_root_account) = &self.libra_root_account {
+            let script = Script::new(
+                script_bytes,
+                vec![],
+                vec![
+                    TransactionArgument::Address(address),
+                    //TransactionArgument::U8Vector(auth_key),
+                    TransactionArgument::U8Vector(
+                        libra_root_account.authentication_key.clone().unwrap(),
+                    ),
+                ],
+            );
 
-        self.association_transaction_with_local_libra_root_account(
-            TransactionPayload::Script(script),
-            true,
-        )
+            self.association_transaction_with_local_libra_root_account(
+                TransactionPayload::Script(script),
+                true,
+            )
+        } else {
+            Ok(())
+        }
     }
 
     /// Create a testnet account
@@ -1032,8 +1036,13 @@ impl ViolasClient {
     ) -> Result<()> {
         match &self.libra_root_account {
             Some(_) => {
-                let script =
-                    transaction_builder::encode_peer_to_peer_with_metadata_script(currency_tag, receiver, amount, vec![], vec![]);
+                let script = transaction_builder::encode_peer_to_peer_with_metadata_script(
+                    currency_tag,
+                    receiver,
+                    amount,
+                    vec![],
+                    vec![],
+                );
 
                 self.association_transaction_with_local_testnet_dd_account(
                     TransactionPayload::Script(script),

@@ -17,6 +17,7 @@ namespace violas
     const size_t ADDRESS_LENGTH = 16;
     using Address = std::array<uint8_t, ADDRESS_LENGTH>;
     using AuthenticationKey = std::array<uint8_t, ADDRESS_LENGTH * 2>;
+    using PublicKey = std::array<uint8_t, ADDRESS_LENGTH * 2>;
 
     struct AddressAndIndex
     {
@@ -35,6 +36,7 @@ namespace violas
     {
         Address address;
         AuthenticationKey auth_key;
+        PublicKey pub_key;
         uint64_t sequence_number;
         AccountStatus status;
     };
@@ -202,6 +204,21 @@ namespace violas
             const Address &dd_address,
             uint64_t amount,
             uint64_t tier_index) = 0;
+
+        virtual void
+        create_designated_dealer_account(
+            std::string_view currency_code,
+            uint64_t nonce,
+            const Address &new_account_address,
+            const AuthenticationKey &auth_key,
+            std::string_view human_name,
+            std::string_view base_url,
+            PublicKey compliance_public_key,
+            bool add_all_currencies) = 0;
+
+        virtual void
+        update_account_authentication_key(            
+            const Address &address) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

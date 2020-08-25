@@ -233,6 +233,7 @@ namespace violas
 
                 auto out_address = &account.address[0];
                 auto out_auth_key = &account.auth_key[0];
+                auto out_pubkey = account.pub_key.data();
                 auto out_sequence_num = &account.sequence_number;
                 auto out_status = &account.status;
 
@@ -241,6 +242,7 @@ namespace violas
                                         i : usize as "size_t",
                                         out_address : &mut [c_uchar; ADDRESS_LENGTH] as "uint8_t *",
                                         out_auth_key : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
+                                        out_pubkey : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
                                         out_sequence_num : &mut u64 as "uint64_t *",
                                         out_status : &mut AccountStatus as "AccountStatus *"
                                         ] {
@@ -248,6 +250,9 @@ namespace violas
 
                     out_address.copy_from_slice(&account.address.as_ref());
                     out_auth_key.copy_from_slice(&account.authentication_key.as_ref().unwrap());
+                    if account.key_pair.is_some() {
+                        out_pubkey.copy_from_slice(&account.key_pair.as_ref().unwrap().public_key.to_bytes());
+                    }                    
                     *out_sequence_num = account.sequence_number;
                     *out_status = account.status.clone();
                 });
@@ -708,6 +713,86 @@ namespace violas
             });
 
             check_result(ret);
+        }
+
+        virtual void
+        create_designated_dealer_account(
+            std::string_view currency_code,
+            uint64_t nonce,
+            const Address &new_account_address,
+            const AuthenticationKey &auth_key,
+            std::string_view human_name,
+            std::string_view base_url,
+            PublicKey compliance_public_key,
+            bool add_all_currencies) override
+        {
+            auto in_currency_code = currency_code.data();
+            auto in_address = new_account_address.data();
+            auto in_auth_key = auth_key.data();
+            auto in_human_name = human_name.data();
+            auto in_base_url = base_url.data();
+            auto in_compliance_public_key = compliance_public_key.data();
+
+            bool ret = rust!( client_create_designated_dealer_account [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_currency_code : *const c_char as "const char *",
+                nonce : u64 as "uint64_t",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                in_auth_key : &[u8;ADDRESS_LENGTH*2] as "const uint8_t *",
+                in_human_name : *const c_char as "const char *",
+                in_base_url : *const c_char as "const char *",
+                in_compliance_public_key :  &[u8;ADDRESS_LENGTH*2] as "const uint8_t *",
+                add_all_currencies : bool as "bool"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.create_designated_dealer_account(
+                                    make_currency_tag(in_currency_code),
+                                    nonce,
+                                    AccountAddress::new(*in_address),
+                                    AuthenticationKey::new(*in_auth_key).prefix().to_vec(),
+                                    CStr::from_ptr(in_human_name).to_str().unwrap().as_bytes().to_owned(),
+                                    CStr::from_ptr(in_base_url).to_str().unwrap().as_bytes().to_owned(),
+                                    in_compliance_public_key.to_owned().to_vec(),
+                                    add_all_currencies,
+                                    true);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::create_system_account, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+        }
+
+        virtual void
+        update_account_authentication_key(const Address &address) override
+        {
+            auto in_address = address.data();
+
+            bool ret = rust!( client_update_account_authentication_key [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.update_account_authentication_key(
+                                    AccountAddress::new(*in_address),
+                                    );
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::create_system_account, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
         }
     };
 

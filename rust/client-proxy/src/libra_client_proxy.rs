@@ -55,7 +55,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt, fs,
-    io::{stdout, Write},
+    
     path::{Path, PathBuf},
     process::Command,
     str::{self, FromStr},
@@ -780,43 +780,31 @@ impl ClientProxy {
         sequence_number: u64,
     ) -> Result<()> {
         let mut max_iterations = 5000;
-        println!(
-            "waiting for {} with sequence number {}",
-            account, sequence_number
-        );
         loop {
-            stdout().flush().unwrap();
-
             match self
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
             {
                 Ok(Some(txn_view)) => {
-                    println!();
                     if txn_view.vm_status == VMStatusView::Executed {
-                        println!("transaction executed!");
-                        if txn_view.events.is_empty() {
-                            println!("no events emitted");
-                        }
                         break Ok(());
                     } else {
                         break Err(format_err!(
-                            "transaction failed to execute; status: {:?}!",
+                            "transaction failed to execute, status: {:?}!",
                             txn_view.vm_status
                         ));
                     }
                 }
                 Err(e) => {
-                    println!();
-                    println!("Response with error: {:?}", e);
+                    bail!("Response with error: {:?}", e);
                 }
                 _ => {
-                    print!(".");
+                    //print!(".");
                 }
             }
             max_iterations -= 1;
             if max_iterations == 0 {
-                panic!("wait_for_transaction timeout");
+                bail!("wait_for_transaction timeout");
             }
             thread::sleep(time::Duration::from_millis(10));
         }

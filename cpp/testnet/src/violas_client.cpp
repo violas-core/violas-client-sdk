@@ -147,5 +147,20 @@ void run_test_case(client_ptr client)
         i++;
     }
 
-    client->transfer(0, accounts[1].address, LBR, 5 * MICRO_COIN, 1);
+    //client->transfer(0, accounts[1].address, LBR, 5 * MICRO_COIN, 1);
+    auto bank_addr = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x62, 0x61, 0x6E, 0x6B});
+    AuthenticationKey auth_key = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0, 0x0, 0x0, 0x0};
+    PublicKey pub_key = {0x1a, 0xbb, 0x9e, 0x6f, 0xec, 0x3f, 0x18, 0x21, 0x0a, 0x3a, 0xa1, 0x1d, 0x00, 0x47, 0x5d, 0xee,
+                        0x76, 0xeb, 0xa7, 0x93, 0x78, 0x72, 0x37, 0x40, 0xb3, 0x7a, 0x9a, 0x2d, 0x09, 0x74, 0x96, 0xba};
+
+    client->create_designated_dealer_account("LBR",
+                                             0,
+                                             bank_addr,
+                                             auth_key,
+                                             "Bank administrator",
+                                             "www.violas.io",
+                                             pub_key,
+                                             true);
+
+    client->update_account_authentication_key(bank_addr);
 }

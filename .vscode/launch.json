@@ -43,7 +43,7 @@
                 "http://localhost:8080",
                 "/tmp/libra/mint.key",
                 "waypoint",
-                "0:466c8d398da5292daaa29f028ee300f5b0458a7faa16792e3b5cf16caf5a58a7",
+                "0:692279ff1e4a23bdcc01b907024c781dc249b346db62651171fbe65829f97e72",
                 "4"
             ],
             "cwd": "${workspaceFolder}/build/debug"
@@ -57,7 +57,7 @@
                 "http://localhost:8080",
                 "/tmp/libra/mint.key",
                 "waypoint",
-                "0:466c8d398da5292daaa29f028ee300f5b0458a7faa16792e3b5cf16caf5a58a7",
+                "0:692279ff1e4a23bdcc01b907024c781dc249b346db62651171fbe65829f97e72",
                 "4"
             ],
             //"args": ["http://51.140.241.96:50001", "/home/hunter/mint_test.key", "governor","0:2f4d2b3f414fe799f8a13003311fcff9b1c5dd073c3a5e84fcfbc534d5fccbc2"],

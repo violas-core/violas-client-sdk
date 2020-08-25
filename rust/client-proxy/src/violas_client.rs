@@ -133,74 +133,83 @@ impl ViolasClient {
 
     fn create_bank_administrator_account(&mut self) -> Result<()> {
         
-        //let ba_account = self.bank_administrator_account.clone();
-
-        match &mut self.bank_administrator_account {
-            Some(bank_manager) => {
-                if bank_manager.status == AccountStatus::Local {
-                    // let mut auth_key = [0u8; 32];
-                    // auth_key.copy_from_slice(&bank_manager.authentication_key.clone().unwrap());
-
-                    self.create_violas_system_account(
-                        "LBR",
-                        bank_manager.address.clone(),
-                        bank_manager.authentication_key.clone().unwrap(),
-                    )?;
-
-                    // let compliance_public_key = bank_manager
-                    //     .key_pair
-                    //     .as_ref()
-                    //     .unwrap()
-                    //     .public_key
-                    //     .to_bytes()
-                    //     .to_vec();
-
-                    // //bank_manager.address = AuthenticationKey::new(auth_key).derived_address();
-                    // let address = bank_manager.address.clone();
-                    // self.create_parent_vasp_account(
-                    //     make_currency_tag("LBR"),
-                    //     0,
-                    //     //AuthenticationKey::new(auth_key).derived_address(),
-                    //     bank_administrator_account_address(),
-                    //     AuthenticationKey::new(auth_key).prefix().to_vec(),
-                    //     "bank administrator".as_bytes().to_owned(),
-                    //     "http://www.violas.io".as_bytes().to_owned(),
-                    //     compliance_public_key,
-                    //     false,
-                    //     true,
-                    // )?;
-
-                    // self.mint_for_testnet(
-                    //     make_currency_tag("LBR"),
-                    //     bank_manager.address.clone(),
-                    //     10 * 1_000_000,
-                    //     true,
-                    // )?;
-
-                    // self.mint_for_testnet(
-                    //     make_currency_tag("Coin1"),
-                    //     address.clone(),
-                    //     10 * 1_000_000,
-                    //     true,
-                    // )?;
-
-                    // let script = transaction_builder::encode_rotate_authentication_key_script(
-                    //     auth_key.to_vec(),
-                    // );
-
-                    // let script = transaction_builder::encode_add_currency_to_account_script(
-                    //     make_currency_tag("Coin2"),
-                    // );
-
-                    // self.association_transaction_with_bank_administrator_account(
-                    //     //association_transaction_with_bank_administrator_account
-                    //     TransactionPayload::Script(script),
-                    //     true,
-                    // )?;
-                }
+        if self.bank_administrator_account.is_some() {
+            let bank_administrator = self.bank_administrator_account.as_ref().unwrap();
+            if bank_administrator.status == AccountStatus::Local {
+                self.create_violas_system_account(
+                    "LBR",
+                    bank_administrator.address.clone(),
+                    bank_administrator.authentication_key.clone().unwrap(),
+                )?;
             }
-            None => {}
         }
+
+        // match &mut self.bank_administrator_account {
+        //     Some(bank_manager) => {
+        //         if bank_manager.status == AccountStatus::Local {
+        //             // let mut auth_key = [0u8; 32];
+        //             // auth_key.copy_from_slice(&bank_manager.authentication_key.clone().unwrap());
+
+        //             self.create_violas_system_account(
+        //                 "LBR",
+        //                 bank_manager.address.clone(),
+        //                 bank_manager.authentication_key.clone().unwrap(),
+        //             )?;
+
+        //             // let compliance_public_key = bank_manager
+        //             //     .key_pair
+        //             //     .as_ref()
+        //             //     .unwrap()
+        //             //     .public_key
+        //             //     .to_bytes()
+        //             //     .to_vec();
+
+        //             // //bank_manager.address = AuthenticationKey::new(auth_key).derived_address();
+        //             // let address = bank_manager.address.clone();
+        //             // self.create_parent_vasp_account(
+        //             //     make_currency_tag("LBR"),
+        //             //     0,
+        //             //     //AuthenticationKey::new(auth_key).derived_address(),
+        //             //     bank_administrator_account_address(),
+        //             //     AuthenticationKey::new(auth_key).prefix().to_vec(),
+        //             //     "bank administrator".as_bytes().to_owned(),
+        //             //     "http://www.violas.io".as_bytes().to_owned(),
+        //             //     compliance_public_key,
+        //             //     false,
+        //             //     true,
+        //             // )?;
+
+        //             // self.mint_for_testnet(
+        //             //     make_currency_tag("LBR"),
+        //             //     bank_manager.address.clone(),
+        //             //     10 * 1_000_000,
+        //             //     true,
+        //             // )?;
+
+        //             // self.mint_for_testnet(
+        //             //     make_currency_tag("Coin1"),
+        //             //     address.clone(),
+        //             //     10 * 1_000_000,
+        //             //     true,
+        //             // )?;
+
+        //             // let script = transaction_builder::encode_rotate_authentication_key_script(
+        //             //     auth_key.to_vec(),
+        //             // );
+
+        //             // let script = transaction_builder::encode_add_currency_to_account_script(
+        //             //     make_currency_tag("Coin2"),
+        //             // );
+
+        //             // self.association_transaction_with_bank_administrator_account(
+        //             //     //association_transaction_with_bank_administrator_account
+        //             //     TransactionPayload::Script(script),
+        //             //     true,
+        //             // )?;
+        //         }
+        //     }
+        //     None => {}
+        // }
 
         Ok(())
     }
@@ -1024,7 +1033,7 @@ impl ViolasClient {
         match &self.libra_root_account {
             Some(_) => {
                 let script =
-                    transaction_builder::encode_testnet_mint_script(currency_tag, receiver, amount);
+                    transaction_builder::encode_peer_to_peer_with_metadata_script(currency_tag, receiver, amount, vec![], vec![]);
 
                 self.association_transaction_with_local_testnet_dd_account(
                     TransactionPayload::Script(script),

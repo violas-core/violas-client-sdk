@@ -1,7 +1,10 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{libra_client::LibraClient, AccountData, AccountStatus};
+use crate::{    
+    libra_client::LibraClient,
+    AccountData, AccountStatus,
+};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use compiled_stdlib::{transaction_scripts::StdlibScript, StdLibOptions};
 use libra_crypto::{
@@ -31,7 +34,7 @@ use libra_types::{
     account_state::AccountState,
     chain_id::ChainId,
     ledger_info::LedgerInfoWithSignatures,
-    on_chain_config::VMPublishingOption,
+    on_chain_config::{LibraVersion, VMPublishingOption},
     transaction::{
         authenticator::AuthenticationKey,
         helpers::{create_unsigned_txn, create_user_txn, TransactionSigner},
@@ -52,6 +55,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt, fs,
+    io::{stdout, Write},
     path::{Path, PathBuf},
     process::Command,
     str::{self, FromStr},
@@ -505,10 +509,12 @@ impl ClientProxy {
         println!(">> Sending coins from faucet");
         match self.testnet_designated_dealer_account {
             Some(_) => {
-                let script = transaction_builder::encode_testnet_mint_script(
+                let script = transaction_builder::encode_peer_to_peer_with_metadata_script(
                     type_tag_for_currency_code(currency_code),
                     receiver,
                     num_coins,
+                    vec![],
+                    vec![],
                 );
                 self.association_transaction_with_local_testnet_dd_account(
                     TransactionPayload::Script(script),
@@ -572,6 +578,37 @@ impl ClientProxy {
                 TransactionPayload::Script(
                     transaction_builder::encode_modify_publishing_option_script(
                         VMPublishingOption::locked(StdlibScript::allowlist()),
+                    ),
+                ),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
+
+    /// Modify the stored LibraVersion on chain.
+    pub fn change_libra_version(
+        &mut self,
+        space_delim_strings: &[&str],
+        is_blocking: bool,
+    ) -> Result<()> {
+        ensure!(
+            space_delim_strings[0] == "change_libra_version",
+            "inconsistent command '{}' for change_libra_version",
+            space_delim_strings[0]
+        );
+        ensure!(
+            space_delim_strings.len() == 2,
+            "Invalid number of arguments for changing libra_version"
+        );
+        match self.libra_root_account {
+            Some(_) => self.association_transaction_with_local_libra_root_account(
+                TransactionPayload::Script(
+                    transaction_builder::encode_update_libra_version_script(
+                        self.libra_root_account.as_ref().unwrap().sequence_number,
+                        LibraVersion {
+                            major: space_delim_strings[1].parse::<u64>().unwrap(),
+                        },
                     ),
                 ),
                 is_blocking,
@@ -743,31 +780,43 @@ impl ClientProxy {
         sequence_number: u64,
     ) -> Result<()> {
         let mut max_iterations = 5000;
+        println!(
+            "waiting for {} with sequence number {}",
+            account, sequence_number
+        );
         loop {
+            stdout().flush().unwrap();
+
             match self
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
             {
                 Ok(Some(txn_view)) => {
+                    println!();
                     if txn_view.vm_status == VMStatusView::Executed {
+                        println!("transaction executed!");
+                        if txn_view.events.is_empty() {
+                            println!("no events emitted");
+                        }
                         break Ok(());
                     } else {
                         break Err(format_err!(
-                            "transaction failed to execute, status: {:?}!",
+                            "transaction failed to execute; status: {:?}!",
                             txn_view.vm_status
                         ));
                     }
                 }
                 Err(e) => {
-                    bail!("Response with error: {:?}", e);
+                    println!();
+                    println!("Response with error: {:?}", e);
                 }
                 _ => {
-                    //print!(".");
+                    print!(".");
                 }
             }
             max_iterations -= 1;
             if max_iterations == 0 {
-                bail!("wait_for_transaction timeout");
+                panic!("wait_for_transaction timeout");
             }
             thread::sleep(time::Duration::from_millis(10));
         }

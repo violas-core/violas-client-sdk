@@ -669,6 +669,12 @@ impl ViolasClient {
                 }
                 None => unimplemented!(),
             }
+        } else if account_ref_id == VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID as usize {
+            let script = transaction_builder::encode_add_currency_to_account_script(type_tag);
+            self.association_transaction_with_bank_administrator_account(
+                TransactionPayload::Script(script),
+                is_blocking,
+            )
         } else {
             self.submit_transction_with_account(
                 account_ref_id as usize,

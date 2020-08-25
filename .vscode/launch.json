@@ -43,7 +43,7 @@
                 "http://localhost:8080",
                 "/tmp/libra/mint.key",
                 "waypoint",
-                "0:692279ff1e4a23bdcc01b907024c781dc249b346db62651171fbe65829f97e72",
+                "0:5d2a1de1093f837188bdd9231bd5522b968fca79b6ce57cc453b5a5f561b5752",
                 "4"
             ],
             "cwd": "${workspaceFolder}/build/debug"

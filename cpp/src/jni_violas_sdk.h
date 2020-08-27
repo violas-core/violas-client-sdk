@@ -6,6 +6,8 @@
 #define VIOLAS_JNI_VIOLAS_SDK_H
 
 #include <functional>
+#include <cstdint>
+#include <string>
 
 //
 //	Create native clinet

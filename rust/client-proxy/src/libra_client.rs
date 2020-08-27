@@ -279,7 +279,7 @@ impl LibraClient {
         self.latest_epoch_change_li.as_ref()
     }
 
-    /// Latest trusted state    
+    /// Latest trusted state
     // pub(crate) fn trusted_state(&self) -> TrustedState {
     //     self.trusted_state.clone()
     // }

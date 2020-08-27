@@ -252,7 +252,7 @@ namespace violas
                     out_auth_key.copy_from_slice(&account.authentication_key.as_ref().unwrap());
                     if account.key_pair.is_some() {
                         out_pubkey.copy_from_slice(&account.key_pair.as_ref().unwrap().public_key.to_bytes());
-                    }                    
+                    }
                     *out_sequence_num = account.sequence_number;
                     *out_status = account.status.clone();
                 });
@@ -262,24 +262,27 @@ namespace violas
         }
 
         virtual void
-        create_testnet_account( std::string_view currency_code,
-                                const AuthenticationKey &auth_key) override
+        create_validator_account( std::string_view currency_code,
+                                const AuthenticationKey &auth_key,
+                                std::string_view human_name) override
         {
             auto in_currency_code = currency_code.data();
             auto in_auth_key = auth_key.data();
+            auto in_human_name = human_name.data();
 
             bool ret = rust!( client_create_testnet_account [
                             rust_violas_client : &mut ViolasClient as "void *",
                             in_currency_code : *const c_char as "const char *",
-                            in_auth_key : &[u8;AUTH_KEY_LENGTH] as "const uint8_t *"
+                            in_auth_key : &[u8;AUTH_KEY_LENGTH] as "const uint8_t *",
+                            in_human_name : *const c_char as "const char *"
                             ] -> bool as "bool" {
                                 let auth_key = AuthenticationKey::new(*in_auth_key);
 
-                                let ret = rust_violas_client.create_testing_account(
-                                                make_currency_tag(in_currency_code),
+                                let ret = rust_violas_client.create_validator_account(
+                                                0,
                                                 auth_key.derived_address(),
                                                 auth_key.prefix().to_vec(),
-                                                false,
+                                                CStr::from_ptr(in_human_name).to_str().unwrap().as_bytes().to_owned(),
                                                 true);
                                 match ret {
                                     Ok(_) => true,
@@ -395,7 +398,7 @@ namespace violas
                         match ret {
                             Ok(_) => true,
                             Err(e) => {
-                                let err = format_err!("ffi::add_currency, {}",e);
+                                let err = format_err!("ffi::modify_VM_publishing_option, {}",e);
                                 set_last_error(err);
                                 false
                             }
@@ -537,8 +540,8 @@ namespace violas
 
         /// Add a currency to current account
         virtual void
-        add_currency(   size_t account_index,
-                        std::string_view currency_code) override
+        add_currency(size_t account_index,
+                     std::string_view currency_code) override
         {
             auto in_currency_code = currency_code.data();
 
@@ -577,11 +580,7 @@ namespace violas
                             ] -> bool as "bool" {
 
                                 let ret = rust_violas_client.publish_currency(
-                                    CStr::from_ptr(in_currency_code)
-                                        .to_str()
-                                        .unwrap()
-                                        .as_bytes()
-                                        .to_owned()
+                                    CStr::from_ptr(in_currency_code).to_str().unwrap()
                                     );
                                 match ret {
                                     Ok(_) => true,

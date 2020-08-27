@@ -475,7 +475,7 @@ namespace LIB_NAME
             args.data = args_array.data();
 
             ViolasTypeTag v_type_tags[16];
-            for (int i = 0; i < 16 && i < type_tags.size(); i++)
+            for (size_t i = 0; i < 16 && i < type_tags.size(); i++)
                 v_type_tags[i] = from_type_tag(type_tags[i]);
 
             bool ret = violas_execute_script_ex((uint64_t)raw_client_proxy,

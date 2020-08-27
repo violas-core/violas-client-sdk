@@ -2,6 +2,7 @@
 #include <jni_violas_sdk.h>
 #include <filesystem>
 
+
 namespace fs = std::filesystem;
 
 #define CLASS_METHOD(x) Java_io_violas_sdk_Token_##x

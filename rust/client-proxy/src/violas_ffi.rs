@@ -859,9 +859,10 @@ pub mod x86_64 {
     #[no_mangle]
     pub fn libra_disable_custom_script(raw_ptr: u64) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
-            let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
+            let _proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
-            proxy.disable_custom_script(&["disble_custom_script"], true)
+            //proxy.disable_custom_script(&["disble_custom_script"], true)
+            Ok(())
         });
 
         if result.is_ok() {
@@ -1174,9 +1175,8 @@ pub mod x86_64 {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
                 let module_name = CStr::from_ptr(in_module_name)
                     .to_str()
-                    .unwrap()
-                    .as_bytes()
-                    .to_owned();
+                    .unwrap();
+                    
                 // publish currency
                 match proxy.publish_currency(module_name) {
                     Ok(_) => true,
@@ -1564,10 +1564,14 @@ pub mod x86_64 {
 
                 let auth_key = AuthenticationKey::new(*in_auth_key);
                 // register currency
-                match proxy.create_testing_account(
+                match proxy.create_parent_vasp_account(
                     type_tag,
+                    0,
                     auth_key.derived_address(),
                     auth_key.prefix().to_vec(),
+                    "user".as_bytes().to_vec(),
+                    vec![],
+                    vec![],
                     add_all_currencies,
                     is_blocking,
                 ) {
@@ -1596,7 +1600,7 @@ pub mod x86_64 {
     pub fn violas_create_parent_vasp_account(
         raw_client: u64,
         in_type_tag: &ViolasTypeTag,
-        sliding_nonce : u64,
+        sliding_nonce: u64,
         in_auth_key: &[u8; 32],
         in_human_name: *const c_char,
         in_base_url: *const c_char,

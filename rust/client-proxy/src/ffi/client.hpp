@@ -89,8 +89,9 @@ namespace violas
         get_all_accounts() = 0;
 
         virtual void
-        create_testnet_account(std::string_view currency_code,
-                               const AuthenticationKey &auth_key) = 0;
+        create_validator_account(std::string_view currency_code,
+                                 const AuthenticationKey &auth_key,
+                                 std::string_view human_name) = 0;
 
         virtual void
         mint_for_testnet(std::string_view currency_code,

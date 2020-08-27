@@ -1,4 +1,6 @@
 #include "io_violas_sdk_Client.h"
+#include <cstdint>
+#include <string>
 #include <jni_violas_sdk.h>
 
 #define CLASS_METHOD(x) Java_io_violas_sdk_Client_##x

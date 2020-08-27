@@ -42,7 +42,7 @@ compiled-stdlib = { path = "../../../libra/language/stdlib/compiled",  version =
 transaction-builder = { path = "../../../libra/language/transaction-builder", version = "0.1.0" }
 libra-types = { path = "../../../libra/types", version = "0.1.0" }
 
-move-lang = { path = "../../../libra/language/move-lang", version = "0.0.1" }
+#move-lang = { path = "../../../libra/language/move-lang", version = "0.0.1" }
 move-core-types = { path = "../../../libra/language/move-core/types"}
 
 [dev-dependencies]

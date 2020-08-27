@@ -1,7 +1,7 @@
 use crate::{
     libra_client_proxy::{parse_transaction_argument_for_client, ClientProxy},
-    violas_account::{bank_administrator_account_address, make_currency_tag},
-    AccountData, AccountStatus,
+    violas_account::bank_administrator_account_address, //make_currency_tag
+    AccountData,                                        //AccountStatus
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
 use libra_crypto::test_utils::KeyPair;
@@ -12,7 +12,7 @@ use libra_types::{
     account_config::{treasury_compliance_account_address, BalanceResource},
     account_state::AccountState,
     chain_id::ChainId,
-    on_chain_config::VMPublishingOption,
+    //on_chain_config::VMPublishingOption,
     transaction::{
         authenticator::AuthenticationKey, Module, Script, TransactionArgument, TransactionPayload,
     },
@@ -364,20 +364,23 @@ impl ViolasClient {
     /// Modify VM publishing option
     pub fn modify_vm_publishing_option(
         &mut self,
-        publishing_option: &PublishingOption,
+        _publishing_option: &PublishingOption,
         is_blocking: bool,
     ) -> Result<()> {
-        let option = match publishing_option {
-            //locked => VMPublishingOption::locked(),
-            PublishingOption::Open => VMPublishingOption::open(),
-            PublishingOption::CustomScript => VMPublishingOption::custom_scripts(),
-        };
+        // let script_bytes = fs::read(
+        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/modify_publishing_option.mv",
+        // )?;
+        let script_bytes = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
+            0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
+            116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
+            111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
+        ];
 
         match self.libra_root_account {
             Some(_) => self.association_transaction_with_local_libra_root_account(
-                TransactionPayload::Script(
-                    transaction_builder::encode_modify_publishing_option_script(option),
-                ),
+                TransactionPayload::Script(Script::new(script_bytes, vec![], vec![])),
                 is_blocking,
             ),
             None => unimplemented!(),
@@ -522,8 +525,10 @@ impl ViolasClient {
     ///
     /// publish a new module with specified module name
     ///
-    pub fn publish_currency(&mut self, module_name: Vec<u8>) -> Result<()> {
-        let new_module_byte_code = if module_name.len() == 3 {
+    pub fn publish_currency(&mut self, currency_code: &str) -> Result<()> {
+        let module_name = currency_code.as_bytes().to_owned();
+
+        let module_byte_code = if module_name.len() == 3 {
             let mut module_byte_code = vec![
                 161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 16, 8, 22, 16, 10, 38, 5,
                 0, 0, 0, 0, 2, 0, 3, 86, 76, 83, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101,
@@ -552,11 +557,27 @@ impl ViolasClient {
             bail!("The length of module name must be 3 or 6 bytes.");
         };
 
+        // let module_byte_code = {
+        //     let code = "
+        //     module VLS {
+        //         struct VLS { }
+        //     }
+        //     "
+        //     .to_string();
+        //     //.replace("VLS", currency_code);
+
+        //     let compiler = Compiler {
+        //         address: libra_types::account_config::CORE_CODE_ADDRESS,
+        //         extra_deps: vec![],
+        //         ..Compiler::default()
+        //     };
+        //     compiler.into_module_blob("file_name", code.as_str())?
+        // };
         match self.libra_root_account {
             Some(_) => self
                 .libra_client_proxy
                 .association_transaction_with_local_libra_root_account(
-                    TransactionPayload::Module(Module::new(new_module_byte_code)),
+                    TransactionPayload::Module(Module::new(module_byte_code)),
                     true,
                 ),
             None => unimplemented!(),
@@ -889,21 +910,21 @@ impl ViolasClient {
     }
 
     /// Create a testnet account
-    pub fn create_testing_account(
+    pub fn create_validator_account(
         self: &mut Self,
-        type_tag: TypeTag,
+        sliding_nonce: u64,
         new_account_address: AccountAddress,
         auth_key_prefix: Vec<u8>,
-        add_all_currencies: bool,
+        human_name: Vec<u8>,
         is_blocking: bool,
     ) -> Result<()> {
         match &self.libra_root_account {
             Some(_) => {
-                let script = transaction_builder::encode_create_testing_account_script(
-                    type_tag,
+                let script = transaction_builder::encode_create_validator_account_script(
+                    sliding_nonce,
                     new_account_address,
                     auth_key_prefix,
-                    add_all_currencies,
+                    human_name,
                 );
                 self.association_transaction_with_local_libra_root_account(
                     TransactionPayload::Script(script),
@@ -921,8 +942,8 @@ impl ViolasClient {
         new_account_address: AccountAddress,
         auth_key_prefix: Vec<u8>,
         human_name: Vec<u8>,
-        base_url: Vec<u8>,
-        compliance_public_key: Vec<u8>,
+        _base_url: Vec<u8>,
+        _compliance_public_key: Vec<u8>,
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
@@ -934,8 +955,8 @@ impl ViolasClient {
                     new_account_address,
                     auth_key_prefix,
                     human_name,
-                    base_url,
-                    compliance_public_key,
+                    //base_url,
+                    //compliance_public_key,
                     add_all_currencies,
                 );
                 self.association_transaction_with_local_libra_root_account(
@@ -989,8 +1010,8 @@ impl ViolasClient {
         new_account_address: AccountAddress,
         auth_key_prefix: Vec<u8>,
         human_name: Vec<u8>,
-        base_url: Vec<u8>,
-        compliance_public_key: Vec<u8>,
+        _base_url: Vec<u8>,
+        _compliance_public_key: Vec<u8>,
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
@@ -1002,8 +1023,8 @@ impl ViolasClient {
                     new_account_address,
                     auth_key_prefix,
                     human_name,
-                    base_url,
-                    compliance_public_key,
+                    //base_url,
+                    //compliance_public_key,
                     add_all_currencies,
                 );
                 self.association_transaction_with_local_treasury_compliance_account(

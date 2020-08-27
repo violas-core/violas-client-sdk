@@ -3,7 +3,7 @@
 pub mod ffi;
 mod libra_client;
 pub mod libra_client_proxy;
-pub mod move_compiler;
+//pub mod move_compiler;
 pub mod violas_account;
 pub mod violas_client;
 pub mod violas_ffi;

@@ -1,8 +1,4 @@
-use crate::{
-    violas_account,
-    violas_client::{PublishingOption, ViolasClient},
-    AccountAddress, AccountStatus,
-};
+use crate::{violas_account, violas_client::ViolasClient, AccountAddress, AccountStatus};
 use anyhow::{format_err, Error};
 use cpp::cpp;
 use libra_types::{
@@ -186,22 +182,31 @@ namespace violas
         }
 
         virtual AddressAndIndex
-        create_next_account() override
+        create_next_account(const std::optional<Address> &address = std::nullopt) override
         {
             AddressAndIndex addr_index;
+            bool is_addr_available = address != std::nullopt;
+            auto in_address = is_addr_available ?(*address).data() :  nullptr;
             auto out_index = &addr_index.index;
             auto out_addr = &addr_index.address[0];
 
             bool ret = rust!(Client_create_next_account [
                                         rust_violas_client : &mut ViolasClient as "void *",
+                                        is_addr_available : bool as "bool",
+                                        in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
                                         out_index : &mut usize as "size_t *",
                                         out_addr : &mut [c_uchar; ADDRESS_LENGTH] as "uint8_t *"
                                         ] -> bool as "bool" {
-                let result = rust_violas_client.create_next_account(true);
+                let result = rust_violas_client.create_next_account(
+                    match is_addr_available {
+                    true => Some(AccountAddress::new(*in_address)),
+                    false => None
+                    },
+                    true, );
                 match result {
-                    Ok(addr_index) => {
-                        out_addr.copy_from_slice(&addr_index.address.as_ref());
-                        *out_index = addr_index.index;
+                    Ok((address, index)) => {
+                        out_addr.copy_from_slice(&address.as_ref());
+                        *out_index = index;
                         true
                     },
                     Err(e) => {
@@ -382,23 +387,44 @@ namespace violas
         //  Modify VM publishing option
         //
         virtual void
-        modify_VM_publishing_option(PublishingOption option) override
+        allow_custom_script() override
         {
-            const auto in_option = &option;
-
-            bool ret = rust!( client_modify_publishing_option
+            bool ret = rust!( client_allow_custom_script
                 [
-                    rust_violas_client : &mut ViolasClient as "void *",
-                    in_option : *const PublishingOption as "const PublishingOption*"
+                    rust_violas_client : &mut ViolasClient as "void *"
                 ] -> bool as "bool" {
 
-                        let ret = rust_violas_client.modify_vm_publishing_option(
-                                        &*in_option,
-                                        true);
+                        let ret = rust_violas_client.allow_custom_script(true);
                         match ret {
                             Ok(_) => true,
                             Err(e) => {
-                                let err = format_err!("ffi::modify_VM_publishing_option, {}",e);
+                                let err = format_err!("ffi::allow_custom_script, {}",e);
+                                set_last_error(err);
+                                false
+                            }
+                        }
+                });
+
+            check_result(ret);
+        }
+
+        //
+        //  Allow  to publish custom module
+        //  note that calling method needs violas root privilege
+        virtual void
+        allow_publishing_module(bool enabled) override
+        {
+            bool ret = rust!( client_allow_publishing_module
+                [
+                    rust_violas_client : &mut ViolasClient as "void *",
+                    enabled : bool as "bool"
+                ] -> bool as "bool" {
+
+                        let ret = rust_violas_client.allow_publishing_module(enabled, true);
+                        match ret {
+                            Ok(_) => true,
+                            Err(e) => {
+                                let err = format_err!("ffi::allow_publishing_module, {}",e);
                                 set_last_error(err);
                                 false
                             }
@@ -768,17 +794,22 @@ namespace violas
         }
 
         virtual void
-        update_account_authentication_key(const Address &address) override
+        update_account_authentication_key(
+                                        const Address &address,
+                                        const AuthenticationKey &auth_key) override
         {
             auto in_address = address.data();
+            auto in_auth_key = auth_key.data();
 
             bool ret = rust!( client_update_account_authentication_key [
                 rust_violas_client : &mut ViolasClient as "void *",
-                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *"
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                in_auth_key : &[u8;ADDRESS_LENGTH*2] as "const uint8_t *"
                 ] -> bool as "bool" {
 
                     let ret = rust_violas_client.update_account_authentication_key(
                                     AccountAddress::new(*in_address),
+                                    AuthenticationKey::new(*in_auth_key),
                                     );
                     match ret {
                         Ok(_) => true,

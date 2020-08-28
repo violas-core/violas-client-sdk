@@ -55,9 +55,6 @@ int main(int argc, const char *argv[])
 
         client->test_connection();
 
-        for (size_t i = 0; i < 3; i++)
-            client->create_next_account();
-
         using handler = function<void()>;
         map<int, handler> handlers = {
             {1, [=]() { initialize_all_currencies(client); }},
@@ -75,7 +72,10 @@ int main(int argc, const char *argv[])
         int index;
         cin >> index;
 
-        client->modify_VM_publishing_option(Client::PublishingOption::open);
+        client->allow_publishing_module(true);
+        client->allow_custom_script();
+
+        cout << "allow custom script and  publishing module." << endl;
 
         handlers[index]();
     }
@@ -123,46 +123,51 @@ void initialize_all_currencies(client_ptr client)
 
 void run_test_case(client_ptr client)
 {
+    client->create_next_account(BANK_ACCOUNT_ADDRESS);
+    client->create_next_account(EXCHANGE_ACCOUNT_ADDRESS);
+
     auto accounts = client->get_all_accounts();
     auto LBR = "LBR", Coin1 = "Coin1";
 
-    int i = 0;
+    //for (size_t i = 0; i < 3; i++)
+    
+
     for (const auto &account : accounts)
     {
-        try_catch([&]() {
-            //client->create_parent_vasp_account(LBR, account.auth_key);
-            for (auto currency_code : currency_codes)
-            {
-                client->add_currency(i, currency_code);
-
-                client->mint_for_testnet(currency_code, account.address, 100 * MICRO_COIN);
-            }
-        },
-                  false);
-
         cout << "Address : " << account.address
              << ", Auth Key :" << account.auth_key
              << ", Sequence Number : " << account.sequence_number
              << endl;
-        i++;
     }
 
     //client->transfer(0, accounts[1].address, LBR, 5 * MICRO_COIN, 1);
-    auto bank_addr = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x62, 0x61, 0x6E, 0x6B});
-    AuthenticationKey auth_key = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0, 0x0, 0x0, 0x0};
+    //AuthenticationKey dummy_auth_key = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0, 0x0, 0x0, 0x0};
     PublicKey pub_key = {0x1a, 0xbb, 0x9e, 0x6f, 0xec, 0x3f, 0x18, 0x21, 0x0a, 0x3a, 0xa1, 0x1d, 0x00, 0x47, 0x5d, 0xee,
-                        0x76, 0xeb, 0xa7, 0x93, 0x78, 0x72, 0x37, 0x40, 0xb3, 0x7a, 0x9a, 0x2d, 0x09, 0x74, 0x96, 0xba};
+                         0x76, 0xeb, 0xa7, 0x93, 0x78, 0x72, 0x37, 0x40, 0xb3, 0x7a, 0x9a, 0x2d, 0x09, 0x74, 0x96, 0xba};
 
     client->create_designated_dealer_account("LBR",
                                              0,
-                                             bank_addr,
-                                             auth_key,
-                                             "Bank administrator",
+                                             BANK_ACCOUNT_ADDRESS,
+                                             accounts[0].auth_key, //only auth key prefix is applied
+                                             "Bank Administrator",
                                              "www.violas.io",
                                              pub_key,
                                              true);
 
-    client->update_account_authentication_key(bank_addr);
+    client->update_account_authentication_key(BANK_ACCOUNT_ADDRESS, accounts[0].auth_key);
 
-    client->add_currency(BANK_ADMINISTRATOR_ID, "USD");
+    client->add_currency(0, "USD");
+
+    client->create_designated_dealer_account("LBR",
+                                             0,
+                                             EXCHANGE_ACCOUNT_ADDRESS,
+                                             accounts[1].auth_key, //only auth key prefix is applied
+                                             "Exchange Administrator",
+                                             "www.violas.io",
+                                             pub_key,
+                                             true);
+
+    client->update_account_authentication_key(EXCHANGE_ACCOUNT_ADDRESS, accounts[1].auth_key);
+
+    client->add_currency(1, "USD");
 }

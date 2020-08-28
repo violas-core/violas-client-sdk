@@ -11,6 +11,7 @@
 #include <string_view>
 #include <limits>
 #include <variant>
+#include <optional>
 
 namespace violas
 {
@@ -63,6 +64,8 @@ namespace violas
     const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
     const Address CORE_CODE_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01};
+    const Address BANK_ACCOUNT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0x41, 0x4E, 0x4B});     //BANK,00000000000000000000000042414E4B
+    const Address EXCHANGE_ACCOUNT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x45, 0x58, 0x43, 0x48}); //EXCH
 
     class Client
     {
@@ -83,7 +86,7 @@ namespace violas
         //  wallet methods
         ////////////////////////////////////////////////////////////////
         virtual AddressAndIndex
-        create_next_account() = 0;
+        create_next_account(const std::optional<Address> &address = std::nullopt) = 0;
 
         virtual std::vector<Account>
         get_all_accounts() = 0;
@@ -112,17 +115,18 @@ namespace violas
         ////////////////////////////////////////////////////////////////
         //  management methods
         ////////////////////////////////////////////////////////////////
-        enum PublishingOption
-        {
-            //locked,
-            open,
-            custom_script
-        };
+
         //
-        //  Modify VM publishing option
-        //  note that calling method needs association privilege
+        //  Allow  the custom scripts
+        //  note that calling method needs violas root privilege
         virtual void
-        modify_VM_publishing_option(PublishingOption option) = 0;
+        allow_custom_script() = 0;
+
+        //
+        //  Allow  to publish custom module
+        //  note that calling method needs violas root privilege
+        virtual void
+        allow_publishing_module(bool enabled) = 0;
 
         //
         //  publish a module file
@@ -220,7 +224,8 @@ namespace violas
 
         virtual void
         update_account_authentication_key(
-            const Address &address) = 0;
+            const Address &address,
+            const AuthenticationKey &auth_key) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

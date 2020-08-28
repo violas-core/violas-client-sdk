@@ -125,7 +125,7 @@ pub struct ClientProxy {
     /// Account used for "minting" operations
     pub testnet_designated_dealer_account: Option<AccountData>,
     /// Wallet library managing user accounts.
-    wallet: WalletLibrary,
+    pub wallet: WalletLibrary,
     /// Whether to sync with validator on wallet recovery.
     sync_on_wallet_recovery: bool,
     /// temp files (alive for duration of program)

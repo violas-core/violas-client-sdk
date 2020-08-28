@@ -1,1 +1,1 @@
-cp ../../../../violas-dex-core/contract/*.move ./
+cp ../../../violas-dex-core/contract/*.move ./

@@ -14,8 +14,6 @@ echo "build currencies/register_currency.move"
 ../build.sh register_currency.move 0x0
 mv move_build_output/scripts/main.mv register_currency.mv
 
-echo "build update_account_authentication_key.move"
-../build.sh update_account_authentication_key.move 0x0
-mv move_build_output/scripts/main.mv update_account_authentication_key.mv
+
 
 rm -rf move_build_output

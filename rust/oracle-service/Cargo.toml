@@ -21,8 +21,8 @@ daemonize = "0.4"
 chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
 
 client-proxy = { path = "../client-proxy", version = "0.1.0" }
-libra-types = { path = "../../../libra/types", version = "0.1.0" }
-#libra-json-rpc = { path = "../../../libra/json-rpc", version = "0.1.0"}
+libra-types = { path = "../../../Violas/types", version = "0.1.0" }
+#libra-json-rpc = { path = "../../../Violas/json-rpc", version = "0.1.0"}
 
 [profile.release]
 panic = 'abort'

@@ -9,7 +9,7 @@ use structopt::StructOpt;
 use tokio::{
     runtime::Runtime,
     task,
-    time::{self, Instant, Interval},
+    time::{self}, //Instant, Interval
 };
 mod oracle;
 use chrono::prelude::*;

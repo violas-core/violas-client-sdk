@@ -146,8 +146,8 @@ pub mod x86_64 {
     ) -> AccountAndIndex {
         let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
-        let accountAndIndex = client
-            .create_next_account(sync_with_validator)
+        let (address, index) = client
+            .create_next_account(None, sync_with_validator)
             .expect("failed to call create_next_account");
 
         // println!(
@@ -157,13 +157,13 @@ pub mod x86_64 {
         // );
 
         let mut account = AccountAndIndex {
-            index: accountAndIndex.index as u64,
+            index: index as u64,
             address: [0; LENGTH],
         };
 
         account
             .address
-            .copy_from_slice(&accountAndIndex.address.to_vec());
+            .copy_from_slice(&address.to_vec());
 
         account
     }

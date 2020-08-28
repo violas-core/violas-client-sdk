@@ -14,7 +14,6 @@ module ViolasBank {
     //use 0x1::LBR;
     use 0x1::FixedPoint32;
     use 0x1::Oracle;
-	//use 0x1::CoreAddresses;
     
     resource struct LibraToken<Token> {
 	coin: Libra::Libra<Token>,
@@ -210,13 +209,10 @@ module ViolasBank {
     
     ///////////////////////////////////////////////////////////////////////////////////
     
-    fun contract_address() : address {	
-	0xe6ec25c77d29d0f1220ee4fae1da6a1b
-	//0x62616E6B
-	//0xda13aace1aa1c49e497416a9dd062ecb
-	//CoreAddresses::LIBRA_ROOT_ADDRESS()
+    fun contract_address() : address {
+		0xda13aace1aa1c49e497416a9dd062ecb
     }
-     
+    
     fun require_published(sender: address) {
 	assert(exists<Tokens>(sender), 102);
     }

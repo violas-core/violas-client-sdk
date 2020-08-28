@@ -57,13 +57,6 @@ impl DerefMut for ViolasClient {
     }
 }
 
-#[repr(C)]
-pub enum PublishingOption {
-    //locked,
-    Open,
-    CustomScript,
-}
-
 impl ViolasClient {
     /// Construct a new ViolasClient.
     pub fn new(
@@ -129,6 +122,34 @@ impl ViolasClient {
         //client.create_bank_administrator_account()?;
 
         Ok(client)
+    }
+
+    /// Returns the account index that should be used by user to reference this account
+    pub fn create_next_account(
+        &mut self,
+        address: Option<AccountAddress>,
+        sync_with_validator: bool,
+    ) -> Result<(AccountAddress, usize)> {
+        let (auth_key, child_number) = self.libra_client_proxy.wallet.new_address()?;
+        let private_key = self
+            .libra_client_proxy
+            .wallet
+            .get_private_key(child_number)?;
+
+        let account_data = ClientProxy::get_account_data_from_address(
+            &mut self.client,
+            match address {
+                Some(addr) => addr,
+                None => auth_key.derived_address(),
+            },
+            sync_with_validator,
+            Some(KeyPair::from(private_key)),
+            Some(auth_key.to_vec()),
+        )?;
+
+        let addr_index = self.insert_account_data(account_data);
+
+        Ok((addr_index.address, addr_index.index))
     }
 
     pub fn create_bank_administrator_account(&mut self) -> Result<()> {
@@ -246,35 +267,6 @@ impl ViolasClient {
         Ok(resp)
     }
 
-    pub fn association_transaction_with_bank_administrator_account(
-        &mut self,
-        payload: TransactionPayload,
-        is_blocking: bool,
-    ) -> Result<()> {
-        ensure!(
-            self.bank_administrator_account.is_some(),
-            "No treasury compliance account loaded"
-        );
-        //  create txn to submit
-        let sender = self.bank_administrator_account.as_ref().unwrap();
-        let sender_address = sender.address;
-        let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
-
-        // submit txn
-        let mut sender_mut = self.bank_administrator_account.as_mut().unwrap();
-        let resp = self
-            .libra_client_proxy
-            .client
-            .submit_transaction(Some(&mut sender_mut), txn)?;
-        let sequence_number = sender_mut.sequence_number;
-
-        // wait for txn
-        if is_blocking {
-            self.wait_for_transaction(sender_address, sequence_number)?;
-        }
-        Ok(resp)
-    }
-
     /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(
         &mut self,
@@ -361,22 +353,18 @@ impl ViolasClient {
         // })
     }
 
-    /// Modify VM publishing option
-    pub fn modify_vm_publishing_option(
-        &mut self,
-        _publishing_option: &PublishingOption,
-        is_blocking: bool,
-    ) -> Result<()> {
-        // let script_bytes = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/modify_publishing_option.mv",
-        // )?;
-        let script_bytes = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
-            0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
-            116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
-            111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
-        ];
+    /// Allow custom script
+    pub fn allow_custom_script(&mut self, is_blocking: bool) -> Result<()> {
+        let script_bytes = fs::read(
+            "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_custom_script.mv",
+        )?;
+        // let script_bytes = vec![
+        //     161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
+        //     0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
+        //     116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
+        //     111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
+        //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
+        // ];
 
         match self.libra_root_account {
             Some(_) => self.association_transaction_with_local_libra_root_account(
@@ -387,6 +375,31 @@ impl ViolasClient {
         }
     }
 
+    /// Allow publishing module
+    pub fn allow_publishing_module(&mut self, open: bool, is_blocking: bool) -> Result<()> {
+        let script_bytes = fs::read(
+            "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_publishing_module.mv",
+        )?;
+        // let script_bytes = vec![
+        //     161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
+        //     0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
+        //     116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
+        //     111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
+        //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
+        // ];
+
+        match self.libra_root_account {
+            Some(_) => self.association_transaction_with_local_libra_root_account(
+                TransactionPayload::Script(Script::new(
+                    script_bytes,
+                    vec![],
+                    vec![TransactionArgument::Bool(open)],
+                )),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
     /// Publish Move module
     /// if sender ref id is u64::MAX, then publish module with association account
     ///
@@ -690,15 +703,9 @@ impl ViolasClient {
                 }
                 None => unimplemented!(),
             }
-        } else if account_ref_id == VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID as usize {
-            let script = transaction_builder::encode_add_currency_to_account_script(type_tag);
-            self.association_transaction_with_bank_administrator_account(
-                TransactionPayload::Script(script),
-                is_blocking,
-            )
         } else {
             self.submit_transction_with_account(
-                account_ref_id as usize,
+                account_ref_id,
                 transaction_builder::encode_add_currency_to_account_script(type_tag),
                 None,
                 None,
@@ -881,32 +888,35 @@ impl ViolasClient {
     pub fn update_account_authentication_key(
         &mut self,
         address: AccountAddress,
-        //auth_key: Vec<u8>,
+        auth_key: AuthenticationKey,
     ) -> Result<()> {
-        let script_bytes = fs::read(
-            "/home/hunter/Projects/work/ViolasClientSdk/move/currencies/update_account_authentication_key.mv",
-        )?;
+        // let script_bytes = fs::read(
+        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/update_account_authentication_key.mv",
+        // )?;
 
-        if let Some(libra_root_account) = &self.libra_root_account {
-            let script = Script::new(
-                script_bytes,
-                vec![],
-                vec![
-                    TransactionArgument::Address(address),
-                    //TransactionArgument::U8Vector(auth_key),
-                    TransactionArgument::U8Vector(
-                        libra_root_account.authentication_key.clone().unwrap(),
-                    ),
-                ],
-            );
+        let script_bytes = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 7, 7, 14, 47, 8, 61, 16, 0, 0,
+            0, 1, 0, 1, 0, 3, 6, 12, 5, 10, 2, 0, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117,
+            110, 116, 33, 117, 112, 100, 97, 116, 101, 95, 97, 99, 99, 111, 117, 110, 116, 95, 97,
+            117, 116, 104, 101, 110, 116, 105, 99, 97, 116, 105, 111, 110, 95, 107, 101, 121, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 5, 11, 0, 10, 1, 11, 2, 17, 0, 2,
+        ];
+        let script = Script::new(
+            script_bytes,
+            vec![],
+            vec![
+                TransactionArgument::Address(address),
+                TransactionArgument::U8Vector(auth_key.to_vec()),
+                // TransactionArgument::U8Vector(
+                //     libra_root_account.authentication_key.clone().unwrap(),
+                // ),
+            ],
+        );
 
-            self.association_transaction_with_local_libra_root_account(
-                TransactionPayload::Script(script),
-                true,
-            )
-        } else {
-            Ok(())
-        }
+        self.association_transaction_with_local_libra_root_account(
+            TransactionPayload::Script(script),
+            true,
+        )
     }
 
     /// Create a testnet account

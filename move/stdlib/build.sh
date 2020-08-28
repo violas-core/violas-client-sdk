@@ -1,14 +1,16 @@
-echo "build modify_publishing_option.move"
-../build.sh modify_publishing_option.move 0x0 
-mv move_build_output/scripts/main.mv modify_publishing_option.mv
+rm *.mv
 
-# echo "build exdep.move"
-# ../build.sh exdep.move 0x0
-# mv move_build_output/modules/0_ExDep.mv exdep.mv
+echo "build update_account_authentication_key.move"
+../build.sh update_account_authentication_key.move 0x0 
+mv move_build_output/scripts/main.mv update_account_authentication_key.mv
 
-# echo "build initialize.move"
-# ../build.sh initialize.move 0x0 exchange.move exdep.move
-# mv move_build_output/scripts/main.mv initialize.mv
+echo "build allow_publishing_module.move"
+../build.sh allow_publishing_module.move 0x0
+mv move_build_output/scripts/main.mv allow_publishing_module.mv
+
+echo "build allow_custom_script.move"
+../build.sh allow_custom_script.move 0x0
+mv move_build_output/scripts/main.mv allow_custom_script.mv
 
 # echo "build add_currency.move"
 # ../build.sh add_currency.move 0x0 exchange.move exdep.move

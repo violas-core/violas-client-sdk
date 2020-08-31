@@ -2,12 +2,13 @@
 #define VIOLAS_CLIENT
 
 #if __cplusplus < 201703
-#error complier must be than c++17
+#error c++ complier must be than c++17
 #endif
 
 #include <memory>
 #include <array>
 #include <vector>
+#include <string>
 #include <string_view>
 #include <limits>
 #include <variant>
@@ -19,6 +20,7 @@ namespace violas
     using Address = std::array<uint8_t, ADDRESS_LENGTH>;
     using AuthenticationKey = std::array<uint8_t, ADDRESS_LENGTH * 2>;
     using PublicKey = std::array<uint8_t, ADDRESS_LENGTH * 2>;
+    using VecU8 = std::vector<uint8_t>;
 
     struct AddressAndIndex
     {
@@ -65,7 +67,7 @@ namespace violas
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
     const Address CORE_CODE_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01};
     const Address BANK_ACCOUNT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0x41, 0x4E, 0x4B});     //BANK,00000000000000000000000042414E4B
-    const Address EXCHANGE_ACCOUNT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x45, 0x58, 0x43, 0x48}); //EXCH
+    const Address EXCHANGE_ACCOUNT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x45, 0x58, 0x43, 0x48}); //EXCH,00000000000000000000000045584348
 
     class Client
     {
@@ -149,30 +151,30 @@ namespace violas
         virtual void
         execute_script(size_t account_index,
                        std::string_view module_file_name,
-                       const std::vector<TypeTag> &type_tags,
-                       const std::vector<TransactionAugment> &arguments) = 0;
+                       const std::vector<TypeTag> &type_tags = {},
+                       const std::vector<TransactionAugment> &arguments = {}) = 0;
 
         //
         //  Execute script file with specified arguments
         //
-        template <typename... Args>
-        void execute_script(size_t account_index,
-                            std::string_view script_file_name,
-                            const std::vector<TypeTag> &type_tags,
-                            const Args &... args)
-        {
-            using namespace std;
+        // template <typename... Args>
+        // void execute_script(size_t account_index,
+        //                     std::string_view script_file_name,
+        //                     const std::vector<TypeTag> &type_tags,
+        //                     const Args &... args)
+        // {
+        //     using namespace std;
 
-            std::vector<TransactionAugment> txn_args;
-            auto parse_arg = [&](const auto &arg) {
-                txn_args.push_back(arg);
-            };
+        //     std::vector<TransactionAugment> txn_args;
+        //     auto parse_arg = [&](const auto &arg) {
+        //         txn_args.push_back(arg);
+        //     };
 
-            ((parse_arg(args)), ...);
-            //(args.push_back(std::forward<TransactionAugment>(args)), ...);
+        //     ((parse_arg(args)), ...);
+        //     //(args.push_back(std::forward<TransactionAugment>(args)), ...);
 
-            execute_script(account_index, script_file_name, type_tags, txn_args);
-        }
+        //     execute_script(account_index, script_file_name, type_tags, txn_args);
+        // }
 
         ///////////////////////////////////////////////////////
         // multi-currency method
@@ -204,28 +206,55 @@ namespace violas
 
         /// mint currency for dd account
         virtual void
-        mint_currency_for_designated_dealer(
-            std::string_view currency_code,
-            uint64_t sliding_nonce,
-            const Address &dd_address,
-            uint64_t amount,
-            uint64_t tier_index) = 0;
+        mint_currency_for_designated_dealer(std::string_view currency_code,
+                                            uint64_t sliding_nonce,
+                                            const Address &dd_address,
+                                            uint64_t amount,
+                                            uint64_t tier_index) = 0;
 
         virtual void
-        create_designated_dealer_account(
-            std::string_view currency_code,
-            uint64_t nonce,
-            const Address &new_account_address,
-            const AuthenticationKey &auth_key,
-            std::string_view human_name,
-            std::string_view base_url,
-            PublicKey compliance_public_key,
-            bool add_all_currencies) = 0;
+        create_designated_dealer_account(std::string_view currency_code,
+                                         uint64_t nonce,
+                                         const Address &new_account_address,
+                                         const AuthenticationKey &auth_key,
+                                         std::string_view human_name,
+                                         std::string_view base_url,
+                                         PublicKey compliance_public_key,
+                                         bool add_all_currencies) = 0;
 
         virtual void
-        update_account_authentication_key(
-            const Address &address,
-            const AuthenticationKey &auth_key) = 0;
+        update_account_authentication_key(const Address &address,
+                                          const AuthenticationKey &auth_key) = 0;
+
+        //
+        // Create parent VASP account
+        //
+        virtual void
+        create_parent_vasp_account(std::string_view currency_code,
+                                   uint64_t nonce,
+                                   const Address &new_account_address,
+                                   const AuthenticationKey &auth_key,
+                                   std::string_view human_name,
+                                   std::string_view base_url,
+                                   PublicKey compliance_public_key,
+                                   bool add_all_currencies) = 0;
+
+        //  Exchnage interface
+        //
+        virtual std::string
+        get_exchange_currencies(const Address &address) = 0;
+
+        //
+        //  get exchange reservers
+        //
+        virtual std::string
+        get_exchange_reserves(const Address &address) = 0;
+
+        //
+        //  get liquidity balance
+        //
+        virtual std::string
+        get_liquidity_balance(const Address &address) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

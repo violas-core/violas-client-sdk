@@ -25,3 +25,5 @@ mv move_build_output/scripts/main.mv remove_liquidity.mv
 echo "build swap.move"
 ../build.sh swap.move 0x0 exchange.move exdep.move
 mv move_build_output/scripts/main.mv swap.mv
+
+rm -rf move_build_output

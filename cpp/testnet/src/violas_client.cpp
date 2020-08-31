@@ -6,6 +6,7 @@
 #include <client.hpp> //rust-client-proxy/ffi/client.hpp
 #include <iomanip>
 #include <functional>
+#include <violas_sdk2.hpp>
 #include "terminal.h"
 
 using namespace std;
@@ -22,7 +23,7 @@ std::ostream &operator<<(std::ostream &os, const array<uint8_t, N> &bytes)
     return os << std::dec;
 }
 
-auto currency_codes = {
+string currency_codes[] = {
     "VLSUSD",
     "VLSEUR",
     "VLSGBP",
@@ -37,6 +38,7 @@ auto currency_codes = {
 
 void run_test_case(client_ptr client);
 void initialize_all_currencies(client_ptr client);
+void deploy_exchange(client_ptr client);
 
 int main(int argc, const char *argv[])
 {
@@ -59,13 +61,13 @@ int main(int argc, const char *argv[])
         map<int, handler> handlers = {
             {1, [=]() { initialize_all_currencies(client); }},
             {2, [=]() { run_test_case(client); }},
-
+            {3, [=]() { deploy_exchange(client); }},
         };
 
         cout << "input index\n"
                 "1 for initialize all currencies \n"
-                "2 for testing Exchange \n"
-                //"3 for testing Account Management.\n"
+                "2 for testing Account Management \n"
+                "3 for Initilize Exchange contracts.\n"
                 //"4 for testing Bank \n"
                 "Please input index : ";
 
@@ -130,7 +132,6 @@ void run_test_case(client_ptr client)
     auto LBR = "LBR", Coin1 = "Coin1";
 
     //for (size_t i = 0; i < 3; i++)
-    
 
     for (const auto &account : accounts)
     {
@@ -170,4 +171,130 @@ void run_test_case(client_ptr client)
     client->update_account_authentication_key(EXCHANGE_ACCOUNT_ADDRESS, accounts[1].auth_key);
 
     client->add_currency(1, "USD");
+}
+
+void deploy_exchange(client_ptr client)
+{
+    cout << color::RED << "Deploy Exchange and initialize it ..." << color::RESET << endl;
+
+    //try_catch
+    auto admin = client->create_next_account(EXCHANGE_ACCOUNT_ADDRESS);
+    auto user1 = client->create_next_account();
+    auto user2 = client->create_next_account();
+
+    auto accounts = client->get_all_accounts();
+    auto &admin_account = accounts[admin.index];
+    auto &user1_account = accounts[user1.index];
+    auto &user2_account = accounts[user2.index];
+    for (auto &account : accounts)
+    {
+        cout << "address : " << account.address << endl;
+    }
+
+    try_catch([&]() {
+        client->create_designated_dealer_account("LBR",
+                                                 0,
+                                                 EXCHANGE_ACCOUNT_ADDRESS,
+                                                 admin_account.auth_key, //only auth key prefix is applied
+                                                 "Exchange Administrator",
+                                                 "www.violas.io",
+                                                 admin_account.pub_key,
+                                                 true);
+
+        client->update_account_authentication_key(EXCHANGE_ACCOUNT_ADDRESS, admin_account.auth_key);
+
+        client->create_parent_vasp_account("LBR",
+                                           0,
+                                           user1_account.address,
+                                           user1_account.auth_key,
+                                           "Exchange user1",
+                                           "www.violas.io",
+                                           user1_account.pub_key,
+                                           true);
+
+        client->create_parent_vasp_account("LBR",
+                                           0,
+                                           user2_account.address,
+                                           user2_account.auth_key,
+                                           "Exchange user1",
+                                           "www.violas.io",
+                                           user2_account.pub_key,
+                                           true);
+
+        for (auto currency_code : currency_codes)
+        {
+            client->add_currency(admin.index, currency_code);
+
+            client->add_currency(user1.index, currency_code);
+            client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
+
+            client->add_currency(user2.index, currency_code);
+            client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
+        }
+
+        cout << "created all accounts for Exchange" << endl;
+    });
+
+    auto print_all_balance = [&](const Address &addr) {
+        auto fmt_balance = [=](string_view currency) -> string {
+            TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
+
+            auto balance = 0; //client->get_currency_balance(tag, addr);
+            //return is_valid_balance(balance) ? to_string((double)balance / MICRO_COIN) : "N/A";
+            return to_string((double)balance / MICRO_COIN);
+        };
+
+        cout << "LBR : " // << double(client->get_balance(addr)) / MICRO_COIN << ", "
+             << "USD : " << fmt_balance("VLSUSD") << ", "
+             << "EUR : " << fmt_balance("VLSEUR") << "."
+             << "GBP : " << fmt_balance("VLSGBP") << "."
+             << endl;
+    };
+
+    //print_all_balance(accounts[0].address);
+    //print_all_balance(accounts[1].address);
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    const string script_path = "../../move/exchange/";
+    auto exchange = Exchange::create(client, script_path);
+
+    try_catch([&]() {
+        exchange->deploy_with_account(ASSOCIATION_ID);
+        cout << "deploied Exchange contracts on Violas blockchain." << endl;
+
+        exchange->initialize(admin.index);
+        cout << "Initialize Exchange contracts with admin account." << endl;
+
+        for (auto currency : currency_codes)
+        {
+            exchange->add_currency(currency);
+        }
+        cout << "add all currencies for Exchange" << endl;
+
+    });
+
+    exchange->add_liquidity(user1.index, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 2 * MICRO_COIN, 0});
+
+    exchange->add_liquidity(user1.index, {currency_codes[1], 2 * MICRO_COIN, 0}, {currency_codes[2], 4 * MICRO_COIN, 0});
+
+    exchange->add_liquidity(user1.index, {currency_codes[2], 4 * MICRO_COIN, 0}, {currency_codes[3], 8 * MICRO_COIN, 0});
+
+    //exchange->add_liquidity(user0, {currency_codes[3], 1 * MICRO_COIN, 0}, {currency_codes[4], 4 * MICRO_COIN, 0});
+    cout << "added liquidity with account 1 for Exchange" << endl;
+
+    auto currencies = exchange->get_currencies(admin.address);
+    //copy(begin(currencies), end(currencies), ostream_iterator<string>(cout, ", "));
+    cout << endl;
+
+    auto reserve = exchange->get_reserves(admin.address);
+    cout << reserve << endl;
+
+    auto liquidity_balance = exchange->get_liquidity_balance(admin.address);
+    cout << "liquidity balance is :" << liquidity_balance << endl;
+
+    exchange->swap(user1.index, user1.address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
+
+    print_all_balance(user1.address);
+    print_all_balance(user2.address);
 }

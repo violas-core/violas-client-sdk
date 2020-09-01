@@ -1,9 +1,10 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <iterator>
 #include <map>
 #include <memory>
-#include <client.hpp> //rust-client-proxy/ffi/client.hpp
+#include <client.hpp> //rust/client-proxy/ffi/client.hpp
 #include <iomanip>
 #include <functional>
 #include <violas_sdk2.hpp>
@@ -263,7 +264,7 @@ void deploy_exchange(client_ptr client)
         exchange->deploy_with_account(ASSOCIATION_ID);
         cout << "deploied Exchange contracts on Violas blockchain." << endl;
 
-        exchange->initialize(admin.index);
+        exchange->initialize(admin);
         cout << "Initialize Exchange contracts with admin account." << endl;
 
         for (auto currency : currency_codes)
@@ -283,14 +284,14 @@ void deploy_exchange(client_ptr client)
     //exchange->add_liquidity(user0, {currency_codes[3], 1 * MICRO_COIN, 0}, {currency_codes[4], 4 * MICRO_COIN, 0});
     cout << "added liquidity with account 1 for Exchange" << endl;
 
-    auto currencies = exchange->get_currencies(admin.address);
-    //copy(begin(currencies), end(currencies), ostream_iterator<string>(cout, ", "));
+    auto currencies = exchange->get_currencies();
+    copy(begin(currencies), end(currencies), ostream_iterator<string>(cout, ", "));
     cout << endl;
 
-    auto reserve = exchange->get_reserves(admin.address);
+    auto reserve = exchange->get_reserves();
     cout << reserve << endl;
 
-    auto liquidity_balance = exchange->get_liquidity_balance(admin.address);
+    auto liquidity_balance = exchange->get_liquidity_balance();
     cout << "liquidity balance is :" << liquidity_balance << endl;
 
     exchange->swap(user1.index, user1.address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);

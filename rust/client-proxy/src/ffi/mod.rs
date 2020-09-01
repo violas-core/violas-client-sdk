@@ -2,9 +2,13 @@ use crate::{violas_account, violas_client::ViolasClient, AccountAddress, Account
 use anyhow::{format_err, Error};
 use cpp::cpp;
 use libra_types::{
-    chain_id::ChainId, transaction::authenticator::AuthenticationKey, waypoint::Waypoint,
+    account_config::CORE_CODE_ADDRESS, chain_id::ChainId,
+    transaction::authenticator::AuthenticationKey, waypoint::Waypoint,
 };
-use move_core_types::language_storage::TypeTag;
+use move_core_types::{
+    identifier::Identifier,
+    language_storage::{StructTag, TypeTag},
+};
 use std::{
     cell::RefCell,
     ffi::{CStr, CString},
@@ -31,14 +35,6 @@ fn get_last_error() -> *const c_char {
         let err = prev.borrow_mut();
         CString::new(err.clone()).unwrap().into_raw()
     })
-}
-
-fn free_string(s: *mut c_char) {
-    if !s.is_null() {
-        unsafe {
-            CString::from_raw(s);
-        }
-    }
 }
 
 // for Rust
@@ -110,6 +106,19 @@ namespace violas
         //raw rust ViolasClient pointer
         void * rust_violas_client;
 
+        void free_rust_string(const char * rust_str)
+        {
+            rust!( client_free_string [
+                rust_str : *mut c_char as "const char *"
+                ] {
+                    if !rust_str.is_null() {
+                        unsafe {
+                            CString::from_raw(rust_str);
+                        }
+                    }
+                });
+        }
+
         void check_result(bool ret)
         {
             if( !ret )
@@ -119,9 +128,7 @@ namespace violas
                 });
 
                 string error(last_error);
-                rust!( client_free_string [last_error : *mut c_char as "const char*"] {
-                    free_string(last_error);
-                });
+                free_rust_string(last_error);
 
                 throw runtime_error(error);
             }
@@ -885,25 +892,168 @@ namespace violas
         virtual std::string //json string
         get_exchange_currencies(const Address &address) override
         {
-            return string();
+            auto in_address = address.data();
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_get_exchange_currencies [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+                    let resource_tag = StructTag {
+                        address: CORE_CODE_ADDRESS,
+                        module: Identifier::new("Exchange").unwrap(),
+                        name: Identifier::new("RegisteredCurrencies").unwrap(),
+                        type_params: vec![],
+                    };
+
+                    let ret: Result<Option<violas_account::exchange::RegisteredCurrencies>, Error> =
+                    rust_violas_client.get_account_resource(&AccountAddress::new(*in_address), &resource_tag);
+
+                    match ret {
+                        Ok(opt) => match opt {
+                            Some(view) => {
+                                let json_currencies = serde_json::to_string(&view).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new reserves detail")
+                                    .into_raw();
+                                true
+                            }
+                            None => {
+                                false
+                            }
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to get exchagne reserves with error, {}",
+                                e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
         }
 
         //
         //  get exchange reservers
+        //  return json string
         //
         virtual std::string
         get_exchange_reserves(const Address & address ) override
         {
-            return string();
+            auto in_address = address.data();
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_get_exchange_reserves [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+                    let resource_tag = StructTag {
+                        address: CORE_CODE_ADDRESS,
+                        module: Identifier::new("Exchange").unwrap(),
+                        name: Identifier::new("Reserves").unwrap(),
+                        type_params: vec![],
+                    };
+
+                    let ret: Result<Option<violas_account::exchange::Reserves>, Error> =
+                    rust_violas_client.get_account_resource(&AccountAddress::new(*in_address), &resource_tag);
+
+                    match ret {
+                        Ok(opt) => match opt {
+                            Some(view) => {
+                                let json_currencies = serde_json::to_string(&view).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new reserves detail error")
+                                    .into_raw();
+                                true
+                            }
+                            None => {
+                                false
+                            }
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to get exchagne reserves with error, {}",
+                                e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
         }
 
         //
         //  get liquidity balance
+        //  return json string
         //
         virtual std::string
         get_liquidity_balance(const Address & address ) override
         {
-            return string();
+            auto in_address = address.data();
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_get_liquidity_balance [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+                    let resource_tag = StructTag {
+                        address: CORE_CODE_ADDRESS,
+                        module: Identifier::new("Exchange").unwrap(),
+                        name: Identifier::new("Tokens").unwrap(),
+                        type_params: vec![],
+                    };
+
+                    let ret: Result<Option<violas_account::exchange::Tokens>, Error> =
+                    rust_violas_client.get_account_resource(&AccountAddress::new(*in_address), &resource_tag);
+
+                    match ret {
+                        Ok(opt) => match opt {
+                            Some(view) => {
+                                let json_currencies = serde_json::to_string(&view).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new reserves detail error")
+                                    .into_raw();
+                                true
+                            }
+                            None => {
+                                false
+                            }
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to get exchagne liquidity balance with error, {}",
+                                e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
         }
     };
 

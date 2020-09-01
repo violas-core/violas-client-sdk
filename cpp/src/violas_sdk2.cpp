@@ -34,12 +34,12 @@ namespace violas
         //  Initialize Exchange contacts with administrator account index
         //
         virtual void
-        initialize(size_t admin_account_index) override
+        initialize(const AddressAndIndex &admin) override
         {
-            m_admin_account_index = admin_account_index;
+            m_admin = admin;
 
             //  initialize module Exchange under association account
-            m_client->execute_script(m_admin_account_index, _script_initialize);
+            m_client->execute_script(m_admin.index, _script_initialize);
         }
 
         virtual void
@@ -47,15 +47,13 @@ namespace violas
         {
             TypeTag tag(CORE_CODE_ADDRESS, currency_code, currency_code);
 
-            m_client->execute_script(m_admin_account_index, _script_add_currency, vector<TypeTag>{tag});
+            m_client->execute_script(m_admin.index, _script_add_currency, vector<TypeTag>{tag});
         }
 
         virtual std::vector<std::string>
-        get_currencies(const Address &address) override
+        get_currencies() override
         {
-            //auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
-
-            string currencies = m_client->get_exchange_currencies(address);
+            string currencies = m_client->get_exchange_currencies(m_admin.address);
 
             json currency_codes = json::parse(currencies);
 
@@ -74,26 +72,21 @@ namespace violas
                 codes.push_back(code);
             }
 
-            //cout << " the size of codes is " << codes.size() << endl;
-
             return codes;
         }
 
         virtual std::string
-        get_reserves(const Address &address) override
+        get_reserves() override
         {
-            //auto client_imp = dynamic_pointer_cast<ClientImp>(m_client);
-            //void *raw_client = client_imp->get_raw_client();
-
-            string json_reservers_info = m_client->get_exchange_reserves(address);
+            string json_reservers_info = m_client->get_exchange_reserves(m_admin.address);
 
             return json_reservers_info;
         }
 
         virtual std::string
-        get_liquidity_balance(const Address &address) override
+        get_liquidity_balance() override
         {
-            string json_balances = m_client->get_liquidity_balance(address);
+            string json_balances = m_client->get_liquidity_balance(m_admin.address);
 
             return json_balances;
         }
@@ -160,7 +153,7 @@ namespace violas
         vector<uint8_t>
         find_swap_path(std::string_view currency_code_a, uint64_t currency_a_amount, std::string_view currency_code_b)
         {
-            auto currency_codes = get_currencies(ASSOCIATION_ADDRESS);
+            auto currency_codes = get_currencies();
             size_t currency_a_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_a));
             size_t currency_b_index = distance(begin(currency_codes), find(begin(currency_codes), end(currency_codes), currency_code_b));
 
@@ -191,7 +184,7 @@ namespace violas
             //
             //  initialize all vertex and edge
             //
-            json reserves = json::parse(get_reserves(ASSOCIATION_ADDRESS));
+            json reserves = json::parse(get_reserves());
 
             for (const auto &reserve : reserves["reserves"])
             {
@@ -257,7 +250,7 @@ namespace violas
         }
 
     private:
-        size_t m_admin_account_index;
+        AddressAndIndex m_admin;
         std::string m_script_path;
         const std::string _module_exchange = m_script_path + "exchange.mv";
         const std::string _module_exdep = m_script_path + "exdep.mv";

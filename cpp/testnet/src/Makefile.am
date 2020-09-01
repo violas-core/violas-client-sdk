@@ -32,5 +32,5 @@ RUST_CPP_CLIENT = $(top_srcdir)/rust/client-proxy/target/debug/build/client-prox
 
 violas_client_SOURCES = violas_client.cpp 
 violas_client_CXXFLAGS = -std=c++17 -I$(top_srcdir)/cpp/src -I$(top_srcdir)/rust/client-proxy/src/ffi
-violas_client_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib $(CLIENT_PROXY_PATH)
+violas_client_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib -L../../src/.libs $(CLIENT_PROXY_PATH)
 violas_client_LDADD = $(CLIENT_PROXY) $(RUST_CPP_CLIENT) -lviolas_sdk

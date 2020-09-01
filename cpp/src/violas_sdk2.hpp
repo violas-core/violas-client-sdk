@@ -20,13 +20,13 @@ namespace violas
         //  Initialize Exchange contacts with administrator account index
         //
         virtual void
-        initialize(size_t admin_account_index) = 0;
+        initialize(const AddressAndIndex & admin) = 0;
 
         virtual void
         add_currency(std::string_view currency_code) = 0;
 
         virtual std::vector<std::string>
-        get_currencies(const Address &address) = 0;
+        get_currencies() = 0;
 
         struct LiquidityInfo
         {
@@ -46,10 +46,10 @@ namespace violas
 
         //get all liqudity info
         virtual std::string
-        get_reserves(const Address &address) = 0;
+        get_reserves() = 0;
 
         virtual std::string
-        get_liquidity_balance(const Address &address) = 0;
+        get_liquidity_balance() = 0;
 
         // remove liquidity
         virtual void

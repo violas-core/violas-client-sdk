@@ -58,6 +58,29 @@ namespace violas
               resource_name(res)
         {
         }
+
+        TypeTag(const TypeTag &tag)
+            : address(tag.address),
+              module_name(tag.module_name),
+              resource_name(tag.resource_name)
+        {
+        }
+
+        TypeTag(TypeTag &&tag)
+        {
+            address = std::move(tag.address);
+            module_name = std::move(tag.module_name);
+            resource_name = std::move(tag.resource_name);
+        }
+
+        TypeTag &operator=(TypeTag &&tag)
+        {
+            address = std::move(tag.address);
+            module_name = std::move(tag.module_name);
+            resource_name = std::move(tag.resource_name);
+
+            return *this;
+        }
     };
 
     const uint64_t MICRO_COIN = 1E+6;
@@ -66,8 +89,11 @@ namespace violas
     const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
     const Address CORE_CODE_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01};
-    const Address BANK_ACCOUNT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0x41, 0x4E, 0x4B});     //BANK,00000000000000000000000042414E4B
-    const Address EXCHANGE_ACCOUNT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x45, 0x58, 0x43, 0x48}); //EXCH,00000000000000000000000045584348
+    
+    inline TypeTag make_currency_tag(std::string_view currency_code)
+    {
+        return TypeTag(CORE_CODE_ADDRESS, currency_code, currency_code);
+    }
 
     class Client
     {

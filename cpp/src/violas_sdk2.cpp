@@ -47,7 +47,7 @@ namespace violas
         {
             TypeTag tag(CORE_CODE_ADDRESS, currency_code, currency_code);
 
-            m_client->execute_script(m_admin.index, _script_add_currency, vector<TypeTag>{tag});
+            m_client->execute_script(m_admin.index, _script_add_currency, {tag});
         }
 
         virtual std::vector<std::string>
@@ -267,4 +267,169 @@ namespace violas
         return make_shared<ExchangeImp>(client, exchange_contracts_path);
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////
+    //  BankImp
+    //  Implementation for Bank interface
+    /////////////////////////////////////////////////////////////////////////////////////
+    class BankImp : public Bank
+    {
+    public:
+        BankImp(client_ptr client,
+                std::string_view bank_contracts_path) : m_client(client),
+                                                        m_bank_path(bank_contracts_path)
+        {
+        }
+
+        virtual ~BankImp() {}
+
+        virtual void
+        deploy_with_association_account() override
+        {
+            m_client->publish_module(ASSOCIATION_ID, _module_bank);
+        }
+
+        virtual void
+        publish(size_t account_index) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_publish,
+                                     {},
+                                     {VecU8()});
+        }
+
+        virtual void
+        add_currency(std::string_view currency_code,
+                     const Address &owner,
+                     uint64_t collateral_factor,
+                     uint64_t base_rate,
+                     uint64_t rate_multiplier,
+                     uint64_t rate_jump_multiplier,
+                     uint64_t rate_kink) override
+        {
+            m_client->execute_script(ASSOCIATION_ID,
+                                     _script_register_libra_token,
+                                     {make_currency_tag(currency_code)},
+                                     {owner,
+                                      collateral_factor,
+                                      base_rate,
+                                      rate_multiplier,
+                                      rate_jump_multiplier,
+                                      rate_kink,
+                                      VecU8()});
+        }
+
+        virtual void
+        update_currency_price(std::string_view currency_code, uint64_t price) override
+        {
+            m_client->execute_script(ASSOCIATION_ID,
+                                     _scirpt_update_price,
+                                     {make_currency_tag(currency_code)},
+                                     {price});
+        }
+
+        virtual void
+        enter(size_t account_index, std::string_view currency_code, uint64_t amount) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_enter_bank,
+                                     {make_currency_tag(currency_code)},
+                                     {amount});
+        }
+
+        virtual void
+        exit(size_t account_index, std::string_view currency_code, uint64_t amount) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_exit_bank,
+                                     {make_currency_tag(currency_code)},
+                                     {amount});
+        }
+
+        virtual void
+        lock(size_t account_index,
+             std::string_view currency_code,
+             uint64_t amount) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_lock,
+                                     {make_currency_tag(currency_code)},
+                                     {amount, VecU8()});
+        }
+
+        virtual void
+        redeem(size_t account_index,
+               std::string_view currency_code,
+               uint64_t amount) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_redeem,
+                                     {make_currency_tag(currency_code)},
+                                     {amount, VecU8()});
+        }
+
+        virtual void
+        borrow(size_t account_index,
+               std::string_view currency_code,
+               uint64_t amount) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_borrow,
+                                     {make_currency_tag(currency_code)},
+                                     {amount, VecU8()});
+        }
+
+        virtual void
+        repay_borrow(size_t account_index,
+                     std::string_view currency_code,
+                     uint64_t amount) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_repay_borrow,
+                                     {make_currency_tag(currency_code)},
+                                     {amount, VecU8()});
+        }
+
+        virtual void
+        liquidate_borrow(size_t account_index,
+                         std::string_view borrowed_currency_code,
+                         const Address &liquidated_user_addr,
+                         uint64_t amount,
+                         std::string_view liquidated_currency_code) override
+        {
+            m_client->execute_script(account_index,
+                                     _script_liquidate_borrow,
+                                     //tags
+                                     {make_currency_tag(borrowed_currency_code),
+                                      make_currency_tag(liquidated_currency_code)},
+                                     //arguments
+                                     {liquidated_user_addr,
+                                      amount,
+                                      VecU8()});
+        }
+
+    private:
+        client_ptr m_client;
+        string m_bank_path;
+        const string _module_bank = m_bank_path + "bank.mv";
+        const string _script_borrow = m_bank_path + "borrow.mv";
+        const string _script_create_token = m_bank_path + "create_token.mv";
+        const string _script_enter_bank = m_bank_path + "enter_bank.mv";
+        const string _script_exit_bank = m_bank_path + "exit_bank.mv";
+        const string _script_liquidate_borrow = m_bank_path + "liquidate_borrow.mv";
+        const string _script_lock = m_bank_path + "lock.mv";
+        const string _script_mint = m_bank_path + "mint.mv";
+        const string _script_publish = m_bank_path + "publish.mv";
+        const string _script_redeem = m_bank_path + "redeem.mv";
+        const string _script_register_libra_token = m_bank_path + "register_libra_token.mv";
+        const string _script_repay_borrow = m_bank_path + "repay_borrow.mv";
+        const string _script_update_collateral_factor = m_bank_path + "update_collateral_factor.mv";
+        const string _scirpt_update_price = m_bank_path + "update_price.mv";
+    }; // Bank
+
+    std::shared_ptr<Bank>
+    Bank::create_bank(client_ptr client,
+                      std::string_view bank_contracts_path)
+    {
+        return make_shared<BankImp>(client, bank_contracts_path);
+    }
 } // namespace violas

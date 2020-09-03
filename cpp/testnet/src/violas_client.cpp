@@ -178,7 +178,7 @@ void run_test_case(client_ptr client)
 void deploy_exchange(client_ptr client)
 {
     cout << color::RED << "Deploy Exchange and initialize it ..." << color::RESET << endl;
-    
+
     auto admin = client->create_next_account(EXCHANGE_ADMIN_ADDRESS);
     auto user1 = client->create_next_account();
     auto user2 = client->create_next_account();
@@ -261,7 +261,7 @@ void deploy_exchange(client_ptr client)
     auto exchange = Exchange::create(client, script_path);
 
     try_catch([&]() {
-        exchange->deploy_with_account(ASSOCIATION_ID);
+        exchange->deploy_with_root_account();
         cout << "deploied Exchange contracts on Violas blockchain." << endl;
 
         exchange->initialize(admin);
@@ -359,5 +359,76 @@ void deploy_bank(client_ptr client)
 
         cout << "created all accounts for Bank contract." << endl;
     });
-    
+
+    auto bank = Bank::create_bank(client, "../../move/bank/");
+    //
+    //  initialize
+    //
+    try_catch([=]() {
+        bank->deploy_with_root_account();
+        cout << "deployed bank module successfully." << endl;
+
+        bank->initialize(admin);
+
+        bank->publish(user1.index);
+        bank->publish(user2.index);
+
+        cout << "published successfully." << endl;
+
+        for (auto currency_code : currency_codes)
+        {
+            bank->add_currency(currency_code,
+                               admin.address,
+                               Bank::MANTISSA_1_0 / 2,       // 50%
+                               Bank::MANTISSA_1_0 / 20,      // 5%
+                               Bank::MANTISSA_1_0 / 10,      // 10%
+                               Bank::MANTISSA_1_0 / 2,       // 50%
+                               Bank::MANTISSA_1_0 * 8 / 10); // 80%
+        }
+
+        cout << "added currencies successfully." << endl;
+    });
+
+    cout << "finished Initialization for Bank module" << endl;
+
+    // try_catch([=]() {
+    // });
+
+    // bank->update_currency_price(currency_codes[0], Bank::MANTISSA_1_0 / 10);
+    // bank->update_currency_price(currency_codes[1], Bank::MANTISSA_1_0 / 10);
+    // bank->update_currency_price(currency_codes[2], Bank::MANTISSA_1_0 / 10);
+    string currencies[] = {"USD", "EUR", "GBP"};
+
+    for (auto currency_code : currencies)
+    {
+        bank->update_currency_price(currency_code, Bank::MANTISSA_1_0 / 10);
+
+        bank->enter(user1.index, currency_code, 1000 * MICRO_COIN);
+        bank->enter(user2.index, currency_code, 1000 * MICRO_COIN);
+
+        cout << "update for Bank module" << endl;
+    }
+
+    //  lock currency 0 with 10 MICRO_COIN
+    bank->lock(user1.index, currencies[0], 100 * MICRO_COIN);
+
+    //
+    //  lock  200 and redeem 100 for currency 1
+    //
+    bank->lock(user1.index, currencies[1], 200 * MICRO_COIN);
+    bank->redeem(user1.index, currencies[1], 100 * MICRO_COIN);
+
+    //
+    // borrow  and repay 100 for currency 2
+    //
+    bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
+    bank->repay_borrow(user1.index, currencies[2], 100 * MICRO_COIN);
+
+    bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
+
+    bank->update_currency_price(currencies[2], Bank::MANTISSA_1_0 / 5); //20%
+
+    // bank->enter(user1, "VLSEUR", 10 * MICRO_COIN);
+
+    bank->liquidate_borrow(user2.index, currencies[2], user1.address, 90 * MICRO_COIN, currencies[0]);
 }

@@ -17,7 +17,7 @@ namespace violas
         virtual ~Exchange() {}
 
         virtual void
-        deploy_with_account(size_t account_index) = 0;
+        deploy_with_root_account() = 0;
 
         //
         //  Initialize Exchange contacts with administrator account index
@@ -87,7 +87,10 @@ namespace violas
         virtual ~Bank() {}
 
         virtual void
-        deploy_with_association_account() = 0;
+        deploy_with_root_account() = 0;
+
+        virtual void
+        initialize(const AddressAndIndex &admin) = 0;
 
         virtual void
         publish(size_t account_index) = 0;

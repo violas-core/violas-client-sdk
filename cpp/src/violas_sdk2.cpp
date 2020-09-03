@@ -23,11 +23,11 @@ namespace violas
         }
 
         virtual void
-        deploy_with_account(size_t account_index) override
+        deploy_with_root_account() override
         {
-            m_client->publish_module(account_index, _module_exdep);
+            m_client->publish_module(ASSOCIATION_ID, _module_exdep);
 
-            m_client->publish_module(account_index, _module_exchange);
+            m_client->publish_module(ASSOCIATION_ID, _module_exchange);
         }
 
         //
@@ -283,9 +283,16 @@ namespace violas
         virtual ~BankImp() {}
 
         virtual void
-        deploy_with_association_account() override
+        deploy_with_root_account() override
         {
             m_client->publish_module(ASSOCIATION_ID, _module_bank);
+        }
+
+        virtual void
+        initialize(const AddressAndIndex &admin) override
+        {
+            m_admin = admin;
+            publish(m_admin.index);
         }
 
         virtual void
@@ -306,7 +313,7 @@ namespace violas
                      uint64_t rate_jump_multiplier,
                      uint64_t rate_kink) override
         {
-            m_client->execute_script(ASSOCIATION_ID,
+            m_client->execute_script(m_admin.index,
                                      _script_register_libra_token,
                                      {make_currency_tag(currency_code)},
                                      {owner,
@@ -321,7 +328,7 @@ namespace violas
         virtual void
         update_currency_price(std::string_view currency_code, uint64_t price) override
         {
-            m_client->execute_script(ASSOCIATION_ID,
+            m_client->execute_script(m_admin.index,
                                      _scirpt_update_price,
                                      {make_currency_tag(currency_code)},
                                      {price});
@@ -409,6 +416,7 @@ namespace violas
 
     private:
         client_ptr m_client;
+        AddressAndIndex m_admin;
         string m_bank_path;
         const string _module_bank = m_bank_path + "bank.mv";
         const string _script_borrow = m_bank_path + "borrow.mv";

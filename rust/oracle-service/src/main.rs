@@ -127,23 +127,29 @@ fn main() -> Result<()> {
                 let currency_rates = rt.block_on(async {
                     //let mut interval = time::interval(Duration::from_secs(60));
                     //interval.tick().await;
-                    time::delay_for(Duration::from_secs(60)).await;
+                    //time::delay_for(Duration::from_secs(60)).await;
                     gather_exchange_rate_from_coinbase().await
                 })?;
 
                 let mut oracle = create_oracle(args.clone())?;
 
-                println!("udpate Oracle exchange rates, {}", Local::now());
+                println!(
+                    "{} : started to udpate Oracle Exchange Rates.",
+                    Local::now()
+                );
 
                 for currency_rate in currency_rates {
                     let (currency, ex_rate) = currency_rate;
                     oracle.update_exchange_rate(currency.as_str(), ex_rate)?;
+                    print!("{} : {}, ", currency, ex_rate);
                 }
 
                 println!(
-                    "finished udpating Oracle exchange rates, {:?}",
+                    "\n{} : finished udpating Oracle Exchange Rates.",
                     Local::now()
                 );
+
+                rt.block_on(async { time::delay_for(Duration::from_secs(60)).await });
             }
         }
     }
@@ -199,7 +205,7 @@ fn daemon() -> Result<()> {
         .umask(0o777) // Set umask, `0o027` by default.
         .stdout(stdout) // Redirect stdout to `/tmp/daemon.out`.
         .stderr(stderr) // Redirect stderr to `/tmp/daemon.err`.
-        .exit_action(|| println!("Executed before master process exits"))
+        .exit_action(|| println!("violas_oracle starts to run as a daemon."))
         .privileged_action(|| "Executed before drop privileges");
 
     match daemonize.start() {

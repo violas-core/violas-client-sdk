@@ -210,7 +210,7 @@ module ViolasBank {
     ///////////////////////////////////////////////////////////////////////////////////
     
     fun contract_address() : address {
-		0xda13aace1aa1c49e497416a9dd062ecb
+		0x00000000000000000000000042414E4B //0xda13aace1aa1c49e497416a9dd062ecb
     }
     
     fun require_published(sender: address) {

@@ -4,11 +4,17 @@ use client_proxy::{
     violas_client::{self, ViolasClient},
 };
 use libra_types::{
+    account_address::AccountAddress,
     account_config::{libra_root_address, CORE_CODE_ADDRESS},
     event::EventHandle,
-    transaction::TransactionArgument,
+    transaction::{authenticator::AuthenticationKey, TransactionArgument},
 };
 use serde::{Deserialize, Serialize};
+
+pub fn oracle_admin_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0x4f524143")
+        .expect("Parsing valid hex literal should always succeed")
+}
 
 #[derive(Serialize, Debug, Deserialize)]
 struct ExchangeRateReource {
@@ -33,7 +39,37 @@ impl Oracle {
         self.violas_client.publish_module(
             violas_client::VIOLAS_ROOT_ACCOUNT_ID as usize,
             oracle_module_file_name,
-        )
+        )?;
+
+        self.violas_client.create_next_account(None, false)?;
+        let auth_key = self.violas_client.accounts[0]
+            .authentication_key
+            .as_ref()
+            .unwrap()
+            .clone();
+        let pub_key = &self.violas_client.accounts[0]
+            .key_pair
+            .as_ref()
+            .unwrap()
+            .public_key.clone();
+
+        self.violas_client.create_designated_dealer_account(
+            make_currency_tag("LBR"),
+            0,
+            oracle_admin_address(),
+            (&auth_key[0..16]).to_vec(), //only auth key prefix is applied
+            "Oracle Administrator".as_bytes().to_vec(),
+            "www.violas.io".as_bytes().to_owned(),
+            pub_key.to_bytes().to_vec(),
+            true,
+            true,
+        )?;
+
+        let mut data: [u8; 32] = [0; 32];
+        data.copy_from_slice(&auth_key);
+
+        self.violas_client
+            .update_account_authentication_key(oracle_admin_address(), AuthenticationKey::new(data))
     }
 
     pub fn update_exchange_rate(&mut self, currency_code: &str, exchange_rate: f64) -> Result<()> {

@@ -24,7 +24,7 @@ struct Args {
     #[structopt(short = "u")]
     pub url: String,
     /// mint key file with path
-    #[structopt(short = "m")]
+    #[structopt(short = "m", default_value = "")]
     pub mint_key: String,
     ///waypoint
     #[structopt(short)]
@@ -132,12 +132,8 @@ fn main() -> Result<()> {
             let mut rt = Runtime::new()?;
 
             loop {
-                let currency_rates = rt.block_on(async {
-                    //let mut interval = time::interval(Duration::from_secs(60));
-                    //interval.tick().await;
-                    //time::delay_for(Duration::from_secs(60)).await;
-                    gather_exchange_rate_from_coinbase().await
-                })?;
+                let currency_rates =
+                    rt.block_on(async { gather_exchange_rate_from_coinbase().await })?;
 
                 let mut oracle = create_oracle(args.clone())?;
 

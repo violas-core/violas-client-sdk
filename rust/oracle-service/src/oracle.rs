@@ -5,7 +5,7 @@ use client_proxy::{
 };
 use libra_types::{
     account_address::AccountAddress,
-    account_config::{libra_root_address, CORE_CODE_ADDRESS},
+    account_config::CORE_CODE_ADDRESS, //libra_root_address
     event::EventHandle,
     transaction::{authenticator::AuthenticationKey, TransactionArgument},
 };
@@ -77,7 +77,7 @@ impl Oracle {
             .update_account_authentication_key(oracle_admin_address(), auth_key)?;
 
         println!(
-            "succeded to create admin account with address {} and authentication key {:?}",
+            "succeded to create admin account with address {} and authentication key {:x?}",
             oracle_admin_address(),
             data
         );
@@ -86,6 +86,19 @@ impl Oracle {
     }
 
     pub fn update_exchange_rate(&mut self, currency_code: &str, exchange_rate: f64) -> Result<()> {
+        if self.violas_client.accounts.len() == 0 {
+            self.violas_client
+                .create_next_account(Some(oracle_admin_address()), true)?;
+
+            println!(
+                "update Oracle exchange rate  with account address {} and authentication key {:x?}",
+                oracle_admin_address(),
+                self.violas_client.accounts[0]
+                    .authentication_key
+                    .as_ref()
+                    .unwrap()
+            );
+        }
         // let script_bytecode = fs::read(
         //     "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
         // )?;
@@ -98,9 +111,6 @@ impl Oracle {
         ];
         let numerator = (exchange_rate * 1E+9_f64) as u64;
         let denominator = 1E+9 as u64;
-
-        self.violas_client
-            .create_next_account(Some(oracle_admin_address()), true)?;
 
         self.violas_client.execute_script_raw(
             0, //violas_client::VIOLAS_ROOT_ACCOUNT_ID,

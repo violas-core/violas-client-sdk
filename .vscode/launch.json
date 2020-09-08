@@ -22,13 +22,13 @@
             "name": "violas-oracle",
             "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle",
             "args": [
-                "service",
+                "publish",
                 "-u",
                 "http://localhost:8080",
                 "-m",
                 "/tmp/libra/mint.key",
                 "-w",
-                "0:466c8d398da5292daaa29f028ee300f5b0458a7faa16792e3b5cf16caf5a58a7",
+                "0:e61344d84a5f5703119cf9b90cb080ea22feb4130a9a99d8958d37702ac3c35b",
                 "-c",
                 "4"
             ],

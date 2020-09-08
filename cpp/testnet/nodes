@@ -22,4 +22,4 @@ bin/testnet http://51.140.241.96:50001  mint_test.key waypoint "0:4e16e966cae776
 
 Debug
 bin/violas_client http://localhost:8080 /tmp/libra/mint.key waypoint 0:e61344d84a5f5703119cf9b90cb080ea22feb4130a9a99d8958d37702ac3c35b 4
-bin/violas-oracle publish -u http://localhost:8080 -m /tmp/libra/mint.key -w 0:e61344d84a5f5703119cf9b90cb080ea22feb4130a9a99d8958d37702ac3c35b -c 4
+bin/violas-oracle publish -u http://localhost:8080 -m /tmp/libra/mint.key -w 0:e61344d84a5f5703119cf9b90cb080ea22feb4130a9a99d8958d37702ac3c35b -c 4 -n $PWD/oracle.mne

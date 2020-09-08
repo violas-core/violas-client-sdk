@@ -12,7 +12,7 @@ use libra_types::{
 use serde::{Deserialize, Serialize};
 
 pub fn oracle_admin_address() -> AccountAddress {
-    AccountAddress::from_hex_literal("0x4f524143")
+    AccountAddress::from_hex_literal("0x4f524143") //0000000000000000000000004f524143
         .expect("Parsing valid hex literal should always succeed")
 }
 
@@ -41,8 +41,10 @@ impl Oracle {
             oracle_module_file_name,
         )?;
 
+        println!("succeded to publish Oracle moudle");
+
         self.violas_client.create_next_account(None, false)?;
-        let auth_key = self.violas_client.accounts[0]
+        let auth_key_data = self.violas_client.accounts[0]
             .authentication_key
             .as_ref()
             .unwrap()
@@ -51,13 +53,19 @@ impl Oracle {
             .key_pair
             .as_ref()
             .unwrap()
-            .public_key.clone();
+            .public_key
+            .clone();
+
+        let mut data: [u8; 32] = [0; 32];
+        data.copy_from_slice(&auth_key_data);
+
+        let auth_key = AuthenticationKey::new(data);
 
         self.violas_client.create_designated_dealer_account(
             make_currency_tag("LBR"),
             0,
             oracle_admin_address(),
-            (&auth_key[0..16]).to_vec(), //only auth key prefix is applied
+            auth_key.prefix().to_vec(), //only auth key prefix is applied
             "Oracle Administrator".as_bytes().to_vec(),
             "www.violas.io".as_bytes().to_owned(),
             pub_key.to_bytes().to_vec(),
@@ -65,11 +73,16 @@ impl Oracle {
             true,
         )?;
 
-        let mut data: [u8; 32] = [0; 32];
-        data.copy_from_slice(&auth_key);
-
         self.violas_client
-            .update_account_authentication_key(oracle_admin_address(), AuthenticationKey::new(data))
+            .update_account_authentication_key(oracle_admin_address(), auth_key)?;
+
+        println!(
+            "succeded to create admin account with address {} and authentication key {:?}",
+            oracle_admin_address(),
+            data
+        );
+
+        Ok(())
     }
 
     pub fn update_exchange_rate(&mut self, currency_code: &str, exchange_rate: f64) -> Result<()> {
@@ -86,8 +99,11 @@ impl Oracle {
         let numerator = (exchange_rate * 1E+9_f64) as u64;
         let denominator = 1E+9 as u64;
 
+        self.violas_client
+            .create_next_account(Some(oracle_admin_address()), true)?;
+
         self.violas_client.execute_script_raw(
-            violas_client::VIOLAS_ROOT_ACCOUNT_ID,
+            0, //violas_client::VIOLAS_ROOT_ACCOUNT_ID,
             script_bytecode,
             vec![make_currency_tag(currency_code)],
             vec![
@@ -148,7 +164,7 @@ impl Oracle {
 
     pub fn view_exchange_rate(&mut self, currency_code: &str) -> Result<Option<f64>> {
         let ex_rate: Option<ExchangeRateReource> = self.violas_client.get_account_resource(
-            &libra_root_address(),
+            &oracle_admin_address(),
             &make_struct_tag(
                 &CORE_CODE_ADDRESS,
                 "Oracle",

@@ -4,7 +4,7 @@ use client_proxy::violas_client::ViolasClient;
 use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
 use libra_types::{chain_id::ChainId, waypoint::Waypoint};
-use std::{str::FromStr, string::String, time::Duration};
+use std::{path::Path, str::FromStr, string::String, time::Duration};
 use structopt::StructOpt;
 use tokio::{
     runtime::Runtime,
@@ -29,6 +29,9 @@ struct Args {
     ///waypoint
     #[structopt(short)]
     pub waypoint: String,
+    ///mnemonic file
+    #[structopt(short = "n")]
+    pub mnemonic: String,
 }
 
 #[derive(Debug, StructOpt)]
@@ -74,7 +77,7 @@ fn main() -> Result<()> {
             treasury_compliance_account_file.as_str(),
             true,
             None,
-            None,
+            Some(args.mnemonic),
             Waypoint::from_str(args.waypoint.as_str()).unwrap(),
         )?;
 
@@ -83,15 +86,20 @@ fn main() -> Result<()> {
 
     match command {
         Command::Publish(args) => {
-            println!("Pleae input module path and file name : ");
-            let mut oracle_module_file = String::new();
-            std::io::stdin().read_line(&mut oracle_module_file)?;
-            // remove char '\n'
-            oracle_module_file.remove(oracle_module_file.len() - 1);
+            let mut oracle_module_file = String::from("move/oracle/oracle.mv");
+            if !Path::new(oracle_module_file.as_str()).exists() {
+                println!("Pleae input module path and file name : ");
+                oracle_module_file.clear();
+                std::io::stdin().read_line(&mut oracle_module_file)?;
+                // remove char '\n'
+                oracle_module_file.remove(oracle_module_file.len() - 1);
+            };
 
             let mut oracle = create_oracle(args)?;
 
-            oracle.publish(oracle_module_file.as_str())?
+            oracle.publish(oracle_module_file.as_str())?;
+
+            println!("");
         }
         Command::Update(args) => {
             let mut rt = Runtime::new()?;

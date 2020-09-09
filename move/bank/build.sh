@@ -5,7 +5,7 @@ rm *.mv
 
 echo "build bank.move"
 ../build.sh bank.move 0x0 ../oracle/oracle.move
-mv  move_build_output/modules/0_ViolasBank.mv bank.mv
+mv  move_build_output/modules/0_ViolasBank2.mv bank.mv
 
 echo "build borrow.move"
 ../build.sh borrow.move 0x0 bank.move ../oracle/oracle.move

@@ -360,7 +360,7 @@ void deploy_bank(client_ptr client)
         cout << "created all accounts for Bank contract." << endl;
     });
 
-    auto bank = Bank::create_bank(client, "../../move/bank/");
+    auto bank = Bank::create_bank(client, "../../move/bank/");  //../../move/bank/
     //
     //  initialize
     //
@@ -382,7 +382,7 @@ void deploy_bank(client_ptr client)
                                Bank::MANTISSA_1_0 / 2,       // 50%
                                Bank::MANTISSA_1_0 / 20,      // 5%
                                Bank::MANTISSA_1_0 / 10,      // 10%
-                               Bank::MANTISSA_1_0 / 2,       // 50%
+                               Bank::MANTISSA_1_0 / 5,       // 50%
                                Bank::MANTISSA_1_0 * 8 / 10); // 80%
         }
 
@@ -417,16 +417,18 @@ void deploy_bank(client_ptr client)
     //
     bank->lock(user1.index, currencies[1], 200 * MICRO_COIN);
     bank->redeem(user1.index, currencies[1], 100 * MICRO_COIN);
-
+    cout << "finished to redeem currency." << endl;
     //
     // borrow  and repay 100 for currency 2
     //
     bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
     bank->repay_borrow(user1.index, currencies[2], 100 * MICRO_COIN);
+    cout << "finished to repay_borrow currency." << endl;
 
     bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
 
     bank->update_currency_price(currencies[2], Bank::MANTISSA_1_0 / 5); //20%
+    cout << "finished to update currency price." << endl;
 
     // bank->enter(user1, "VLSEUR", 10 * MICRO_COIN);
 

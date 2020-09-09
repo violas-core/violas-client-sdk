@@ -382,7 +382,7 @@ void deploy_bank(client_ptr client)
                                Bank::MANTISSA_1_0 / 2,       // 50%
                                Bank::MANTISSA_1_0 / 20,      // 5%
                                Bank::MANTISSA_1_0 / 10,      // 10%
-                               Bank::MANTISSA_1_0 / 5,       // 50%
+                               Bank::MANTISSA_1_0 / 5,       // 20%
                                Bank::MANTISSA_1_0 * 8 / 10); // 80%
         }
 

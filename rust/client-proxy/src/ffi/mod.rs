@@ -157,6 +157,7 @@ namespace violas
                                                 CStr::from_ptr(c_url).to_str().unwrap(),
                                                 CStr::from_ptr(c_mint_key).to_str().unwrap() ,
                                                 CStr::from_ptr(c_mint_key).to_str().unwrap(),
+                                                CStr::from_ptr(c_mint_key).to_str().unwrap(),
                                                 true,
                                                 None,
                                                 Some(CStr::from_ptr(c_mnemonic).to_str().unwrap().to_owned()),

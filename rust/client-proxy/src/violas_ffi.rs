@@ -81,6 +81,7 @@ pub mod x86_64 {
                     ChainId::new(chain_id),
                     CStr::from_ptr(c_url).to_str().unwrap(),
                     faucet_account_file,
+                    faucet_account_file,
                     treasury_compliance_account_file,
                     sync_on_wallet_recovery,
                     None, //Some(CStr::from_ptr(faucet_server).to_str().unwrap().to_owned()),
@@ -161,9 +162,7 @@ pub mod x86_64 {
             address: [0; LENGTH],
         };
 
-        account
-            .address
-            .copy_from_slice(&address.to_vec());
+        account.address.copy_from_slice(&address.to_vec());
 
         account
     }
@@ -836,7 +835,7 @@ pub mod x86_64 {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
             let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
-            proxy.enable_custom_script(&["enable_custom_script"], true)
+            proxy.allow_custom_script(true)
         });
 
         if result.is_ok() {
@@ -1173,10 +1172,7 @@ pub mod x86_64 {
         unsafe {
             let ret = panic::catch_unwind(|| -> bool {
                 let proxy = &mut *(raw_client as *mut ViolasClient);
-                let module_name = CStr::from_ptr(in_module_name)
-                    .to_str()
-                    .unwrap();
-                    
+                let module_name = CStr::from_ptr(in_module_name).to_str().unwrap();
                 // publish currency
                 match proxy.publish_currency(module_name) {
                     Ok(_) => true,

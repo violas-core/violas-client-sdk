@@ -74,6 +74,7 @@ fn main() -> Result<()> {
             ChainId::new(args.chain_id),
             args.url.as_str(),
             mint_key.as_str(),
+            mint_key.as_str(),
             treasury_compliance_account_file.as_str(),
             true,
             None,

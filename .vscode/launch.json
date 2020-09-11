@@ -28,7 +28,7 @@
                 "-m",
                 "/tmp/libra/mint.key",
                 "-w",
-                "0:e61344d84a5f5703119cf9b90cb080ea22feb4130a9a99d8958d37702ac3c35b",
+                "0:efd064c526cc98c2560750968cdd98deebc8f75b24fb744089e9fa589003e924",
                 "-c",
                 "4"
             ],
@@ -42,11 +42,11 @@
             "args": [
                 "http://localhost:8080",
                 "/tmp/libra/mint.key",
-                "waypoint",
-                "0:e61344d84a5f5703119cf9b90cb080ea22feb4130a9a99d8958d37702ac3c35b",
-                "4"
+                "build/debug/violas-client.mne",
+                "0:efd064c526cc98c2560750968cdd98deebc8f75b24fb744089e9fa589003e924",
+                "4",
             ],
-            "cwd": "${workspaceFolder}/build/debug"
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",

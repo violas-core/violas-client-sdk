@@ -154,7 +154,7 @@ impl ViolasClient {
         Ok((addr_index.address, addr_index.index))
     }
 
-    pub fn association_transaction_with_local_treasury_compliance_account(
+    pub fn association_transaction_with_local_tc_account(
         &mut self,
         payload: TransactionPayload,
         is_blocking: bool,
@@ -591,7 +591,7 @@ impl ViolasClient {
         match &self.libra_root_account {
             Some(_) => {
                 // add currency for testnet dd account
-                self.association_transaction_with_local_treasury_compliance_account(
+                self.association_transaction_with_local_tc_account(
                     TransactionPayload::Script(script),
                     is_blocking,
                 )
@@ -659,7 +659,7 @@ impl ViolasClient {
         };
 
         match &self.libra_root_account {
-            Some(_faucet) => self.association_transaction_with_local_treasury_compliance_account(
+            Some(_faucet) => self.association_transaction_with_local_tc_account(
                 TransactionPayload::Script(script),
                 is_blocking,
             ),
@@ -873,7 +873,7 @@ impl ViolasClient {
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.libra_root_account {
+        match &self.treasury_compliance_account {
             Some(_) => {
                 let script = transaction_builder::encode_create_parent_vasp_account_script(
                     type_tag,
@@ -885,7 +885,7 @@ impl ViolasClient {
                     //compliance_public_key,
                     add_all_currencies,
                 );
-                self.association_transaction_with_local_libra_root_account(
+                self.association_transaction_with_local_tc_account(
                     TransactionPayload::Script(script),
                     is_blocking,
                 )
@@ -953,7 +953,7 @@ impl ViolasClient {
                     //compliance_public_key,
                     add_all_currencies,
                 );
-                self.association_transaction_with_local_treasury_compliance_account(
+                self.association_transaction_with_local_tc_account(
                     TransactionPayload::Script(script),
                     is_blocking,
                 )

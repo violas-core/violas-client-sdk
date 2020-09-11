@@ -360,7 +360,7 @@ void deploy_bank(client_ptr client)
         cout << "created all accounts for Bank contract." << endl;
     });
 
-    auto bank = Bank::create_bank(client, "../../move/bank/");  //../../move/bank/
+    auto bank = Bank::create_bank(client, "move/bank/");  //../../move/bank/
     //
     //  initialize
     //

@@ -5,7 +5,7 @@ rm *.mv
 
 echo "build bank.move"
 ../build.sh bank.move 0x0 ../oracle/oracle.move
-mv  move_build_output/modules/0_ViolasBank2.mv bank.mv
+mv  move_build_output/modules/0_ViolasBank.mv bank.mv
 
 echo "build borrow.move"
 ../build.sh borrow.move 0x0 bank.move ../oracle/oracle.move
@@ -58,5 +58,9 @@ mv move_build_output/scripts/main.mv update_collateral_factor.mv
 echo "build update_price.move"
 ../build.sh update_price.move 0x0 bank.move ../oracle/oracle.move
 mv move_build_output/scripts/main.mv update_price.mv
+
+echo "build update_price_from_oracle.move"
+../build.sh update_price_from_oracle.move 0x0 bank.move ../oracle/oracle.move
+mv move_build_output/scripts/main.mv update_price_from_oracle.mv
 
 rm -rf move_build_output

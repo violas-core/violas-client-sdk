@@ -17,7 +17,8 @@ echo "copied build/release/bin to "$1"/bin"
 
 strip $1/lib/*.so $1/bin/* 
 
-cp -r move/ $1
+#copy all files in folder move and then remove *.move and *.sh in target folder 
+cp -r move/ $1 && find $1/move -name "*.move" | xargs rm && find $1/move -name "*.sh" | xargs rm
 echo "copied all compiled move contract files"
 
 cp -r cpp/testnet/mnemonic $1

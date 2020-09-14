@@ -9,7 +9,7 @@ use libra_json_rpc_client::views::VMStatusView;
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::{treasury_compliance_account_address, BalanceResource},
+    account_config::{libra_root_address, treasury_compliance_account_address, BalanceResource},
     account_state::AccountState,
     chain_id::ChainId,
     //on_chain_config::VMPublishingOption,
@@ -700,7 +700,7 @@ impl ViolasClient {
     }
 
     /// get balance of currency for account
-    pub fn get_balance_of_currency(
+    pub fn get_currency_balance(
         &mut self,
         currency_tag: TypeTag,
         address: AccountAddress,
@@ -721,12 +721,19 @@ impl ViolasClient {
         }
     }
 
-    // get currency info ex
-    // pub fn get_currency_detail(&self) -> CurrencyInfoViewEx {
-    //     let currency_info_res : CurrencyInfoResource = self.get_account_resource(CORE_ADD, tag_path: &StructTag);
+    ///get currency info
+    pub fn get_currency_info(&self) -> CurrencyInfoViewEx {
+        let currency_info_res: CurrencyInfoResource =
+            self.get_account_resource(libra_root_address(), tag_path: &StructTag);
 
-    //     CurrencyInfoViewEx::from()
-    // }
+        CurrencyInfoViewEx::from();
+        // let currency_info: HashMap<_, _> = self
+        //     .client
+        //     .get_currency_info()?
+        //     .into_iter()
+        //     .map(|view| (view.code.clone(), view))
+        //     .collect();
+    }
 
     /// Preburn `amount` `Token(type_tag)`s from `account`.
     /// This will only succeed if `account` has already registerred preburner resource.

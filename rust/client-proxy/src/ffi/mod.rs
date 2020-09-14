@@ -602,6 +602,34 @@ namespace violas
             check_result(ret);
         }
 
+        /// get the balance of currency for the account address
+        virtual uint64_t
+        get_currency_balance(const Address &address,
+                             std::string_view currency_code) override
+        {
+            auto in_address = address.data();
+            auto in_currency_code = currency_code.data();
+
+            uint64_t balance = rust!( client_get_currency_balance [
+                                rust_violas_client : &mut ViolasClient as "void *",
+                                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                                in_currency_code : *const c_char as "const char *"
+                            ] -> u64 as "uint64_t" {
+                                let ret = rust_violas_client.get_currency_balance(
+                                    make_currency_tag(in_currency_code),
+                                    AccountAddress::new(*in_address));
+                                match ret {
+                                    Ok(balance) => balance,
+                                    Err(e) => {
+                                        let err = format_err!("ffi::get_currency_balance, {}",e);
+                                        set_last_error(err);
+                                        u64::MAX
+                                    }
+                                }
+                        });
+            
+            return balance;            
+        }
         // Call this method with root association privilege
         virtual void
         publish_curency(std::string_view currency_code) override

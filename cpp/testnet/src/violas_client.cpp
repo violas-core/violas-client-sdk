@@ -127,6 +127,8 @@ void initialize_all_currencies(client_ptr client)
 
 void run_test_case(client_ptr client)
 {
+    uint64_t balance = client->get_currency_balance(TESTNET_DD_ADDRESS, "LBR");
+
     client->create_next_account(BANK_ADMIN_ADDRESS);
     client->create_next_account(EXCHANGE_ADMIN_ADDRESS);
 

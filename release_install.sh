@@ -15,6 +15,11 @@ echo "copied build/release/lib to "$1"/lib"
 cp build/release/bin $1 -r
 echo "copied build/release/bin to "$1"/bin"
 
+cp ../Violas/target/release/cli $1/bin
+cp ../Violas/target/release/libra-node $1/bin
+cp ../Violas/target/release/config-builder $1/bin
+echo "copied ../Violas/target/release/bin to "$1"/bin"
+
 strip $1/lib/*.so $1/bin/* 
 
 #copy all files in folder move and then remove *.move and *.sh in target folder 

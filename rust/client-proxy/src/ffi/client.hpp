@@ -84,12 +84,11 @@ namespace violas
     };
 
     const uint64_t MICRO_COIN = 1E+6;
-    const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
-    const uint64_t BANK_ADMINISTRATOR_ID = ASSOCIATION_ID - 2;
+    const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();    
     const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
     const Address CORE_CODE_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01};
-    
+
     inline TypeTag make_currency_tag(std::string_view currency_code)
     {
         return TypeTag(CORE_CODE_ADDRESS, currency_code, currency_code);
@@ -229,6 +228,11 @@ namespace violas
         virtual void
         add_currency(size_t account_index,
                      std::string_view currency_code) = 0;
+
+        /// get the balance of currency for the account address
+        virtual uint64_t
+        get_currency_balance(const Address &address,
+                             std::string_view currency_code) = 0;
 
         /// mint currency for dd account
         virtual void

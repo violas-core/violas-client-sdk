@@ -1427,7 +1427,7 @@ pub mod x86_64 {
                 let tag =
                     make_currency_tag(CStr::from_ptr(violas_type_tag.module).to_str().unwrap());
 
-                match proxy.get_balance_of_currency(tag, AccountAddress::new(*addr)) {
+                match proxy.get_currency_balance(tag, AccountAddress::new(*addr)) {
                     Ok(balance) => Some(balance),
                     Err(e) => {
                         set_last_error(format_err!(

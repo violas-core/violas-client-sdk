@@ -5,11 +5,6 @@ use libra_types::{
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::{Deserialize, Serialize};
 
-pub fn bank_administrator_account_address() -> AccountAddress {
-    AccountAddress::from_hex_literal("0x62616E6B")  //00000000000000000000000062616E6B, 
-        .expect("Parsing valid hex literal should always succeed")
-}
-
 /// make struct tag
 pub fn make_struct_tag(
     addr: &AccountAddress,

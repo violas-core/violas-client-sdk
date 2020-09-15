@@ -123,6 +123,8 @@ void initialize_all_currencies(client_ptr client)
                                                     3);
         cout << "minted 1,000,000 coins to DD account " << endl;
     }
+
+    cout << "all currency info : " << client->get_all_currency_info() << endl;
 }
 
 void run_test_case(client_ptr client)

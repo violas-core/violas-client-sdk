@@ -234,6 +234,10 @@ namespace violas
         get_currency_balance(const Address &address,
                              std::string_view currency_code) = 0;
 
+        /// Get all currency info
+        virtual std::string
+        get_all_currency_info() = 0;
+        
         /// mint currency for dd account
         virtual void
         mint_currency_for_designated_dealer(std::string_view currency_code,

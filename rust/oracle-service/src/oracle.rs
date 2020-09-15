@@ -102,25 +102,52 @@ impl Oracle {
         // let script_bytecode = fs::read(
         //     "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
         // )?;
-        let script_bytecode = vec![
+
+        // Oracle::update_exchange_rate
+        let update_exchange_rate = vec![
             161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 9, 7, 19, 28, 8, 47,
             16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 3, 6, 12, 3, 3, 0, 1, 9, 0, 6, 79, 114, 97, 99, 108,
             101, 20, 117, 112, 100, 97, 116, 101, 95, 101, 120, 99, 104, 97, 110, 103, 101, 95,
             114, 97, 116, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 5, 11,
             0, 10, 1, 10, 2, 56, 0, 2,
         ];
+        // ViolasBank::update_price_from_oracle
+        let update_price_from_oracle = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 7, 7, 17, 36, 8, 53,
+            16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 1, 6, 12, 0, 1, 9, 0, 10, 86, 105, 111, 108, 97, 115,
+            66, 97, 110, 107, 24, 117, 112, 100, 97, 116, 101, 95, 112, 114, 105, 99, 101, 95, 102,
+            114, 111, 109, 95, 111, 114, 97, 99, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 1, 1, 0, 1, 3, 11, 0, 56, 0, 2,
+        ];
         let numerator = (exchange_rate * 1E+9_f64) as u64;
         let denominator = 1E+9 as u64;
 
-        self.violas_client.execute_script_raw(
-            0, //violas_client::VIOLAS_ROOT_ACCOUNT_ID,
-            script_bytecode,
+        let mut ret = self.violas_client.execute_script_raw(
+            0,
+            update_exchange_rate,
             vec![make_currency_tag(currency_code)],
             vec![
                 TransactionArgument::U64(numerator),
                 TransactionArgument::U64(denominator),
             ],
+            true,
         )?;
+
+        ret = self.violas_client.execute_script_raw(
+            0,
+            update_price_from_oracle,
+            vec![make_currency_tag(currency_code)],
+            vec![],
+            true,
+        );
+        match ret {
+            Ok(_) => {
+                println!("succeded to call 'update_price_from_oracle'");
+            }
+            Err(e) => {
+                println!("failed to call 'update_price_from_oracle', error : {}", e);
+            }
+        }
 
         Ok(())
     }
@@ -164,6 +191,7 @@ impl Oracle {
                 TransactionArgument::U64(amount_crc1),
                 TransactionArgument::U64(amount_crc2),
             ],
+            true,
         )?;
         println!(
             "{}({}) -> {}({})",

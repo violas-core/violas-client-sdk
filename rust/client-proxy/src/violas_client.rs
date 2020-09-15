@@ -1,7 +1,7 @@
 use crate::{
     libra_client_proxy::{parse_transaction_argument_for_client, ClientProxy},
-    violas_account::bank_administrator_account_address, //make_currency_tag
-    AccountData,                                        //AccountStatus
+    violas_account::CurrencyInfoViewEx, //make_currency_tag
+    AccountData,                        //AccountStatus
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
 use libra_crypto::test_utils::KeyPair;
@@ -40,7 +40,6 @@ pub struct ViolasClient {
     libra_client_proxy: ClientProxy,
     /// Account used TreasuryCompliance operations (e.g., minting)
     pub treasury_compliance_account: Option<AccountData>,
-    pub bank_administrator_account: Option<AccountData>,
 }
 
 impl Deref for ViolasClient {
@@ -82,10 +81,8 @@ impl ViolasClient {
             waypoint,
         )?;
 
-        let (treasury_compliance_account, bank_administrator_account) = if libra_root_account_file
-            .is_empty()
-        {
-            (None, None)
+        let treasury_compliance_account = if libra_root_account_file.is_empty() {
+            None
         } else {
             let treasury_compliance_account_key = generate_key::load_key(libra_root_account_file);
             let key_pair = KeyPair::from(treasury_compliance_account_key);
@@ -97,28 +94,13 @@ impl ViolasClient {
                 Some(key_pair),
                 None,
             )?;
-            let bank_administrator_account_key = generate_key::load_key(libra_root_account_file);
-            let key_pair = KeyPair::from(bank_administrator_account_key);
-            let auth_key = AuthenticationKey::ed25519(&key_pair.public_key);
 
-            let bank_administrator_account_data = ClientProxy::get_account_data_from_address(
-                &mut libra_client_proxy.client,
-                bank_administrator_account_address(),
-                true,
-                Some(key_pair),
-                Some(auth_key.to_vec()),
-            )?;
-
-            (
-                Some(treasury_compliance_account_data),
-                Some(bank_administrator_account_data),
-            )
+            Some(treasury_compliance_account_data)
         };
 
         let client = ViolasClient {
             libra_client_proxy,
             treasury_compliance_account,
-            bank_administrator_account,
         };
 
         //client.create_bank_administrator_account()?;
@@ -367,9 +349,6 @@ impl ViolasClient {
                 }
                 self.libra_root_account.as_ref().unwrap()
             }
-            VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID => {
-                self.bank_administrator_account.as_ref().unwrap()
-            }
             _ => self.accounts.get(sender_ref_id as usize).unwrap(),
         };
 
@@ -388,10 +367,6 @@ impl ViolasClient {
             proxy
                 .client
                 .submit_transaction(proxy.libra_root_account.as_mut(), txn)
-        } else if sender_ref_id == VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID {
-            proxy
-                .client
-                .submit_transaction(self.bank_administrator_account.as_mut(), txn)
         } else {
             proxy
                 .client
@@ -408,9 +383,10 @@ impl ViolasClient {
         script_file_name: &str,
         tags: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
+        is_blocking: bool,
     ) -> Result<()> {
         let script_bytecode = fs::read(script_file_name)?;
-        self.execute_script_raw(sender_ref_id, script_bytecode, tags, args)
+        self.execute_script_raw(sender_ref_id, script_bytecode, tags, args, is_blocking)
     }
 
     /// execute script with json format
@@ -420,6 +396,7 @@ impl ViolasClient {
         script_bytecode: Vec<u8>,
         tags: Vec<TypeTag>,
         script_arguments: Vec<TransactionArgument>,
+        is_blocking: bool,
     ) -> Result<()> {
         let sender = if sender_ref_id == u64::MAX {
             if self.libra_root_account.is_none() {
@@ -437,18 +414,21 @@ impl ViolasClient {
         let sequence_number = sender.sequence_number;
         let proxy = &mut self.libra_client_proxy;
 
-        let resp = if sender_ref_id == u64::MAX {
+        if sender_ref_id == u64::MAX {
             proxy
                 .client
-                .submit_transaction(proxy.libra_root_account.as_mut(), txn)
+                .submit_transaction(proxy.libra_root_account.as_mut(), txn)?;
         } else {
             proxy
                 .client
-                .submit_transaction(proxy.accounts.get_mut(sender_ref_id as usize), txn)
+                .submit_transaction(proxy.accounts.get_mut(sender_ref_id as usize), txn)?;
         };
 
-        self.wait_for_transaction(sender_address, sequence_number + 1)?;
-        resp
+        if is_blocking {
+            self.wait_for_transaction(sender_address, sequence_number + 1)
+        } else {
+            Ok(())
+        }
     }
 
     ///
@@ -722,17 +702,17 @@ impl ViolasClient {
     }
 
     ///get currency info
-    pub fn get_currency_info(&self) -> CurrencyInfoViewEx {
-        let currency_info_res: CurrencyInfoResource =
-            self.get_account_resource(libra_root_address(), tag_path: &StructTag);
-
-        CurrencyInfoViewEx::from();
-        // let currency_info: HashMap<_, _> = self
-        //     .client
-        //     .get_currency_info()?
-        //     .into_iter()
-        //     .map(|view| (view.code.clone(), view))
-        //     .collect();
+    pub fn get_all_currency_info(&mut self) -> Result<Vec<CurrencyInfoViewEx>> {
+        if let (Some(blob), _) = self.client.get_account_state_blob(libra_root_address())? {
+            let account_state = AccountState::try_from(&blob)?;
+            Ok(account_state
+                .get_registered_currency_info_resources()?
+                .iter()
+                .map(|info| CurrencyInfoViewEx::from(info.as_ref().unwrap()))
+                .collect())
+        } else {
+            bail!("get account state blob error for libra root address ");
+        }
     }
 
     /// Preburn `amount` `Token(type_tag)`s from `account`.
@@ -1009,65 +989,6 @@ impl ViolasClient {
                     is_blocking,
                 )
             }
-            None => unimplemented!(),
-        }
-    }
-
-    /// publish oracle move module
-    pub fn publish_oracle(&mut self) -> Result<()> {
-        let module_bytecode =
-            fs::read("/home/hunter/Projects/work/ViolasClientSdk/move/oracle/oracle.mv")?;
-        // let module_bytecode = vec![
-        //     161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 16, 8, 22, 16, 10, 38, 5, 0,
-        //     0, 0, 0, 2, 0, 3, 86, 76, 83, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101, 108, 100,
-        //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0,
-        // ];
-
-        match self.libra_root_account {
-            Some(_) => self
-                .libra_client_proxy
-                .association_transaction_with_local_libra_root_account(
-                    TransactionPayload::Module(Module::new(module_bytecode)),
-                    true,
-                ),
-            None => unimplemented!(),
-        }
-    }
-
-    /// update oracle currency exchange rate
-    pub fn update_oracle_exchange_rate(
-        &mut self,
-        currency: TypeTag,
-        exchange_rate: f64,
-        is_blocking: bool,
-    ) -> Result<()> {
-        // let script_bytecode = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
-        // )?;
-        let script_bytecode = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 9, 7, 19, 28, 8, 47,
-            16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 3, 6, 12, 3, 3, 0, 1, 9, 0, 6, 79, 114, 97, 99, 108,
-            101, 20, 117, 112, 100, 97, 116, 101, 95, 101, 120, 99, 104, 97, 110, 103, 101, 95,
-            114, 97, 116, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 5, 11,
-            0, 10, 1, 10, 2, 56, 0, 2,
-        ];
-        let numerator = (exchange_rate * 1E+9_f64) as u64;
-        let denominator = 1E+9 as u64;
-
-        let script = Script::new(
-            script_bytecode,
-            vec![currency],
-            vec![
-                TransactionArgument::U64(numerator),
-                TransactionArgument::U64(denominator),
-            ],
-        );
-
-        match self.libra_root_account {
-            Some(_) => self.association_transaction_with_local_libra_root_account(
-                TransactionPayload::Script(script),
-                is_blocking,
-            ),
             None => unimplemented!(),
         }
     }

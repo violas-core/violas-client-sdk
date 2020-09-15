@@ -45,8 +45,8 @@ pub struct CurrencyInfoViewEx {
     pub to_lbr_exchange_rate: f32,
 }
 
-impl From<CurrencyInfoResource> for CurrencyInfoViewEx {
-    fn from(info: CurrencyInfoResource) -> CurrencyInfoViewEx {
+impl From<&CurrencyInfoResource> for CurrencyInfoViewEx {
+    fn from(info: &CurrencyInfoResource) -> CurrencyInfoViewEx {
         CurrencyInfoViewEx {
             total_value: info.total_value(),
             preburn_value: info.preburn_value(),

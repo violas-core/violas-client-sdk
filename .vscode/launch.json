@@ -22,7 +22,7 @@
             "name": "violas-oracle",
             "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle",
             "args": [
-                "publish",
+                "update",
                 "-u",
                 "http://localhost:8080",
                 "-m",
@@ -30,7 +30,9 @@
                 "-w",
                 "0:efd064c526cc98c2560750968cdd98deebc8f75b24fb744089e9fa589003e924",
                 "-c",
-                "4"
+                "4",
+                "-n",
+                "${workspaceFolder}/rust/oracle-service/target/debug/oracle.m"
             ],
             "cwd": "${workspaceFolder}"
         },

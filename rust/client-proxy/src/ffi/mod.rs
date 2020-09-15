@@ -627,9 +627,44 @@ namespace violas
                                     }
                                 }
                         });
-            
-            return balance;            
+
+            return balance;
         }
+
+        /// Get all currency info
+        virtual std::string
+        get_all_currency_info() override
+        {
+            char * all_currency_info = nullptr;
+            auto out_all_currency_info = &all_currency_info;
+
+            rust!( client_get_all_currency_info [
+                rust_violas_client : &mut ViolasClient as "void *",
+                out_all_currency_info : *mut *mut c_char as "char **"
+            ] -> bool as "bool" {
+                let ret = rust_violas_client.get_all_currency_info( );
+                match ret {
+                    Ok(all_currency_info) => {
+                        let json_currencies_info = serde_json::to_string(&all_currency_info).unwrap();
+                        *out_all_currency_info = CString::new(json_currencies_info)
+                            .expect("new reserves detail error")
+                            .into_raw();
+                        true
+                    },
+                    Err(e) => {
+                        let err = format_err!("ffi::get_all_currency_info, {}",e);
+                        set_last_error(err);
+                        false
+                    }
+                }
+            });
+
+            string temp = all_currency_info;
+            free_rust_string(all_currency_info);
+
+            return temp;
+        }
+
         // Call this method with root association privilege
         virtual void
         publish_curency(std::string_view currency_code) override

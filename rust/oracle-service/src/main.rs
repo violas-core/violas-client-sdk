@@ -9,7 +9,7 @@ use structopt::StructOpt;
 use tokio::{
     runtime::Runtime,
     task,
-    time::{self}, 
+    time::{self},
 };
 mod oracle;
 use chrono::prelude::*;
@@ -109,11 +109,22 @@ fn main() -> Result<()> {
                 rt.block_on(async { gather_exchange_rate_from_coinbase().await })?;
 
             let mut oracle = create_oracle(args)?;
+            oracle.create_admin_account()?;
 
             for currency_rate in currency_rates {
                 let (currency, ex_rate) = currency_rate;
-                oracle.update_exchange_rate(currency.as_str(), ex_rate)?;
+                let ret = oracle.update_exchange_rate(currency.as_str(), ex_rate);
+                match ret {
+                    Ok(_) => {
+                        print!("{} : {}, ", currency, ex_rate);
+                    }
+                    Err(e) => {
+                        println!("failed to update exchange rate, error : {}", e);
+                    }
+                }
             }
+
+            println!("");
         }
         Command::Test(args) => {
             task::block_in_place(|| -> Result<()> {
@@ -132,11 +143,13 @@ fn main() -> Result<()> {
 
             let mut rt = Runtime::new()?;
 
+            let mut oracle = create_oracle(args.clone())?;
+
+            oracle.create_admin_account()?;
+
             loop {
                 let currency_rates =
                     rt.block_on(async { gather_exchange_rate_from_coinbase().await })?;
-
-                let mut oracle = create_oracle(args.clone())?;
 
                 println!(
                     "{} : started to udpate Oracle Exchange Rates.",
@@ -145,8 +158,15 @@ fn main() -> Result<()> {
 
                 for currency_rate in currency_rates {
                     let (currency, ex_rate) = currency_rate;
-                    oracle.update_exchange_rate(currency.as_str(), ex_rate)?;
-                    print!("{} : {}, ", currency, ex_rate);
+                    let ret = oracle.update_exchange_rate(currency.as_str(), ex_rate);
+                    match ret {
+                        Ok(_) => {
+                            print!("{} : {}, ", currency, ex_rate);
+                        }
+                        Err(e) => {
+                            println!("failed to update exchange rate, error : {}", e);
+                        }
+                    }
                 }
 
                 println!(

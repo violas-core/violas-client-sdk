@@ -85,20 +85,25 @@ impl Oracle {
         Ok(())
     }
 
-    pub fn update_exchange_rate(&mut self, currency_code: &str, exchange_rate: f64) -> Result<()> {
+    pub fn create_admin_account(&mut self) -> Result<()> {
         if self.violas_client.accounts.len() == 0 {
             self.violas_client
                 .create_next_account(Some(oracle_admin_address()), true)?;
-
-            println!(
-                "update Oracle exchange rate  with account address {} and authentication key {:x?}",
-                oracle_admin_address(),
-                self.violas_client.accounts[0]
-                    .authentication_key
-                    .as_ref()
-                    .unwrap()
-            );
         }
+
+        println!(
+            "update Oracle exchange rate  with account address {} and authentication key {:x?}",
+            oracle_admin_address(),
+            self.violas_client.accounts[0]
+                .authentication_key
+                .as_ref()
+                .unwrap()
+        );
+
+        Ok(())
+    }
+
+    pub fn update_exchange_rate(&mut self, currency_code: &str, exchange_rate: f64) -> Result<()> {
         // let script_bytecode = fs::read(
         //     "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
         // )?;
@@ -113,16 +118,19 @@ impl Oracle {
         ];
         // ViolasBank::update_price_from_oracle
         let update_price_from_oracle = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 7, 7, 17, 36, 8, 53,
-            16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 1, 6, 12, 0, 1, 9, 0, 10, 86, 105, 111, 108, 97, 115,
-            66, 97, 110, 107, 24, 117, 112, 100, 97, 116, 101, 95, 112, 114, 105, 99, 101, 95, 102,
-            114, 111, 109, 95, 111, 114, 97, 99, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 1, 1, 1, 0, 1, 3, 11, 0, 56, 0, 2,
+            161, 28, 235, 11, 1, 0, 0, 0, 7, 1, 0, 2, 3, 2, 16, 4, 18, 2, 5, 20, 14, 7, 34, 57, 8,
+            91, 16, 6, 107, 5, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 3, 0, 0, 3, 0, 3, 1, 1, 2, 4, 1, 6,
+            12, 1, 1, 2, 6, 12, 10, 2, 0, 1, 9, 0, 10, 86, 105, 111, 108, 97, 115, 66, 97, 110,
+            107, 12, 105, 115, 95, 112, 117, 98, 108, 105, 115, 104, 101, 100, 7, 112, 117, 98,
+            108, 105, 115, 104, 24, 117, 112, 100, 97, 116, 101, 95, 112, 114, 105, 99, 101, 95,
+            102, 114, 111, 109, 95, 111, 114, 97, 99, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 10, 2, 2, 1, 0, 1, 1, 0, 3, 12, 10, 0, 17, 0, 9, 33, 3, 6, 5, 9, 10, 0, 7,
+            0, 17, 1, 11, 0, 56, 0, 2,
         ];
         let numerator = (exchange_rate * 1E+9_f64) as u64;
         let denominator = 1E+9 as u64;
 
-        let mut ret = self.violas_client.execute_script_raw(
+        self.violas_client.execute_script_raw(
             0,
             update_exchange_rate,
             vec![make_currency_tag(currency_code)],
@@ -130,24 +138,16 @@ impl Oracle {
                 TransactionArgument::U64(numerator),
                 TransactionArgument::U64(denominator),
             ],
-            true,
+            false,
         )?;
 
-        ret = self.violas_client.execute_script_raw(
+        self.violas_client.execute_script_raw(
             0,
             update_price_from_oracle,
             vec![make_currency_tag(currency_code)],
             vec![],
-            true,
-        );
-        match ret {
-            Ok(_) => {
-                println!("succeded to call 'update_price_from_oracle'");
-            }
-            Err(e) => {
-                println!("failed to call 'update_price_from_oracle', error : {}", e);
-            }
-        }
+            false,
+        )?;
 
         Ok(())
     }

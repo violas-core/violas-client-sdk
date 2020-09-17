@@ -27,3 +27,8 @@ debug   : cargo build --all --bins --exclude cluster-test -j4
 release : cargo build --release --all --bins -j4
 target/debug/libra-swarm -c /tmp/libra
 ``` 
+
+# generate doc for c++
+```
+doxygen libviolas-client.doxy
+```

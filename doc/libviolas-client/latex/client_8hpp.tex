@@ -1,0 +1,97 @@
+\hypertarget{client_8hpp}{}\section{/home/hunter/\+Projects/work/\+Violas\+Client\+Sdk/rust/client-\/proxy/src/ffi/client.hpp File Reference}
+\label{client_8hpp}\index{/home/hunter/\+Projects/work/\+Violas\+Client\+Sdk/rust/client-\/proxy/src/ffi/client.\+hpp@{/home/hunter/\+Projects/work/\+Violas\+Client\+Sdk/rust/client-\/proxy/src/ffi/client.\+hpp}}
+{\ttfamily \#include $<$memory$>$}\newline
+{\ttfamily \#include $<$array$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$string\+\_\+view$>$}\newline
+{\ttfamily \#include $<$limits$>$}\newline
+{\ttfamily \#include $<$variant$>$}\newline
+{\ttfamily \#include $<$optional$>$}\newline
+Include dependency graph for client.\+hpp\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{client_8hpp__incl}
+\end{center}
+\end{figure}
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structviolas_1_1_address_and_index}{violas\+::\+Address\+And\+Index}
+\item 
+struct \hyperlink{structviolas_1_1_account}{violas\+::\+Account}
+\item 
+struct \hyperlink{structviolas_1_1_type_tag}{violas\+::\+Type\+Tag}
+\item 
+class \hyperlink{classviolas_1_1_client}{violas\+::\+Client}
+\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{client_8hpp_ac4f9020df5073f2d5f031c1d3aa46ced}\label{client_8hpp_ac4f9020df5073f2d5f031c1d3aa46ced}} 
+using {\bfseries violas\+::\+Address} = std\+::array$<$ uint8\+\_\+t, A\+D\+D\+R\+E\+S\+S\+\_\+\+L\+E\+N\+G\+TH $>$
+\item 
+\mbox{\Hypertarget{client_8hpp_a3e1e6e14f4e9fc4e11151db2da38ee19}\label{client_8hpp_a3e1e6e14f4e9fc4e11151db2da38ee19}} 
+using {\bfseries violas\+::\+Authentication\+Key} = std\+::array$<$ uint8\+\_\+t, A\+D\+D\+R\+E\+S\+S\+\_\+\+L\+E\+N\+G\+TH $\ast$2 $>$
+\item 
+\mbox{\Hypertarget{client_8hpp_ac4cb602d427e8b018aae8704d2c9877e}\label{client_8hpp_ac4cb602d427e8b018aae8704d2c9877e}} 
+using {\bfseries violas\+::\+Public\+Key} = std\+::array$<$ uint8\+\_\+t, A\+D\+D\+R\+E\+S\+S\+\_\+\+L\+E\+N\+G\+TH $\ast$2 $>$
+\item 
+\mbox{\Hypertarget{client_8hpp_aadbb99e13cd5b3b6afd00cfbfa337689}\label{client_8hpp_aadbb99e13cd5b3b6afd00cfbfa337689}} 
+using {\bfseries violas\+::\+Vec\+U8} = std\+::vector$<$ uint8\+\_\+t $>$
+\item 
+\mbox{\Hypertarget{client_8hpp_abe3ebdaf7fcffbeea777de9a46f21592}\label{client_8hpp_abe3ebdaf7fcffbeea777de9a46f21592}} 
+using {\bfseries violas\+::client\+\_\+ptr} = std\+::shared\+\_\+ptr$<$ Client $>$
+\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{client_8hpp_a2816db4e1fa87bb94fda0bd01a0a630e}\label{client_8hpp_a2816db4e1fa87bb94fda0bd01a0a630e}} 
+enum {\bfseries Account\+Status} \{ {\bfseries Local}, 
+{\bfseries Persisted}, 
+{\bfseries Unknow}
+ \}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{client_8hpp_aa3784925591dd3259180f6cbb0cfafea}\label{client_8hpp_aa3784925591dd3259180f6cbb0cfafea}} 
+Type\+Tag {\bfseries violas\+::make\+\_\+currency\+\_\+tag} (std\+::string\+\_\+view currency\+\_\+code)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{client_8hpp_a97b7bdfcf727ae2d2bb13cbca3d20ba5}\label{client_8hpp_a97b7bdfcf727ae2d2bb13cbca3d20ba5}} 
+const size\+\_\+t {\bfseries violas\+::\+A\+D\+D\+R\+E\+S\+S\+\_\+\+L\+E\+N\+G\+TH} = 16
+\item 
+\mbox{\Hypertarget{client_8hpp_a2ea6c6cd760643ef27f8c63a0cee9471}\label{client_8hpp_a2ea6c6cd760643ef27f8c63a0cee9471}} 
+const uint64\+\_\+t {\bfseries violas\+::\+M\+I\+C\+R\+O\+\_\+\+C\+O\+IN} = 1\+E+6
+\item 
+\mbox{\Hypertarget{client_8hpp_aef8663b2a3c6d317f101baede32ba7ae}\label{client_8hpp_aef8663b2a3c6d317f101baede32ba7ae}} 
+const uint64\+\_\+t {\bfseries violas\+::\+A\+S\+S\+O\+C\+I\+A\+T\+I\+O\+N\+\_\+\+ID} = std\+::numeric\+\_\+limits$<$uint64\+\_\+t$>$\+::max()
+\item 
+\mbox{\Hypertarget{client_8hpp_a2accd0e309777da7d39aec6eadf07f51}\label{client_8hpp_a2accd0e309777da7d39aec6eadf07f51}} 
+const Address {\bfseries violas\+::\+A\+S\+S\+O\+C\+I\+A\+T\+I\+O\+N\+\_\+\+A\+D\+D\+R\+E\+SS} = \{00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0\+A, 0x55, 0x0\+C, 0x18\}
+\item 
+\mbox{\Hypertarget{client_8hpp_aac6eccd45b7f8a843b399689b2c0e08e}\label{client_8hpp_aac6eccd45b7f8a843b399689b2c0e08e}} 
+const Address {\bfseries violas\+::\+T\+E\+S\+T\+N\+E\+T\+\_\+\+D\+D\+\_\+\+A\+D\+D\+R\+E\+SS} = \{00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x\+D\+D\}
+\item 
+\mbox{\Hypertarget{client_8hpp_a8fb887c3d55f75dd84c3487fbc1aa7be}\label{client_8hpp_a8fb887c3d55f75dd84c3487fbc1aa7be}} 
+const Address {\bfseries violas\+::\+C\+O\+R\+E\+\_\+\+C\+O\+D\+E\+\_\+\+A\+D\+D\+R\+E\+SS} = \{00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01\}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\begin{DoxyAuthor}{Author}
+Hunter Sun (\href{mailto:HunterSun2018@gmail.com}{\tt Hunter\+Sun2018@gmail.\+com}) 
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+0.\+1 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2020-\/09-\/17
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2020 
+\end{DoxyCopyright}

@@ -1,8 +1,18 @@
+/**
+ * @file client.hpp
+ * @author Hunter Sun (HunterSun2018@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2020-09-17
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ */
 #ifndef VIOLAS_CLIENT
 #define VIOLAS_CLIENT
 
 #if __cplusplus < 201703
-#error c++ complier must be than c++17
+#error c++ complier must be greater than c++17
 #endif
 
 #include <memory>
@@ -84,7 +94,7 @@ namespace violas
     };
 
     const uint64_t MICRO_COIN = 1E+6;
-    const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();    
+    const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
     const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
     const Address CORE_CODE_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01};
@@ -127,9 +137,17 @@ namespace violas
         mint_for_testnet(std::string_view currency_code,
                          const Address &receiver,
                          uint64_t amount) = 0;
-        //
-        /// transfer
-        //
+        /**
+         * @brief transfer currency
+         * 
+         * @param sender_account_ref_id the account index of client's wallet 
+         * @param receiver_address      the address of receiver
+         * @param currency_code         currency code
+         * @param amount                the amount of currency
+         * @param gas_unit_price        the gas unit price
+         * @param max_gas_amount        the max gas amount, default is 1,000,000
+         * @param gas_currency_code     the gas currency code. default is 'LBR'
+         */
         virtual void
         transfer(size_t sender_account_ref_id,
                  const Address &receiver_address,
@@ -170,14 +188,77 @@ namespace violas
             std::vector<uint8_t>,
             bool>;
 
-        //
-        //  Execute script file with specified arguments
-        //
+        /**
+         * @brief Execute script file with arguments
+         * 
+         * @param account_index account index of wallet
+         * @param script_file_name script file name with path
+         * @param type_tags transaction TypeTag vector for script
+         * @param arguments transaction argument vector for script 
+         */
         virtual void
         execute_script(size_t account_index,
-                       std::string_view module_file_name,
+                       std::string_view script_file_name,
                        const std::vector<TypeTag> &type_tags = {},
                        const std::vector<TransactionAugment> &arguments = {}) = 0;
+
+        /**
+         * @brief Query accout status infomation
+         * 
+         * @param address - the address of account
+         * @return std::string 
+         */
+        virtual std::string
+        query_account_info(const Address &address) = 0;
+
+        /**
+         * @brief Query transaction inforamtion by address and seqence number
+         * 
+         * @param address the address of account
+         * @param seq_number    the sequence number of account
+         * @param is_fetching_event whether fectching event or not
+         * @return std::string with json format
+         */
+        virtual std::string
+        query_transaction_info(const Address &address,
+                               uint64_t seq_number,
+                               bool is_fetching_event) = 0;
+        /**
+         * @brief Query transaction inforamtion by range
+         * 
+         * @param start_version     start version 
+         * @param limit             limit of range, amount of queried transaction
+         * @param is_fetching_event whether fectching event or not
+         * @return std::string  with json format
+         */
+        virtual std::string
+        query_transaction_info(uint64_t start_version,
+                               uint64_t limit,
+                               bool is_fetching_event) = 0;
+        /**
+         * @brief evnet type
+         * 
+         */
+        enum event_type
+        {
+            sent,
+            received
+        };
+
+        /**
+         * @brief Query events
+         * 
+         * @param address       the address of account
+         * @param type          evnet type
+         * @param start_version start version
+         * @param limit         limit of rang, amount of queried events
+         * @return std::string  with json format
+         */
+        virtual std::string
+        query_events(const Address &address,
+                     event_type type,
+                     uint64_t start_version,
+                     uint64_t limit) = 0;
 
         //
         //  Execute script file with specified arguments
@@ -206,8 +287,7 @@ namespace violas
         ///////////////////////////////////////////////////////
 
         // Call this method with root association privilege
-        virtual void
-        publish_curency(std::string_view currency_code) = 0;
+        virtual void publish_curency(std::string_view currency_code) = 0;
 
         // Register currency with association root account
         virtual void
@@ -237,7 +317,7 @@ namespace violas
         /// Get all currency info
         virtual std::string
         get_all_currency_info() = 0;
-        
+
         /// mint currency for dd account
         virtual void
         mint_currency_for_designated_dealer(std::string_view currency_code,

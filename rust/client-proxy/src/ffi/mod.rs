@@ -572,6 +572,60 @@ namespace violas
             check_result(ret);
         }
 
+        /**
+         * @brief Query accout status infomation
+         *
+         * @param address - the address of account
+         * @return std::string
+         */
+        virtual std::string
+        query_account_info(const Address & address) override
+        {
+            return "";
+        }
+
+        /**
+         * @brief Query transaction inforamtion
+         *
+         * @return string::string
+         */
+        virtual std::string
+        query_transaction_info( const Address &address,
+                                uint64_t seq_number,
+                                bool is_fetching_event) override
+        {
+            return "";
+        }
+        /**
+         * @brief query transaction inforamtion by range
+         * 
+         * @param start_version     start version 
+         * @param limit             limit of range, amount of queried transaction
+         * @param is_fetching_event whether fectching event or not
+         * @return std::string  with json format
+         */
+        virtual std::string
+        query_transaction_info(uint64_t start_version,
+                               uint64_t limit,
+                               bool is_fetching_event) override
+        {
+            return "";
+        }
+        ///
+        /// Query events
+        /// 
+        virtual std::string
+        query_events(const Address &address,
+                     event_type type,
+                     uint64_t start_version,
+                     uint64_t limit) override
+        {
+            return "";
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// multi currency methods
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Add a currency to current account
         virtual void
         add_currency(size_t account_index,

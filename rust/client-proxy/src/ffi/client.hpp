@@ -221,8 +221,8 @@ namespace violas
          */
         virtual std::string
         query_transaction_info(const Address &address,
-                               uint64_t seq_number,
-                               bool is_fetching_event) = 0;
+                               uint64_t sequence_number,
+                               bool is_fetching_events) = 0;
         /**
          * @brief Query transaction inforamtion by range
          * 
@@ -234,7 +234,7 @@ namespace violas
         virtual std::string
         query_transaction_info(uint64_t start_version,
                                uint64_t limit,
-                               bool is_fetching_event) = 0;
+                               bool is_fetching_events) = 0;
         /**
          * @brief evnet type
          * 

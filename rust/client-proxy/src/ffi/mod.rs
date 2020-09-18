@@ -581,7 +581,51 @@ namespace violas
         virtual std::string
         query_account_info(const Address & address) override
         {
-            return "";
+            auto in_address = address.data();
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_query_account_info [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.query_account_info(AccountAddress::new(*in_address));
+
+                    match ret {
+                        Ok(opt) => match opt {
+                            (Some(view), _version) => {
+                                let json_currencies = serde_json::to_string(&view).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new reserves detail error")
+                                    .into_raw();
+                                true
+                            }
+                            (None, _) => {
+                                set_last_error(format_err!(
+                                    "no info for account {}",
+                                    AccountAddress::new(*in_address)
+                                ));
+                                false
+                            }
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to get exchagne reserves with error, {}",
+                                e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
         }
 
         /**
@@ -591,15 +635,62 @@ namespace violas
          */
         virtual std::string
         query_transaction_info( const Address &address,
-                                uint64_t seq_number,
-                                bool is_fetching_event) override
+                                uint64_t sequence_number,
+                                bool is_fetching_events) override
         {
-            return "";
+            auto in_address = address.data();
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_query_transaction_info_by_acc_seq [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                sequence_number : u64 as "uint64_t",
+                is_fetching_events : bool as "bool",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.query_transaction_info(AccountAddress::new(*in_address), sequence_number, is_fetching_events);
+
+                    match ret {
+                        Ok(opt) => match opt {
+                            Some(view) => {
+                                let json_currencies = serde_json::to_string(&view).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new CString error")
+                                    .into_raw();
+                                true
+                            }
+                            None => {
+                                set_last_error(format_err!(
+                                    "no transaction info for account {} and sequence number {}",
+                                    AccountAddress::new(*in_address),
+                                    sequence_number
+                                ));
+                                false
+                            }
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to get exchagne reserves with error, {}",
+                                e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
         }
         /**
          * @brief query transaction inforamtion by range
-         * 
-         * @param start_version     start version 
+         *
+         * @param start_version     start version
          * @param limit             limit of range, amount of queried transaction
          * @param is_fetching_event whether fectching event or not
          * @return std::string  with json format
@@ -607,20 +698,97 @@ namespace violas
         virtual std::string
         query_transaction_info(uint64_t start_version,
                                uint64_t limit,
-                               bool is_fetching_event) override
+                               bool is_fetching_events) override
         {
-            return "";
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_query_transaction_info_by_range [
+                rust_violas_client : &mut ViolasClient as "void *",
+                start_version : u64 as "uint64_t",
+                limit : u64 as "uint64_t",
+                is_fetching_events : bool as "bool",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.query_transaction_by_range(start_version, limit, is_fetching_events);
+
+                    match ret {
+                        Ok(views) => {
+                            let json_currencies = serde_json::to_string(&views).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new CString error")
+                                    .into_raw();
+                                true
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to query transaction info with error, {}",
+                                e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
         }
         ///
         /// Query events
-        /// 
+        ///
         virtual std::string
         query_events(const Address &address,
                      event_type type,
                      uint64_t start_version,
                      uint64_t limit) override
         {
-            return "";
+            auto in_address = address.data();
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+            bool in_event_type = (type == event_type::sent)? true : false;
+
+            bool ret = rust!( client_query_events [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                in_event_type : bool as "bool",
+                start_version : u64 as "uint64_t",
+                limit : u64 as "uint64_t",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.query_events(
+                                                        AccountAddress::new(*in_address),
+                                                        in_event_type,
+                                                        start_version, limit);
+
+                    match ret {
+                        Ok(events_account ) => {
+                            let json_currencies = serde_json::to_string(&events_account).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new CString error")
+                                    .into_raw();
+                                true
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to query events with error, {}", e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////

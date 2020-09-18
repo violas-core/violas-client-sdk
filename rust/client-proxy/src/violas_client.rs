@@ -5,16 +5,20 @@ use crate::{
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
 use libra_crypto::test_utils::KeyPair;
-use libra_json_rpc_client::views::VMStatusView;
+use libra_json_rpc_client::views::{AccountView, EventView, TransactionView, VMStatusView};
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::{libra_root_address, treasury_compliance_account_address, BalanceResource},
+    account_config::{
+        libra_root_address, treasury_compliance_account_address, BalanceResource,
+        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
+    },
     account_state::AccountState,
     chain_id::ChainId,
     //on_chain_config::VMPublishingOption,
     transaction::{
         authenticator::AuthenticationKey, Module, Script, TransactionArgument, TransactionPayload,
+        Version,
     },
     waypoint::Waypoint,
 };
@@ -991,5 +995,56 @@ impl ViolasClient {
             }
             None => unimplemented!(),
         }
+    }
+
+    /// Query account info
+    pub fn query_account_info(
+        &mut self,
+        address: AccountAddress,
+    ) -> Result<(Option<AccountView>, Version)> {
+        let account = self.client.get_account(address, true)?;
+
+        Ok(account)
+    }
+
+    /// query transaction by account address and sequence number
+    pub fn query_transaction_info(
+        &mut self,
+        address: AccountAddress,
+        sequence_number: u64,
+        fetching_events: bool,
+    ) -> Result<Option<TransactionView>> {
+        self.client
+            .get_txn_by_acc_seq(address, sequence_number, fetching_events)
+    }
+
+    /// query transaction by account address and sequence number
+    pub fn query_transaction_by_range(
+        &mut self,
+        start_version: u64,
+        limit: u64,
+        fetching_events: bool,
+    ) -> Result<Vec<TransactionView>> {
+        self.client
+            .get_txn_by_range(start_version, limit, fetching_events)
+    }
+
+    /// Query event view
+    pub fn query_events(
+        &mut self,
+        address: AccountAddress,
+        event_type: bool,
+        start_seq_number: u64,
+        limit: u64,
+    ) -> Result<(Vec<EventView>, AccountView)> {
+        let path = match event_type {
+            true => ACCOUNT_SENT_EVENT_PATH.to_vec(),
+            false => ACCOUNT_RECEIVED_EVENT_PATH.to_vec(),
+        };
+
+        let access_path = AccessPath::new(address, path);
+
+        self.client
+            .get_events_by_access_path(access_path, start_seq_number, limit)
     }
 }

@@ -44,6 +44,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt, fs,
+    io::{stdout, Write},
     path::{Path, PathBuf},
     process::Command,
     str::{self, FromStr},
@@ -55,6 +56,14 @@ const GAS_UNIT_PRICE: u64 = 0;
 const MAX_GAS_AMOUNT: u64 = 1_000_000;
 const TX_EXPIRATION: i64 = 100;
 
+/// Enum used for error formatting.
+#[derive(Debug)]
+enum InputType {
+    Bool,
+    UnsignedInt,
+    Usize,
+}
+
 /// Check whether the input string is a valid libra address.
 pub fn is_address(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AccountAddress::LENGTH)
@@ -63,14 +72,6 @@ pub fn is_address(data: &str) -> bool {
 /// Check whether the input string is a valid libra authentication key.
 pub fn is_authentication_key(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AuthenticationKey::LENGTH)
-}
-
-/// Enum used for error formatting.
-#[derive(Debug)]
-enum InputType {
-    Bool,
-    UnsignedInt,
-    Usize,
 }
 
 /// Account data is stored in a map and referenced by an index.
@@ -186,11 +187,12 @@ impl ClientProxy {
             Some(dd_account_data)
         };
 
-        let faucet_url = Url::parse(&faucet_url.unwrap_or(format!(
-            "http://{}",
-            url.host_str().unwrap().replace("client", "faucet").as_str()
-        )))
-        .expect("Invalid faucet URL");
+        let faucet_url = if let Some(faucet_url) = &faucet_url {
+            Url::parse(faucet_url).expect("Invalid faucet URL specified")
+        } else {
+            url.join("/mint")
+                .expect("Failed to construct faucet URL from JSON-RPC URL")
+        };
 
         let address_to_ref_id = accounts
             .iter()
@@ -568,50 +570,6 @@ impl ClientProxy {
         }
     }
 
-    /// Allow executing arbitrary script in the network.
-    //     pub fn enable_custom_script(
-    //         &mut self,
-    //         space_delim_strings: &[&str],
-    //         is_blocking: bool,
-    //     ) -> Result<()> {
-    //         ensure!(
-    //             space_delim_strings[0] == "enable_custom_script",
-    //             "inconsistent command '{}' for enable_custom_script",
-    //             space_delim_strings[0]
-    //         );
-    //         ensure!(
-    //             space_delim_strings.len() == 1,
-    //             "Invalid number of arguments for setting publishing option"
-    //         );
-    //         let script_body = {
-    //             let code = "
-    //     import 0x1.LibraTransactionPublishingOption;
-
-    //     main(account: &signer) {
-    //       LibraTransactionPublishingOption.set_open_script(move(account));
-
-    //       return;
-    //     }
-    // ";
-
-    //             let compiler = Compiler {
-    //                 address: libra_types::account_config::CORE_CODE_ADDRESS,
-    //                 extra_deps: vec![],
-    //                 ..Compiler::default()
-    //             };
-    //             compiler
-    //                 .into_script_blob("file_name", code)
-    //                 .expect("Failed to compile")
-    //         };
-    //         match self.libra_root_account {
-    //             Some(_) => self.association_transaction_with_local_libra_root_account(
-    //                 TransactionPayload::Script(Script::new(script_body, vec![], vec![])),
-    //                 is_blocking,
-    //             ),
-    //             None => unimplemented!(),
-    //         }
-    //     }
-
     /// Add a hash to the allowlist that could be executed by the network.
     pub fn add_to_script_allow_list(
         &mut self,
@@ -697,38 +655,50 @@ impl ClientProxy {
         }
     }
 
-    // Waits for the next transaction for a specific address and prints it
+    /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(
         &mut self,
         account: AccountAddress,
         sequence_number: u64,
     ) -> Result<()> {
         let mut max_iterations = 5000;
+        println!(
+            "waiting for {} with sequence number {}",
+            account, sequence_number
+        );
         loop {
+            stdout().flush().unwrap();
+
             match self
                 .client
                 .get_txn_by_acc_seq(account, sequence_number - 1, true)
             {
                 Ok(Some(txn_view)) => {
+                    println!();
                     if txn_view.vm_status == VMStatusView::Executed {
+                        println!("transaction executed!");
+                        if txn_view.events.is_empty() {
+                            println!("no events emitted");
+                        }
                         break Ok(());
                     } else {
                         break Err(format_err!(
-                            "transaction failed to execute, status: {:?}!",
+                            "transaction failed to execute; status: {:?}!",
                             txn_view.vm_status
                         ));
                     }
                 }
                 Err(e) => {
-                    bail!("Response with error: {:?}", e);
+                    println!();
+                    println!("Response with error: {:?}", e);
                 }
                 _ => {
-                    //print!(".");
+                    print!(".");
                 }
             }
             max_iterations -= 1;
             if max_iterations == 0 {
-                bail!("wait_for_transaction timeout");
+                panic!("wait_for_transaction timeout");
             }
             thread::sleep(time::Duration::from_millis(10));
         }
@@ -1419,7 +1389,7 @@ impl ClientProxy {
         Ok(())
     }
 
-    fn association_transaction_with_local_tc_account(
+    pub fn association_transaction_with_local_tc_account(
         &mut self,
         payload: TransactionPayload,
         is_blocking: bool,

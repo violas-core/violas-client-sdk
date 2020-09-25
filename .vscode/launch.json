@@ -28,7 +28,7 @@
                 "-m",
                 "/tmp/libra/mint.key",
                 "-w",
-                "0:efd064c526cc98c2560750968cdd98deebc8f75b24fb744089e9fa589003e924",
+                "0:170cc0c698d8b673a3b5fe884777f1144712ba89bffbde58d43483b9d29da154",
                 "-c",
                 "4",
                 "-n",
@@ -45,7 +45,7 @@
                 "http://localhost:8080",
                 "/tmp/libra/mint.key",
                 "build/debug/violas-client.mne",
-                "0:efd064c526cc98c2560750968cdd98deebc8f75b24fb744089e9fa589003e924",
+                "0:170cc0c698d8b673a3b5fe884777f1144712ba89bffbde58d43483b9d29da154",
                 "4",
             ],
             "cwd": "${workspaceFolder}"

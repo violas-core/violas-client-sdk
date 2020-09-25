@@ -21,5 +21,5 @@ bin/testnet  http://47.93.114.230:50001 mint_beijing.key waypoint "0:d56a77989f9
 bin/testnet http://51.140.241.96:50001  mint_test.key waypoint "0:4e16e966cae7766595a59a2079a1e4c7fc86781a3986bc9b3e70c9855ddf8665" 
 
 Debug
-bin/violas_client http://localhost:8080 /tmp/libra/mint.key waypoint 0:5b15c8edcc6a94c948eeeea544d970429831636bc44ef719bde2752277cf1cb5 4
-bin/violas-oracle publish -u http://localhost:8080 -m /tmp/libra/mint.key -w 0:5b15c8edcc6a94c948eeeea544d970429831636bc44ef719bde2752277cf1cb5 -c 4 -n $PWD/oracle.m
+bin/violas_client http://localhost:8080 /tmp/libra/mint.key waypoint 0:170cc0c698d8b673a3b5fe884777f1144712ba89bffbde58d43483b9d29da154 4
+bin/violas-oracle publish -u http://localhost:8080 -m /tmp/libra/mint.key -w 0:170cc0c698d8b673a3b5fe884777f1144712ba89bffbde58d43483b9d29da154 -c 4 -n $PWD/mnemonic/oracle.mne   

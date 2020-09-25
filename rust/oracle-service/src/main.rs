@@ -148,8 +148,18 @@ fn main() -> Result<()> {
             oracle.create_admin_account()?;
 
             loop {
-                let currency_rates =
-                    rt.block_on(async { gather_exchange_rate_from_coinbase().await })?;
+                let ret = rt.block_on(async { gather_exchange_rate_from_coinbase().await });
+
+                let currency_rates = match ret {
+                    Ok(rates) => rates,
+                    Err(e) => {
+                        println!(
+                            "failed to gather exchange rate from coinbase, error : {}",
+                            e
+                        );
+                        continue;
+                    }
+                };
 
                 println!(
                     "{} : started to udpate Oracle Exchange Rates.",

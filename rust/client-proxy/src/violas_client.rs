@@ -5,7 +5,9 @@ use crate::{
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
 use libra_crypto::test_utils::KeyPair;
-use libra_json_rpc_client::views::{AccountView, EventView, TransactionView, VMStatusView};
+use libra_json_rpc_client::views::{
+    AccountView, BlockMetadata, EventView, TransactionView, VMStatusView,
+};
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -112,6 +114,11 @@ impl ViolasClient {
         Ok(client)
     }
 
+    /// Test JSON RPC client connection with validator.
+    pub fn test_validator_connection(&mut self) -> Result<BlockMetadata> {
+        self.client.get_metadata()
+    }
+
     /// Returns the account index that should be used by user to reference this account
     pub fn create_next_account(
         &mut self,
@@ -138,6 +145,63 @@ impl ViolasClient {
         let addr_index = self.insert_account_data(account_data);
 
         Ok((addr_index.address, addr_index.index))
+    }
+
+    pub fn association_transaction_with_local_libra_root_account(
+        &mut self,
+        payload: TransactionPayload,
+        is_blocking: bool,
+    ) -> Result<()> {
+        ensure!(
+            self.libra_root_account.is_some(),
+            "No assoc root account loaded"
+        );
+        let sender = self.libra_root_account.as_ref().unwrap();
+        let sender_address = sender.address;
+        let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
+        let mut sender_mut = self.libra_client_proxy.libra_root_account.as_mut().unwrap();
+        self.libra_client_proxy
+            .client
+            .submit_transaction(Some(&mut sender_mut), txn)?;
+        if is_blocking {
+            self.wait_for_transaction(
+                sender_address,
+                self.libra_root_account.as_ref().unwrap().sequence_number,
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn association_transaction_with_local_testnet_dd_account(
+        &mut self,
+        payload: TransactionPayload,
+        is_blocking: bool,
+    ) -> Result<()> {
+        ensure!(
+            self.testnet_designated_dealer_account.is_some(),
+            "No testnet Designated Dealer account loaded"
+        );
+        let sender = self.testnet_designated_dealer_account.as_ref().unwrap();
+        let sender_address = sender.address;
+        let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
+        let mut sender_mut = self
+            .libra_client_proxy
+            .testnet_designated_dealer_account
+            .as_mut()
+            .unwrap();
+        self.libra_client_proxy
+            .client
+            .submit_transaction(Some(&mut sender_mut), txn)?;
+        if is_blocking {
+            self.wait_for_transaction(
+                sender_address,
+                self.testnet_designated_dealer_account
+                    .as_ref()
+                    .unwrap()
+                    .sequence_number,
+            )?;
+        }
+        Ok(())
     }
 
     pub fn association_transaction_with_local_tc_account(
@@ -487,12 +551,10 @@ impl ViolasClient {
         //     compiler.into_module_blob("file_name", code.as_str())?
         // };
         match self.libra_root_account {
-            Some(_) => self
-                .libra_client_proxy
-                .association_transaction_with_local_libra_root_account(
-                    TransactionPayload::Module(Module::new(module_byte_code)),
-                    true,
-                ),
+            Some(_) => self.association_transaction_with_local_libra_root_account(
+                TransactionPayload::Module(Module::new(module_byte_code)),
+                true,
+            ),
             None => unimplemented!(),
         }
     }
@@ -712,7 +774,7 @@ impl ViolasClient {
             Ok(account_state
                 .get_registered_currency_info_resources()?
                 .iter()
-                .map(|info| CurrencyInfoViewEx::from(info.as_ref().unwrap()))
+                .map(|info| CurrencyInfoViewEx::from(info))
                 .collect())
         } else {
             bail!("get account state blob error for libra root address ");

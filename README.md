@@ -45,3 +45,7 @@ make install-strip
 	grpcio with version 0.4.7 can be compiled successfully, but grpcio with version 0.5.0-alpha.5 cannot be compiled successfully.
 
 ```
+
+## How is this project organized?
+```
+```

@@ -6,6 +6,7 @@ module VLS {
     use 0x1::Errors;
     use 0x1::FixedPoint32;
     use 0x1::Libra::{Self, Libra};
+    //use 0x1::LibraAccount;
     use 0x1::LibraTimestamp;
     //use 0x1::Signer;
     
@@ -24,8 +25,8 @@ module VLS {
         preburn_cap: Libra::Preburn<VLS>,
     }
 
-    struct Receivers {
-        miner : address
+    resource struct Receivers {
+        miner : address,
     }
 
     /// The `Reserve` resource is in an invalid state
@@ -116,11 +117,18 @@ module VLS {
 
     /// Distribute VLS to all the specified account 
     public fun distribute() 
-    acquires Reserve {
+    acquires Receivers, Reserve {
         LibraTimestamp::assert_operating();
         let _time_seconds = LibraTimestamp::now_seconds();
 
-        let _vls_coins = mint(100);
+        let vls_coin = mint(100);
+
+        let miner = *&borrow_global<Receivers>(CoreAddresses::LIBRA_ROOT_ADDRESS()).miner;
+
+        //LibraAccount::deposit<VLS>(CoreAddresses::VM_RESERVED_ADDRESS(), receivers.miner, vls_coin, x"", x"")
+         // Deposit the `to_deposit` coin
+        //Libra::deposit(LibraAccount::balance<VLS>(miner), vls_coin);
+        //move_to(miner, LibraAccount::Balance<VLS>{ coin: Libra::zero<VLS>() });
 
     }
 }

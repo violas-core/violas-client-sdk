@@ -56,14 +56,6 @@ const GAS_UNIT_PRICE: u64 = 0;
 const MAX_GAS_AMOUNT: u64 = 1_000_000;
 const TX_EXPIRATION: i64 = 100;
 
-/// Enum used for error formatting.
-#[derive(Debug)]
-enum InputType {
-    Bool,
-    UnsignedInt,
-    Usize,
-}
-
 /// Check whether the input string is a valid libra address.
 pub fn is_address(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AccountAddress::LENGTH)
@@ -72,6 +64,14 @@ pub fn is_address(data: &str) -> bool {
 /// Check whether the input string is a valid libra authentication key.
 pub fn is_authentication_key(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AuthenticationKey::LENGTH)
+}
+
+/// Enum used for error formatting.
+#[derive(Debug)]
+enum InputType {
+    Bool,
+    UnsignedInt,
+    Usize,
 }
 
 /// Account data is stored in a map and referenced by an index.
@@ -242,7 +242,7 @@ impl ClientProxy {
         };
 
         let (auth_key, child_number) = self.wallet.new_address()?;
-        let private_key = self.wallet.get_private_key(child_number)?;
+        let private_key = self.wallet.get_private_key_by_child_num(child_number)?;
 
         let account_data = Self::get_account_data_from_address(
             &mut self.client,
@@ -271,9 +271,10 @@ impl ClientProxy {
         } else {
             for (ref index, ref account) in self.accounts.iter().enumerate() {
                 println!(
-                    "User account index: {}, address: {}, sequence number: {}, status: {:?}",
+                    "User account index: {}, address: {}, private_key: {:?}, sequence number: {}, status: {:?}",
                     index,
                     hex::encode(&account.address),
+                    hex::encode(&self.wallet.get_private_key(&account.address).unwrap().to_bytes()),
                     account.sequence_number,
                     account.status,
                 );
@@ -1275,7 +1276,7 @@ impl ClientProxy {
     /// Get account using specific address.
     /// Sync with validator for account sequence number in case it is already created on chain.
     /// This assumes we have a very low probability of mnemonic word conflict.
-    pub fn get_account_data_from_address(
+    fn get_account_data_from_address(
         client: &mut LibraClient,
         address: AccountAddress,
         sync_with_validator: bool,
@@ -1366,7 +1367,7 @@ impl ClientProxy {
         Ok(auth_key)
     }
 
-    pub fn association_transaction_with_local_libra_root_account(
+    fn association_transaction_with_local_libra_root_account(
         &mut self,
         payload: TransactionPayload,
         is_blocking: bool,
@@ -1389,7 +1390,7 @@ impl ClientProxy {
         Ok(())
     }
 
-    pub fn association_transaction_with_local_tc_account(
+    fn association_transaction_with_local_tc_account(
         &mut self,
         payload: TransactionPayload,
         is_blocking: bool,
@@ -1413,7 +1414,7 @@ impl ClientProxy {
         Ok(())
     }
 
-    pub fn association_transaction_with_local_testnet_dd_account(
+    fn association_transaction_with_local_testnet_dd_account(
         &mut self,
         payload: TransactionPayload,
         is_blocking: bool,
@@ -1593,7 +1594,7 @@ impl ClientProxy {
     }
 }
 
-pub fn parse_transaction_argument_for_client(s: &str) -> Result<TransactionArgument> {
+fn parse_transaction_argument_for_client(s: &str) -> Result<TransactionArgument> {
     if is_address(s) {
         let account_address = ClientProxy::address_from_strings(s)?;
         return Ok(TransactionArgument::Address(account_address));

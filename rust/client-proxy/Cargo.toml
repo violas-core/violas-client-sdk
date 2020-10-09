@@ -37,7 +37,7 @@ libra-metrics = { path = "../../../Violas/common/metrics", version = "0.1.0" }
 libra-temppath = { path = "../../../Violas/common/temppath/", version = "0.1.0" }
 libra-workspace-hack = { path = "../../../Violas/common/workspace-hack", version = "0.1.0" }
 libra-network-address = { path = "../../../Violas/network/network-address", version = "0.1.0" }
-resource-viewer = { path = "../../../Violas/language/resource-viewer", version = "0.1.0" }
+resource-viewer = { path = "../../../Violas/language/tools/resource-viewer", version = "0.1.0" }
 compiled-stdlib = { path = "../../../Violas/language/stdlib/compiled",  version = "0.1.0" }
 transaction-builder = { path = "../../../Violas/language/transaction-builder", version = "0.1.0" }
 libra-types = { path = "../../../Violas/types", version = "0.1.0" }

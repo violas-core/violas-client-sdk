@@ -1,10 +1,15 @@
 use crate::{
-    libra_client_proxy::{parse_transaction_argument_for_client, ClientProxy},
+    libra_client::LibraClient,
+    libra_client_proxy::ClientProxy,
     violas_account::CurrencyInfoViewEx, //make_currency_tag
     AccountData,                        //AccountStatus
+    AccountStatus,
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
-use libra_crypto::test_utils::KeyPair;
+use libra_crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature},
+    test_utils::KeyPair,
+};
 use libra_json_rpc_client::views::{
     AccountView, BlockMetadata, EventView, TransactionView, VMStatusView,
 };
@@ -13,14 +18,16 @@ use libra_types::{
     account_address::AccountAddress,
     account_config::{
         libra_root_address, treasury_compliance_account_address, BalanceResource,
-        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
+        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH, LBR_NAME,
     },
     account_state::AccountState,
     chain_id::ChainId,
     //on_chain_config::VMPublishingOption,
     transaction::{
-        authenticator::AuthenticationKey, Module, Script, TransactionArgument, TransactionPayload,
-        Version,
+        authenticator::AuthenticationKey,
+        helpers::{create_unsigned_txn, create_user_txn, TransactionSigner},
+        parse_transaction_argument, Module, Script, SignedTransaction, TransactionArgument,
+        TransactionPayload, Version,
     },
     waypoint::Waypoint,
 };
@@ -34,6 +41,11 @@ use std::{
     thread, time,
 };
 use transaction_builder;
+
+const CLIENT_WALLET_MNEMONIC_FILE: &str = "client.mnemonic";
+const GAS_UNIT_PRICE: u64 = 0;
+const MAX_GAS_AMOUNT: u64 = 1_000_000;
+const TX_EXPIRATION: i64 = 100;
 
 pub const VIOLAS_ROOT_ACCOUNT_ID: u64 = u64::MAX;
 pub const VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 1;
@@ -93,7 +105,7 @@ impl ViolasClient {
             let treasury_compliance_account_key = generate_key::load_key(libra_root_account_file);
             let key_pair = KeyPair::from(treasury_compliance_account_key);
 
-            let treasury_compliance_account_data = ClientProxy::get_account_data_from_address(
+            let treasury_compliance_account_data = Self::get_account_data_from_address(
                 &mut libra_client_proxy.client,
                 treasury_compliance_account_address(),
                 true,
@@ -129,9 +141,9 @@ impl ViolasClient {
         let private_key = self
             .libra_client_proxy
             .wallet
-            .get_private_key(child_number)?;
+            .get_private_key_by_child_num(child_number)?;
 
-        let account_data = ClientProxy::get_account_data_from_address(
+        let account_data = Self::get_account_data_from_address(
             &mut self.client,
             match address {
                 Some(addr) => addr,
@@ -233,6 +245,67 @@ impl ViolasClient {
         Ok(resp)
     }
 
+    /// Craft a transaction to be submitted.
+    fn create_txn_to_submit(
+        &self,
+        program: TransactionPayload,
+        sender_account: &AccountData,
+        max_gas_amount: Option<u64>,
+        gas_unit_price: Option<u64>,
+        gas_currency_code: Option<String>,
+    ) -> Result<SignedTransaction> {
+        let signer: Box<&dyn TransactionSigner> = match &sender_account.key_pair {
+            Some(key_pair) => Box::new(key_pair),
+            None => Box::new(&self.wallet),
+        };
+        create_user_txn(
+            *signer,
+            program,
+            sender_account.address,
+            sender_account.sequence_number,
+            max_gas_amount.unwrap_or(MAX_GAS_AMOUNT),
+            gas_unit_price.unwrap_or(GAS_UNIT_PRICE),
+            gas_currency_code.unwrap_or_else(|| LBR_NAME.to_owned()),
+            TX_EXPIRATION,
+            self.chain_id,
+        )
+    }
+
+    /// Get account using specific address.
+    /// Sync with validator for account sequence number in case it is already created on chain.
+    /// This assumes we have a very low probability of mnemonic word conflict.
+    fn get_account_data_from_address(
+        client: &mut LibraClient,
+        address: AccountAddress,
+        sync_with_validator: bool,
+        key_pair: Option<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+        authentication_key_opt: Option<Vec<u8>>,
+    ) -> Result<AccountData> {
+        let (sequence_number, authentication_key, status) = if sync_with_validator {
+            match client.get_account(address, true) {
+                Ok(resp) => match resp.0 {
+                    Some(account_view) => (
+                        account_view.sequence_number,
+                        Some(account_view.authentication_key.into_bytes()?),
+                        AccountStatus::Persisted,
+                    ),
+                    None => (0, authentication_key_opt, AccountStatus::Local),
+                },
+                Err(e) => {
+                    bail!("Failed to get account from validator, error: {:?}", e);
+                }
+            }
+        } else {
+            (0, authentication_key_opt, AccountStatus::Local)
+        };
+        Ok(AccountData {
+            address,
+            authentication_key,
+            key_pair,
+            sequence_number,
+            status,
+        })
+    }
     /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(
         &mut self,
@@ -281,11 +354,11 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         let proxy: &mut ClientProxy = &mut self.libra_client_proxy;
-
         let sender = proxy
             .accounts
             .get(account_ref_id)
             .ok_or_else(|| format_err!("Unable to find sender account: {}", account_ref_id))?;
+
         let gas_currency_code = match gas_currency_type {
             Some(TypeTag::Struct(tag)) => Some(tag.module.into_string()),
             _ => None,
@@ -298,6 +371,7 @@ impl ViolasClient {
             gas_unit_price, /* gas_unit_price */
             gas_currency_code,
         )?;
+
         let sender_mut = proxy
             .accounts
             .get_mut(account_ref_id)
@@ -1109,4 +1183,38 @@ impl ViolasClient {
         self.client
             .get_events_by_access_path(access_path, start_seq_number, limit)
     }
+}
+
+fn parse_transaction_argument_for_client(s: &str) -> Result<TransactionArgument> {
+    if is_address(s) {
+        let account_address = address_from_strings(s)?;
+        return Ok(TransactionArgument::Address(account_address));
+    }
+    parse_transaction_argument(s)
+}
+
+/// Check whether the input string is a valid libra address.
+pub fn is_address(data: &str) -> bool {
+    hex::decode(data).map_or(false, |vec| vec.len() == AccountAddress::LENGTH)
+}
+
+/// Check whether the input string is a valid libra authentication key.
+pub fn is_authentication_key(data: &str) -> bool {
+    hex::decode(data).map_or(false, |vec| vec.len() == AuthenticationKey::LENGTH)
+}
+
+fn address_from_strings(data: &str) -> Result<AccountAddress> {
+    let account_vec: Vec<u8> = hex::decode(data.parse::<String>()?)?;
+    ensure!(
+        account_vec.len() == AccountAddress::LENGTH,
+        "The address {:?} is of invalid length. Addresses must be 16-bytes long"
+    );
+    let account = AccountAddress::try_from(&account_vec[..]).map_err(|error| {
+        format_err!(
+            "The address {:?} is invalid, error: {:?}",
+            &account_vec,
+            error,
+        )
+    })?;
+    Ok(account)
 }

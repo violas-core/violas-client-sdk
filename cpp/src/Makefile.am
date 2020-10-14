@@ -1,22 +1,22 @@
 lib_LTLIBRARIES = libviolas_sdk.la libjniSdk.la liblibra_sdk.la
 
 if DEBUG
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/client-proxy/target/debug #-L$(top_srcdir)/rust/client-proxy/target/x86_64-pc-windows-gnu/release
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/debug #-L$(top_srcdir)/rust/client-proxy/target/x86_64-pc-windows-gnu/release
     CLIENT_PROXY =
 else
-    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/client-proxy/target/release
+    CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/release
     CLIENT_PROXY = 
 endif
 
 libviolas_sdk_la_SOURCES = violas_sdk.cpp violas_sdk2.cpp
 #libcppSdk_la_HEADERS = violas_sdk.hpp
-libviolas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -I$(top_srcdir)/rust/client-proxy/src/ffi
+libviolas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -I$(top_srcdir)/rust/violas-client/src/ffi
 libviolas_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
 libviolas_sdk_la_LIBADD = $(CLIENT_PROXY) 
 
 liblibra_sdk_la_SOURCES = violas_sdk.cpp
 #libcppSdk_la_HEADERS = violas_sdk.hpp
-liblibra_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -DLIB_NAME=Libra -I$(top_srcdir)/rust/client-proxy/src/ffi
+liblibra_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -DLIB_NAME=Libra -I$(top_srcdir)/rust/violas-client/src/ffi
 liblibra_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH) 
 liblibra_sdk_la_LIBADD = $(CLIENT_PROXY)
 

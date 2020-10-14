@@ -30,7 +30,7 @@ transfer_LDADD = -lviolas_sdk $(CLIENT_PROXY) -lstdc++fs
 if DEBUG
     RUST_CPP_CLIENT = $(top_srcdir)/rust/client-proxy/target/debug/build/client-proxy-57a899ab70809e0a/out/rust_cpp/cpp_closures.o
 else # for release 
-    RUST_CPP_CLIENT = $(top_srcdir)/rust/client-proxy/target/release/build/client-proxy-e1025e79fd73a001/out/rust_cpp/cpp_closures.o
+    RUST_CPP_CLIENT = $(top_srcdir)/rust/client-proxy/target/release/build/client-proxy-ac2bb33a17dfcba6/out/rust_cpp/cpp_closures.o
 endif
 
 violas_client_SOURCES = violas_client.cpp 

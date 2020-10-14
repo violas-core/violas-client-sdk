@@ -153,8 +153,9 @@ fn main() -> Result<()> {
                 let currency_rates = match ret {
                     Ok(rates) => rates,
                     Err(e) => {
-                        println!(
-                            "failed to gather exchange rate from coinbase, error : {}",
+                        eprintln!(
+                            "{} : failed to gather exchange rate from coinbase, error : {}",
+                            Local::now(),
                             e
                         );
                         continue;
@@ -174,7 +175,11 @@ fn main() -> Result<()> {
                             print!("{} : {}, ", currency, ex_rate);
                         }
                         Err(e) => {
-                            println!("failed to update exchange rate, error : {}", e);
+                            eprintln!(
+                                "{} : failed to update exchange rate, error : {}",
+                                Local::now(),
+                                e
+                            );
                         }
                     }
                 }

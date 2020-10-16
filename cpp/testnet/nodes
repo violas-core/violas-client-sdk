@@ -9,7 +9,7 @@
 0 Azure-美国西部2 | 52.151.2.66
 1 Azure-美国西部2 | 52.151.9.191
 2 Azure-美国西部2 | 52.229.12.97
-3 Azure-美国西部2 | 52.183.33.162
+3 Azure-美国西部2 | 52.183.33.162                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
 4 Azure-美国西部2 | 13.77.137.84
 域名：ac.testnet.violas.io
 端口：40001
@@ -18,8 +18,8 @@
 bin/testnet  http://47.93.114.230:50001 mint_beijing.key waypoint "0:d56a77989f9c26437d117f996726574518fb7cd71bf18216a2af3766475bb104"
 
 内部测试链
-bin/testnet http://51.140.241.96:50001  mint_test.key waypoint "0:4e16e966cae7766595a59a2079a1e4c7fc86781a3986bc9b3e70c9855ddf8665" 
+bin/testnet http://51.140.241.96:50001  mint_test.key waypoint "0:4e16e966cae7766595a59a2079a1e4c7fc86781a3986bc9b3e70c9855ddf8665"
 
 Debug
-bin/violas_client http://localhost:8080 /tmp/libra/mint.key waypoint 0:bd0470b52774722a921e6c7b477cadbc9776f47998214f304dc0c2c4e6c66bea 4
+bin/violas_client http://localhost:8080 /tmp/libra/mint.key waypoint 0:45fcb9c50dfa8119c275794bf685beca9d3b210240f92397931d1c2310ef74a3 4
 bin/violas-oracle publish -u http://localhost:8080 -m /tmp/libra/mint.key -w 0:bd0470b52774722a921e6c7b477cadbc9776f47998214f304dc0c2c4e6c66bea -c 4 -n $PWD/mnemonic/oracle.mne   

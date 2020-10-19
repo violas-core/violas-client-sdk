@@ -1,0 +1,39 @@
+\begin{theindex}
+
+  \item {event\_type}
+    \subitem {violas::Client}, \hyperpage{7}
+  \item {execute\_script}
+    \subitem {violas::Client}, \hyperpage{7}
+
+  \indexspace
+
+  \item {query\_account\_info}
+    \subitem {violas::Client}, \hyperpage{7}
+  \item {query\_events}
+    \subitem {violas::Client}, \hyperpage{8}
+  \item {query\_transaction\_info}
+    \subitem {violas::Client}, \hyperpage{8, 9}
+
+  \indexspace
+
+  \item {src/ffi/client.hpp}, \hyperpage{11}
+
+  \indexspace
+
+  \item {transfer}
+    \subitem {violas::Client}, \hyperpage{9}
+
+  \indexspace
+
+  \item {violas::Account}, \hyperpage{5}
+  \item {violas::AddressAndIndex}, \hyperpage{5}
+  \item {violas::Client}, \hyperpage{5}
+    \subitem {event\_type}, \hyperpage{7}
+    \subitem {execute\_script}, \hyperpage{7}
+    \subitem {query\_account\_info}, \hyperpage{7}
+    \subitem {query\_events}, \hyperpage{8}
+    \subitem {query\_transaction\_info}, \hyperpage{8, 9}
+    \subitem {transfer}, \hyperpage{9}
+  \item {violas::TypeTag}, \hyperpage{10}
+
+\end{theindex}

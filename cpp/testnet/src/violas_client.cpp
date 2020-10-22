@@ -129,13 +129,13 @@ void initialize_all_currencies(client_ptr client)
 
 void run_test_case(client_ptr client)
 {
-    uint64_t balance = client->get_currency_balance(TESTNET_DD_ADDRESS, "LBR");
+    uint64_t balance = client->get_currency_balance(TESTNET_DD_ADDRESS, "Coin1");
 
     client->create_next_account(BANK_ADMIN_ADDRESS);
     client->create_next_account(EXCHANGE_ADMIN_ADDRESS);
 
     auto accounts = client->get_all_accounts();
-    auto LBR = "LBR", Coin1 = "Coin1";
+    auto Coin1 = "Coin1";
 
     //for (size_t i = 0; i < 3; i++)
 
@@ -147,12 +147,12 @@ void run_test_case(client_ptr client)
              << endl;
     }
 
-    //client->transfer(0, accounts[1].address, LBR, 5 * MICRO_COIN, 1);
+    //client->transfer(0, accounts[1].address, Coin1, 5 * MICRO_COIN, 1);
     //AuthenticationKey dummy_auth_key = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0, 0x0, 0x0, 0x0};
     PublicKey pub_key = {0x1a, 0xbb, 0x9e, 0x6f, 0xec, 0x3f, 0x18, 0x21, 0x0a, 0x3a, 0xa1, 0x1d, 0x00, 0x47, 0x5d, 0xee,
                          0x76, 0xeb, 0xa7, 0x93, 0x78, 0x72, 0x37, 0x40, 0xb3, 0x7a, 0x9a, 0x2d, 0x09, 0x74, 0x96, 0xba};
 
-    client->create_designated_dealer_account("LBR",
+    client->create_designated_dealer_account("Coin1",
                                              0,
                                              BANK_ADMIN_ADDRESS,
                                              accounts[0].auth_key, //only auth key prefix is applied
@@ -165,7 +165,7 @@ void run_test_case(client_ptr client)
 
     client->add_currency(0, "USD");
 
-    client->create_designated_dealer_account("LBR",
+    client->create_designated_dealer_account("Coin1",
                                              0,
                                              EXCHANGE_ADMIN_ADDRESS,
                                              accounts[1].auth_key, //only auth key prefix is applied
@@ -197,7 +197,7 @@ void deploy_exchange(client_ptr client)
     }
 
     try_catch([&]() {
-        client->create_designated_dealer_account("LBR",
+        client->create_designated_dealer_account("Coin1",
                                                  0,
                                                  EXCHANGE_ADMIN_ADDRESS,
                                                  admin_account.auth_key, //only auth key prefix is applied
@@ -208,7 +208,7 @@ void deploy_exchange(client_ptr client)
 
         client->update_account_authentication_key(EXCHANGE_ADMIN_ADDRESS, admin_account.auth_key);
 
-        client->create_parent_vasp_account("LBR",
+        client->create_parent_vasp_account("Coin1",
                                            0,
                                            user1_account.address,
                                            user1_account.auth_key,
@@ -217,7 +217,7 @@ void deploy_exchange(client_ptr client)
                                            user1_account.pub_key,
                                            true);
 
-        client->create_parent_vasp_account("LBR",
+        client->create_parent_vasp_account("Coin1",
                                            0,
                                            user2_account.address,
                                            user2_account.auth_key,
@@ -249,7 +249,7 @@ void deploy_exchange(client_ptr client)
             return to_string((double)balance / MICRO_COIN);
         };
 
-        cout << "LBR : " // << double(client->get_balance(addr)) / MICRO_COIN << ", "
+        cout << "Coin1 : " // << double(client->get_balance(addr)) / MICRO_COIN << ", "
              << "USD : " << fmt_balance("VLSUSD") << ", "
              << "EUR : " << fmt_balance("VLSEUR") << "."
              << "GBP : " << fmt_balance("VLSGBP") << "."
@@ -321,7 +321,7 @@ void deploy_bank(client_ptr client)
     }
 
     try_catch([&]() {
-        client->create_designated_dealer_account("LBR",
+        client->create_designated_dealer_account("Coin1",
                                                  0,
                                                  BANK_ADMIN_ADDRESS,
                                                  admin_account.auth_key, //only auth key prefix is applied
@@ -332,7 +332,7 @@ void deploy_bank(client_ptr client)
 
         client->update_account_authentication_key(BANK_ADMIN_ADDRESS, admin_account.auth_key);
 
-        client->create_parent_vasp_account("LBR",
+        client->create_parent_vasp_account("Coin1",
                                            0,
                                            user1_account.address,
                                            user1_account.auth_key,
@@ -341,7 +341,7 @@ void deploy_bank(client_ptr client)
                                            user1_account.pub_key,
                                            true);
 
-        client->create_parent_vasp_account("LBR",
+        client->create_parent_vasp_account("Coin1",
                                            0,
                                            user2_account.address,
                                            user2_account.auth_key,

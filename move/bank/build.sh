@@ -59,8 +59,8 @@ echo "build update_price.move"
 ../build.sh update_price.move 0x0 bank.move ../oracle/oracle.move
 mv move_build_output/scripts/main.mv update_price.mv
 
-echo "build update_price_from_oracle.move"
-../build.sh update_price_from_oracle.move 0x0 bank.move ../oracle/oracle.move
-mv move_build_output/scripts/main.mv update_price_from_oracle.mv
+echo "build update_price_from_oracle_ex.move"
+../build.sh update_price_from_oracle_ex.move 0x0 bank.move ../oracle/oracle.move
+mv move_build_output/scripts/main.mv update_price_from_oracle_ex.mv
 
 rm -rf move_build_output

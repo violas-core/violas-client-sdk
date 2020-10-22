@@ -63,16 +63,25 @@ void distribute_vls(client_ptr client)
                                                12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117, 110, 116, 14, 100, 105,
                                                115, 116, 114, 105, 98, 117, 116, 101, 95, 118, 108, 115, 0, 0, 0, 0,
                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 17, 0, 2};
+    //0000000000000000000000000000DD01
+    const Address VLS_ADDRESS({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01});
+    //string
+    client->create_next_account(VLS_ADDRESS);
 
-    client->create_next_account();
     auto accounts = client->get_all_accounts();
 
     try_catch([&]() {
         client->create_designated_dealer_account("Coin1", 0,
-                                                 accounts[0].address, accounts[0].auth_key,
+                                                 VLS_ADDRESS, accounts[0].auth_key,
                                                  "distributer", "wwww.violas.io",
                                                  accounts[0].pub_key, true);
+
+        client->update_account_authentication_key(VLS_ADDRESS, accounts[0].auth_key);
+
+        client->add_currency(0, "VLS");
     });
+
+    
 
     client->execute_script(0, distribute_vls_bytecode);
 }

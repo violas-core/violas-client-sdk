@@ -3,19 +3,7 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "attach",
-            "name": "Attach by name",
-            "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle"
-        },
-        {
-            "type": "lldb",
-            "request": "attach",
-            "name": "Attach",
-            "pid": "${command:pickMyProcess}" // use ${command:pickProcess} to pick other users' processes
-        },
+    "configurations": [              
         {
             "type": "lldb",
             "request": "launch",
@@ -53,17 +41,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Launch testnet",
-            "program": "${workspaceFolder}/build/debug/bin/testnet",
+            "name": "Launch violas_vls",
+            "program": "${workspaceFolder}/build/debug/bin/violas_vls",
             "args": [
-                "http://localhost:8080",
+                "http://localhost:40955",
                 "/tmp/libra/mint.key",
                 "waypoint",
-                "0:692279ff1e4a23bdcc01b907024c781dc249b346db62651171fbe65829f97e72",
+                "0:63d1cab20e52e3e6d7babbe07c8e195dfec7c156ffe30e9c4679fd5c38a3e59e",
                 "4"
-            ],
-            //"args": ["http://51.140.241.96:50001", "/home/hunter/mint_test.key", "governor","0:2f4d2b3f414fe799f8a13003311fcff9b1c5dd073c3a5e84fcfbc534d5fccbc2"],
-            //"args": ["http://47.93.114.230:50001", "/home/hunter/Documents/node/mint_beijing.key", "governor","0:f462b02303dfe9e6db7d15523451155989f604f27fe20cd65a4700e0060e7238"],
+            ],            
             "cwd": "${workspaceFolder}/build/debug"
         },
         {

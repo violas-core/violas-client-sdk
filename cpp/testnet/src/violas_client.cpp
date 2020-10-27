@@ -8,28 +8,16 @@
 #include <iomanip>
 #include <functional>
 #include <violas_sdk2.hpp>
-#include "terminal.h"
+#include "utils.h"
 
 using namespace std;
 using namespace violas;
-
-template <size_t N>
-std::ostream &operator<<(std::ostream &os, const array<uint8_t, N> &bytes)
-{
-    for (auto v : bytes)
-    {
-        os << std::setfill('0') << std::setw(2) << std::hex << (int)v;
-    }
-
-    return os << std::dec;
-}
 
 string currency_codes[] = {
     "VLSUSD",
     "VLSEUR",
     "VLSGBP",
     "VLSSGD",
-    "VLS",
     "USD",
     "EUR",
     "GBP",
@@ -41,6 +29,7 @@ void run_test_case(client_ptr client);
 void initialize_all_currencies(client_ptr client);
 void deploy_exchange(client_ptr client);
 void deploy_bank(client_ptr client);
+void mint_currency(client_ptr client);
 
 int main(int argc, const char *argv[])
 {
@@ -65,12 +54,14 @@ int main(int argc, const char *argv[])
             {2, [=]() { run_test_case(client); }},
             {3, [=]() { deploy_exchange(client); }},
             {4, [=]() { deploy_bank(client); }},
+            {5, [=]() { mint_currency(client); }},
         };
 
         cout << "1 for deploying all currencies \n"
                 "2 for testing Account Management \n"
                 "3 for deploying Exchange Contract.\n"
                 "4 for deploying Bank Contract.\n"
+                "5 for minting curreny to DD account.\n"
                 "Please input index : ";
 
         int index;
@@ -119,12 +110,46 @@ void initialize_all_currencies(client_ptr client)
         client->mint_currency_for_designated_dealer(currency_code,
                                                     0,
                                                     TESTNET_DD_ADDRESS,
-                                                    1000000 * MICRO_COIN,
+                                                    1'000'000 * MICRO_COIN,
                                                     3);
         cout << "minted 1,000,000 coins to DD account " << endl;
     }
 
     cout << "all currency info : " << client->get_all_currency_info() << endl;
+}
+
+void mint_currency(client_ptr client)
+{
+    cout << color::RED << "mint currencies ..." << color::RESET << endl;
+
+    auto accounts = client->get_all_accounts();
+
+    for (auto currency_code : currency_codes)
+    {
+        cout << currency_code << endl;
+    }
+
+    while (true)
+    {
+        string currency_code;
+        uint64_t amount;
+        cout << "Pleae input currency code and amout : ";
+
+        cin >> currency_code;
+        if (currency_code == "q" || currency_code == "quit")
+            break;
+
+        cin >> amount;
+
+        try_catch([&]() {
+            client->mint_currency_for_designated_dealer(currency_code,
+                                                        0,
+                                                        TESTNET_DD_ADDRESS,
+                                                        amount * MICRO_COIN,
+                                                        3);
+            cout << "minted " << amount << " " << currency_code << " to DD account " << endl;
+        });
+    }
 }
 
 void run_test_case(client_ptr client)
@@ -364,7 +389,7 @@ void deploy_bank(client_ptr client)
         cout << "created all accounts for Bank contract." << endl;
     });
 
-    auto bank = Bank::create_bank(client, "move/bank/");  //../../move/bank/
+    auto bank = Bank::create_bank(client, "move/bank/"); //../../move/bank/
     //
     //  initialize
     //

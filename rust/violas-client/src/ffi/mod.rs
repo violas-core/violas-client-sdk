@@ -246,6 +246,7 @@ namespace violas
             {
                 auto & account = accounts[i];
 
+                accounts[i].index = i;
                 auto out_address = &account.address[0];
                 auto out_auth_key = &account.auth_key[0];
                 auto out_pubkey = account.pub_key.data();
@@ -1057,7 +1058,7 @@ namespace violas
                     match ret {
                         Ok(_) => true,
                         Err(e) => {
-                            let err = format_err!("ffi::add_currency_for_designated_dealer, {}",e);
+                            let err = format_err!("ffi::mint_currency_for_designated_dealer, {}",e);
                             set_last_error(err);
                             false
                         }

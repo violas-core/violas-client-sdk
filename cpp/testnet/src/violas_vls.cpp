@@ -2,12 +2,21 @@
 #include <map>
 #include <functional>
 #include <client.hpp>
-#include "terminal.h"
+#include "utils.h"
 
 using namespace std;
 using namespace violas;
 
-void distribute_vls(client_ptr client);
+void initialize_timestamp(client_ptr client);
+void mine_vls(client_ptr client);
+
+const Address VLS_ADDRESSES[] = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x00},
+                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01}, // 0000000000000000000000000000DD01
+                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x02},
+                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x03},
+                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x04},
+                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x05},
+                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x06}};
 
 int main(int argc, const char *argv[])
 {
@@ -28,12 +37,12 @@ int main(int argc, const char *argv[])
 
         using handler = function<void()>;
         map<int, handler> handlers = {
-            {1, [=]() { distribute_vls(client); }}
-
+            {1, [=]() { mine_vls(client); }},
+            {2, [=]() { initialize_timestamp(client); }},
         };
 
-        cout << "1 for deploying all currencies \n"
-                //"2 for testing Account Management \n"
+        cout << "1 for distribute vls \n"
+                "2 for initialize vls timestamp \n"
                 //"3 for deploying Exchange Contract.\n"
                 //"4 for deploying Bank Contract.\n"
                 "Please input index : ";
@@ -41,47 +50,80 @@ int main(int argc, const char *argv[])
         int index;
         cin >> index;
 
-        client->allow_publishing_module(true);
-        client->allow_custom_script();
-
-        cout << "allow custom script and  publishing module." << endl;
-
         handlers[index]();
     }
     catch (const std::exception &e)
     {
-        std::cerr << "caught an exception : " << e.what() << '\n';
+        std::cerr << color::RED
+                  << "caught an exception : " << e.what()
+                  << color::RESET
+                  << endl;
     }
 
     return 0;
 }
 
-void distribute_vls(client_ptr client)
+void mine_vls(client_ptr client)
 {
-    vector<uint8_t> distribute_vls_bytecode = {161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5,
-                                               7, 1, 7, 8, 28, 8, 36, 16, 0, 0, 0, 1, 0, 0, 0, 0,
-                                               12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117, 110, 116, 14, 100, 105,
-                                               115, 116, 114, 105, 98, 117, 116, 101, 95, 118, 108, 115, 0, 0, 0, 0,
-                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 17, 0, 2};
-    //0000000000000000000000000000DD01
-    const Address VLS_ADDRESS({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01});
+    vector<uint8_t> distribute_vls_bytecode = {
+        161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 1, 7, 8, 22, 8, 30,
+        16, 0, 0, 0, 1, 0, 0, 0, 0, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117,
+        110, 116, 8, 109, 105, 110, 101, 95, 118, 108, 115, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 17, 0, 2};
+
     //string
-    client->create_next_account(VLS_ADDRESS);
+    client->create_next_account(VLS_ADDRESSES[0]);
+
+    auto accounts = client->get_all_accounts();
+
+    client->execute_script(0, distribute_vls_bytecode);
+
+    cout << color::GREEN << "succeeded to mine VLS." << color::RESET << endl;
+}
+
+void initialize_timestamp(client_ptr client)
+{
+    client->allow_publishing_module(true);
+    client->allow_custom_script();
+
+    cout << "allow custom script and  publishing module." << endl;
+
+    vector<uint8_t> vls_initialize_timestamp = {
+        161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 1, 7, 8, 25, 8, 33,
+        16, 0, 0, 0, 1, 0, 0, 0, 0, 3, 86, 76, 83, 20, 105, 110, 105, 116, 105, 97, 108,
+        105, 122, 101, 95, 116, 105, 109, 101, 115, 116, 97, 109, 112, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 17, 0, 2};
+
+    for (const auto address : VLS_ADDRESSES)
+    {
+        client->create_next_account(address);
+    }
 
     auto accounts = client->get_all_accounts();
 
     try_catch([&]() {
-        client->create_designated_dealer_account("Coin1", 0,
-                                                 VLS_ADDRESS, accounts[0].auth_key,
-                                                 "distributer", "wwww.violas.io",
-                                                 accounts[0].pub_key, true);
+        for (auto account : accounts)
+        {
+            client->create_designated_dealer_account("Coin1", 0,
+                                                     account.address, account.auth_key,
+                                                     "distributer", "wwww.violas.io",
+                                                     account.pub_key, true);
 
-        client->update_account_authentication_key(VLS_ADDRESS, accounts[0].auth_key);
+            client->update_account_authentication_key(account.address, account.auth_key);
 
-        client->add_currency(0, "VLS");
+            cout << "address : " << account.address
+                 << ", auth key : " << account.auth_key << endl;
+
+            client->add_currency(account.index, "VLS");
+        }
+
+        cout << color::GREEN << "Created all accounts for VLS receivers." << color::RESET << endl;
     });
 
-    
+    client->add_currency_for_designated_dealer("VLS", TESTNET_DD_ADDRESS);
+    cout << color::GREEN << "add currency VLS for account DD." << color::RESET << endl;
 
-    client->execute_script(0, distribute_vls_bytecode);
+    client->execute_script(0, vls_initialize_timestamp);
+
+    cout << color::GREEN << "Initialized timestamp for VLS module." << color::RESET << endl;
 }

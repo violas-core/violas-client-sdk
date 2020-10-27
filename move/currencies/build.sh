@@ -14,8 +14,12 @@ echo "build currencies/register_currency.move"
 ../build.sh register_currency.move 0x0
 mv move_build_output/scripts/main.mv register_currency.mv
 
-echo "build distribute_vls.move"
-../build.sh distribute_vls.move 0x0
-mv move_build_output/scripts/main.mv distribute_vls.mv
+echo "build vls_initialize_timestamp.move"
+../build.sh vls_initialize_timestamp.move 0x0
+mv move_build_output/scripts/main.mv vls_initialize_timestamp.mv
+
+echo "build mine_vls.move"
+../build.sh mine_vls.move 0x0
+mv move_build_output/scripts/main.mv mine_vls.mv
 
 rm -rf move_build_output

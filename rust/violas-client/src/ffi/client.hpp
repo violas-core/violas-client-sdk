@@ -47,6 +47,7 @@ namespace violas
 
     struct Account
     {
+        uint64_t index;
         Address address;
         AuthenticationKey auth_key;
         PublicKey pub_key;
@@ -198,10 +199,10 @@ namespace violas
          */
         virtual void
         execute_script_file(size_t account_index,
-                       std::string_view script_file_name,
-                       const std::vector<TypeTag> &type_tags = {},
-                       const std::vector<TransactionAugment> &arguments = {},
-                       bool is_blocking = true) = 0;
+                            std::string_view script_file_name,
+                            const std::vector<TypeTag> &type_tags = {},
+                            const std::vector<TransactionAugment> &arguments = {},
+                            bool is_blocking = true) = 0;
 
         /**
          * @brief Execute script bytecode with arguments
@@ -213,10 +214,10 @@ namespace violas
          */
         virtual void
         execute_script(size_t account_index,
-                          const std::vector<uint8_t> &script,
-                          const std::vector<TypeTag> &type_tags = {},
-                          const std::vector<TransactionAugment> &arguments = {},
-                          bool is_blocking = true) = 0;
+                       const std::vector<uint8_t> &script,
+                       const std::vector<TypeTag> &type_tags = {},
+                       const std::vector<TransactionAugment> &arguments = {},
+                       bool is_blocking = true) = 0;
 
         /**
          * @brief Query accout status infomation

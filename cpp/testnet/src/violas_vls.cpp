@@ -65,7 +65,7 @@ int main(int argc, const char *argv[])
 
 void mine_vls(client_ptr client)
 {
-    vector<uint8_t> distribute_vls_bytecode = {
+    vector<uint8_t> mint_vls_bytecode = {
         161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 1, 7, 8, 22, 8, 30,
         16, 0, 0, 0, 1, 0, 0, 0, 0, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117,
         110, 116, 8, 109, 105, 110, 101, 95, 118, 108, 115, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -76,7 +76,7 @@ void mine_vls(client_ptr client)
 
     auto accounts = client->get_all_accounts();
 
-    client->execute_script(0, distribute_vls_bytecode);
+    client->execute_script(0, mint_vls_bytecode);
 
     cout << color::GREEN << "succeeded to mine VLS." << color::RESET << endl;
 }
@@ -112,16 +112,11 @@ void initialize_timestamp(client_ptr client)
             client->update_account_authentication_key(account.address, account.auth_key);
 
             cout << "address : " << account.address
-                 << ", auth key : " << account.auth_key << endl;
-
-            client->add_currency(account.index, "VLS");
+                 << ", auth key : " << account.auth_key << endl;            
         }
 
         cout << color::GREEN << "Created all accounts for VLS receivers." << color::RESET << endl;
     });
-
-    client->add_currency_for_designated_dealer("VLS", TESTNET_DD_ADDRESS);
-    cout << color::GREEN << "add currency VLS for account DD." << color::RESET << endl;
 
     client->execute_script(0, vls_initialize_timestamp);
 

@@ -599,8 +599,9 @@ impl ViolasClient {
     ///
     pub fn publish_currency(&mut self, currency_code: &str) -> Result<()> {
         let module_name = currency_code.as_bytes().to_owned();
+        let module_size: u8 = module_name.len() as u8;
 
-        let module_byte_code = if module_name.len() == 3 {
+        let module_byte_code = if module_size == 3 {
             let mut module_byte_code = vec![
                 161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 16, 8, 22, 16, 10, 38, 5,
                 0, 0, 0, 0, 2, 0, 3, 86, 76, 83, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101,
@@ -608,11 +609,35 @@ impl ViolasClient {
             ];
 
             let position = 0x1F; //module_byte_code.
-            module_byte_code[position - 1] = module_name.len() as u8;
+            module_byte_code[position - 1] = module_size;
             let head = &module_byte_code[..position]; //from begin to index
             let tail = &module_byte_code[position + 3..]; //skip VLS from current to end
             [head, &module_name[..], tail].concat()
-        } else if module_name.len() == 6 {
+        } else if module_size == 4 {
+            let mut module_byte_code = vec![
+                161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 17, 8, 23, 16, 10, 39, 5,
+                0, 0, 0, 0, 2, 0, 4, 85, 83, 68, 84, 11, 100, 117, 109, 109, 121, 95, 102, 105,
+                101, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0,
+            ];
+
+            let position = 0x1F; //module_byte_code.
+            module_byte_code[position - 1] = module_size;
+            let head = &module_byte_code[..position]; //from begin to index
+            let tail = &module_byte_code[position + 4..]; //skip USDT from current to end
+            [head, &module_name[..], tail].concat()
+        } else if module_size == 5 {
+            let mut module_byte_code = vec![
+                161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 18, 8, 24, 16, 10, 40, 5,
+                0, 0, 0, 0, 2, 0, 5, 76, 73, 66, 82, 65, 11, 100, 117, 109, 109, 121, 95, 102, 105,
+                101, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0,
+            ];
+
+            let position = 0x1F; //module_byte_code.
+            module_byte_code[position - 1] = module_size;
+            let head = &module_byte_code[..position]; //from begin to index
+            let tail = &module_byte_code[position + 5..]; //skip LIBRA from current to end
+            [head, &module_name[..], tail].concat()
+        } else if module_size == 6 {
             let mut module_byte_code = vec![
                 161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 19, 8, 25, 16, 10, 41, 5,
                 0, 0, 0, 0, 2, 0, 6, 86, 76, 83, 85, 83, 68, 11, 100, 117, 109, 109, 121, 95, 102,
@@ -621,7 +646,7 @@ impl ViolasClient {
             ];
 
             let position = 0x1F; //module_byte_code.
-            module_byte_code[position - 1] = module_name.len() as u8;
+            module_byte_code[position - 1] = module_size;
             let head = &module_byte_code[..position]; //from begin to index
             let tail = &module_byte_code[position + 6..]; //skip VLSUSD from current to end
             [head, &module_name[..], tail].concat()

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <map>
+#include <string>
+#include <tuple>
 #include <functional>
 #include <client.hpp>
 #include "utils.h"
@@ -10,13 +12,15 @@ using namespace violas;
 void initialize_timestamp(client_ptr client);
 void mine_vls(client_ptr client);
 
-const Address VLS_ADDRESSES[] = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x00},
-                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01}, // 0000000000000000000000000000DD01
-                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x02},
-                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x03},
-                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x04},
-                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x05},
-                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x06}};
+const tuple<Address, string> VLS_ADDRESSES[] =
+    // 0000000000000000000000000000DD00
+    {{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x00}, "garbage"},
+     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01}, "community"},
+     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x02}, "investor"},
+     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x03}, "association"},
+     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x04}, "dev-team"},
+     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x05}, "consultant"},
+     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x06}, "contributor"}};
 
 int main(int argc, const char *argv[])
 {
@@ -42,9 +46,7 @@ int main(int argc, const char *argv[])
         };
 
         cout << "1 for distribute vls \n"
-                "2 for initialize vls timestamp \n"
-                //"3 for deploying Exchange Contract.\n"
-                //"4 for deploying Bank Contract.\n"
+                "2 for initialize vls timestamp \n"                
                 "Please input index : ";
 
         int index;
@@ -72,7 +74,8 @@ void mine_vls(client_ptr client)
         0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 17, 0, 2};
 
     //string
-    client->create_next_account(VLS_ADDRESSES[0]);
+    auto [address0, name] = VLS_ADDRESSES[0];
+    client->create_next_account(address0);
 
     auto accounts = client->get_all_accounts();
 
@@ -96,7 +99,7 @@ void initialize_timestamp(client_ptr client)
 
     for (const auto address : VLS_ADDRESSES)
     {
-        client->create_next_account(address);
+        client->create_next_account(get<0>(address));
     }
 
     auto accounts = client->get_all_accounts();
@@ -106,13 +109,14 @@ void initialize_timestamp(client_ptr client)
         {
             client->create_designated_dealer_account("Coin1", 0,
                                                      account.address, account.auth_key,
-                                                     "distributer", "wwww.violas.io",
+                                                     get<1>(VLS_ADDRESSES[account.index]),
+                                                     "wwww.violas.io",
                                                      account.pub_key, true);
 
             client->update_account_authentication_key(account.address, account.auth_key);
 
             cout << "address : " << account.address
-                 << ", auth key : " << account.auth_key << endl;            
+                 << ", auth key : " << account.auth_key << endl;
         }
 
         cout << color::GREEN << "Created all accounts for VLS receivers." << color::RESET << endl;

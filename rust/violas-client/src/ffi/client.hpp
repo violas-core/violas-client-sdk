@@ -53,6 +53,11 @@ namespace violas
         PublicKey pub_key;
         uint64_t sequence_number;
         AccountStatus status;
+
+        bool operator==(const Account &right)
+        {
+            return this->index == right.index;
+        }
     };
 
     struct TypeTag

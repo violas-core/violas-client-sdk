@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libviolas_sdk.la libjniSdk.la liblibra_sdk.la
+lib_LTLIBRARIES = libviolas_sdk.la libjniSdk.la liblibra_sdk.la libpy_violas_sdk.la
 
 if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/debug #-L$(top_srcdir)/rust/client-proxy/target/x86_64-pc-windows-gnu/release
@@ -28,4 +28,9 @@ libjniSdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -fPIC\
 libjniSdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
 libjniSdk_la_LIBADD =  $(CLIENT_PROXY)
 
-
+libpy_violas_sdk_la_SOURCES = py_violas_sdk.cpp
+libpy_violas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -fPIC\
+                        -I$(top_srcdir)/rust/violas-client/src/ffi \
+                        -I/usr/include/python3.8                        
+libpy_violas_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH) -Wl,-rpath=./lib,-rpath=../lib
+libpy_violas_sdk_la_LIBADD =  $(CLIENT_PROXY) $(RUST_CPP_CLIENT) -lboost_python3-py36 #-lboost_python38

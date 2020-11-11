@@ -30,6 +30,7 @@ void initialize_all_currencies(client_ptr client);
 void deploy_exchange(client_ptr client);
 void deploy_bank(client_ptr client);
 void mint_currency(client_ptr client);
+void register_currency(client_ptr client);
 
 int main(int argc, const char *argv[])
 {
@@ -50,6 +51,7 @@ int main(int argc, const char *argv[])
 
         using handler = function<void()>;
         map<int, handler> handlers = {
+            {0, [=]() { register_currency(client); }},
             {1, [=]() { initialize_all_currencies(client); }},
             {2, [=]() { run_test_case(client); }},
             {3, [=]() { deploy_exchange(client); }},
@@ -116,6 +118,57 @@ void initialize_all_currencies(client_ptr client)
     }
 
     cout << "all currency info : " << client->get_all_currency_info() << endl;
+}
+/**
+ * @brief Register currency
+ * 
+ * @param client 
+ */
+void register_currency(client_ptr client)
+{
+    cout << color::GREEN << "Register a new currency ..." << color::RESET << endl;
+
+    string pwd;
+    hash<string> hash_str;
+
+    set_stdin_echo(false); // disable echoing password
+    cout << "please input password for registering currency : ";
+    cin >> pwd;
+    set_stdin_echo(true);
+
+    if (hash_str(pwd) != 12375900582722818748U)
+        return;
+    cout << "\nPassword was verified successfully." << endl;
+
+    string currency_code;
+    do
+    {
+        cout << "Please input a currency code with 3~6 characters : ";
+        cin >> currency_code;
+    } while (currency_code.length() < 3 && currency_code.length() > 6);
+
+    client->publish_curency(currency_code);
+    cout << color::GREEN << "Published " << currency_code << color::RESET << endl;
+
+    client->register_currency(currency_code,
+                              1,
+                              2,
+                              false,
+                              1000000,
+                              100);
+
+    cout << "Registered " << currency_code << endl;
+
+    client->add_currency_for_designated_dealer(currency_code,
+                                               TESTNET_DD_ADDRESS);
+    cout << "Added currency " << currency_code << " for DD account, " << endl;
+
+    client->mint_currency_for_designated_dealer(currency_code,
+                                                0,
+                                                TESTNET_DD_ADDRESS,
+                                                1000000 * MICRO_COIN,
+                                                3);
+    cout << "Minted 1,000,000  " << currency_code << " to DD account " << endl;
 }
 
 void mint_currency(client_ptr client)

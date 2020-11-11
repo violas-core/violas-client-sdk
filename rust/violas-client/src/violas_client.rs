@@ -400,16 +400,16 @@ impl ViolasClient {
 
     /// Allow custom script
     pub fn allow_custom_script(&mut self, is_blocking: bool) -> Result<()> {
-        let script_bytes = fs::read(
-            "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_custom_script.mv",
-        )?;
-        // let script_bytes = vec![
-        //     161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
-        //     0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
-        //     116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
-        //     111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
-        //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
-        // ];
+        // let script_bytes = fs::read(
+        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_custom_script.mv",
+        // )?;
+        let script_bytes = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
+            0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
+            116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
+            111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
+        ];
 
         match self.libra_root_account {
             Some(_) => self.association_transaction_with_local_libra_root_account(
@@ -422,16 +422,16 @@ impl ViolasClient {
 
     /// Allow publishing module
     pub fn allow_publishing_module(&mut self, open: bool, is_blocking: bool) -> Result<()> {
-        let script_bytes = fs::read(
-            "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_publishing_module.mv",
-        )?;
-        // let script_bytes = vec![
-        //     161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
-        //     0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
-        //     116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
-        //     111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
-        //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
-        // ];
+        // let script_bytes = fs::read(
+        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_publishing_module.mv",
+        // )?;
+        let script_bytes = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 5, 7, 12, 49, 8, 61, 16, 0, 0,
+            0, 1, 0, 1, 0, 2, 6, 12, 1, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
+            116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
+            111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 109, 111, 100, 117, 108, 101,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 4, 11, 0, 10, 1, 17, 0, 2,
+        ];
 
         match self.libra_root_account {
             Some(_) => self.association_transaction_with_local_libra_root_account(
@@ -651,7 +651,7 @@ impl ViolasClient {
             let tail = &module_byte_code[position + 6..]; //skip VLSUSD from current to end
             [head, &module_name[..], tail].concat()
         } else {
-            bail!("The length of module name must be 3 or 6 bytes.");
+            bail!("The length of module name must be between 3 and 6 character.");
         };
 
         // let module_byte_code = {

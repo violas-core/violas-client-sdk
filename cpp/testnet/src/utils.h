@@ -3,6 +3,8 @@
 #include <string>
 #include <array>
 #include <iomanip>
+#include <termios.h>
+#include <unistd.h>
 
 namespace color
 {
@@ -37,6 +39,18 @@ std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
     }
 
     return os << std::dec;
+}
+
+inline void set_stdin_echo(bool enable)
+{
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    if (!enable)
+        tty.c_lflag &= ~ECHO;
+    else
+        tty.c_lflag |= ECHO;
+
+    (void)tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
 #endif

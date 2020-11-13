@@ -4,7 +4,7 @@ if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/debug
     CLIENT_PROXY = -lviolas_client
     # file cpp_closures.o was compiled by rust
-    RUST_CPP_CLIENT = $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-b9b81122908afab9/out/rust_cpp/cpp_closures.o
+    RUST_CPP_CLIENT = $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-54b02e86cfaa5a8e/out/rust_cpp/cpp_closures.o
 else
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/release
     CLIENT_PROXY =  -lviolas_client

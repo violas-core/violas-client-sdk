@@ -339,7 +339,7 @@ void deploy_exchange(client_ptr client)
 
     //////////////////////////////////////////////////////////////////////////////////////////
 
-    const string script_path = "../../move/exchange/";
+    const string script_path = "move/exchange/";
     auto exchange = Exchange::create(client, script_path);
 
     try_catch([&]() {

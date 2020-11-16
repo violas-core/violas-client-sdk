@@ -25,7 +25,7 @@ string currency_codes[] = {
     "BTC",
 };
 
-void run_test_case(client_ptr client);
+void update_dual_attestation_limit(client_ptr client);
 void initialize_all_currencies(client_ptr client);
 void deploy_exchange(client_ptr client);
 void deploy_bank(client_ptr client);
@@ -53,14 +53,14 @@ int main(int argc, const char *argv[])
         map<int, handler> handlers = {
             {0, [=]() { register_currency(client); }},
             {1, [=]() { initialize_all_currencies(client); }},
-            {2, [=]() { run_test_case(client); }},
+            {2, [=]() { update_dual_attestation_limit(client); }},
             {3, [=]() { deploy_exchange(client); }},
             {4, [=]() { deploy_bank(client); }},
             {5, [=]() { mint_currency(client); }},
         };
 
         cout << "1 for deploying all currencies \n"
-                "2 for testing Account Management \n"
+                "2 for updating dual attestation limit \n"
                 "3 for deploying Exchange Contract.\n"
                 "4 for deploying Bank Contract.\n"
                 "5 for minting curreny to DD account.\n"
@@ -82,6 +82,22 @@ int main(int argc, const char *argv[])
     }
 
     return 0;
+}
+
+void check_password()
+{
+    string pwd;
+    hash<string> hash_str;
+
+    set_stdin_echo(false); // disable echoing password
+    cout << "please input password :";
+    cin >> pwd;
+    set_stdin_echo(true);
+
+    if (hash_str(pwd) != 12375900582722818748U)
+        throw runtime_error("pasword is incorrect");
+
+    cout << "\nPassword was verified successfully." << endl;
 }
 
 void initialize_all_currencies(client_ptr client)
@@ -205,56 +221,21 @@ void mint_currency(client_ptr client)
     }
 }
 
-void run_test_case(client_ptr client)
+void update_dual_attestation_limit(client_ptr client)
 {
-    uint64_t balance = client->get_currency_balance(TESTNET_DD_ADDRESS, "Coin1");
+    cout << color::GREEN << "Update dual attestation limit ..." << color::RESET << endl;
 
-    client->create_next_account(BANK_ADMIN_ADDRESS);
-    client->create_next_account(EXCHANGE_ADMIN_ADDRESS);
+    check_password();
 
-    auto accounts = client->get_all_accounts();
-    auto Coin1 = "Coin1";
+    uint64_t limit;
+    cout << "Pleae input dual attestation limit amount : ";
+    cin >> limit;
 
-    //for (size_t i = 0; i < 3; i++)
+    client->update_dual_attestation_limit(0, limit * MICRO_COIN);
 
-    for (const auto &account : accounts)
-    {
-        cout << "Address : " << account.address
-             << ", Auth Key :" << account.auth_key
-             << ", Sequence Number : " << account.sequence_number
-             << endl;
-    }
-
-    //client->transfer(0, accounts[1].address, Coin1, 5 * MICRO_COIN, 1);
-    //AuthenticationKey dummy_auth_key = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0, 0x0, 0x0, 0x0};
-    PublicKey pub_key = {0x1a, 0xbb, 0x9e, 0x6f, 0xec, 0x3f, 0x18, 0x21, 0x0a, 0x3a, 0xa1, 0x1d, 0x00, 0x47, 0x5d, 0xee,
-                         0x76, 0xeb, 0xa7, 0x93, 0x78, 0x72, 0x37, 0x40, 0xb3, 0x7a, 0x9a, 0x2d, 0x09, 0x74, 0x96, 0xba};
-
-    client->create_designated_dealer_account("Coin1",
-                                             0,
-                                             BANK_ADMIN_ADDRESS,
-                                             accounts[0].auth_key, //only auth key prefix is applied
-                                             "Bank Administrator",
-                                             "www.violas.io",
-                                             pub_key,
-                                             true);
-
-    client->update_account_authentication_key(BANK_ADMIN_ADDRESS, accounts[0].auth_key);
-
-    client->add_currency(0, "USD");
-
-    client->create_designated_dealer_account("Coin1",
-                                             0,
-                                             EXCHANGE_ADMIN_ADDRESS,
-                                             accounts[1].auth_key, //only auth key prefix is applied
-                                             "Exchange Administrator",
-                                             "www.violas.io",
-                                             pub_key,
-                                             true);
-
-    client->update_account_authentication_key(EXCHANGE_ADMIN_ADDRESS, accounts[1].auth_key);
-
-    client->add_currency(1, "USD");
+    cout << "succeded to update dual attestation limit to "
+         << color::GREEN << limit << color::RESET << "."
+         << endl;
 }
 
 void deploy_exchange(client_ptr client)

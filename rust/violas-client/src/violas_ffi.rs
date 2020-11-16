@@ -1011,10 +1011,12 @@ pub mod x86_64 {
                     args.push(arg);
                 }
 
+                let script_bytecode = fs::read(script_file_name)?;
+
                 //
                 //  execute script
                 //
-                client.execute_script_file(sender_ref_id, script_file_name, type_tags, &args, true)
+                client.execute_script(sender_ref_id, script_bytecode, type_tags, &args, true)
             }
         });
 
@@ -1071,15 +1073,9 @@ pub mod x86_64 {
                     args.push(arg);
                 }
 
-                // let mut args = script_args
-                //     .iter()
-                //     .map(|x| CStr::from_ptr(*x).to_str().unwrap())
-                //     .collect();
+                let script_bytecode = fs::read(script_file_name)?;
 
-                //
-                //  execute script
-                //
-                client.execute_script_file(sender_ref_id, script_file_name, type_tags, &args, true)
+                client.execute_script(sender_ref_id, script_bytecode, type_tags, &args, true)
             }
         });
 
@@ -1135,15 +1131,10 @@ pub mod x86_64 {
                     args.push(arg);
                 }
 
-                // let mut args = script_args
-                //     .iter()
-                //     .map(|x| CStr::from_ptr(*x).to_str().unwrap())
-                //     .collect();
 
-                //
-                //  execute script
-                //
-                client.execute_script_file(sender_ref_id, script_file_name, type_tags, &args, true)
+                let script_bytecode = fs::read(script_file_name)?;
+
+                client.execute_script(sender_ref_id, script_bytecode, type_tags, &args, true)
             }
         });
 

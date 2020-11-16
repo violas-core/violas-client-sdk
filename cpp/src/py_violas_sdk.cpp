@@ -280,6 +280,20 @@ public:
         m_client->update_account_authentication_key(address, auth_key);
     }
 
+    virtual void
+    update_dual_attestation_limit(uint64_t sliding_nonce, uint64_t new_micro_lbr_limit) override
+    {
+        m_client->update_dual_attestation_limit(sliding_nonce, new_micro_lbr_limit);
+    }
+
+    virtual void
+    rotate_authentication_key_with_nonce(size_t account_index,
+                                         uint64_t sliding_nonce,
+                                         const AuthenticationKey &new_auth_key,
+                                         bool is_blocking) override
+    {
+    }
+    
     //
     // Create parent VASP account
     //

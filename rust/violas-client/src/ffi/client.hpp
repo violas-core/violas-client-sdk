@@ -101,6 +101,10 @@ namespace violas
 
     const uint64_t MICRO_COIN = 1E+6;
     const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
+    const uint64_t VIOLAS_ROOT_ACCOUNT_ID = std::numeric_limits<uint64_t>::max();
+    const uint64_t VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID = VIOLAS_ROOT_ACCOUNT_ID - 1;
+    const uint64_t VIOLAS_TESTNET_DD_ACCOUNT_ID = VIOLAS_ROOT_ACCOUNT_ID - 2;
+
     const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
     const Address CORE_CODE_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01};
@@ -358,10 +362,6 @@ namespace violas
                                          PublicKey compliance_public_key,
                                          bool add_all_currencies) = 0;
 
-        virtual void
-        update_account_authentication_key(const Address &address,
-                                          const AuthenticationKey &auth_key) = 0;
-
         //
         // Create parent VASP account
         //
@@ -374,6 +374,36 @@ namespace violas
                                    std::string_view base_url,
                                    PublicKey compliance_public_key,
                                    bool add_all_currencies) = 0;
+        /**
+         * @brief Update account authentication key
+         * 
+         * @param address       the address of account
+         * @param new_auth_key      the new authentication key 
+         */
+        virtual void
+        update_account_authentication_key(const Address &address,
+                                          const AuthenticationKey &new_auth_key) = 0;
+
+        /**
+         * @brief rotate authentication key with nonce
+         * 
+         * @param account_index     account index
+         * @param sliding_nonce     sliding nonce, default is 0
+         * @param new_auth_key      the new authentication key 
+         * @param is_blocking       if blocking and waiting for result
+         */
+        virtual void
+        rotate_authentication_key_with_nonce(size_t account_index,
+                                             uint64_t sliding_nonce,
+                                             const AuthenticationKey &new_auth_key,
+                                             bool is_blocking) = 0;
+        /**
+         * @brief Update daul attestation limit
+         * 
+         * @param sliding_nonce         sliding nonce
+         * @param new_micro_lbr_limit   the new limit based micro LBR amount 
+         */
+        virtual void update_dual_attestation_limit(uint64_t sliding_nonce, uint64_t new_micro_lbr_limit) = 0;
 
         //  Exchnage interface
         //

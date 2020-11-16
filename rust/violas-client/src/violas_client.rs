@@ -54,7 +54,7 @@ const TX_EXPIRATION: i64 = 100;
 
 pub const VIOLAS_ROOT_ACCOUNT_ID: u64 = u64::MAX;
 pub const VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 1;
-pub const VIOLAS_BANK_ADMINISTRATOR_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 2;
+pub const VIOLAS_TESTNET_DD_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 2;
 
 ///
 /// struct ViolasClient
@@ -489,54 +489,13 @@ impl ViolasClient {
         tags: Vec<TypeTag>,
         args: &[&str],
         is_blocking: bool,
-    ) -> Result<()> {
-        let sender = match sender_ref_id {
-            VIOLAS_ROOT_ACCOUNT_ID => {
-                if self.libra_root_account.is_none() {
-                    bail!("No faucet account loaded");
-                }
-                self.libra_root_account.as_ref().unwrap()
-            }
-            _ => self.accounts.get(sender_ref_id as usize).unwrap(),
-        };
+    ) -> Result<()> {        
         let arguments: Vec<_> = args[0..]
             .iter()
             .filter_map(|arg| parse_transaction_argument_for_client(arg).ok())
             .collect();
-        let program = TransactionPayload::Script(Script::new(script_bytecode, tags, arguments));
-        let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
-        let sender_address = sender.address;
-        let sequence_number = sender.sequence_number;
-        let proxy = &mut self.libra_client_proxy;
-
-        let resp = if sender_ref_id == VIOLAS_ROOT_ACCOUNT_ID {
-            proxy
-                .client
-                .submit_transaction(proxy.libra_root_account.as_mut(), txn)
-        } else {
-            proxy
-                .client
-                .submit_transaction(proxy.accounts.get_mut(sender_ref_id as usize), txn)
-        };
-
-        if is_blocking {
-            self.wait_for_transaction(sender_address, sequence_number + 1)?;
-        };
-        resp
-    }
-
-    /// Execute custom script with association account
-    /// if sender ref id is u64::MAX, then execute module with association account
-    pub fn execute_script_file(
-        &mut self,
-        sender_ref_id: u64,
-        script_file_name: &str,
-        tags: Vec<TypeTag>,
-        args: &[&str],
-        is_blocking: bool,
-    ) -> Result<()> {
-        let script_bytecode = fs::read(script_file_name)?;
-        self.execute_script(sender_ref_id, script_bytecode, tags, args, is_blocking)
+        
+        self.execute_raw_script_bytecode(sender_ref_id, script_bytecode, tags, arguments, is_blocking)
     }
 
     /// execute script with json format
@@ -549,11 +508,11 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         let script_bytecode = fs::read(script_file_name)?;
-        self.execute_script_raw(sender_ref_id, script_bytecode, tags, args, is_blocking)
+        self.execute_raw_script_bytecode(sender_ref_id, script_bytecode, tags, args, is_blocking)
     }
 
     /// execute script with json format
-    pub fn execute_script_raw(
+    pub fn execute_raw_script_bytecode(
         &mut self,
         sender_ref_id: u64,
         script_bytecode: Vec<u8>,
@@ -561,30 +520,61 @@ impl ViolasClient {
         script_arguments: Vec<TransactionArgument>,
         is_blocking: bool,
     ) -> Result<()> {
-        let sender = if sender_ref_id == u64::MAX {
-            if self.libra_root_account.is_none() {
-                bail!("No faucet account loaded");
-            }
-            self.libra_root_account.as_ref().unwrap()
-        } else {
-            self.accounts.get(sender_ref_id as usize).unwrap()
+        let script = Script::new(script_bytecode, tags, script_arguments);
+        self.execute_raw_script(sender_ref_id, script, is_blocking)
+    }
+
+    /// execute script with json format
+    pub fn execute_raw_script(
+        &mut self,
+        sender_ref_id: u64,
+        script: Script,
+        is_blocking: bool,
+    ) -> Result<()> {
+        let sender_opt = match sender_ref_id {
+            VIOLAS_ROOT_ACCOUNT_ID => self.libra_root_account.as_ref(),
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => self.treasury_compliance_account.as_ref(),
+            VIOLAS_TESTNET_DD_ACCOUNT_ID => self.testnet_designated_dealer_account.as_ref(),
+            _ => self.accounts.get(sender_ref_id as usize),
+        };
+        let sender = match sender_opt {
+            Some(sender) => sender,
+            None => bail!("sener reference ID does not exists."),
         };
 
-        let program =
-            TransactionPayload::Script(Script::new(script_bytecode, tags, script_arguments));
-        let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
+        let txn = self.create_txn_to_submit(
+            TransactionPayload::Script(script),
+            sender,
+            None,
+            None,
+            None,
+        )?;
         let sender_address = sender.address;
         let sequence_number = sender.sequence_number;
         let proxy = &mut self.libra_client_proxy;
 
-        if sender_ref_id == u64::MAX {
-            proxy
-                .client
-                .submit_transaction(proxy.libra_root_account.as_mut(), txn)?;
-        } else {
-            proxy
-                .client
-                .submit_transaction(proxy.accounts.get_mut(sender_ref_id as usize), txn)?;
+        match sender_ref_id {
+            VIOLAS_ROOT_ACCOUNT_ID => {
+                proxy
+                    .client
+                    .submit_transaction(proxy.libra_root_account.as_mut(), txn)?;
+            }
+
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => {
+                proxy
+                    .client
+                    .submit_transaction(self.treasury_compliance_account.as_mut(), txn)?;
+            }
+            VIOLAS_TESTNET_DD_ACCOUNT_ID => {
+                proxy
+                    .client
+                    .submit_transaction(proxy.testnet_designated_dealer_account.as_mut(), txn)?;
+            }
+            _ => {
+                proxy
+                    .client
+                    .submit_transaction(proxy.accounts.get_mut(sender_ref_id as usize), txn)?;
+            }
         };
 
         if is_blocking {
@@ -974,41 +964,6 @@ impl ViolasClient {
         }
     }
 
-    /// create system account
-    pub fn update_account_authentication_key(
-        &mut self,
-        address: AccountAddress,
-        auth_key: AuthenticationKey,
-    ) -> Result<()> {
-        // let script_bytes = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/update_account_authentication_key.mv",
-        // )?;
-
-        let script_bytes = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 7, 7, 14, 47, 8, 61, 16, 0, 0,
-            0, 1, 0, 1, 0, 3, 6, 12, 5, 10, 2, 0, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117,
-            110, 116, 33, 117, 112, 100, 97, 116, 101, 95, 97, 99, 99, 111, 117, 110, 116, 95, 97,
-            117, 116, 104, 101, 110, 116, 105, 99, 97, 116, 105, 111, 110, 95, 107, 101, 121, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 5, 11, 0, 10, 1, 11, 2, 17, 0, 2,
-        ];
-        let script = Script::new(
-            script_bytes,
-            vec![],
-            vec![
-                TransactionArgument::Address(address),
-                TransactionArgument::U8Vector(auth_key.to_vec()),
-                // TransactionArgument::U8Vector(
-                //     libra_root_account.authentication_key.clone().unwrap(),
-                // ),
-            ],
-        );
-
-        self.association_transaction_with_local_libra_root_account(
-            TransactionPayload::Script(script),
-            true,
-        )
-    }
-
     /// Create a testnet account
     pub fn create_validator_account(
         self: &mut Self,
@@ -1178,6 +1133,79 @@ impl ViolasClient {
             }
             None => unimplemented!(),
         }
+    }
+    ///
+    /// Update account's authentication key by root account
+    ///
+    pub fn update_account_authentication_key(
+        &mut self,
+        address: AccountAddress,
+        auth_key: AuthenticationKey,
+    ) -> Result<()> {
+        // let script_bytes = fs::read(
+        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/update_account_authentication_key.mv",
+        // )?;
+
+        let script_bytes = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 7, 7, 14, 47, 8, 61, 16, 0, 0,
+            0, 1, 0, 1, 0, 3, 6, 12, 5, 10, 2, 0, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117,
+            110, 116, 33, 117, 112, 100, 97, 116, 101, 95, 97, 99, 99, 111, 117, 110, 116, 95, 97,
+            117, 116, 104, 101, 110, 116, 105, 99, 97, 116, 105, 111, 110, 95, 107, 101, 121, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 5, 11, 0, 10, 1, 11, 2, 17, 0, 2,
+        ];
+        let script = Script::new(
+            script_bytes,
+            vec![],
+            vec![
+                TransactionArgument::Address(address),
+                TransactionArgument::U8Vector(auth_key.to_vec()),
+            ],
+        );
+
+        self.association_transaction_with_local_libra_root_account(
+            TransactionPayload::Script(script),
+            true,
+        )
+    }
+
+    ///
+    /// Update dual attestation limit
+    ///
+    pub fn update_dual_attestation_limit(
+        &mut self,
+        sliding_nonce: u64,
+        new_micro_lbr_limit: u64,
+        is_blocking: bool,
+    ) -> Result<()> {
+        let script = transaction_builder::encode_update_dual_attestation_limit_script(
+            sliding_nonce,
+            new_micro_lbr_limit,
+        );
+
+        match self.testnet_designated_dealer_account {
+            Some(_) => self.association_transaction_with_local_tc_account(
+                TransactionPayload::Script(script),
+                is_blocking,
+            ),
+            None => unimplemented!(),
+        }
+    }
+    ///
+    /// Rotate authentication key wiht nonce
+    ///
+    pub fn rotate_authentication_key_with_nonce(
+        &mut self,
+        account_index: u64,
+        sliding_nonce: u64,
+        new_key: Vec<u8>,
+        is_blocking: bool,
+    ) -> Result<()> {
+        let script = transaction_builder::encode_rotate_authentication_key_with_nonce_script(
+            sliding_nonce,
+            new_key,
+        );
+
+        self.execute_raw_script(account_index, script, is_blocking)
     }
 
     /// Query account info

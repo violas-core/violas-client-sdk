@@ -489,11 +489,10 @@ namespace violas
 
             if(!script.is_open())
                 throw runtime_error(string("execute_script_file : script file ") + script_file_name.data() + "is not exist !");
-            
             istreambuf_iterator<char> fbeg(script), fend;
             vector<uint8_t> script_bytecode(fbeg, fend);
 
-            execute_script(account_index, script_bytecode, type_tags, arguments, is_blocking);            
+            execute_script(account_index, script_bytecode, type_tags, arguments, is_blocking);
         }
 
         /**
@@ -1205,6 +1204,55 @@ namespace violas
 
             check_result(ret);
 
+        }
+
+        /**
+         * @brief rotate authentication key with nonce
+         *
+         * @param account_index     account index
+         * @param sliding_nonce     sliding nonce, default is 0
+         * @param new_auth_key      the new authentication key
+         * @param is_blocking       if blocking and waiting for result
+         */
+        virtual void
+        rotate_authentication_key_with_nonce(size_t account_index,
+                                             uint64_t sliding_nonce,
+                                             const AuthenticationKey &new_auth_key,
+                                             bool is_blocking) override
+                                             {
+                                                 
+                                             }
+        /**
+         * @brief Update daul attestation limit
+         *
+         * @param sliding_nonce         sliding nonce
+         * @param new_micro_lbr_limit   the new limit based micro LBR amount
+         */
+        virtual void
+        update_dual_attestation_limit(uint64_t sliding_nonce, uint64_t new_micro_lbr_limit) override
+        {
+            bool ret = rust!( client_update_dual_attestation_limit [
+                rust_violas_client : &mut ViolasClient as "void *",
+                sliding_nonce : u64 as "uint64_t",
+                new_micro_lbr_limit : u64 as "uint64_t"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.update_dual_attestation_limit(
+                            sliding_nonce,
+                            new_micro_lbr_limit,
+                            true);
+
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::create_system_account, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
         }
 
         //

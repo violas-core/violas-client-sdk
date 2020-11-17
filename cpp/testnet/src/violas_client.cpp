@@ -31,6 +31,7 @@ void deploy_exchange(client_ptr client);
 void deploy_bank(client_ptr client);
 void mint_currency(client_ptr client);
 void register_currency(client_ptr client);
+void rotate_authentication_key(client_ptr client);
 
 int main(int argc, const char *argv[])
 {
@@ -57,6 +58,7 @@ int main(int argc, const char *argv[])
             {3, [=]() { deploy_exchange(client); }},
             {4, [=]() { deploy_bank(client); }},
             {5, [=]() { mint_currency(client); }},
+            {6, [=]() { rotate_authentication_key(client); }},
         };
 
         cout << "1 for deploying all currencies \n"
@@ -64,15 +66,11 @@ int main(int argc, const char *argv[])
                 "3 for deploying Exchange Contract.\n"
                 "4 for deploying Bank Contract.\n"
                 "5 for minting curreny to DD account.\n"
+                "6 for rotate authentication key.\n"
                 "Please input index : ";
 
         int index;
         cin >> index;
-
-        client->allow_publishing_module(true);
-        client->allow_custom_script();
-
-        cout << "allow custom script and  publishing module." << endl;
 
         handlers[index]();
     }
@@ -102,6 +100,11 @@ void check_password()
 
 void initialize_all_currencies(client_ptr client)
 {
+    client->allow_publishing_module(true);
+    client->allow_custom_script();
+
+    cout << "allow custom script and  publishing module." << endl;
+
     cout << color::RED << "initialize all currencies ..." << color::RESET << endl;
 
     auto accounts = client->get_all_accounts();
@@ -496,4 +499,24 @@ void deploy_bank(client_ptr client)
     // bank->enter(user1, "VLSEUR", 10 * MICRO_COIN);
 
     bank->liquidate_borrow(user2.index, currencies[2], user1.address, 90 * MICRO_COIN, currencies[0]);
+}
+
+void rotate_authentication_key(client_ptr client)
+{
+    client->create_next_account();
+
+    auto accounts = client->get_all_accounts();
+
+    try_catch([&]() {
+        client->rotate_authentication_key_with_nonce(VIOLAS_ROOT_ACCOUNT_ID, 0, accounts[0].auth_key);
+
+        client->rotate_authentication_key_with_nonce(VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID, 0, accounts[0].auth_key);
+
+        client->rotate_authentication_key_with_nonce(VIOLAS_TESTNET_DD_ACCOUNT_ID, 0, accounts[0].auth_key);
+        
+        cout << "succeeded to rotate mint key." << endl;
+    });
+
+    client->save_private_key(0, "./mint.key");
+    cout << "saved mint.key to current path." << endl;
 }

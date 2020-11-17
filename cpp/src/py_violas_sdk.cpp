@@ -271,6 +271,7 @@ public:
         PublicKey compliance_public_key,
         bool add_all_currencies) override
     {
+        m_client->create_designated_dealer_account(currency_code, nonce, new_account_address, auth_key, human_name, base_url, compliance_public_key, add_all_currencies);
     }
 
     virtual void
@@ -292,8 +293,15 @@ public:
                                          const AuthenticationKey &new_auth_key,
                                          bool is_blocking) override
     {
+        m_client->rotate_authentication_key_with_nonce(account_index, sliding_nonce, new_auth_key, is_blocking);
     }
-    
+
+    virtual void
+    save_private_key(size_t account_index, std::string_view path_file_str) override
+    {
+        m_client->save_private_key(account_index, path_file_str);
+    }
+
     //
     // Create parent VASP account
     //

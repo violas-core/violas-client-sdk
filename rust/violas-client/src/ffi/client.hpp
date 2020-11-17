@@ -396,7 +396,17 @@ namespace violas
         rotate_authentication_key_with_nonce(size_t account_index,
                                              uint64_t sliding_nonce,
                                              const AuthenticationKey &new_auth_key,
-                                             bool is_blocking) = 0;
+                                             bool is_blocking = true) = 0;
+        
+        /**
+         * @brief Save private key
+         * 
+         * @param account_index account index
+         * @param path_file_str a file name string with path
+         */
+        virtual void
+        save_private_key(size_t account_index, std::string_view path_file_str) = 0;
+        
         /**
          * @brief Update daul attestation limit
          * 

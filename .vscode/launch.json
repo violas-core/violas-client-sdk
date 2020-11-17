@@ -30,10 +30,10 @@
             "name": "Launch violas_client",
             "program": "${workspaceFolder}/build/debug/bin/violas_client",
             "args": [
-                "http://localhost:8080",
+                "http://localhost:46441",
                 "/tmp/libra/mint.key",
-                "build/debug/violas-client.mne",
-                "0:170cc0c698d8b673a3b5fe884777f1144712ba89bffbde58d43483b9d29da154",
+                "build/debug/client.mne",
+                "0:35bc1b1a6ef4fce945aecdd21d637f582f5151f0830a9440e67e68287f6a2bda",
                 "4",
             ],
             "cwd": "${workspaceFolder}"

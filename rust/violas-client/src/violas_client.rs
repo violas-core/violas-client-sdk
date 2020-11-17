@@ -40,8 +40,10 @@ use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::de::DeserializeOwned;
 use std::{
     convert::TryFrom,
-    fs,
+    fs::{self, File},
+    io::Write,
     ops::{Deref, DerefMut},
+    path::Path,
     str::{self},
     thread, time,
 };
@@ -489,13 +491,19 @@ impl ViolasClient {
         tags: Vec<TypeTag>,
         args: &[&str],
         is_blocking: bool,
-    ) -> Result<()> {        
+    ) -> Result<()> {
         let arguments: Vec<_> = args[0..]
             .iter()
             .filter_map(|arg| parse_transaction_argument_for_client(arg).ok())
             .collect();
-        
-        self.execute_raw_script_bytecode(sender_ref_id, script_bytecode, tags, arguments, is_blocking)
+
+        self.execute_raw_script_bytecode(
+            sender_ref_id,
+            script_bytecode,
+            tags,
+            arguments,
+            is_blocking,
+        )
     }
 
     /// execute script with json format
@@ -1197,17 +1205,50 @@ impl ViolasClient {
         &mut self,
         account_index: u64,
         sliding_nonce: u64,
-        new_key: Vec<u8>,
+        new_auth_key: AuthenticationKey,
         is_blocking: bool,
     ) -> Result<()> {
         let script = transaction_builder::encode_rotate_authentication_key_with_nonce_script(
             sliding_nonce,
-            new_key,
+            new_auth_key.to_vec(),
         );
 
         self.execute_raw_script(account_index, script, is_blocking)
     }
+    ///
+    /// Save private key
+    ///
+    pub fn save_private_key(&self, account_index: usize, path_file_str: &str) -> Result<()> {
+        // let private_key: Ed25519PrivateKey = lcs::from_bytes(
+        //     self.accounts[account_index]
+        //         .key_pair
+        //         .as_ref()
+        //         .unwrap()
+        //         .private_key
+        //         .to_bytes()
+        //         .as_ref(),
+        // )?;
 
+        //generate_key::save_key(private_key, Path::new(path_file_str));
+
+        let output_file_path = Path::new(path_file_str);
+        if output_file_path.exists() && !output_file_path.is_file() {
+            bail!("Specified output file path is a directory");
+        }
+
+        let encoded = lcs::to_bytes(
+            &self.accounts[account_index]
+                .key_pair
+                .as_ref()
+                .unwrap()
+                .private_key,
+        )?;
+
+        let mut file = File::create(output_file_path)?;
+        file.write_all(&encoded)?;
+
+        Ok(())
+    }
     /// Query account info
     pub fn query_account_info(
         &mut self,

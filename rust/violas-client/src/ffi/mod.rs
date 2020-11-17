@@ -1164,7 +1164,7 @@ namespace violas
                     match ret {
                         Ok(_) => true,
                         Err(e) => {
-                            let err = format_err!("ffi::create_designated_dealer_account, {}",e);
+                            let err = format_err!("ffi::create_parent_vasp_account, {}",e);
                             set_last_error(err);
                             false
                         }
@@ -1195,7 +1195,7 @@ namespace violas
                     match ret {
                         Ok(_) => true,
                         Err(e) => {
-                            let err = format_err!("ffi::create_system_account, {}",e);
+                            let err = format_err!("ffi::update_account_authentication_key, {}",e);
                             set_last_error(err);
                             false
                         }
@@ -1219,9 +1219,67 @@ namespace violas
                                              uint64_t sliding_nonce,
                                              const AuthenticationKey &new_auth_key,
                                              bool is_blocking) override
-                                             {
-                                                 
-                                             }
+        {
+            //auto in_address = address.data();
+            auto in_new_auth_key = new_auth_key.data();
+
+            bool ret = rust!( client_rotate_authentication_key_with_nonce [
+                rust_violas_client : &mut ViolasClient as "void *",
+                account_index : u64 as "size_t",
+                sliding_nonce : u64 as "uint64_t",
+                //in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                in_new_auth_key : &[u8;ADDRESS_LENGTH*2] as "const uint8_t *",
+                is_blocking : bool as "bool"
+                ] -> bool as "bool" {
+                    let ret = rust_violas_client.rotate_authentication_key_with_nonce(
+                        account_index,
+                        sliding_nonce,
+                        //AccountAddress::new(*in_address),
+                        AuthenticationKey::new(*in_new_auth_key),
+                        is_blocking);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::rotate_authentication_key_with_nonce, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+            check_result(ret);
+        }
+
+         /**
+         * @brief Save private key
+         *
+         * @param account_index account index
+         * @param path_file_str a file name string with path
+         */
+        virtual void
+        save_private_key(size_t account_index, std::string_view path_file_str) override
+        {
+            //auto in_address = address.data();
+            auto in_path_file_str = path_file_str.data();
+
+            bool ret = rust!( client_save_private_key [
+                rust_violas_client : &mut ViolasClient as "void *",
+                account_index: usize as "size_t",
+                in_path_file_str: *const c_char as "const char *"
+                ] -> bool as "bool" {
+                    let ret = rust_violas_client.save_private_key(
+                        account_index,
+                        CStr::from_ptr(in_path_file_str).to_str().unwrap());
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::save_private_key, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+            check_result(ret);
+        }
         /**
          * @brief Update daul attestation limit
          *

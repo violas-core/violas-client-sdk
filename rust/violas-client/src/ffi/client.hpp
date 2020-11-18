@@ -362,6 +362,16 @@ namespace violas
                                          PublicKey compliance_public_key,
                                          bool add_all_currencies) = 0;
 
+        virtual void
+        create_designated_dealer_ex(std::string_view currency_code,
+                                         uint64_t nonce,
+                                         const Address &new_account_address,
+                                         const AuthenticationKey &auth_key,
+                                         std::string_view human_name,
+                                         std::string_view base_url,
+                                         PublicKey compliance_public_key,
+                                         bool add_all_currencies) = 0;
+
         //
         // Create parent VASP account
         //

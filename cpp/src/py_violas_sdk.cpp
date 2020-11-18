@@ -275,6 +275,19 @@ public:
     }
 
     virtual void
+        create_designated_dealer_ex(std::string_view currency_code,
+                                         uint64_t nonce,
+                                         const Address &new_account_address,
+                                         const AuthenticationKey &auth_key,
+                                         std::string_view human_name,
+                                         std::string_view base_url,
+                                         PublicKey compliance_public_key,
+                                         bool add_all_currencies) override
+    {
+        m_client->create_designated_dealer_ex(currency_code, nonce, new_account_address, auth_key, human_name, base_url, compliance_public_key, add_all_currencies);
+    }
+    
+    virtual void
     update_account_authentication_key(const Address &address,
                                       const AuthenticationKey &auth_key) override
     {

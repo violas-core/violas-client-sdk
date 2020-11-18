@@ -504,19 +504,22 @@ void deploy_bank(client_ptr client)
 void rotate_authentication_key(client_ptr client)
 {
     client->create_next_account();
+    client->create_next_account(BANK_ADMIN_ADDRESS);
 
     auto accounts = client->get_all_accounts();
 
-    try_catch([&]() {
-        client->rotate_authentication_key_with_nonce(VIOLAS_ROOT_ACCOUNT_ID, 0, accounts[0].auth_key);
+    // client->rotate_authentication_key_with_nonce(VIOLAS_ROOT_ACCOUNT_ID, 0, accounts[0].auth_key);
 
-        client->rotate_authentication_key_with_nonce(VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID, 0, accounts[0].auth_key);
+    // client->rotate_authentication_key_with_nonce(VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID, 0, accounts[0].auth_key);
 
-        client->rotate_authentication_key_with_nonce(VIOLAS_TESTNET_DD_ACCOUNT_ID, 0, accounts[0].auth_key);
-        
-        cout << "succeeded to rotate mint key." << endl;
-    });
+    // client->rotate_authentication_key_with_nonce(VIOLAS_TESTNET_DD_ACCOUNT_ID, 0, accounts[0].auth_key);
 
-    client->save_private_key(0, "./mint.key");
-    cout << "saved mint.key to current path." << endl;
+    // cout << "succeeded to rotate mint key." << endl;
+
+    // client->save_private_key(0, "./mint.key");
+    // cout << "saved mint.key to current path." << endl;
+
+    client->create_designated_dealer_ex("Coin1", 0, BANK_ADMIN_ADDRESS, accounts[1].auth_key, "Bank admin", "", accounts[1].pub_key, false);
+
+    client->add_currency(1, "LBR");
 }

@@ -1099,6 +1099,46 @@ impl ViolasClient {
         }
     }
 
+    /// Create a designed dealer vasp account
+    pub fn create_designated_dealer_ex(
+        &mut self,
+        type_tag: TypeTag,
+        nonce: u64,
+        new_account_address: AccountAddress,
+        auth_key: AuthenticationKey,
+        human_name: Vec<u8>,
+        _base_url: Vec<u8>,
+        _compliance_public_key: Vec<u8>,
+        add_all_currencies: bool,
+        is_blocking: bool,
+    ) -> Result<()> {
+        let scripte_bytecode = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 27, 7, 44, 76, 8,
+            120, 16, 0, 0, 0, 1, 1, 2, 0, 1, 0, 0, 3, 2, 1, 1, 1, 1, 4, 2, 6, 12, 3, 0, 5, 6, 12,
+            5, 10, 2, 10, 2, 1, 6, 6, 12, 3, 5, 10, 2, 10, 2, 1, 1, 9, 0, 12, 76, 105, 98, 114, 97,
+            65, 99, 99, 111, 117, 110, 116, 12, 83, 108, 105, 100, 105, 110, 103, 78, 111, 110, 99,
+            101, 21, 114, 101, 99, 111, 114, 100, 95, 110, 111, 110, 99, 101, 95, 111, 114, 95, 97,
+            98, 111, 114, 116, 27, 99, 114, 101, 97, 116, 101, 95, 100, 101, 115, 105, 103, 110,
+            97, 116, 101, 100, 95, 100, 101, 97, 108, 101, 114, 95, 101, 120, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 3, 1, 10, 10, 0, 10, 1, 17, 0, 11, 0, 10, 2, 11, 3,
+            11, 4, 10, 5, 56, 0, 2,
+        ];
+
+        self.execute_raw_script_bytecode(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            scripte_bytecode,
+            vec![type_tag],
+            vec![
+                TransactionArgument::U64(nonce),
+                TransactionArgument::Address(new_account_address),
+                TransactionArgument::U8Vector(auth_key.to_vec()),
+                TransactionArgument::U8Vector(human_name),
+                TransactionArgument::Bool(add_all_currencies),
+            ],
+            is_blocking,
+        )
+    }
+
     //// Get account resource
     pub fn get_account_resource<T: DeserializeOwned>(
         &mut self,

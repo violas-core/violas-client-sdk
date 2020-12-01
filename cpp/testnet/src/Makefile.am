@@ -9,7 +9,7 @@ else
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/release
     CLIENT_PROXY =  -lviolas_client
     # file cpp_closures.o was compiled by rust
-    RUST_CPP_CLIENT = $(top_srcdir)/rust/violas-client/target/release/build/violas-client-bf36d8b30b493f0e/out/rust_cpp/cpp_closures.o
+    RUST_CPP_CLIENT = $(top_srcdir)/rust/violas-client/target/release/build/violas-client-07e8da7d2a5babbb/out/rust_cpp/cpp_closures.o
 endif
 
 violas_client_SOURCES = violas_client.cpp 

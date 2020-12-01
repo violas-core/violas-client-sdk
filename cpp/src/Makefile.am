@@ -5,14 +5,14 @@ if DEBUG
     CLIENT_PROXY =  $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-54b02e86cfaa5a8e/out/rust_cpp/cpp_closures.o
 else
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/release
-    CLIENT_PROXY = 
+    CLIENT_PROXY = $(top_srcdir)/rust/violas-client/target/release/build/violas-client-07e8da7d2a5babbb/out/rust_cpp/cpp_closures.o
 endif
 
 libviolas_sdk_la_SOURCES = violas_sdk.cpp violas_sdk2.cpp
 #libcppSdk_la_HEADERS = violas_sdk.hpp
 libviolas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -I$(top_srcdir)/rust/violas-client/src/ffi
 libviolas_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
-libviolas_sdk_la_LIBADD = $(CLIENT_PROXY) 
+libviolas_sdk_la_LIBADD = $(CLIENT_PROXY)
 
 liblibra_sdk_la_SOURCES = violas_sdk.cpp
 #libcppSdk_la_HEADERS = violas_sdk.hpp
@@ -33,4 +33,4 @@ libpy_violas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -fPIC\
                         -I$(top_srcdir)/rust/violas-client/src/ffi \
                         -I/usr/include/python3.8                        
 libpy_violas_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH) -Wl,-rpath=./lib,-rpath=../lib
-libpy_violas_sdk_la_LIBADD =  $(CLIENT_PROXY) $(RUST_CPP_CLIENT) -lboost_python3-py36 #-lboost_python38
+libpy_violas_sdk_la_LIBADD =  $(CLIENT_PROXY) $(RUST_CPP_CLIENT) -lboost_python38 #-lboost_python3-py36

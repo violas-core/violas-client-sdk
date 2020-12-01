@@ -127,7 +127,7 @@ impl Oracle {
         let numerator = (exchange_rate * 1E+9_f64) as u64;
         let denominator = 1E+9 as u64;
 
-        self.client.execute_script_raw(
+        self.client.execute_raw_script_bytecode(
             0,
             update_exchange_rate,
             vec![make_currency_tag(currency_code)],
@@ -138,7 +138,7 @@ impl Oracle {
             false,
         )?;
 
-        self.client.execute_script_raw(
+        self.client.execute_raw_script_bytecode(
             0,
             update_price_from_oracle,
             vec![make_currency_tag(currency_code)],
@@ -177,7 +177,7 @@ impl Oracle {
             5, 10, 2, 11, 5, 17, 0, 12, 3, 10, 1, 10, 3, 33, 12, 6, 11, 6, 3, 22, 6, 234, 3, 0, 0,
             0, 0, 0, 0, 39, 2,
         ];
-        self.client.execute_script_raw(
+        self.client.execute_raw_script_bytecode(
             u64::MAX,
             script_bytecode,
             vec![

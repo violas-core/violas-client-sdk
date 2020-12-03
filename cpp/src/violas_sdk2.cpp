@@ -432,6 +432,7 @@ namespace violas
         const string _script_repay_borrow = m_bank_path + "repay_borrow.mv";
         const string _script_update_collateral_factor = m_bank_path + "update_collateral_factor.mv";
         const string _scirpt_update_price = m_bank_path + "update_price.mv";
+        const string _scirpt_set_incentive_rate = m_bank_path + "set_incentive_rate.mv";
     }; // Bank
 
     std::shared_ptr<Bank>

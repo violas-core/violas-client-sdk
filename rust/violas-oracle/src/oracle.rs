@@ -59,20 +59,17 @@ impl Oracle {
 
         let auth_key = AuthenticationKey::new(data);
 
-        self.client.create_designated_dealer_account(
-            make_currency_tag("LBR"),
+        self.client.create_designated_dealer_ex(
+            make_currency_tag("Coin1"),
             0,
             oracle_admin_address(),
-            auth_key.prefix().to_vec(), //only auth key prefix is applied
+            auth_key,
             "Oracle Administrator".as_bytes().to_vec(),
             "www.violas.io".as_bytes().to_owned(),
             pub_key.to_bytes().to_vec(),
             true,
             true,
         )?;
-
-        self.client
-            .update_account_authentication_key(oracle_admin_address(), auth_key)?;
 
         println!(
             "succeded to create admin account with address {} and authentication key {:x?}",

@@ -140,7 +140,7 @@ namespace violas
                          std::string_view borrowed_currency_code,
                          const Address &liquidated_user,
                          uint64_t amount,
-                         std::string_view liquidated_currency_code) = 0;
+                         std::string_view liquidated_currency_code) = 0;        
 
     }; // Bank
 

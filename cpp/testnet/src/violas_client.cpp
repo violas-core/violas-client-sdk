@@ -259,16 +259,14 @@ void deploy_exchange(client_ptr client)
     }
 
     try_catch([&]() {
-        client->create_designated_dealer_account("Coin1",
-                                                 0,
-                                                 EXCHANGE_ADMIN_ADDRESS,
-                                                 admin_account.auth_key, //only auth key prefix is applied
-                                                 "Exchange Administrator",
-                                                 "www.violas.io",
-                                                 admin_account.pub_key,
-                                                 true);
-
-        client->update_account_authentication_key(EXCHANGE_ADMIN_ADDRESS, admin_account.auth_key);
+        client->create_designated_dealer_ex("Coin1",
+                                                    0,
+                                                    EXCHANGE_ADMIN_ADDRESS,
+                                                    admin_account.auth_key, //only auth key prefix is applied
+                                                    "Exchange Administrator",
+                                                    "www.violas.io",
+                                                    admin_account.pub_key,
+                                                    true);
 
         client->create_parent_vasp_account("Coin1",
                                            0,
@@ -383,16 +381,14 @@ void deploy_bank(client_ptr client)
     }
 
     try_catch([&]() {
-        client->create_designated_dealer_account("Coin1",
-                                                 0,
-                                                 BANK_ADMIN_ADDRESS,
-                                                 admin_account.auth_key, //only auth key prefix is applied
-                                                 "Bank Administrator",
-                                                 "www.violas.io",
-                                                 admin_account.pub_key,
-                                                 true);
-
-        client->update_account_authentication_key(BANK_ADMIN_ADDRESS, admin_account.auth_key);
+        client->create_designated_dealer_ex("Coin1",
+                                                    0,
+                                                    BANK_ADMIN_ADDRESS,
+                                                    admin_account.auth_key, //only auth key prefix is applied
+                                                    "Bank Administrator",
+                                                    "www.violas.io",
+                                                    admin_account.pub_key,
+                                                    true);
 
         client->create_parent_vasp_account("Coin1",
                                            0,

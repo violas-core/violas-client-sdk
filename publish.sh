@@ -17,7 +17,8 @@ echo "copied build/release/bin to "$1"/bin"
 
 cp ../Violas/target/release/cli $1/bin
 cp ../Violas/target/release/libra-node $1/bin
-#cp ../Violas/target/release/config-builder $1/bin
+cp ../Violas/target/release/move-build $1/bin
+cp ../Violas/target/release/libra-swarm $1/bin
 echo "copied ../Violas/target/release/bin to "$1"/bin"
 
 strip $1/lib/*.so $1/bin/* 

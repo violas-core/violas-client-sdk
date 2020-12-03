@@ -63,4 +63,8 @@ echo "build update_price_from_oracle_ex.move"
 ../build.sh update_price_from_oracle_ex.move 0x0 bank.move ../oracle/oracle.move
 mv move_build_output/scripts/main.mv update_price_from_oracle_ex.mv
 
+echo "building set_incentive_rate.move"
+../build.sh set_incentive_rate.move 0x0 bank.move ../oracle/oracle.move
+mv move_build_output/scripts/main.mv set_incentive_rate.mv
+
 rm -rf move_build_output

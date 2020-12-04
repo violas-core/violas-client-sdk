@@ -13,15 +13,15 @@ void initialize_timestamp(client_ptr client);
 void mine_vls(client_ptr client);
 void distribute_vls_to_bank_admin(client_ptr client);
 
-const tuple<Address, string> VLS_ADDRESSES[] =
+const tuple<Address, string> VLS_ADDRESSES[] = {
     // 0000000000000000000000000000DD00
-    {{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x00}, "garbage"},
-     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01}, "community"},
-     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x02}, "investor"},
-     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x03}, "association"},
-     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x04}, "dev-team"},
-     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x05}, "consultant"},
-     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x06}, "contributor"}};
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x00}, "DUSTBIN"},
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01}, "VLS-COMM"},
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x02}, "VLS-ASSOCA"},
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x03}, "VLS-TEAM"},
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x04}, "VLS-ADVS"},
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x05}, "VLS-OPEN"},
+};
 
 int main(int argc, const char *argv[])
 {
@@ -151,7 +151,7 @@ void distribute_vls_to_bank_admin(client_ptr client)
     cout << "account 1's VLS balance : " << (double)vls_balance / MICRO_COIN << endl;
 
     uint64_t amount = 0;
-    cout << "pleaes input amount for distributing VLS to Bank admi : ";
+    cout << "pleaes input amount for distributing VLS to Bank administrator : ";
     cin >> amount;
     cout << endl;
 

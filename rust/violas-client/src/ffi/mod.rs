@@ -1229,36 +1229,33 @@ namespace violas
             check_result(ret);
         }
 
+        /**
+         * @brief recover account of wallet from specified
+         *
+         * @param mnemonic_file_path mnemonic file path
+         */
         virtual void
-        update_account_authentication_key(
-                                        const Address &address,
-                                        const AuthenticationKey &auth_key) override
+        recover_wallet_accounts(std::string_view mnemonic_file_path) override
         {
-            auto in_address = address.data();
-            auto in_auth_key = auth_key.data();
+            //auto in_address = address.data();
+            auto in_file_path_str = mnemonic_file_path.data();
 
-            bool ret = rust!( client_update_account_authentication_key [
+            bool ret = rust!( client_recover_wallet_account [
                 rust_violas_client : &mut ViolasClient as "void *",
-                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
-                in_auth_key : &[u8;ADDRESS_LENGTH*2] as "const uint8_t *"
+                in_file_path_str: *const c_char as "const char *"
                 ] -> bool as "bool" {
-
-                    let ret = rust_violas_client.update_account_authentication_key(
-                                    AccountAddress::new(*in_address),
-                                    AuthenticationKey::new(*in_auth_key),
-                                    );
+                    let ret = rust_violas_client.recover_wallet_accounts(
+                        CStr::from_ptr(in_file_path_str).to_str().unwrap());
                     match ret {
                         Ok(_) => true,
                         Err(e) => {
-                            let err = format_err!("ffi::update_account_authentication_key, {}",e);
+                            let err = format_err!("ffi::recover_wallet_accounts, {}",e);
                             set_last_error(err);
                             false
                         }
                     }
             });
-
             check_result(ret);
-
         }
 
         /**

@@ -15,7 +15,7 @@ void distribute_vls_to_bank_admin(client_ptr client);
 
 const tuple<Address, string> VLS_ADDRESSES[] = {
     // 0000000000000000000000000000DD00
-    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x00}, "DUSTBIN"},
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x00}, "Trash"},
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x01}, "VLS-COMM"},
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x02}, "VLS-ASSOCA"},
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xDD, 0x03}, "VLS-TEAM"},

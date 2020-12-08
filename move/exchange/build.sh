@@ -10,8 +10,8 @@ echo "build initialize.move"
 ../build.sh initialize.move 0x0 exchange.move exdep.move
 mv move_build_output/scripts/main.mv initialize.mv
 
-echo "build add_currency.move"
-../build.sh add_currency.move 0x0 exchange.move exdep.move
+echo "build add_currency_pair.move"
+../build.sh add_currency_pair.move 0x0 exchange.move exdep.move
 mv move_build_output/scripts/main.mv add_currency.mv
 
 echo "build add_liquidity.move"

@@ -384,15 +384,6 @@ namespace violas
                                    std::string_view base_url,
                                    PublicKey compliance_public_key,
                                    bool add_all_currencies) = 0;
-        /**
-         * @brief Update account authentication key
-         * 
-         * @param address       the address of account
-         * @param new_auth_key      the new authentication key 
-         */
-        virtual void
-        update_account_authentication_key(const Address &address,
-                                          const AuthenticationKey &new_auth_key) = 0;
 
         /**
          * @brief rotate authentication key with nonce
@@ -408,6 +399,14 @@ namespace violas
                                              const AuthenticationKey &new_auth_key,
                                              bool is_blocking = true) = 0;
         
+        /**
+         * @brief recover account of wallet from specified 
+         * 
+         * @param mnemonic_file_path mnemonic file path
+         */
+        virtual void
+        recover_wallet_accounts(std::string_view mnemonic_file_path) = 0;
+
         /**
          * @brief Save private key
          * 

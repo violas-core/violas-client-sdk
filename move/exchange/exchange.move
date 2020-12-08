@@ -34,7 +34,7 @@ module Exchange {
     }
 
     fun admin_addr(): address {
-        0x00000000000000000000000045584348
+        0x45584348
     }
 
     public fun initialize(sender: &signer) {

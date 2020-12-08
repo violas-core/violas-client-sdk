@@ -101,12 +101,12 @@ namespace violas
             TypeTag currency_b(CORE_CODE_ADDRESS, second.currency_code, second.currency_code);
 
             m_client->execute_script_file(account_index,
-                                     _script_add_liquidity,
-                                     {currency_a, currency_b},
-                                     {first.desired_amount,
-                                      second.desired_amount,
-                                      first.min_amount,
-                                      second.min_amount});
+                                          _script_add_liquidity,
+                                          {currency_a, currency_b},
+                                          {first.desired_amount,
+                                           second.desired_amount,
+                                           first.min_amount,
+                                           second.min_amount});
         }
 
         // remove liquidity
@@ -121,11 +121,11 @@ namespace violas
             TypeTag currency_b(CORE_CODE_ADDRESS, currency_code_b, currency_code_b);
 
             m_client->execute_script_file(account_index,
-                                     _script_remove_liquidity,
-                                     {currency_a, currency_b},
-                                     {liquidity_amount,
-                                      a_acceptable_min_amount,
-                                      b_acceptable_min_amount});
+                                          _script_remove_liquidity,
+                                          {currency_a, currency_b},
+                                          {liquidity_amount,
+                                           a_acceptable_min_amount,
+                                           b_acceptable_min_amount});
         }
 
         // swap currency from A to B
@@ -144,9 +144,9 @@ namespace violas
             // path = find_swap_path("VLSSGD", 100000, "VLSUSD");
 
             m_client->execute_script_file(account_index,
-                                     _script_swap_currency,
-                                     {currency_tag_a, currency_tag_b},
-                                     {receiver, amount_a, b_acceptable_min_amount, path, VecU8()});
+                                          _script_swap_currency,
+                                          {currency_tag_a, currency_tag_b},
+                                          {receiver, amount_a, b_acceptable_min_amount, path, VecU8()});
         }
 
     protected:
@@ -299,9 +299,9 @@ namespace violas
         publish(size_t account_index) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_publish,
-                                     {},
-                                     {VecU8()});
+                                          _script_publish,
+                                          {},
+                                          {VecU8()});
         }
 
         virtual void
@@ -314,42 +314,42 @@ namespace violas
                      uint64_t rate_kink) override
         {
             m_client->execute_script_file(m_admin.index,
-                                     _script_register_libra_token,
-                                     {make_currency_tag(currency_code)},
-                                     {owner,
-                                      collateral_factor,
-                                      base_rate,
-                                      rate_multiplier,
-                                      rate_jump_multiplier,
-                                      rate_kink,
-                                      VecU8()});
+                                          _script_register_libra_token,
+                                          {make_currency_tag(currency_code)},
+                                          {owner,
+                                           collateral_factor,
+                                           base_rate,
+                                           rate_multiplier,
+                                           rate_jump_multiplier,
+                                           rate_kink,
+                                           VecU8()});
         }
 
         virtual void
         update_currency_price(std::string_view currency_code, uint64_t price) override
         {
             m_client->execute_script_file(m_admin.index,
-                                     _scirpt_update_price,
-                                     {make_currency_tag(currency_code)},
-                                     {price});
+                                          _scirpt_update_price,
+                                          {make_currency_tag(currency_code)},
+                                          {price});
         }
 
         virtual void
         enter(size_t account_index, std::string_view currency_code, uint64_t amount) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_enter_bank,
-                                     {make_currency_tag(currency_code)},
-                                     {amount});
+                                          _script_enter_bank,
+                                          {make_currency_tag(currency_code)},
+                                          {amount});
         }
 
         virtual void
         exit(size_t account_index, std::string_view currency_code, uint64_t amount) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_exit_bank,
-                                     {make_currency_tag(currency_code)},
-                                     {amount});
+                                          _script_exit_bank,
+                                          {make_currency_tag(currency_code)},
+                                          {amount});
         }
 
         virtual void
@@ -358,9 +358,9 @@ namespace violas
              uint64_t amount) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_lock,
-                                     {make_currency_tag(currency_code)},
-                                     {amount, VecU8()});
+                                          _script_lock,
+                                          {make_currency_tag(currency_code)},
+                                          {amount, VecU8()});
         }
 
         virtual void
@@ -369,9 +369,9 @@ namespace violas
                uint64_t amount) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_redeem,
-                                     {make_currency_tag(currency_code)},
-                                     {amount, VecU8()});
+                                          _script_redeem,
+                                          {make_currency_tag(currency_code)},
+                                          {amount, VecU8()});
         }
 
         virtual void
@@ -380,9 +380,9 @@ namespace violas
                uint64_t amount) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_borrow,
-                                     {make_currency_tag(currency_code)},
-                                     {amount, VecU8()});
+                                          _script_borrow,
+                                          {make_currency_tag(currency_code)},
+                                          {amount, VecU8()});
         }
 
         virtual void
@@ -391,9 +391,9 @@ namespace violas
                      uint64_t amount) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_repay_borrow,
-                                     {make_currency_tag(currency_code)},
-                                     {amount, VecU8()});
+                                          _script_repay_borrow,
+                                          {make_currency_tag(currency_code)},
+                                          {amount, VecU8()});
         }
 
         virtual void
@@ -404,14 +404,14 @@ namespace violas
                          std::string_view liquidated_currency_code) override
         {
             m_client->execute_script_file(account_index,
-                                     _script_liquidate_borrow,
-                                     //tags
-                                     {make_currency_tag(borrowed_currency_code),
-                                      make_currency_tag(liquidated_currency_code)},
-                                     //arguments
-                                     {liquidated_user_addr,
-                                      amount,
-                                      VecU8()});
+                                          _script_liquidate_borrow,
+                                          //tags
+                                          {make_currency_tag(borrowed_currency_code),
+                                           make_currency_tag(liquidated_currency_code)},
+                                          //arguments
+                                          {liquidated_user_addr,
+                                           amount,
+                                           VecU8()});
         }
 
     private:

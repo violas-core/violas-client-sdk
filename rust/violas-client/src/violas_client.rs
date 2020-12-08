@@ -36,6 +36,7 @@ use libra_types::{
     },
     waypoint::Waypoint,
 };
+use libra_wallet::WalletLibrary;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::de::DeserializeOwned;
 use std::{
@@ -1182,39 +1183,6 @@ impl ViolasClient {
             None => unimplemented!(),
         }
     }
-    ///
-    /// Update account's authentication key by root account
-    ///
-    pub fn update_account_authentication_key(
-        &mut self,
-        address: AccountAddress,
-        auth_key: AuthenticationKey,
-    ) -> Result<()> {
-        // let script_bytes = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/update_account_authentication_key.mv",
-        // )?;
-
-        let script_bytes = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 7, 7, 14, 47, 8, 61, 16, 0, 0,
-            0, 1, 0, 1, 0, 3, 6, 12, 5, 10, 2, 0, 12, 76, 105, 98, 114, 97, 65, 99, 99, 111, 117,
-            110, 116, 33, 117, 112, 100, 97, 116, 101, 95, 97, 99, 99, 111, 117, 110, 116, 95, 97,
-            117, 116, 104, 101, 110, 116, 105, 99, 97, 116, 105, 111, 110, 95, 107, 101, 121, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 5, 11, 0, 10, 1, 11, 2, 17, 0, 2,
-        ];
-        let script = Script::new(
-            script_bytes,
-            vec![],
-            vec![
-                TransactionArgument::Address(address),
-                TransactionArgument::U8Vector(auth_key.to_vec()),
-            ],
-        );
-
-        self.association_transaction_with_local_libra_root_account(
-            TransactionPayload::Script(script),
-            true,
-        )
-    }
 
     ///
     /// Update dual attestation limit
@@ -1238,6 +1206,21 @@ impl ViolasClient {
             None => unimplemented!(),
         }
     }
+
+    ///
+    ///  Recover wallet accounts from file
+    ///
+    pub fn recover_wallet_accounts(&mut self, file_path_str: &str) -> Result<()> {
+        let file_path = Path::new(file_path_str);
+        if file_path.exists() == true {
+            self.wallet = WalletLibrary::recover(file_path)?;
+            self.recover_accounts_in_wallet()?;
+            Ok(())
+        } else {
+            bail!("file \"{}\" does not exist", file_path_str)
+        }
+    }
+
     ///
     /// Rotate authentication key wiht nonce
     ///

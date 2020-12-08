@@ -3,6 +3,7 @@
 #include <string_view>
 #include <iterator>
 #include <map>
+#include <tuple>
 #include <memory>
 #include <client.hpp> //rust/client-proxy/ffi/client.hpp
 #include <iomanip>
@@ -25,13 +26,20 @@ string currency_codes[] = {
     "BTC",
 };
 
+enum account_type
+{
+    DD,
+    VASP,
+    CHILD_VASP,
+};
+
 void update_dual_attestation_limit(client_ptr client);
 void initialize_all_currencies(client_ptr client);
 void deploy_exchange(client_ptr client);
 void deploy_bank(client_ptr client);
 void mint_currency(client_ptr client);
 void register_currency(client_ptr client);
-void rotate_authentication_key(client_ptr client);
+void create_bridge_accounts(client_ptr client);
 
 int main(int argc, const char *argv[])
 {
@@ -50,6 +58,11 @@ int main(int argc, const char *argv[])
 
         client->test_connection();
 
+        cout << "The current used mnemonic file is "
+             << color::RED << mnemonic << color::RESET
+             << "."
+             << endl;
+
         using handler = function<void()>;
         map<int, handler> handlers = {
             {0, [=]() { register_currency(client); }},
@@ -58,7 +71,7 @@ int main(int argc, const char *argv[])
             {3, [=]() { deploy_exchange(client); }},
             {4, [=]() { deploy_bank(client); }},
             {5, [=]() { mint_currency(client); }},
-            {6, [=]() { rotate_authentication_key(client); }},
+            {6, [=]() { create_bridge_accounts(client); }},
         };
 
         cout << "1 for deploying all currencies \n"
@@ -66,7 +79,8 @@ int main(int argc, const char *argv[])
                 "3 for deploying Exchange Contract.\n"
                 "4 for deploying Bank Contract.\n"
                 "5 for minting curreny to DD account.\n"
-                "6 for rotate authentication key.\n"
+                "6 for creating all accounts for Bridge service.\n"
+                "7 for rotate authentication key.\n"
                 "Please input index : ";
 
         int index;
@@ -93,7 +107,7 @@ void check_password()
     set_stdin_echo(true);
 
     if (hash_str(pwd) != 12375900582722818748U)
-        throw runtime_error("pasword is incorrect");
+        throw runtime_error("password is incorrect");
 
     cout << "\nPassword was verified successfully." << endl;
 }
@@ -260,13 +274,13 @@ void deploy_exchange(client_ptr client)
 
     try_catch([&]() {
         client->create_designated_dealer_ex("Coin1",
-                                                    0,
-                                                    EXCHANGE_ADMIN_ADDRESS,
-                                                    admin_account.auth_key, //only auth key prefix is applied
-                                                    "Exchange Administrator",
-                                                    "www.violas.io",
-                                                    admin_account.pub_key,
-                                                    true);
+                                            0,
+                                            EXCHANGE_ADMIN_ADDRESS,
+                                            admin_account.auth_key, //only auth key prefix is applied
+                                            "Exchange Administrator",
+                                            "www.violas.io",
+                                            admin_account.pub_key,
+                                            true);
 
         client->create_parent_vasp_account("Coin1",
                                            0,
@@ -382,13 +396,13 @@ void deploy_bank(client_ptr client)
 
     try_catch([&]() {
         client->create_designated_dealer_ex("Coin1",
-                                                    0,
-                                                    BANK_ADMIN_ADDRESS,
-                                                    admin_account.auth_key, //only auth key prefix is applied
-                                                    "Bank Administrator",
-                                                    "www.violas.io",
-                                                    admin_account.pub_key,
-                                                    true);
+                                            0,
+                                            BANK_ADMIN_ADDRESS,
+                                            admin_account.auth_key, //only auth key prefix is applied
+                                            "Bank Administrator",
+                                            "www.violas.io",
+                                            admin_account.pub_key,
+                                            true);
 
         client->create_parent_vasp_account("Coin1",
                                            0,
@@ -497,25 +511,79 @@ void deploy_bank(client_ptr client)
     bank->liquidate_borrow(user2.index, currencies[2], user1.address, 90 * MICRO_COIN, currencies[0]);
 }
 
+void create_bridge_accounts(client_ptr client)
+{
+    // address, type, name of Bridge account
+    static tuple<Address, account_type, string> bridge_address_type[] = {
+        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'B', 'U', 'R', 'N'}, DD, "Bridge Burn"},
+        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'F', 'U', 'N', 'D'}, DD, "Bridge Fund"},
+        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'U', 'S', 'D', 'T'}, DD, "Bridge USDT"},
+        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', '-', 'B', 'T', 'C'}, DD, "Bridge BTC"},
+        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'V', 'A', 'S', 'P'}, VASP, "Bridge Parent VASP"},
+    };
+
+    string bridge_mne = "mnemonic/bridge.mne";
+    client->recover_wallet_accounts(bridge_mne);
+    cout << "Violas client is using mnemonic file "
+         << color::GREEN << bridge_mne << color::RESET
+         << endl;
+
+    for (const auto &[address, type, name] : bridge_address_type)
+    {
+        auto [_, index] = client->create_next_account(type == DD ? optional(address) : nullopt);
+        auto accounts = client->get_all_accounts();
+        const auto &account = accounts[index];
+
+        cout << "Account " << index << ", address : " << account.address << ", authentication key : " << account.auth_key << endl;
+
+        switch (type)
+        {
+        case DD:
+        {
+            client->create_designated_dealer_ex("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
+        }
+        break;
+        case VASP:
+        {
+            client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
+        }
+        break;
+        default:
+            break;
+        }
+    }
+
+    //
+    //  Create parent VASP account for backend(VLS-USER)
+    //
+    bridge_mne = "mnemonic/backend.mne";
+    client->recover_wallet_accounts(bridge_mne);
+    cout << "Violas client is using mnemonic file "
+         << color::GREEN << bridge_mne << color::RESET
+         << endl;
+
+    auto [address, index] = client->create_next_account();
+    auto accounts = client->get_all_accounts();
+    const auto &account = accounts[index];
+
+    client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, "VLS-USER", "", account.pub_key, true);
+    
+    cout << "Account " << index << ", address : " << account.address << ", authentication key : " << account.auth_key << endl;
+}
+
 void rotate_authentication_key(client_ptr client)
 {
     client->create_next_account();
-    client->create_next_account(BANK_ADMIN_ADDRESS);
-
     auto accounts = client->get_all_accounts();
 
-    // client->rotate_authentication_key_with_nonce(VIOLAS_ROOT_ACCOUNT_ID, 0, accounts[0].auth_key);
+    client->rotate_authentication_key_with_nonce(VIOLAS_ROOT_ACCOUNT_ID, 0, accounts[0].auth_key);
 
-    // client->rotate_authentication_key_with_nonce(VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID, 0, accounts[0].auth_key);
+    client->rotate_authentication_key_with_nonce(VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID, 0, accounts[0].auth_key);
 
-    // client->rotate_authentication_key_with_nonce(VIOLAS_TESTNET_DD_ACCOUNT_ID, 0, accounts[0].auth_key);
+    client->rotate_authentication_key_with_nonce(VIOLAS_TESTNET_DD_ACCOUNT_ID, 0, accounts[0].auth_key);
 
-    // cout << "succeeded to rotate mint key." << endl;
+    cout << "succeeded to rotate mint key." << endl;
 
-    // client->save_private_key(0, "./mint.key");
-    // cout << "saved mint.key to current path." << endl;
-
-    client->create_designated_dealer_ex("Coin1", 0, BANK_ADMIN_ADDRESS, accounts[1].auth_key, "Bank admin", "", accounts[1].pub_key, false);
-
-    client->add_currency(1, "LBR");
+    client->save_private_key(0, "./mint.key");
+    cout << "saved mint.key to current path." << endl;
 }

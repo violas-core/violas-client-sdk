@@ -1,9 +1,5 @@
 rm *.mv
 
-echo "build update_account_authentication_key.move"
-../build.sh update_account_authentication_key.move 0x0 
-mv move_build_output/scripts/main.mv update_account_authentication_key.mv
-
 echo "build allow_publishing_module.move"
 ../build.sh allow_publishing_module.move 0x0
 mv move_build_output/scripts/main.mv allow_publishing_module.mv
@@ -15,6 +11,11 @@ mv move_build_output/scripts/main.mv allow_custom_script.mv
 echo "build create_designated_dealer_ex.move"
 ../build.sh create_designated_dealer_ex.move 0x0
 mv move_build_output/scripts/create_designated_dealer_ex.mv .
+
+#echo "build update_account_authentication_key.move"
+#../build.sh update_account_authentication_key.move 0x0 
+#mv move_build_output/scripts/main.mv update_account_authentication_key.mv
+
 
 # echo "build add_liquidity.move"
 # ../build.sh add_liquidity.move 0x0 exchange.move exdep.move

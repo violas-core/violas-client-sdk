@@ -24,6 +24,7 @@ string currency_codes[] = {
     "GBP",
     "SGD",
     "BTC",
+    "USDT",
 };
 
 enum account_type
@@ -519,56 +520,81 @@ void create_bridge_accounts(client_ptr client)
         {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'F', 'U', 'N', 'D'}, DD, "Bridge Fund"},
         {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'U', 'S', 'D', 'T'}, DD, "Bridge USDT"},
         {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', '-', 'B', 'T', 'C'}, DD, "Bridge BTC"},
-        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'V', 'A', 'S', 'P'}, VASP, "Bridge Parent VASP"},
+        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, VASP, "Bridge Parent VASP"},
     };
 
-    string bridge_mne = "mnemonic/bridge.mne";
-    client->recover_wallet_accounts(bridge_mne);
+    string mnemonic = "mnemonic/bridge.mne";
+
+    client->recover_wallet_accounts(mnemonic);
     cout << "Violas client is using mnemonic file "
-         << color::GREEN << bridge_mne << color::RESET
+         << color::GREEN << mnemonic << color::RESET
          << endl;
 
-    for (const auto &[address, type, name] : bridge_address_type)
+    try
     {
-        auto [_, index] = client->create_next_account(type == DD ? optional(address) : nullopt);
-        auto accounts = client->get_all_accounts();
-        const auto &account = accounts[index];
+        for (const auto &[address, type, name] : bridge_address_type)
+        {
+            auto [_, index] = client->create_next_account(type == DD ? optional(address) : nullopt);
+            auto accounts = client->get_all_accounts();
+            const auto &account = accounts[index];
 
-        cout << "Account " << index << ", address : " << account.address << ", authentication key : " << account.auth_key << endl;
+            cout << "Account " << index << ", address : " << account.address << ", authentication key : " << account.auth_key << endl;
 
-        switch (type)
-        {
-        case DD:
-        {
-            client->create_designated_dealer_ex("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
-        }
-        break;
-        case VASP:
-        {
-            client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
-        }
-        break;
-        default:
+            switch (type)
+            {
+            case DD:
+            {
+                client->create_designated_dealer_ex("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
+            }
             break;
+            case VASP:
+            {
+                client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
+            }
+            break;
+            default:
+                break;
+            }
+
+            for (auto currency : currency_codes)
+            {
+                client->add_currency(index, currency);
+            }
         }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
     }
 
     //
     //  Create parent VASP account for backend(VLS-USER)
     //
-    bridge_mne = "mnemonic/backend.mne";
-    client->recover_wallet_accounts(bridge_mne);
+    mnemonic = "mnemonic/backend.mne";
+    client->recover_wallet_accounts(mnemonic);
     cout << "Violas client is using mnemonic file "
-         << color::GREEN << bridge_mne << color::RESET
+         << color::GREEN << mnemonic << color::RESET
          << endl;
 
     auto [address, index] = client->create_next_account();
     auto accounts = client->get_all_accounts();
     const auto &account = accounts[index];
 
-    client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, "VLS-USER", "", account.pub_key, true);
-    
-    cout << "Account " << index << ", address : " << account.address << ", authentication key : " << account.auth_key << endl;
+    try
+    {
+        client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, "VLS-USER", "", account.pub_key, true);
+
+        for (auto currency : currency_codes)
+        {
+            client->add_currency(index, currency);
+        }
+
+        cout << "Account " << index << ", address : " << account.address << ", authentication key : " << account.auth_key << endl;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 void rotate_authentication_key(client_ptr client)

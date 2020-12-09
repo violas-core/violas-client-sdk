@@ -12,9 +12,9 @@ echo "build create_designated_dealer_ex.move"
 ../build.sh create_designated_dealer_ex.move 0x0
 mv move_build_output/scripts/create_designated_dealer_ex.mv .
 
-#echo "build update_account_authentication_key.move"
-#../build.sh update_account_authentication_key.move 0x0 
-#mv move_build_output/scripts/main.mv update_account_authentication_key.mv
+echo "build distribute_vls_from_community.move"
+../build.sh distribute_vls_from_community.move 0x0 ../bank/bank.move ../oracle/oracle.move
+mv move_build_output/scripts/distribute_vls_from_community.mv .
 
 
 # echo "build add_liquidity.move"

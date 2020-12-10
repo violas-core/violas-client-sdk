@@ -16,10 +16,13 @@ echo "build distribute_vls_from_community.move"
 ../build.sh distribute_vls_from_community.move 0x0 ../bank/bank.move ../oracle/oracle.move
 mv move_build_output/scripts/distribute_vls_from_community.mv .
 
+echo "build add_currency_for_designated_dealer.move"
+../build.sh add_currency_for_designated_dealer.move 0x0
+mv move_build_output/scripts/add_currency_for_designated_dealer.mv .
 
-# echo "build add_liquidity.move"
-# ../build.sh add_liquidity.move 0x0 exchange.move exdep.move
-# mv move_build_output/scripts/main.mv add_liquidity.mv
+echo "build recover_vls_fees_to_association.move"
+../build.sh recover_vls_fees_to_association.move 0x0
+mv move_build_output/scripts/recover_vls_fees_to_association.mv .
 
 # echo "build remove_liquidity.move"
 # ../build.sh remove_liquidity.move 0x0 exchange.move exdep.move

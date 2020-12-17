@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libviolas_sdk.la libjniSdk.la liblibra_sdk.la libpy_violas_sdk.la
+lib_LTLIBRARIES = libviolas_sdk.la liblibra_sdk.la libpy_violas_sdk.la #libjniSdk.la
 
 if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/debug #-L$(top_srcdir)/rust/client-proxy/target/x86_64-pc-windows-gnu/release
@@ -8,25 +8,25 @@ else
     CLIENT_PROXY = $(top_srcdir)/rust/violas-client/target/release/build/violas-client-e492e5f30c5b3c32/out/rust_cpp/cpp_closures.o
 endif
 
-libviolas_sdk_la_SOURCES = violas_sdk.cpp violas_sdk2.cpp
+libviolas_sdk_la_SOURCES = violas_sdk2.cpp
 #libcppSdk_la_HEADERS = violas_sdk.hpp
 libviolas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -I$(top_srcdir)/rust/violas-client/src/ffi
 libviolas_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
 libviolas_sdk_la_LIBADD = $(CLIENT_PROXY)
 
-liblibra_sdk_la_SOURCES = violas_sdk.cpp
+liblibra_sdk_la_SOURCES = violas_sdk2.cpp
 #libcppSdk_la_HEADERS = violas_sdk.hpp
 liblibra_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -DLIB_NAME=Libra -I$(top_srcdir)/rust/violas-client/src/ffi
 liblibra_sdk_la_LDFLAGS = $(CLIENT_PROXY_PATH) 
 liblibra_sdk_la_LIBADD = $(CLIENT_PROXY)
 
-libjniSdk_la_SOURCES = violas_sdk.cpp jni_violas_sdk.cpp
-libjniSdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -fPIC\
-                        -I/usr/lib/jvm/java-11-openjdk-amd64/include \
-                        -I/usr/lib/jvm/java-11-openjdk-amd64/include/linux/ \
-                        -I$(top_srcdir)/rust/client-proxy/src/ffi
-libjniSdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
-libjniSdk_la_LIBADD =  $(CLIENT_PROXY)
+# libjniSdk_la_SOURCES = violas_sdk.cpp jni_violas_sdk.cpp
+# libjniSdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -fPIC\
+#                         -I/usr/lib/jvm/java-11-openjdk-amd64/include \
+#                         -I/usr/lib/jvm/java-11-openjdk-amd64/include/linux/ \
+#                         -I$(top_srcdir)/rust/client-proxy/src/ffi
+# libjniSdk_la_LDFLAGS = $(CLIENT_PROXY_PATH)
+# libjniSdk_la_LIBADD =  $(CLIENT_PROXY)
 
 libpy_violas_sdk_la_SOURCES = py_violas_sdk.cpp
 libpy_violas_sdk_la_CXXFLAGS = -Wall -Werror -std=c++17 -fPIC\

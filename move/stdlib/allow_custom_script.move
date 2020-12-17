@@ -1,9 +1,9 @@
 script {
 
-use 0x1::LibraTransactionPublishingOption;
+use 0x1::DiemTransactionPublishingOption;
 
 fun main(lr_account: &signer) {    
-    LibraTransactionPublishingOption::set_open_script(lr_account);
+    DiemTransactionPublishingOption::set_open_script(lr_account);
 }
 
 }

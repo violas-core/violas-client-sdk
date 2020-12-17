@@ -2,7 +2,7 @@ script {
 use 0x1::Signer;
 use 0x1::Vector;
 use 0x1::Errors;
-use 0x1::LibraAccount;
+use 0x1::DiemAccount;
 use 0x1::FixedPoint32;
 use 0x1::VLS::{Self, VLS};
 use 0x1::ViolasBank;
@@ -28,7 +28,7 @@ fun distribute_vls_from_community(account : &signer) {
     assert(sender == addr, Errors::requires_address(E_TRANSACTION_SENDER_IS_NOT_VLS_COMM));
 
     // get balance and total amount of mined VLS
-    let balance = LibraAccount::balance<VLS>(sender);
+    let balance = DiemAccount::balance<VLS>(sender);
     let total = FixedPoint32::divide_u64(balance, ratio);
     
     let bank_distribution_ratio = FixedPoint32::create_from_rational(16, 100);
@@ -45,7 +45,7 @@ fun distribute_vls_from_community(account : &signer) {
         ViolasBank::set_incentive_rate(account, distribution_amount);
 
         // Make sure that the amount of VLS ViolasBank::set_incentive_rate extracted is distribution_amount   
-        assert(LibraAccount::balance<VLS>(sender) == balance - distribution_amount, Errors::limit_exceeded(E_BANK_PAYMENT_IS_INCORRECT));
+        assert(DiemAccount::balance<VLS>(sender) == balance - distribution_amount, Errors::limit_exceeded(E_BANK_PAYMENT_IS_INCORRECT));
     };
     
     // 2. Distribute VLS to Exchange adminitrator
@@ -53,16 +53,16 @@ fun distribute_vls_from_community(account : &signer) {
         let distribution_amount = FixedPoint32::multiply_u64(total, exchange_distribution_ratio);
         
         assert(distribution_amount > 1, 0);
-        //assert(LibraAccount::balance<VLS>(sender) == balance - distribution_amount, ERRORS::limit_exceeded(E_BANK_PAYMENT_IS_INCORRECT));
+        //assert(DiemAccount::balance<VLS>(sender) == balance - distribution_amount, ERRORS::limit_exceeded(E_BANK_PAYMENT_IS_INCORRECT));
     };
 
-    let payer_withdrawal_cap = LibraAccount::extract_withdraw_capability(account);
+    let payer_withdrawal_cap = DiemAccount::extract_withdraw_capability(account);
 
     // 3. Distibute VLS to Backend administrator
     {
         let distribution_amount = FixedPoint32::multiply_u64(total, backend_distribution_ratio);        
 
-        LibraAccount::pay_from<VLS>(
+        DiemAccount::pay_from<VLS>(
             &payer_withdrawal_cap, 
             0x7524f145c133b48b6b0ad43c4d917223, 
             distribution_amount, 
@@ -73,9 +73,9 @@ fun distribute_vls_from_community(account : &signer) {
 
     // 4.  The rest of VLS will be distributed to 0xDD00 accout 
     {
-        let distribution_amount = LibraAccount::balance<VLS>(sender);        
+        let distribution_amount = DiemAccount::balance<VLS>(sender);        
 
-        LibraAccount::pay_from<VLS>(
+        DiemAccount::pay_from<VLS>(
             &payer_withdrawal_cap, 
             0xDD00, 
             distribution_amount, 
@@ -84,7 +84,7 @@ fun distribute_vls_from_community(account : &signer) {
         );
     };
 
-    LibraAccount::restore_withdraw_capability(payer_withdrawal_cap);
+    DiemAccount::restore_withdraw_capability(payer_withdrawal_cap);
 }
 
 } //end of script

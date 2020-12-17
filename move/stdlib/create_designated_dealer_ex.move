@@ -1,5 +1,5 @@
 script {
-use 0x1::LibraAccount;
+use 0x1::DiemAccount;
 use 0x1::SlidingNonce;
 
 fun create_designated_dealer_ex<CoinType>(
@@ -12,7 +12,7 @@ fun create_designated_dealer_ex<CoinType>(
     )
 {
     SlidingNonce::record_nonce_or_abort(tc_account, sliding_nonce);
-    LibraAccount::create_designated_dealer_ex<CoinType>(
+    DiemAccount::create_designated_dealer_ex<CoinType>(
         tc_account, 
         new_account_address, 
         auth_key,
@@ -24,11 +24,11 @@ spec fun create_designated_dealer_ex {
     use 0x1::Errors;
     use 0x1::Roles;
 
-    include LibraAccount::TransactionChecks{sender: tc_account}; // properties checked by the prologue.
+    include DiemAccount::TransactionChecks{sender: tc_account}; // properties checked by the prologue.
     include SlidingNonce::RecordNonceAbortsIf{account: tc_account, seq_nonce: sliding_nonce};
-    include LibraAccount::CreateDesignatedDealerAbortsIf<Currency>{
+    include DiemAccount::CreateDesignatedDealerAbortsIf<Currency>{
         creator_account: tc_account, new_account_address: addr};
-    include LibraAccount::CreateDesignatedDealerEnsures<Currency>{new_account_address: addr};
+    include DiemAccount::CreateDesignatedDealerEnsures<Currency>{new_account_address: addr};
 
     aborts_with [check]
         Errors::INVALID_ARGUMENT,

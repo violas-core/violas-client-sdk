@@ -1,9 +1,9 @@
 script {
-use 0x1::LibraAccount;
+use 0x1::DiemAccount;
 
-fun recover_vls_fees_to_association(tc_account:&signer) {
+fun recover_vls_fees_to_association(tc_account:&signer, receiver: address) {
     
-    LibraAccount::recover_vls_fees_to_association(tc_account);
+    DiemAccount::recover_vls_fees_to_association(tc_account, receiver);
 
 }
 

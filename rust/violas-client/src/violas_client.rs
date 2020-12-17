@@ -16,8 +16,7 @@ use diem_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{
-        diem_root_address, treasury_compliance_account_address, BalanceResource,
-        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
+        diem_root_address, BalanceResource, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
     },
     account_state::AccountState,
     chain_id::ChainId,
@@ -62,8 +61,8 @@ pub const VIOLAS_TESTNET_DD_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 2;
 ///
 pub struct ViolasClient {
     diem_client_proxy: ClientProxy,
-    /// Account used TreasuryCompliance operations (e.g., minting)
-    pub treasury_compliance_account: Option<AccountData>,
+    // Account used TreasuryCompliance operations (e.g., minting)
+    //pub treasury_compliance_account: Option<AccountData>,
 }
 
 impl Deref for ViolasClient {
@@ -93,7 +92,7 @@ impl ViolasClient {
         mnemonic_file: Option<String>,
         waypoint: Waypoint,
     ) -> Result<Self> {
-        let mut diem_client_proxy = ClientProxy::new(
+        let diem_client_proxy = ClientProxy::new(
             chain_id,
             url,
             diem_root_account_file,
@@ -106,29 +105,7 @@ impl ViolasClient {
             true,
         )?;
 
-        let treasury_compliance_account = if diem_root_account_file.is_empty() {
-            None
-        } else {
-            let treasury_compliance_account_key = generate_key::load_key(diem_root_account_file);
-            let key_pair = KeyPair::from(treasury_compliance_account_key);
-
-            let treasury_compliance_account_data = Self::get_account_data_from_address(
-                &mut diem_client_proxy.client,
-                treasury_compliance_account_address(),
-                true,
-                Some(key_pair),
-                None,
-            )?;
-
-            Some(treasury_compliance_account_data)
-        };
-
-        let client = ViolasClient {
-            diem_client_proxy,
-            treasury_compliance_account,
-        };
-
-        //client.create_bank_administrator_account()?;
+        let client = ViolasClient { diem_client_proxy };
 
         Ok(client)
     }
@@ -211,11 +188,11 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         ensure!(
-            self.treasury_compliance_account.is_some(),
+            self.tc_account.is_some(),
             "No treasury compliance account loaded"
         );
         //  create txn to submit
-        let sender = self.treasury_compliance_account.as_ref().unwrap();
+        let sender = self.tc_account.as_ref().unwrap();
         let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
 
         // submit txn
@@ -359,11 +336,11 @@ impl ViolasClient {
         //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_custom_script.mv",
         // )?;
         let script_bytes = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 49, 8, 60, 16, 0, 0,
-            0, 1, 0, 1, 0, 1, 6, 12, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
-            116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
-            111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
+            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 48, 8, 59, 16, 0, 0,
+            0, 1, 0, 1, 0, 1, 6, 12, 0, 31, 68, 105, 101, 109, 84, 114, 97, 110, 115, 97, 99, 116,
+            105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105, 111,
+            110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
         ];
 
         match self.diem_root_account {
@@ -381,8 +358,8 @@ impl ViolasClient {
         //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_publishing_module.mv",
         // )?;
         let script_bytes = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 5, 7, 12, 49, 8, 61, 16, 0, 0,
-            0, 1, 0, 1, 0, 2, 6, 12, 1, 0, 32, 76, 105, 98, 114, 97, 84, 114, 97, 110, 115, 97, 99,
+            161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 5, 7, 12, 48, 8, 60, 16, 0, 0,
+            0, 1, 0, 1, 0, 2, 6, 12, 1, 0, 31, 68, 105, 101, 109, 84, 114, 97, 110, 115, 97, 99,
             116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105,
             111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 109, 111, 100, 117, 108, 101,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 4, 11, 0, 10, 1, 17, 0, 2,
@@ -488,7 +465,7 @@ impl ViolasClient {
     ) -> Result<()> {
         let sender_opt = match sender_ref_id {
             VIOLAS_ROOT_ACCOUNT_ID => self.diem_root_account.as_ref(),
-            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => self.treasury_compliance_account.as_ref(),
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => self.tc_account.as_ref(),
             VIOLAS_TESTNET_DD_ACCOUNT_ID => self.testnet_designated_dealer_account.as_ref(),
             _ => self.accounts.get(sender_ref_id as usize),
         };
@@ -613,13 +590,10 @@ impl ViolasClient {
         currency_code: Vec<u8>,
         is_blocking: bool,
     ) -> Result<()> {
-        // let script_bytes = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/cppSdk/move/currencies/register_currency.mv",
-        // )?;
-        let script_bytes = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 14, 7, 24, 47, 8,
-            71, 16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 7, 6, 12, 3, 3, 1, 3, 3, 10, 2, 0, 1, 9, 0, 12,
-            76, 105, 98, 114, 97, 65, 99, 99, 111, 117, 110, 116, 33, 114, 101, 103, 105, 115, 116,
+        let script_bytecode = vec![
+            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 14, 7, 24, 46, 8,
+            70, 16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 7, 6, 12, 3, 3, 1, 3, 3, 10, 2, 0, 1, 9, 0, 11,
+            68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 33, 114, 101, 103, 105, 115, 116,
             101, 114, 95, 99, 117, 114, 114, 101, 110, 99, 121, 95, 119, 105, 116, 104, 95, 116,
             99, 95, 97, 99, 99, 111, 117, 110, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
             1, 1, 0, 1, 9, 11, 0, 10, 1, 10, 2, 10, 3, 10, 4, 10, 5, 11, 6, 56, 0, 2,
@@ -627,7 +601,7 @@ impl ViolasClient {
 
         // costruct register currency script
         let script = Script::new(
-            script_bytes,
+            script_bytecode,
             vec![type_tag],
             vec![
                 TransactionArgument::U64(exchange_rate_denom),
@@ -660,12 +634,12 @@ impl ViolasClient {
         // )?;
 
         let script_bytecode = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 8, 7, 18, 48, 8, 66,
-            16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 2, 6, 12, 5, 0, 1, 9, 0, 12, 76, 105, 98, 114, 97,
-            65, 99, 99, 111, 117, 110, 116, 34, 97, 100, 100, 95, 99, 117, 114, 114, 101, 110, 99,
-            121, 95, 102, 111, 114, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100,
-            101, 97, 108, 101, 114, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 4,
-            11, 0, 10, 1, 56, 0, 2,
+            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 8, 7, 18, 47, 8, 65,
+            16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 2, 6, 12, 5, 0, 1, 9, 0, 11, 68, 105, 101, 109, 65,
+            99, 99, 111, 117, 110, 116, 34, 97, 100, 100, 95, 99, 117, 114, 114, 101, 110, 99, 121,
+            95, 102, 111, 114, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100, 101,
+            97, 108, 101, 114, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 4, 11,
+            0, 10, 1, 56, 0, 2,
         ];
 
         // costruct register_currency_for_designated_dealer script
@@ -933,7 +907,7 @@ impl ViolasClient {
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.treasury_compliance_account {
+        match &self.tc_account {
             Some(_) => {
                 let script = transaction_builder::encode_create_parent_vasp_account_script(
                     type_tag,
@@ -1001,7 +975,7 @@ impl ViolasClient {
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.treasury_compliance_account {
+        match &self.tc_account {
             Some(_) => {
                 let script = transaction_builder::encode_create_designated_dealer_script(
                     type_tag,

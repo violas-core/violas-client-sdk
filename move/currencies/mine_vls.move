@@ -1,7 +1,7 @@
 script {
-    use 0x1::LibraAccount;
+    use 0x1::DiemAccount;
 
     fun main() {
-        LibraAccount::mine_vls();
+        DiemAccount::mine_vls();
     }
 }

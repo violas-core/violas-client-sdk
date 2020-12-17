@@ -1,5 +1,5 @@
 script {
-use 0x1::LibraAccount;
+use 0x1::DiemAccount;
 
 fun main<NewCurrency>(
     association: &signer,
@@ -11,7 +11,7 @@ fun main<NewCurrency>(
     currency_code: vector<u8>,
 )  {
 
-    LibraAccount::register_currency_with_tc_account<NewCurrency>(
+    DiemAccount::register_currency_with_tc_account<NewCurrency>(
         association, 
         exchange_rate_denom, 
         exchange_rate_num,

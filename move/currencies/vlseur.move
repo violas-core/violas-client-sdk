@@ -2,15 +2,15 @@ address 0x1 {
 
 module VLSEUR {
     use 0x1::Association;
-    use 0x1::Libra;
+    use 0x1::Diem;
     use 0x1::FixedPoint32;
 
     struct T { }
 
-    public fun initialize(account: &signer): (Libra::MintCapability<T>, Libra::BurnCapability<T>) {
+    public fun initialize(account: &signer): (Diem::MintCapability<T>, Diem::BurnCapability<T>) {
         Association::assert_is_association(account);
         // Register the EUR currency.
-        Libra::register_currency<T>(
+        Diem::register_currency<T>(
             account,
             FixedPoint32::create_from_rational(1, 2), // exchange rate to LBR
             false,   // is_synthetic

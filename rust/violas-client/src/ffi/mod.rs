@@ -1,7 +1,7 @@
 use crate::{violas_account, violas_client::ViolasClient, AccountAddress, AccountStatus};
 use anyhow::{format_err, Error};
 use cpp::cpp;
-use libra_types::{
+use diem_types::{
     account_config::CORE_CODE_ADDRESS, chain_id::ChainId,
     transaction::authenticator::AuthenticationKey, waypoint::Waypoint,
 };
@@ -629,14 +629,14 @@ namespace violas
 
                     match ret {
                         Ok(opt) => match opt {
-                            (Some(view), _version) => {
+                            Some(view) => {
                                 let json_currencies = serde_json::to_string(&view).unwrap();
                                 *out_json_string = CString::new(json_currencies)
                                     .expect("new reserves detail error")
                                     .into_raw();
                                 true
                             }
-                            (None, _) => {
+                            None => {
                                 set_last_error(format_err!(
                                     "no info for account {}",
                                     AccountAddress::new(*in_address)

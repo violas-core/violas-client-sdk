@@ -1,4 +1,4 @@
-use libra_types::{
+use diem_types::{
     account_address::AccountAddress, account_config::currency_info::CurrencyInfoResource,
     account_config::*,
 };

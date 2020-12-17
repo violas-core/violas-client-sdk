@@ -2,7 +2,7 @@ use anyhow::Result; //bail, ensure, format_err,
 use bytes::buf::BufExt as _;
 use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
-use libra_types::{chain_id::ChainId, waypoint::Waypoint};
+use diem_types::{chain_id::ChainId, waypoint::Waypoint};
 use std::{path::Path, str::FromStr, string::String, time::Duration};
 use structopt::StructOpt;
 use tokio::{
@@ -22,7 +22,7 @@ struct Args {
     #[structopt(short = "c")]
     pub chain_id: u8,
     /// url
-    #[structopt(short = "u")]
+    #[structopt(short = "u")]4
     pub url: String,
     /// mint key file with path
     #[structopt(short = "m", default_value = "")]
@@ -126,6 +126,8 @@ fn main() -> Result<()> {
             }
 
             println!("");
+
+            oracle.get_the_last_event()?;
         }
         Command::Test(args) => {
             task::block_in_place(|| -> Result<()> {

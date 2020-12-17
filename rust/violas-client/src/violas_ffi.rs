@@ -1,13 +1,13 @@
 //#[cfg(target_arch = "x86_64")]
 #[allow(non_snake_case)]
 pub mod x86_64 {
-    use crate::libra_client_proxy::{AccountEntry, IndexAndSequence};
+    use crate::diem_client_proxy::{AccountEntry, IndexAndSequence};
     //use crate::move_compiler;
     use crate::violas_account::*;
     use crate::violas_client::ViolasClient;
     use crate::AccountStatus;
     use anyhow::{bail, format_err, Error};
-    use libra_types::{
+    use diem_types::{
         access_path::AccessPath, account_address::AccountAddress,
         account_config::CORE_CODE_ADDRESS, account_config::*, account_state::AccountState,
         chain_id::ChainId, transaction::authenticator::AuthenticationKey, waypoint::Waypoint,
@@ -39,7 +39,7 @@ pub mod x86_64 {
         });
     }
     #[no_mangle]
-    pub extern "C" fn libra_get_last_error() -> *const c_char {
+    pub extern "C" fn diem_get_last_error() -> *const c_char {
         LAST_ERROR.with(|prev| {
             let err = prev.borrow_mut();
             CString::new(err.clone()).unwrap().into_raw()
@@ -49,7 +49,7 @@ pub mod x86_64 {
     /// free rust string
     ///
     #[no_mangle]
-    pub extern "C" fn libra_free_string(s: *mut c_char) {
+    pub extern "C" fn diem_free_string(s: *mut c_char) {
         unsafe {
             if s.is_null() {
                 return;
@@ -58,7 +58,7 @@ pub mod x86_64 {
         };
     }
     //
-    //  create libra client proxy
+    //  create diem client proxy
     //
     #[no_mangle]
     pub extern "C" fn violas_create_client(
@@ -108,14 +108,14 @@ pub mod x86_64 {
     /// Destory the raw ViolasClient pointer
     ///
     #[no_mangle]
-    pub extern "C" fn libra_destory_client_proxy(raw_ptr: u64) {
+    pub extern "C" fn diem_destory_client_proxy(raw_ptr: u64) {
         if raw_ptr != 0 {
             let _proxy = unsafe { Box::from_raw(raw_ptr as *mut ViolasClient) };
         }
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_test_validator_connection(raw_ptr: u64) -> bool {
+    pub extern "C" fn diem_test_validator_connection(raw_ptr: u64) -> bool {
         let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
         let ret = client.test_validator_connection();
         //return the boolean result
@@ -126,7 +126,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_create_next_address(_raw_ptr: u64, _sync_with_validator: bool) -> bool {
+    pub extern "C" fn diem_create_next_address(_raw_ptr: u64, _sync_with_validator: bool) -> bool {
         // let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
         // let (address, _) = client.wallet.new_address().unwrap();
@@ -141,7 +141,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_create_next_account(
+    pub extern "C" fn diem_create_next_account(
         raw_ptr: u64,
         sync_with_validator: bool,
     ) -> AccountAndIndex {
@@ -183,7 +183,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_get_all_accounts(raw_ptr: u64) -> Accounts {
+    pub extern "C" fn diem_get_all_accounts(raw_ptr: u64) -> Accounts {
         //
         let client = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
         let mut accounts: Vec<Account> = Vec::new();
@@ -217,7 +217,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_free_all_accounts_buf(buf: Accounts) {
+    pub extern "C" fn diem_free_all_accounts_buf(buf: Accounts) {
         //
         let s = unsafe { std::slice::from_raw_parts_mut(buf.data, buf.len as usize) };
         let s = s.as_mut_ptr();
@@ -234,7 +234,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_get_balance(
+    pub extern "C" fn diem_get_balance(
         raw_ptr: u64,
         address: &[c_uchar; LENGTH],
         out_balance: *mut u64,
@@ -267,7 +267,7 @@ pub mod x86_64 {
                 ret.unwrap()
             } else {
                 set_last_error(format_err!(
-                    "catch panic at function 'libra_get_balance' !'"
+                    "catch panic at function 'diem_get_balance' !'"
                 ));
                 false
             }
@@ -275,7 +275,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_get_sequence_number(
+    pub extern "C" fn diem_get_sequence_number(
         raw_ptr: u64,
         address: &[c_uchar; LENGTH],
         result: &mut u64,
@@ -307,14 +307,14 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!(
-                "catch panic at function 'libra_get_sequence_number' !"
+                "catch panic at function 'diem_get_sequence_number' !"
             ));
             false
         }
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_mint_coins(
+    pub extern "C" fn diem_mint_coins(
         raw_ptr: u64,
         index: u64,
         num_coins: u64,
@@ -344,7 +344,7 @@ pub mod x86_64 {
                 }
             }
         } else {
-            set_last_error(format_err!("catch panic at function (libra_mint_coins) !"));
+            set_last_error(format_err!("catch panic at function (diem_mint_coins) !"));
             false
         }
     }
@@ -357,7 +357,7 @@ pub mod x86_64 {
     /// Transfer num_coins from sender account to receiver. If is_blocking = true,
     /// it will keep querying validator till the sequence number is bumped up in validator.
     #[no_mangle]
-    pub extern "C" fn libra_transfer_coins_int(
+    pub extern "C" fn diem_transfer_coins_int(
         raw_ptr: u64,
         sender_account_ref_id: usize,
         receiver_addr: &[u8; 16],
@@ -375,7 +375,7 @@ pub mod x86_64 {
             client.transfer_currency(
                 sender_account_ref_id,
                 &receiver_address,
-                lbr_type_tag(),
+                xdx_type_tag(),
                 micro_coins,
                 None,
                 None,
@@ -407,14 +407,14 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!(
-                "catch panic at function 'libra_transfer_coins_int' !"
+                "catch panic at function 'diem_transfer_coins_int' !"
             ));
             false
         }
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_compile(
+    pub extern "C" fn diem_compile(
         raw_ptr: u64,
         account_index_or_addr: *const c_char,
         script_path: *const c_char,
@@ -490,7 +490,7 @@ pub mod x86_64 {
                 }
             }
         } else {
-            set_last_error(format_err!("catch panic at function (libra_compile) !"));
+            set_last_error(format_err!("catch panic at function (diem_compile) !"));
             false
         }
     }
@@ -569,7 +569,7 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!(
-                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+                "panic at function (diem_get_committed_txn_by_acc_seq) !"
             ));
             false
         }
@@ -582,7 +582,7 @@ pub mod x86_64 {
     }
 
     // #[no_mangle]
-    // pub extern "C" fn libra_execute_script(
+    // pub extern "C" fn diem_execute_script(
     //     raw_ptr: u64,
     //     account_index: u64,
     //     script_file: *const c_char,
@@ -617,7 +617,7 @@ pub mod x86_64 {
     //         }
     //     } else {
     //         set_last_error(format_err!(
-    //             "catch panic at function 'libra_execute_script' !"
+    //             "catch panic at function 'diem_execute_script' !"
     //         ));
     //         false
     //     }
@@ -626,7 +626,7 @@ pub mod x86_64 {
     ///
     ///
     #[no_mangle]
-    pub extern "C" fn libra_get_committed_txn_by_acc_seq(
+    pub extern "C" fn diem_get_committed_txn_by_acc_seq(
         raw_ptr: u64,
         address: &[c_uchar; LENGTH],
         sequence_num: u64,
@@ -676,7 +676,7 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!(
-                "panic at function \"libra_get_committed_txn_by_acc_seq\" !"
+                "panic at function \"diem_get_committed_txn_by_acc_seq\" !"
             ));
         }
 
@@ -697,7 +697,7 @@ pub mod x86_64 {
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_get_txn_by_range(
+    pub extern "C" fn diem_get_txn_by_range(
         raw_ptr: u64,
         start_version: u64,
         limit: u64,
@@ -744,13 +744,13 @@ pub mod x86_64 {
         if result.is_ok() {
             true
         } else {
-            set_last_error(format_err!("panic at function libra_get_txn_by_range"));
+            set_last_error(format_err!("panic at function diem_get_txn_by_range"));
             false
         }
     }
 
     #[no_mangle]
-    pub extern "C" fn libra_free_all_txn_events(all_txn_events: *mut all_txn_events) {
+    pub extern "C" fn diem_free_all_txn_events(all_txn_events: *mut all_txn_events) {
         if all_txn_events.is_null() {
             return;
         }
@@ -763,14 +763,14 @@ pub mod x86_64 {
             );
 
             for txn_events in vec_txn_events {
-                libra_free_string(txn_events.transaction);
-                libra_free_string(txn_events.events);
+                diem_free_string(txn_events.transaction);
+                diem_free_string(txn_events.events);
             }
         }
     }
 
     // #[no_mangle]
-    // pub extern "C" fn libra_get_account_resource(
+    // pub extern "C" fn diem_get_account_resource(
     //     raw_ptr: u64,
     //     account_index_or_addr: *const c_char,
     //     c_account_path_addr: *const c_char,
@@ -824,14 +824,14 @@ pub mod x86_64 {
     //             }
     //         }
     //     } else {
-    //         set_last_error(format_err!("panic at libra_get_account_resource()"));
+    //         set_last_error(format_err!("panic at diem_get_account_resource()"));
     //         false
     //     }
     // }
 
     ///  Allow executing arbitrary script in the network.
     #[no_mangle]
-    pub fn libra_enable_custom_script(raw_ptr: u64) -> bool {
+    pub fn diem_enable_custom_script(raw_ptr: u64) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
             let proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
@@ -848,15 +848,15 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!(
-                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+                "panic at function (diem_get_committed_txn_by_acc_seq) !"
             ));
             false
         }
     }
 
-    ///   Only allow executing predefined script in the move standard library in the network.
+    ///   Only allow executing predefined script in the move standard diemry in the network.
     #[no_mangle]
-    pub fn libra_disable_custom_script(raw_ptr: u64) -> bool {
+    pub fn diem_disable_custom_script(raw_ptr: u64) -> bool {
         let result = panic::catch_unwind(|| -> Result<(), Error> {
             let _proxy = unsafe { &mut *(raw_ptr as *mut ViolasClient) };
 
@@ -874,7 +874,7 @@ pub mod x86_64 {
             }
         } else {
             set_last_error(format_err!(
-                "panic at function (libra_get_committed_txn_by_acc_seq) !"
+                "panic at function (diem_get_committed_txn_by_acc_seq) !"
             ));
             false
         }
@@ -901,14 +901,14 @@ pub mod x86_64 {
             );
 
             for str in strs {
-                libra_free_string(str);
+                diem_free_string(str);
             }
         }
     }
 
     /// get events
     #[no_mangle]
-    pub fn libra_get_events(
+    pub fn diem_get_events(
         raw_client: u64,
         address: &[c_uchar; LENGTH],
         event_type: bool, //ture for sent, false for received
@@ -962,7 +962,7 @@ pub mod x86_64 {
             if ret.is_ok() {
                 ret.unwrap()
             } else {
-                set_last_error(format_err!("catch panic at function 'libra_get_events' !'"));
+                set_last_error(format_err!("catch panic at function 'diem_get_events' !'"));
                 false
             }
         }

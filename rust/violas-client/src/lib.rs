@@ -1,19 +1,19 @@
 #![recursion_limit = "4096"]
 
 pub mod ffi;
-mod libra_client;
-pub mod libra_client_proxy;
+mod diem_client;
+pub mod diem_client_proxy;
 //pub mod move_compiler;
 pub mod violas_account;
 pub mod violas_client;
-pub mod violas_ffi;
+//pub mod violas_ffi;
 
-use libra_crypto::{
+use diem_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
     traits::ValidCryptoMaterialStringExt,
 };
-use libra_types::account_address::AccountAddress;
+use diem_types::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
 
 //extern crate cpp;

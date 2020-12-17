@@ -8,19 +8,19 @@
             "type": "lldb",
             "request": "launch",
             "name": "violas-oracle",
-            "program": "${workspaceFolder}/rust/oracle-service/target/debug/violas-oracle",
+            "program": "${workspaceFolder}/rust/violas-oracle/target/debug/violas-oracle",
             "args": [
                 "update",
                 "-u",
-                "http://localhost:8080",
+                "http://localhost:40947",
                 "-m",
                 "/tmp/libra/mint.key",
                 "-w",
-                "0:170cc0c698d8b673a3b5fe884777f1144712ba89bffbde58d43483b9d29da154",
+                "0:1f1199a5912f06cf12f70b6a7f4b72573a7a28b83cb176b48810c8fb7652d62f",
                 "-c",
                 "4",
                 "-n",
-                "${workspaceFolder}/rust/oracle-service/target/debug/oracle.m"
+                "/home/hunter/Projects/work/bin/Violas0.6.2/mnemonic/oracle.mne"
             ],
             "cwd": "${workspaceFolder}"
         },

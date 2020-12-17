@@ -1,7 +1,8 @@
 use anyhow::Result;
-use libra_types::{
+use diem_types::{
+    access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::CORE_CODE_ADDRESS, //libra_root_address
+    account_config::CORE_CODE_ADDRESS,
     event::EventHandle,
     transaction::{authenticator::AuthenticationKey, TransactionArgument},
 };
@@ -210,5 +211,19 @@ impl Oracle {
         };
         println!("{} : {}", currency_code, rate.unwrap());
         Ok(rate)
+    }
+
+    /// Print the last Oracle update event
+    pub fn get_the_last_event(&mut self) -> Result<()> {
+        let sender = oracle_admin_address();
+
+        let tag_path =
+            make_struct_tag(&CORE_CODE_ADDRESS, "Oracle", "ExchangeRate", vec![]).access_vector();
+
+        let access_path = AccessPath::new(sender, tag_path);
+        let sn = self.client.accounts[0].sequence_number;
+
+        self.client.query_events_ex(access_path, sn, 10)?;
+        Ok(())
     }
 }

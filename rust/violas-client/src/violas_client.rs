@@ -1,24 +1,23 @@
 use crate::{
-    libra_client::LibraClient,
-    libra_client_proxy::ClientProxy,
+    diem_client::DiemClient,
+    diem_client_proxy::ClientProxy,
     violas_account::CurrencyInfoViewEx, //make_currency_tag
     AccountData,                        //AccountStatus
     AccountStatus,
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
-use libra_crypto::{
+use diem_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey}, //Ed25519Signature
     test_utils::KeyPair,
 };
-use libra_json_rpc_client::views::{
-    AccountView, EventView, MetadataView, TransactionView, VMStatusView,
-};
-use libra_types::{
+use diem_json_rpc_client::async_client::{types as jsonrpc, WaitForTransactionError};
+
+use diem_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{
-        libra_root_address, treasury_compliance_account_address, BalanceResource,
-        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH, LBR_NAME,
+        diem_root_address, treasury_compliance_account_address, BalanceResource,
+        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
     },
     account_state::AccountState,
     chain_id::ChainId,
@@ -32,11 +31,10 @@ use libra_types::{
         SignedTransaction,
         TransactionArgument,
         TransactionPayload,
-        Version,
     },
     waypoint::Waypoint,
 };
-use libra_wallet::WalletLibrary;
+use diem_wallet::WalletLibrary;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::de::DeserializeOwned;
 use std::{
@@ -46,7 +44,7 @@ use std::{
     ops::{Deref, DerefMut},
     path::Path,
     str::{self},
-    thread, time,
+    time,
 };
 use transaction_builder;
 
@@ -63,7 +61,7 @@ pub const VIOLAS_TESTNET_DD_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 2;
 /// struct ViolasClient
 ///
 pub struct ViolasClient {
-    libra_client_proxy: ClientProxy,
+    diem_client_proxy: ClientProxy,
     /// Account used TreasuryCompliance operations (e.g., minting)
     pub treasury_compliance_account: Option<AccountData>,
 }
@@ -72,13 +70,13 @@ impl Deref for ViolasClient {
     type Target = ClientProxy;
 
     fn deref(&self) -> &ClientProxy {
-        &self.libra_client_proxy
+        &self.diem_client_proxy
     }
 }
 
 impl DerefMut for ViolasClient {
     fn deref_mut(&mut self) -> &mut ClientProxy {
-        &mut self.libra_client_proxy
+        &mut self.diem_client_proxy
     }
 }
 
@@ -87,7 +85,7 @@ impl ViolasClient {
     pub fn new(
         chain_id: ChainId,
         url: &str,
-        libra_root_account_file: &str,
+        diem_root_account_file: &str,
         tc_account_file: &str,
         testnet_designated_dealer_account_file: &str,
         sync_on_wallet_recovery: bool,
@@ -95,26 +93,27 @@ impl ViolasClient {
         mnemonic_file: Option<String>,
         waypoint: Waypoint,
     ) -> Result<Self> {
-        let mut libra_client_proxy = ClientProxy::new(
+        let mut diem_client_proxy = ClientProxy::new(
             chain_id,
             url,
-            libra_root_account_file,
+            diem_root_account_file,
             tc_account_file,
             testnet_designated_dealer_account_file,
             sync_on_wallet_recovery,
             faucet_server,
             mnemonic_file,
             waypoint,
+            true,
         )?;
 
-        let treasury_compliance_account = if libra_root_account_file.is_empty() {
+        let treasury_compliance_account = if diem_root_account_file.is_empty() {
             None
         } else {
-            let treasury_compliance_account_key = generate_key::load_key(libra_root_account_file);
+            let treasury_compliance_account_key = generate_key::load_key(diem_root_account_file);
             let key_pair = KeyPair::from(treasury_compliance_account_key);
 
             let treasury_compliance_account_data = Self::get_account_data_from_address(
-                &mut libra_client_proxy.client,
+                &mut diem_client_proxy.client,
                 treasury_compliance_account_address(),
                 true,
                 Some(key_pair),
@@ -125,7 +124,7 @@ impl ViolasClient {
         };
 
         let client = ViolasClient {
-            libra_client_proxy,
+            diem_client_proxy,
             treasury_compliance_account,
         };
 
@@ -135,8 +134,9 @@ impl ViolasClient {
     }
 
     /// Test JSON RPC client connection with validator.
-    pub fn test_validator_connection(&mut self) -> Result<MetadataView> {
-        self.client.get_metadata()
+    pub fn test_connection(&mut self) -> Result<()> {
+        self.test_validator_connection()?;
+        Ok(())
     }
 
     /// Returns the account index that should be used by user to reference this account
@@ -145,9 +145,9 @@ impl ViolasClient {
         address: Option<AccountAddress>,
         sync_with_validator: bool,
     ) -> Result<(AccountAddress, usize)> {
-        let (auth_key, child_number) = self.libra_client_proxy.wallet.new_address()?;
+        let (auth_key, child_number) = self.diem_client_proxy.wallet.new_address()?;
         let private_key = self
-            .libra_client_proxy
+            .diem_client_proxy
             .wallet
             .get_private_key_by_child_num(child_number)?;
 
@@ -167,27 +167,21 @@ impl ViolasClient {
         Ok((addr_index.address, addr_index.index))
     }
 
-    pub fn association_transaction_with_local_libra_root_account(
+    pub fn association_transaction_with_local_diem_root_account(
         &mut self,
         payload: TransactionPayload,
         is_blocking: bool,
     ) -> Result<()> {
         ensure!(
-            self.libra_root_account.is_some(),
+            self.diem_root_account.is_some(),
             "No assoc root account loaded"
         );
-        let sender = self.libra_root_account.as_ref().unwrap();
-        let sender_address = sender.address;
+        let sender = self.diem_root_account.as_ref().unwrap();
         let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
-        let mut sender_mut = self.libra_client_proxy.libra_root_account.as_mut().unwrap();
-        self.libra_client_proxy
-            .client
-            .submit_transaction(Some(&mut sender_mut), txn)?;
+
+        self.diem_client_proxy.client.submit_transaction(&txn)?;
         if is_blocking {
-            self.wait_for_transaction(
-                sender_address,
-                self.libra_root_account.as_ref().unwrap().sequence_number,
-            )?;
+            self.wait_for_transaction(&txn)?;
         }
         Ok(())
     }
@@ -202,24 +196,11 @@ impl ViolasClient {
             "No testnet Designated Dealer account loaded"
         );
         let sender = self.testnet_designated_dealer_account.as_ref().unwrap();
-        let sender_address = sender.address;
         let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
-        let mut sender_mut = self
-            .libra_client_proxy
-            .testnet_designated_dealer_account
-            .as_mut()
-            .unwrap();
-        self.libra_client_proxy
-            .client
-            .submit_transaction(Some(&mut sender_mut), txn)?;
+
+        self.diem_client_proxy.client.submit_transaction(&txn)?;
         if is_blocking {
-            self.wait_for_transaction(
-                sender_address,
-                self.testnet_designated_dealer_account
-                    .as_ref()
-                    .unwrap()
-                    .sequence_number,
-            )?;
+            self.wait_for_transaction(&txn)?;
         }
         Ok(())
     }
@@ -235,20 +216,14 @@ impl ViolasClient {
         );
         //  create txn to submit
         let sender = self.treasury_compliance_account.as_ref().unwrap();
-        let sender_address = sender.address;
         let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
 
         // submit txn
-        let mut sender_mut = self.treasury_compliance_account.as_mut().unwrap();
-        let resp = self
-            .libra_client_proxy
-            .client
-            .submit_transaction(Some(&mut sender_mut), txn)?;
-        let sequence_number = sender_mut.sequence_number;
+        let resp = self.diem_client_proxy.client.submit_transaction(&txn)?;
 
         // wait for txn
         if is_blocking {
-            self.wait_for_transaction(sender_address, sequence_number)?;
+            self.wait_for_transaction(&txn)?;
         }
         Ok(resp)
     }
@@ -273,7 +248,7 @@ impl ViolasClient {
             sender_account.sequence_number,
             max_gas_amount.unwrap_or(MAX_GAS_AMOUNT),
             gas_unit_price.unwrap_or(GAS_UNIT_PRICE),
-            gas_currency_code.unwrap_or_else(|| LBR_NAME.to_owned()),
+            gas_currency_code.unwrap_or_else(|| "VLS".to_string()),
             TX_EXPIRATION,
             self.chain_id,
         )
@@ -283,18 +258,18 @@ impl ViolasClient {
     /// Sync with validator for account sequence number in case it is already created on chain.
     /// This assumes we have a very low probability of mnemonic word conflict.
     fn get_account_data_from_address(
-        client: &mut LibraClient,
+        client: &mut DiemClient,
         address: AccountAddress,
         sync_with_validator: bool,
         key_pair: Option<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
         authentication_key_opt: Option<Vec<u8>>,
     ) -> Result<AccountData> {
         let (sequence_number, authentication_key, status) = if sync_with_validator {
-            match client.get_account(address, true) {
-                Ok(resp) => match resp.0 {
+            match client.get_account(&address) {
+                Ok(resp) => match resp {
                     Some(account_view) => (
                         account_view.sequence_number,
-                        Some(account_view.authentication_key.into_bytes()?),
+                        Some(account_view.authentication_key.into_bytes()),
                         AccountStatus::Persisted,
                     ),
                     None => (0, authentication_key_opt, AccountStatus::Local),
@@ -315,39 +290,23 @@ impl ViolasClient {
         })
     }
     /// Waits for the next transaction for a specific address and prints it
-    pub fn wait_for_transaction(
-        &mut self,
-        account: AccountAddress,
-        sequence_number: u64,
-    ) -> Result<()> {
-        let mut max_iterations = 5000;
-        loop {
-            match self
-                .client
-                .get_txn_by_acc_seq(account, sequence_number - 1, true)
-            {
-                Ok(Some(txn_view)) => {
-                    if txn_view.vm_status == VMStatusView::Executed {
-                        break Ok(());
-                    } else {
-                        break Err(format_err!(
-                            "transaction failed to execute, status: {:?}!",
-                            txn_view.vm_status
-                        ));
-                    }
-                }
-                Err(e) => {
-                    bail!("Response with error: {:?}", e);
-                }
-                _ => {
-                    //print!(".");
-                }
-            }
-            max_iterations -= 1;
-            if max_iterations == 0 {
-                bail!("wait_for_transaction timeout");
-            }
-            thread::sleep(time::Duration::from_millis(10));
+    pub fn wait_for_transaction(&mut self, txn: &SignedTransaction) -> Result<()> {
+        //let (tx, rx) = std::sync::mpsc::channel();
+        let timeout_secs = time::Duration::from_secs(15);
+
+        let ret = self.client.wait_for_transaction(txn, timeout_secs);
+        let ac_update = self.get_account_and_update(&txn.sender());
+
+        if let Err(err) = ac_update {
+            bail!("account update failed: {}", err);
+        }
+        match ret {
+            Ok(_) => Ok(()),
+            Err(WaitForTransactionError::TransactionExecutionFailed(txn)) => bail!(format_err!(
+                "transaction failed to execute; status: {:?}!",
+                txn.vm_status
+            )),
+            Err(e) => Err(anyhow::Error::new(e)),
         }
     }
 
@@ -361,7 +320,7 @@ impl ViolasClient {
         gas_currency_type: Option<TypeTag>,
         is_blocking: bool,
     ) -> Result<()> {
-        let proxy: &mut ClientProxy = &mut self.libra_client_proxy;
+        let proxy: &mut ClientProxy = &mut self.diem_client_proxy;
         let sender = proxy
             .accounts
             .get(account_ref_id)
@@ -380,17 +339,10 @@ impl ViolasClient {
             gas_currency_code,
         )?;
 
-        let sender_mut = proxy
-            .accounts
-            .get_mut(account_ref_id)
-            .ok_or_else(|| format_err!("Unable to find sender account: {}", account_ref_id))?;
-
-        proxy.client.submit_transaction(Some(sender_mut), txn)?;
-        let sender_address = sender_mut.address;
-        let sender_sequence = sender_mut.sequence_number;
+        proxy.client.submit_transaction(&txn)?;
 
         if is_blocking {
-            self.wait_for_transaction(sender_address, sender_sequence)
+            self.wait_for_transaction(&txn)
         } else {
             Ok(())
         }
@@ -414,8 +366,8 @@ impl ViolasClient {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
         ];
 
-        match self.libra_root_account {
-            Some(_) => self.association_transaction_with_local_libra_root_account(
+        match self.diem_root_account {
+            Some(_) => self.association_transaction_with_local_diem_root_account(
                 TransactionPayload::Script(Script::new(script_bytes, vec![], vec![])),
                 is_blocking,
             ),
@@ -436,8 +388,8 @@ impl ViolasClient {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 4, 11, 0, 10, 1, 17, 0, 2,
         ];
 
-        match self.libra_root_account {
-            Some(_) => self.association_transaction_with_local_libra_root_account(
+        match self.diem_root_account {
+            Some(_) => self.association_transaction_with_local_diem_root_account(
                 TransactionPayload::Script(Script::new(
                     script_bytes,
                     vec![],
@@ -453,10 +405,10 @@ impl ViolasClient {
     ///
     pub fn publish_module(&mut self, sender_ref_id: usize, module_file_name: &str) -> Result<()> {
         let sender = if sender_ref_id as u64 == u64::MAX {
-            if self.libra_root_account.is_none() {
+            if self.diem_root_account.is_none() {
                 bail!("No faucet account loaded");
             }
-            self.libra_root_account.as_ref().unwrap()
+            self.diem_root_account.as_ref().unwrap()
         } else {
             self.accounts.get(sender_ref_id as usize).unwrap()
         };
@@ -464,22 +416,16 @@ impl ViolasClient {
         let module_bytes = fs::read(module_file_name)?;
         let program = TransactionPayload::Module(Module::new(module_bytes));
 
-        let sender_address = sender.address;
-        let sequence_number = sender.sequence_number;
         let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
-        let proxy = &mut self.libra_client_proxy;
+        let proxy = &mut self.diem_client_proxy;
 
         let resp = if sender_ref_id as u64 == u64::MAX {
-            proxy
-                .client
-                .submit_transaction(proxy.libra_root_account.as_mut(), txn)
+            proxy.client.submit_transaction(&txn)
         } else {
-            proxy
-                .client
-                .submit_transaction(proxy.accounts.get_mut(sender_ref_id as usize), txn)
+            proxy.client.submit_transaction(&txn)
         };
 
-        self.wait_for_transaction(sender_address, sequence_number + 1)?;
+        self.wait_for_transaction(&txn)?;
         resp
     }
 
@@ -541,7 +487,7 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         let sender_opt = match sender_ref_id {
-            VIOLAS_ROOT_ACCOUNT_ID => self.libra_root_account.as_ref(),
+            VIOLAS_ROOT_ACCOUNT_ID => self.diem_root_account.as_ref(),
             VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => self.treasury_compliance_account.as_ref(),
             VIOLAS_TESTNET_DD_ACCOUNT_ID => self.testnet_designated_dealer_account.as_ref(),
             _ => self.accounts.get(sender_ref_id as usize),
@@ -558,36 +504,12 @@ impl ViolasClient {
             None,
             None,
         )?;
-        let sender_address = sender.address;
-        let sequence_number = sender.sequence_number;
-        let proxy = &mut self.libra_client_proxy;
+        let proxy = &mut self.diem_client_proxy;
 
-        match sender_ref_id {
-            VIOLAS_ROOT_ACCOUNT_ID => {
-                proxy
-                    .client
-                    .submit_transaction(proxy.libra_root_account.as_mut(), txn)?;
-            }
-
-            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => {
-                proxy
-                    .client
-                    .submit_transaction(self.treasury_compliance_account.as_mut(), txn)?;
-            }
-            VIOLAS_TESTNET_DD_ACCOUNT_ID => {
-                proxy
-                    .client
-                    .submit_transaction(proxy.testnet_designated_dealer_account.as_mut(), txn)?;
-            }
-            _ => {
-                proxy
-                    .client
-                    .submit_transaction(proxy.accounts.get_mut(sender_ref_id as usize), txn)?;
-            }
-        };
+        proxy.client.submit_transaction(&txn)?;
 
         if is_blocking {
-            self.wait_for_transaction(sender_address, sequence_number + 1)
+            self.wait_for_transaction(&txn)
         } else {
             Ok(())
         }
@@ -634,7 +556,7 @@ impl ViolasClient {
             let position = 0x1F; //module_byte_code.
             module_byte_code[position - 1] = module_size;
             let head = &module_byte_code[..position]; //from begin to index
-            let tail = &module_byte_code[position + 5..]; //skip LIBRA from current to end
+            let tail = &module_byte_code[position + 5..]; //skip diem from current to end
             [head, &module_name[..], tail].concat()
         } else if module_size == 6 {
             let mut module_byte_code = vec![
@@ -663,14 +585,14 @@ impl ViolasClient {
         //     //.replace("VLS", currency_code);
 
         //     let compiler = Compiler {
-        //         address: libra_types::account_config::CORE_CODE_ADDRESS,
+        //         address: diem_types::account_config::CORE_CODE_ADDRESS,
         //         extra_deps: vec![],
         //         ..Compiler::default()
         //     };
         //     compiler.into_module_blob("file_name", code.as_str())?
         // };
-        match self.libra_root_account {
-            Some(_) => self.association_transaction_with_local_libra_root_account(
+        match self.diem_root_account {
+            Some(_) => self.association_transaction_with_local_diem_root_account(
                 TransactionPayload::Module(Module::new(module_byte_code)),
                 true,
             ),
@@ -717,8 +639,8 @@ impl ViolasClient {
             ],
         );
 
-        match self.libra_root_account {
-            Some(_) => self.association_transaction_with_local_libra_root_account(
+        match self.diem_root_account {
+            Some(_) => self.association_transaction_with_local_diem_root_account(
                 TransactionPayload::Script(script),
                 is_blocking,
             ),
@@ -753,7 +675,7 @@ impl ViolasClient {
             vec![TransactionArgument::Address(dd_address)],
         );
 
-        match &self.libra_root_account {
+        match &self.diem_root_account {
             Some(_) => {
                 // add currency for testnet dd account
                 self.association_transaction_with_local_tc_account(
@@ -772,7 +694,7 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         if account_ref_id == usize::MAX {
-            match &self.libra_root_account {
+            match &self.diem_root_account {
                 Some(_) => {
                     let script =
                         transaction_builder::encode_add_currency_to_account_script(type_tag);
@@ -824,7 +746,7 @@ impl ViolasClient {
             )
         };
 
-        match &self.libra_root_account {
+        match &self.diem_root_account {
             Some(_faucet) => self.association_transaction_with_local_tc_account(
                 TransactionPayload::Script(script),
                 is_blocking,
@@ -871,13 +793,13 @@ impl ViolasClient {
         currency_tag: TypeTag,
         address: AccountAddress,
     ) -> Result<u64> {
-        if let (Some(blob), _) = self.client.get_account_state_blob(address)? {
+        if let (Some(blob), _) = self.client.get_account_state_blob(&address)? {
             let account_state = AccountState::try_from(&blob)?;
             let res_path = BalanceResource::access_path_for(currency_tag);
 
             match account_state.get(&res_path) {
                 Some(bytes) => {
-                    let bal_res: BalanceResource = lcs::from_bytes(bytes).unwrap();
+                    let bal_res: BalanceResource = bcs::from_bytes(bytes).unwrap();
                     Ok(bal_res.coin())
                 }
                 None => bail!("No data for {:?}", address),
@@ -889,7 +811,7 @@ impl ViolasClient {
 
     ///get currency info
     pub fn get_all_currency_info(&mut self) -> Result<Vec<CurrencyInfoViewEx>> {
-        if let (Some(blob), _) = self.client.get_account_state_blob(libra_root_address())? {
+        if let (Some(blob), _) = self.client.get_account_state_blob(&diem_root_address())? {
             let account_state = AccountState::try_from(&blob)?;
             Ok(account_state
                 .get_registered_currency_info_resources()?
@@ -897,7 +819,7 @@ impl ViolasClient {
                 .map(|info| CurrencyInfoViewEx::from(info))
                 .collect())
         } else {
-            bail!("get account state blob error for libra root address ");
+            bail!("get account state blob error for diem root address ");
         }
     }
 
@@ -911,10 +833,10 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         if account_ref_id == u64::MAX {
-            match &self.libra_root_account {
+            match &self.diem_root_account {
                 Some(_) => {
                     let script = transaction_builder::encode_preburn_script(type_tag, amount);
-                    self.association_transaction_with_local_libra_root_account(
+                    self.association_transaction_with_local_diem_root_account(
                         TransactionPayload::Script(script),
                         is_blocking,
                     )
@@ -943,14 +865,14 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         if account_ref_id == u64::MAX {
-            match &self.libra_root_account {
+            match &self.diem_root_account {
                 Some(_) => {
                     let script = transaction_builder::encode_burn_script(
                         type_tag,
                         sliding_nonce,
                         preburn_address,
                     );
-                    self.association_transaction_with_local_libra_root_account(
+                    self.association_transaction_with_local_diem_root_account(
                         TransactionPayload::Script(script),
                         is_blocking,
                     )
@@ -982,7 +904,7 @@ impl ViolasClient {
         human_name: Vec<u8>,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.libra_root_account {
+        match &self.diem_root_account {
             Some(_) => {
                 let script = transaction_builder::encode_create_validator_account_script(
                     sliding_nonce,
@@ -990,7 +912,7 @@ impl ViolasClient {
                     auth_key_prefix,
                     human_name,
                 );
-                self.association_transaction_with_local_libra_root_account(
+                self.association_transaction_with_local_diem_root_account(
                     TransactionPayload::Script(script),
                     is_blocking,
                 )
@@ -1043,7 +965,7 @@ impl ViolasClient {
         initial_balance: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        // match &self.libra_root_account {
+        // match &self.diem_root_account {
         //     Some(_) => {}
         //     None => unimplemented!(),
         // }
@@ -1146,11 +1068,11 @@ impl ViolasClient {
         address: &AccountAddress,
         tag_path: &StructTag,
     ) -> Result<Option<T>> {
-        if let (Some(blob), _) = self.client.get_account_state_blob(address.clone())? {
+        if let (Some(blob), _) = self.client.get_account_state_blob(&address)? {
             let account_state = AccountState::try_from(&blob)?;
-            let access_path = AccessPath::resource_access_vec(tag_path);
+            let access_path = AccessPath::resource_access_vec(tag_path.clone());
 
-            let resource = account_state.get_resource(&access_path.to_vec())?;
+            let resource = account_state.get_resource_impl(&access_path.to_vec())?;
             Ok(resource)
         } else {
             Ok(None)
@@ -1165,7 +1087,7 @@ impl ViolasClient {
         amount: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.libra_root_account {
+        match &self.diem_root_account {
             Some(_) => {
                 let script = transaction_builder::encode_peer_to_peer_with_metadata_script(
                     currency_tag,
@@ -1259,7 +1181,7 @@ impl ViolasClient {
             bail!("Specified output file path is a directory");
         }
 
-        let encoded = lcs::to_bytes(
+        let encoded = bcs::to_bytes(
             &self.accounts[account_index]
                 .key_pair
                 .as_ref()
@@ -1276,8 +1198,8 @@ impl ViolasClient {
     pub fn query_account_info(
         &mut self,
         address: AccountAddress,
-    ) -> Result<(Option<AccountView>, Version)> {
-        let account = self.client.get_account(address, true)?;
+    ) -> Result<Option<jsonrpc::Account>> {
+        let account = self.client.get_account(&address)?;
 
         Ok(account)
     }
@@ -1288,9 +1210,9 @@ impl ViolasClient {
         address: AccountAddress,
         sequence_number: u64,
         fetching_events: bool,
-    ) -> Result<Option<TransactionView>> {
+    ) -> Result<Option<jsonrpc::Transaction>> {
         self.client
-            .get_txn_by_acc_seq(address, sequence_number, fetching_events)
+            .get_txn_by_acc_seq(&address, sequence_number, fetching_events)
     }
 
     /// query transaction by account address and sequence number
@@ -1299,7 +1221,7 @@ impl ViolasClient {
         start_version: u64,
         limit: u64,
         fetching_events: bool,
-    ) -> Result<Vec<TransactionView>> {
+    ) -> Result<Vec<jsonrpc::Transaction>> {
         self.client
             .get_txn_by_range(start_version, limit, fetching_events)
     }
@@ -1311,7 +1233,7 @@ impl ViolasClient {
         event_type: bool,
         start_seq_number: u64,
         limit: u64,
-    ) -> Result<(Vec<EventView>, AccountView)> {
+    ) -> Result<(Vec<jsonrpc::Event>, jsonrpc::Account)> {
         let path = match event_type {
             true => ACCOUNT_SENT_EVENT_PATH.to_vec(),
             false => ACCOUNT_RECEIVED_EVENT_PATH.to_vec(),
@@ -1319,6 +1241,17 @@ impl ViolasClient {
 
         let access_path = AccessPath::new(address, path);
 
+        self.client
+            .get_events_by_access_path(access_path, start_seq_number, limit)
+    }
+
+    /// Query events ex
+    pub fn query_events_ex(
+        &mut self,
+        access_path: AccessPath,
+        start_seq_number: u64,
+        limit: u64,
+    ) -> Result<(Vec<jsonrpc::Event>, jsonrpc::Account)> {
         self.client
             .get_events_by_access_path(access_path, start_seq_number, limit)
     }
@@ -1332,12 +1265,12 @@ fn parse_transaction_argument_for_client(s: &str) -> Result<TransactionArgument>
     parse_transaction_argument(s)
 }
 
-/// Check whether the input string is a valid libra address.
+/// Check whether the input string is a valid diem address.
 pub fn is_address(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AccountAddress::LENGTH)
 }
 
-/// Check whether the input string is a valid libra authentication key.
+/// Check whether the input string is a valid diem authentication key.
 pub fn is_authentication_key(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AuthenticationKey::LENGTH)
 }

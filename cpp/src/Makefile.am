@@ -2,7 +2,7 @@ lib_LTLIBRARIES = libviolas_sdk.la liblibra_sdk.la libpy_violas_sdk.la #libjniSd
 
 if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/debug #-L$(top_srcdir)/rust/client-proxy/target/x86_64-pc-windows-gnu/release
-    CLIENT_PROXY =  $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-54b02e86cfaa5a8e/out/rust_cpp/cpp_closures.o
+    CLIENT_PROXY =  $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-18f7e29f0bd720d5/out/rust_cpp/cpp_closures.o
 else
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/release
     CLIENT_PROXY = $(top_srcdir)/rust/violas-client/target/release/build/violas-client-e492e5f30c5b3c32/out/rust_cpp/cpp_closures.o

@@ -242,11 +242,12 @@ impl ViolasClient {
         authentication_key_opt: Option<Vec<u8>>,
     ) -> Result<AccountData> {
         let (sequence_number, authentication_key, status) = if sync_with_validator {
-            match client.get_account(&address) {
+            let ret = client.get_account(&address);
+            match ret {
                 Ok(resp) => match resp {
                     Some(account_view) => (
                         account_view.sequence_number,
-                        Some(account_view.authentication_key.into_bytes()),
+                        Some(hex::decode(account_view.authentication_key)?),
                         AccountStatus::Persisted,
                     ),
                     None => (0, authentication_key_opt, AccountStatus::Local),
@@ -266,6 +267,7 @@ impl ViolasClient {
             status,
         })
     }
+
     /// Waits for the next transaction for a specific address and prints it
     pub fn wait_for_transaction(&mut self, txn: &SignedTransaction) -> Result<()> {
         //let (tx, rx) = std::sync::mpsc::channel();
@@ -1010,9 +1012,9 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         let scripte_bytecode = vec![
-            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 27, 7, 44, 76, 8,
-            120, 16, 0, 0, 0, 1, 1, 2, 0, 1, 0, 0, 3, 2, 1, 1, 1, 1, 4, 2, 6, 12, 3, 0, 5, 6, 12,
-            5, 10, 2, 10, 2, 1, 6, 6, 12, 3, 5, 10, 2, 10, 2, 1, 1, 9, 0, 12, 76, 105, 98, 114, 97,
+            161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 27, 7, 44, 75, 8,
+            119, 16, 0, 0, 0, 1, 1, 2, 0, 1, 0, 0, 3, 2, 1, 1, 1, 1, 4, 2, 6, 12, 3, 0, 5, 6, 12,
+            5, 10, 2, 10, 2, 1, 6, 6, 12, 3, 5, 10, 2, 10, 2, 1, 1, 9, 0, 11, 68, 105, 101, 109,
             65, 99, 99, 111, 117, 110, 116, 12, 83, 108, 105, 100, 105, 110, 103, 78, 111, 110, 99,
             101, 21, 114, 101, 99, 111, 114, 100, 95, 110, 111, 110, 99, 101, 95, 111, 114, 95, 97,
             98, 111, 114, 116, 27, 99, 114, 101, 97, 116, 101, 95, 100, 101, 115, 105, 103, 110,

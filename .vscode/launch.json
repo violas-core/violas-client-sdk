@@ -12,11 +12,11 @@
             "args": [
                 "update",
                 "-u",
-                "http://localhost:40947",
+                "http://localhost:39991",
                 "-m",
                 "/tmp/libra/mint.key",
                 "-w",
-                "0:1f1199a5912f06cf12f70b6a7f4b72573a7a28b83cb176b48810c8fb7652d62f",
+                "0:488dec2c0dcd32b31472a79aa667763462121ca79fb5fd5c0f58a9be975f822a",
                 "-c",
                 "4",
                 "-n",
@@ -30,10 +30,10 @@
             "name": "Launch violas_client",
             "program": "${workspaceFolder}/build/debug/bin/violas_client",
             "args": [
-                "http://localhost:42107",
-                "/tmp/libra/mint.key",
+                "http://localhost:37941",
+                "/tmp/diem/mint.key",
                 "build/debug/client.mne",
-                "0:9aa56e850739fde1dde32a54f1c670dd1ad3c4d12b7f040a9ed17355d5d29a82",
+                "0:1940f1677ad173c5214bd3e66cc60839e33d4e1c91aa4270ebc6e868696f0031",
                 "4",
             ],
             "cwd": "${workspaceFolder}"
@@ -44,10 +44,10 @@
             "name": "Launch violas_vls",
             "program": "${workspaceFolder}/build/debug/bin/violas_vls",
             "args": [
-                "http://localhost:40955",
-                "/tmp/libra/mint.key",
+                "http://localhost:37941",
+                "/tmp/diem/mint.key",
                 "waypoint",
-                "0:63d1cab20e52e3e6d7babbe07c8e195dfec7c156ffe30e9c4679fd5c38a3e59e",
+                "0:1940f1677ad173c5214bd3e66cc60839e33d4e1c91aa4270ebc6e868696f0031",
                 "4"
             ],            
             "cwd": "${workspaceFolder}/build/debug"

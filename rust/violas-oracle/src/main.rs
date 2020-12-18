@@ -1,8 +1,8 @@
 use anyhow::Result; //bail, ensure, format_err,
 use bytes::buf::BufExt as _;
+use diem_types::{chain_id::ChainId, waypoint::Waypoint};
 use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
-use diem_types::{chain_id::ChainId, waypoint::Waypoint};
 use std::{path::Path, str::FromStr, string::String, time::Duration};
 use structopt::StructOpt;
 use tokio::{
@@ -22,7 +22,7 @@ struct Args {
     #[structopt(short = "c")]
     pub chain_id: u8,
     /// url
-    #[structopt(short = "u")]4
+    #[structopt(short = "u")]
     pub url: String,
     /// mint key file with path
     #[structopt(short = "m", default_value = "")]
@@ -67,25 +67,31 @@ fn main() -> Result<()> {
     let command = Command::from_args();
     //println!("{:?}", command);
 
-    let create_oracle = |args: Args| -> Result<Oracle> {
-        let mint_key = args.mint_key.clone();
-        let treasury_compliance_account_file = mint_key.clone();
+    process_command(command)?;
 
-        let client = ViolasClient::new(
-            ChainId::new(args.chain_id),
-            args.url.as_str(),
-            mint_key.as_str(),
-            mint_key.as_str(),
-            treasury_compliance_account_file.as_str(),
-            true,
-            None,
-            Some(args.mnemonic),
-            Waypoint::from_str(args.waypoint.as_str()).unwrap(),
-        )?;
+    Ok(())
+}
 
-        Oracle::new(client)
-    };
+fn create_oracle(args: Args) -> Result<Oracle> {
+    let mint_key = args.mint_key.clone();
+    let treasury_compliance_account_file = mint_key.clone();
 
+    let client = ViolasClient::new(
+        ChainId::new(args.chain_id),
+        args.url.as_str(),
+        mint_key.as_str(),
+        mint_key.as_str(),
+        treasury_compliance_account_file.as_str(),
+        true,
+        None,
+        Some(args.mnemonic),
+        Waypoint::from_str(args.waypoint.as_str()).unwrap(),
+    )?;
+
+    Oracle::new(client)
+}
+
+fn process_command(command: Command) -> Result<()> {
     match command {
         Command::Publish(args) => {
             let mut oracle_module_file = String::from("move/oracle/oracle.mv");

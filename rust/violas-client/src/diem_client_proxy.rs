@@ -1295,7 +1295,7 @@ impl ClientProxy {
     /// Get account using specific address.
     /// Sync with validator for account sequence number in case it is already created on chain.
     /// This assumes we have a very low probability of mnemonic word conflict.
-    fn get_account_data_from_address(
+    pub fn get_account_data_from_address(
         client: &DiemClient,
         address: AccountAddress,
         sync_with_validator: bool,

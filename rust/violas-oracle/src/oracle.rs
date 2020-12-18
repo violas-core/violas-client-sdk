@@ -61,7 +61,7 @@ impl Oracle {
         let auth_key = AuthenticationKey::new(data);
 
         self.client.create_designated_dealer_ex(
-            make_currency_tag("Coin1"),
+            make_currency_tag("VLS"),
             0,
             oracle_admin_address(),
             auth_key,

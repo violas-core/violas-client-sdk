@@ -133,16 +133,16 @@ impl Oracle {
                 TransactionArgument::U64(numerator),
                 TransactionArgument::U64(denominator),
             ],
-            false,
+            true,
         )?;
 
-        self.client.execute_raw_script_bytecode(
-            0,
-            update_price_from_oracle,
-            vec![make_currency_tag(currency_code)],
-            vec![],
-            false,
-        )?;
+        // self.client.execute_raw_script_bytecode(
+        //     0,
+        //     update_price_from_oracle,
+        //     vec![make_currency_tag(currency_code)],
+        //     vec![],
+        //     false,
+        // )?;
 
         Ok(())
     }
@@ -186,7 +186,7 @@ impl Oracle {
                 TransactionArgument::U64(amount_crc1),
                 TransactionArgument::U64(amount_crc2),
             ],
-            true,
+            false,
         )?;
         println!(
             "{}({}) -> {}({})",
@@ -218,7 +218,7 @@ impl Oracle {
         let sender = oracle_admin_address();
 
         let tag_path =
-            make_struct_tag(&CORE_CODE_ADDRESS, "Oracle", "ExchangeRate", vec![]).access_vector();
+            make_struct_tag(&CORE_CODE_ADDRESS, "Oracle", "UpdateEvent", vec![]).access_vector();
 
         let access_path = AccessPath::new(sender, tag_path);
         let sn = self.client.accounts[0].sequence_number;

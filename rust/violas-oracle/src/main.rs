@@ -3,7 +3,7 @@ use bytes::buf::BufExt as _;
 use diem_types::{chain_id::ChainId, waypoint::Waypoint};
 use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
-use std::{path::Path, str::FromStr, string::String, time::Duration};
+use std::{io::stdin, path::Path, str::FromStr, string::String, time::Duration};
 use structopt::StructOpt;
 use tokio::{
     runtime::Runtime,
@@ -66,6 +66,11 @@ enum Command {
 fn main() -> Result<()> {
     let command = Command::from_args();
     //println!("{:?}", command);
+    // let mut s = String::new();
+
+    // stdin()
+    //     .read_line(&mut s)
+    //     .expect("Did not enter a correct string");
 
     process_command(command)?;
 

@@ -5,7 +5,7 @@ if DEBUG
     CLIENT_PROXY =  $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-18f7e29f0bd720d5/out/rust_cpp/cpp_closures.o
 else
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/release
-    CLIENT_PROXY = $(top_srcdir)/rust/violas-client/target/release/build/violas-client-e492e5f30c5b3c32/out/rust_cpp/cpp_closures.o
+    CLIENT_PROXY = $(top_srcdir)/rust/violas-client/target/release/build/violas-client-c796d9c49274bb62/out/rust_cpp/cpp_closures.o
 endif
 
 libviolas_sdk_la_SOURCES = violas_sdk2.cpp

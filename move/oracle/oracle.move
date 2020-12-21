@@ -45,33 +45,33 @@ use 0x1::Event::{ Self, EventHandle };
 
     /// update exchange rate, if the exchange rate for CoinType doesn't exist then create it 
     public fun update_exchange_rate<CoinType>(
-        lr_account : &signer, 
+        admin_account : &signer, 
         numerator : u64, 
         denominator: u64
     ) acquires ExchangeRate {
         assert(
-            Signer::address_of(lr_account) == administrator_address(), //CoreAddresses::Diem_ROOT_ADDRESS(),
+            Signer::address_of(admin_account) == administrator_address(), 
             EINVALID_SINGLETON_ADDRESS
         );        
 
         assert(Diem::is_currency<CoinType>(), ENOT_A_REGISTERED_CURRENCY);        
 
-        if(!exists<ExchangeRate<CoinType>>(administrator_address())) {  //CoreAddresses::Diem_ROOT_ADDRESS()
+        if(!exists<ExchangeRate<CoinType>>(administrator_address())) {  
             let exchange_rate = ExchangeRate<CoinType> {
                 value : FixedPoint32::create_from_rational(numerator, denominator), 
                 timestamp : DiemTimestamp::now_microseconds(),
-                update_events : Event::new_event_handle<UpdateEvent>(lr_account)
+                update_events : Event::new_event_handle<UpdateEvent>(admin_account)
             };
         
             emit_updating_events(&mut exchange_rate);
 
             move_to(
-                lr_account, 
+                admin_account, 
                 exchange_rate,
                 );
         }
         else {
-            let exchange_rate = borrow_global_mut<ExchangeRate<CoinType>>(administrator_address()); //CoreAddresses::Diem_ROOT_ADDRESS()
+            let exchange_rate = borrow_global_mut<ExchangeRate<CoinType>>(administrator_address()); 
 
             exchange_rate.value = FixedPoint32::create_from_rational(numerator, denominator);
             exchange_rate.timestamp = DiemTimestamp::now_microseconds();

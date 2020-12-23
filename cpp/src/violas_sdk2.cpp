@@ -25,8 +25,6 @@ namespace violas
         virtual void
         deploy_with_root_account() override
         {
-            m_client->publish_module(ASSOCIATION_ID, _module_exdep);
-
             m_client->publish_module(ASSOCIATION_ID, _module_exchange);
         }
 
@@ -34,12 +32,12 @@ namespace violas
         //  Initialize Exchange contacts with administrator account index
         //
         virtual void
-        initialize(const AddressAndIndex &admin) override
+        initialize(const AddressAndIndex &admin, const Address &distributor_address) override
         {
             m_admin = admin;
 
             //  initialize module Exchange under association account
-            m_client->execute_script_file(m_admin.index, _script_initialize);
+            m_client->execute_script_file(m_admin.index, _script_initialize, {}, {distributor_address});
         }
 
         virtual void

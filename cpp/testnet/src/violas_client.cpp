@@ -259,6 +259,13 @@ void update_dual_attestation_limit(client_ptr client)
 void deploy_exchange(client_ptr client)
 {
     cout << color::RED << "Deploy Exchange and initialize it ..." << color::RESET << endl;
+    string mnemonic = "mnemonic/exchange.mne";
+
+    client->recover_wallet_accounts(mnemonic);
+    cout << "Violas client is using mnemonic file "
+         << color::GREEN << mnemonic << color::RESET
+         << endl;
+    
 
     auto admin = client->create_next_account(EXCHANGE_ADMIN_ADDRESS);
     auto user1 = client->create_next_account();
@@ -274,7 +281,7 @@ void deploy_exchange(client_ptr client)
     }
 
     try_catch([&]() {
-        client->create_designated_dealer_ex("Coin1",
+        client->create_designated_dealer_ex("VLS",
                                             0,
                                             EXCHANGE_ADMIN_ADDRESS,
                                             admin_account.auth_key, //only auth key prefix is applied
@@ -283,7 +290,7 @@ void deploy_exchange(client_ptr client)
                                             admin_account.pub_key,
                                             true);
 
-        client->create_parent_vasp_account("Coin1",
+        client->create_parent_vasp_account("VLS",
                                            0,
                                            user1_account.address,
                                            user1_account.auth_key,
@@ -292,7 +299,7 @@ void deploy_exchange(client_ptr client)
                                            user1_account.pub_key,
                                            true);
 
-        client->create_parent_vasp_account("Coin1",
+        client->create_parent_vasp_account("VLS",
                                            0,
                                            user2_account.address,
                                            user2_account.auth_key,
@@ -324,7 +331,7 @@ void deploy_exchange(client_ptr client)
             return to_string((double)balance / MICRO_COIN);
         };
 
-        cout << "Coin1 : " // << double(client->get_balance(addr)) / MICRO_COIN << ", "
+        cout << "VLS : " // << double(client->get_balance(addr)) / MICRO_COIN << ", "
              << "USD : " << fmt_balance("VLSUSD") << ", "
              << "EUR : " << fmt_balance("VLSEUR") << "."
              << "GBP : " << fmt_balance("VLSGBP") << "."
@@ -335,22 +342,22 @@ void deploy_exchange(client_ptr client)
     //print_all_balance(accounts[1].address);
 
     //////////////////////////////////////////////////////////////////////////////////////////
-
+    const Address reward_admin_address = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x56, 0x4C, 0x53, 0x01}; //000000000000000000000000564C5301
     const string script_path = "move/exchange/";
     auto exchange = Exchange::create(client, script_path);
 
     try_catch([&]() {
         exchange->deploy_with_root_account();
-        cout << "deploied Exchange contracts on Violas blockchain." << endl;
+        cout << color::GREEN << "deploied Exchange contracts on Violas blockchain." << color::RESET << endl;
 
-        exchange->initialize(admin);
-        cout << "Initialize Exchange contracts with admin account." << endl;
+        exchange->initialize(admin, reward_admin_address);
+        cout << color::GREEN << "Initialize Exchange contracts with admin account." << color::RESET << endl;
 
         for (auto currency : currency_codes)
         {
             exchange->add_currency(currency);
         }
-        cout << "add all currencies for Exchange" << endl;
+        cout << color::GREEN << "add all currencies for Exchange" << color::RESET << endl;
     });
 
     exchange->add_liquidity(user1.index, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 2 * MICRO_COIN, 0});
@@ -381,6 +388,12 @@ void deploy_exchange(client_ptr client)
 void deploy_bank(client_ptr client)
 {
     cout << color::RED << "Deploy Bank Contract and initialize it ..." << color::RESET << endl;
+    const string mnemonic = "mnemonic/bank.mne";
+
+    client->recover_wallet_accounts(mnemonic);
+    cout << "Violas client is using mnemonic file "
+         << color::GREEN << mnemonic << color::RESET
+         << endl;
 
     auto admin = client->create_next_account(BANK_ADMIN_ADDRESS);
     auto user1 = client->create_next_account();
@@ -396,7 +409,7 @@ void deploy_bank(client_ptr client)
     }
 
     try_catch([&]() {
-        client->create_designated_dealer_ex("Coin1",
+        client->create_designated_dealer_ex("VLS",
                                             0,
                                             BANK_ADMIN_ADDRESS,
                                             admin_account.auth_key, //only auth key prefix is applied
@@ -405,7 +418,7 @@ void deploy_bank(client_ptr client)
                                             admin_account.pub_key,
                                             true);
 
-        client->create_parent_vasp_account("Coin1",
+        client->create_parent_vasp_account("VLS",
                                            0,
                                            user1_account.address,
                                            user1_account.auth_key,
@@ -414,7 +427,7 @@ void deploy_bank(client_ptr client)
                                            user1_account.pub_key,
                                            true);
 
-        client->create_parent_vasp_account("Coin1",
+        client->create_parent_vasp_account("VLS",
                                            0,
                                            user2_account.address,
                                            user2_account.auth_key,
@@ -544,12 +557,12 @@ void create_bridge_accounts(client_ptr client)
             {
             case DD:
             {
-                client->create_designated_dealer_ex("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
+                client->create_designated_dealer_ex("VLS", 0, account.address, account.auth_key, name, "", account.pub_key, true);
             }
             break;
             case VASP:
             {
-                client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, name, "", account.pub_key, true);
+                client->create_parent_vasp_account("VLS", 0, account.address, account.auth_key, name, "", account.pub_key, true);
             }
             break;
             default:
@@ -582,7 +595,7 @@ void create_bridge_accounts(client_ptr client)
 
     try
     {
-        client->create_parent_vasp_account("Coin1", 0, account.address, account.auth_key, "VLS-USER", "", account.pub_key, true);
+        client->create_parent_vasp_account("VLS", 0, account.address, account.auth_key, "VLS-USER", "", account.pub_key, true);
 
         for (auto currency : currency_codes)
         {

@@ -136,13 +136,13 @@ impl Oracle {
             true,
         )?;
 
-        // self.client.execute_raw_script_bytecode(
-        //     0,
-        //     update_price_from_oracle,
-        //     vec![make_currency_tag(currency_code)],
-        //     vec![],
-        //     false,
-        // )?;
+        self.client.execute_raw_script_bytecode(
+            0,
+            update_price_from_oracle,
+            vec![make_currency_tag(currency_code)],
+            vec![],
+            true,
+        )?;
 
         Ok(())
     }

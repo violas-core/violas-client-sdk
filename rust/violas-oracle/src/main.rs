@@ -3,7 +3,7 @@ use bytes::buf::BufExt as _;
 use diem_types::{chain_id::ChainId, waypoint::Waypoint};
 use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
-use std::{io::stdin, path::Path, str::FromStr, string::String, time::Duration};
+use std::{path::Path, str::FromStr, string::String, time::Duration}; //io::stdin,
 use structopt::StructOpt;
 use tokio::{
     runtime::Runtime,

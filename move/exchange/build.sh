@@ -1,3 +1,5 @@
+rm *.mv
+
 echo "build exchange.move"
 ../build.sh exchange.move 0x0
 mv build/modules/0_Exchange.mv exchange.mv

@@ -23,7 +23,7 @@ namespace violas
         //  Initialize Exchange contacts with administrator account index
         //
         virtual void
-        initialize(const AddressAndIndex &admin) = 0;
+        initialize(const AddressAndIndex &admin, const Address &distributor_address) = 0;
 
         virtual void
         add_currency(std::string_view currency_code) = 0;
@@ -140,7 +140,7 @@ namespace violas
                          std::string_view borrowed_currency_code,
                          const Address &liquidated_user,
                          uint64_t amount,
-                         std::string_view liquidated_currency_code) = 0;        
+                         std::string_view liquidated_currency_code) = 0;
 
     }; // Bank
 

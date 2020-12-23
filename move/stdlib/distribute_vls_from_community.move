@@ -5,11 +5,14 @@ use 0x1::Errors;
 use 0x1::DiemAccount;
 use 0x1::FixedPoint32;
 use 0x1::VLS::{Self, VLS};
+use 0x1::DiemTimestamp;
 use 0x1::ViolasBank;
+use 0x1::Exchange;
 
 const E_TRANSACTION_SENDER_IS_NOT_VLS_COMM: u64 = 1000;
 const E_BANK_PAYMENT_IS_INCORRECT: u64 = 1001;
 const E_EXCHANGE_PAYMENT_IS_INCORRECT: u64 = 1002;
+const BACKEND_ADDRESS : address = 0x585c6aa31dfb19c4af20e8e14112cb3f;
 
 ///
 /// distribute VLS from Violas community to Bank administrator account, Exchange adminitrator account and backend(VLS-USER) account
@@ -42,6 +45,8 @@ fun distribute_vls_from_community(account : &signer) {
         };
 
         let distribution_amount = FixedPoint32::multiply_u64(total, bank_distribution_ratio);
+        
+        balance = DiemAccount::balance<VLS>(sender);
         ViolasBank::set_incentive_rate(account, distribution_amount);
 
         // Make sure that the amount of VLS ViolasBank::set_incentive_rate extracted is distribution_amount   
@@ -51,9 +56,14 @@ fun distribute_vls_from_community(account : &signer) {
     // 2. Distribute VLS to Exchange adminitrator
     {
         let distribution_amount = FixedPoint32::multiply_u64(total, exchange_distribution_ratio);
+        let start_time = DiemTimestamp::now_seconds();
+        let end_time = start_time + 86400; // 24hours
         
-        assert(distribution_amount > 1, 0);
-        //assert(DiemAccount::balance<VLS>(sender) == balance - distribution_amount, ERRORS::limit_exceeded(E_BANK_PAYMENT_IS_INCORRECT));
+        balance = DiemAccount::balance<VLS>(sender);
+        Exchange::set_next_rewards(account, distribution_amount, start_time, end_time);
+
+        // Make sure that payment to Exchange admin is correct 
+        assert(DiemAccount::balance<VLS>(sender) == balance - distribution_amount, Errors::limit_exceeded(E_EXCHANGE_PAYMENT_IS_INCORRECT));
     };
 
     let payer_withdrawal_cap = DiemAccount::extract_withdraw_capability(account);
@@ -64,20 +74,20 @@ fun distribute_vls_from_community(account : &signer) {
 
         DiemAccount::pay_from<VLS>(
             &payer_withdrawal_cap, 
-            0x7524f145c133b48b6b0ad43c4d917223, 
+            BACKEND_ADDRESS, 
             distribution_amount, 
             x"", 
             x""
         );        
     };
 
-    // 4.  The rest of VLS will be distributed to 0xDD00 accout 
+    // 4.  The rest of VLS will be distributed to VLS trash accout 
     {
         let distribution_amount = DiemAccount::balance<VLS>(sender);        
 
         DiemAccount::pay_from<VLS>(
             &payer_withdrawal_cap, 
-            0xDD00, 
+            0x564C5300,             //VLS Trash
             distribution_amount, 
             x"", 
             x""

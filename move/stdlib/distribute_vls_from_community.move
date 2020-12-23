@@ -20,6 +20,9 @@ const BACKEND_ADDRESS : address = 0x585c6aa31dfb19c4af20e8e14112cb3f;
 fun distribute_vls_from_community(account : &signer) {
     let sender = Signer::address_of(account);    
 
+    // Mine VLS to VLS-COMM account
+    DiemAccount::mine_vls();
+
     // retrieve all distribution receivers
     let receivers = VLS::get_receivers();
     

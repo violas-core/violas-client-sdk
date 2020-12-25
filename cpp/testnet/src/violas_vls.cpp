@@ -37,13 +37,16 @@ int main(int argc, char *argv[])
 
         client->test_connection();
 
-        string mnemonic = "mnemonic/vls.mne";
+        if (args.mnemoic.empty())
+        {
+            string mnemonic = "mnemonic/vls.mne";
 
-        client->recover_wallet_accounts(mnemonic);
-        cout << "Violas client is using mnemonic file "
-             << color::GREEN << mnemonic << color::RESET
-             << endl;
-
+            client->recover_wallet_accounts(mnemonic);
+            cout << "Violas client is using mnemonic file "
+                 << color::GREEN << mnemonic << color::RESET
+                 << endl;
+        }
+        
         if (args.distrbuting)
         {
             distribute_vls_to_all_service_admins(client);

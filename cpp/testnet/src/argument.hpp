@@ -8,7 +8,7 @@ struct Arguments
     std::string mint_key;
     std::string mnemoic;
     std::string waypoint;
-    int chain_id = -1;
+    uint8_t chain_id = -1;
     bool distrbuting = false;
 
     void parse_command_line(int argc, char *argv[])

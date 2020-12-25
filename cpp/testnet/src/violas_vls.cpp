@@ -5,6 +5,7 @@
 #include <functional>
 #include <client.hpp>
 #include "utils.h"
+#include "argument.hpp"
 
 using namespace std;
 using namespace violas;
@@ -15,8 +16,7 @@ void distribute_vls_to_all_service_admins(client_ptr client);
 void recover_vls_fees_to_association(client_ptr client);
 
 const tuple<Address, string> VLS_ADDRESSES[] = {
-    // 000000000000000000000000564C5300
-    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x00}, "VLS-TRASH"},
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x00}, "VLS-TRASH"}, // 000000000000000000000000564C5300
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x01}, "VLS-COMM"},
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x02}, "VLS-ASSOCA"},
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x03}, "VLS-TEAM"},
@@ -24,48 +24,49 @@ const tuple<Address, string> VLS_ADDRESSES[] = {
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x05}, "VLS-OPEN"},
 };
 
-int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
     try
     {
-        if (argc < 6)
-            throw runtime_error("missing arguments. \n Usage : url mint_key mnemonic waypoint chain_id");
+        Arguments args;
 
-        uint8_t chain_id = stoi(argv[5]);
-        string url = argv[1];
-        string mint_key = argv[2];
-        string mnemonic = argv[3];
-        string waypoint = argv[4];
+        args.parse_command_line(argc, argv);
+        args.show();
 
-        auto client = Client::create(chain_id, url, mint_key, mnemonic, waypoint);
+        auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemoic, args.waypoint);
 
         client->test_connection();
 
-        using handler = function<void()>;
-        map<int, handler> handlers = {
-            {1, [=]() { mine_vls(client); }},
-            {2, [=]() { initialize_timestamp(client); }},
-            {3, [=]() { distribute_vls_to_all_service_admins(client); }},
-            {4, [=]() { recover_vls_fees_to_association(client); }},
-        };
-
-        mnemonic = "mnemonic/vls.mne";
+        string mnemonic = "mnemonic/vls.mne";
 
         client->recover_wallet_accounts(mnemonic);
         cout << "Violas client is using mnemonic file "
              << color::GREEN << mnemonic << color::RESET
              << endl;
 
-        cout << "1 for distribute vls \n"
-                "2 for initialize vls timestamp \n"
-                "3 for distribuate vls to all Violas adminitrators\n"
-                "4 for recover vls fees toassociation\n"
-                "Please input index : ";
+        if (args.distrbuting)
+        {
+            distribute_vls_to_all_service_admins(client);
+        }
+        else
+        {
+            using handler = function<void()>;
+            map<int, handler> handlers = {
+                {1, [=]() { initialize_timestamp(client); }},
+                {2, [=]() { distribute_vls_to_all_service_admins(client); }},
+                {3, [=]() { recover_vls_fees_to_association(client); }},
+            };
 
-        int index;
-        cin >> index;
+            cout << "1 for initialize vls timestamp \n"
+                    "2 for distribuate vls to all Violas adminitrators\n"
+                    "3 for recover vls fees toassociation\n"
+                    "Please input index : ";
 
-        handlers[index]();
+            int index;
+            cin >> index;
+
+            handlers[index]();
+        }
     }
     catch (const std::exception &e)
     {
@@ -149,20 +150,14 @@ void distribute_vls_to_all_service_admins(client_ptr client)
 
     auto accounts = client->get_all_accounts();
 
-    auto vls_balance = client->get_currency_balance(accounts[1].address, "VLS");
-    cout << "account 1's VLS balance : " << (double)vls_balance / MICRO_COIN << endl;
-
-    // uint64_t amount = 0;
-    // cout << "pleaes input amount for distributing VLS to Bank administrator : ";
-    // cin >> amount;
-    // cout << endl;
-
-    //client->execute_script(1, set_incentive_rate, {}, {amount * MICRO_COIN});
+    // auto vls_balance = client->get_currency_balance(accounts[1].address, "VLS");
+    // cout << "account 1's VLS balance : " << (double)vls_balance / MICRO_COIN << endl;
 
     client->execute_script(1, script_bytecode, {}, {});
 
-    auto amount = vls_balance - client->get_currency_balance(accounts[1].address, "VLS");
-    cout << "distribute " << amount << " VLS to Bank admin" << endl;
+    time_t rawtime = time(NULL);
+    cout << put_time(localtime(&rawtime), "%Y-%m-%d %X")
+         << " - distribute VLS from VLS-COMM to all service adminitrators" << endl;
 }
 
 void recover_vls_fees_to_association(client_ptr client)

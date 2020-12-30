@@ -1,12 +1,13 @@
 #![recursion_limit = "4096"]
 
-pub mod ffi;
 mod diem_client;
+
 pub mod diem_client_proxy;
+pub mod ffi;
 //pub mod move_compiler;
 pub mod violas_account;
 pub mod violas_client;
-//pub mod violas_ffi;
+pub use diem_json_rpc_client::views;
 
 use diem_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},

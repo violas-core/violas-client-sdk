@@ -11,7 +11,7 @@ use diem_crypto::{
     test_utils::KeyPair,
 };
 use diem_json_rpc_client::async_client::{types as jsonrpc, WaitForTransactionError};
-
+use diem_json_rpc_client::views::EventView;
 use diem_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -20,6 +20,7 @@ use diem_types::{
     },
     account_state::AccountState,
     chain_id::ChainId,
+    event::EventKey,
     //on_chain_config::VMPublishingOption,
     transaction::{
         authenticator::AuthenticationKey,
@@ -490,6 +491,12 @@ impl ViolasClient {
         if is_blocking {
             self.wait_for_transaction(&txn)
         } else {
+            let seq = txn
+                .sequence_number()
+                .checked_add(1)
+                .ok_or_else(|| format_err!("seqnum can't reach u64::max"))?;
+            proxy.update_account_seq(&txn.sender(), seq);
+
             Ok(())
         }
     }
@@ -1203,13 +1210,13 @@ impl ViolasClient {
     }
 
     /// Query event view
-    pub fn query_events(
+    pub fn query_payment_events(
         &mut self,
         address: AccountAddress,
         event_type: bool,
         start_seq_number: u64,
         limit: u64,
-    ) -> Result<(Vec<jsonrpc::Event>, jsonrpc::Account)> {
+    ) -> Result<(Vec<EventView>, jsonrpc::Account)> {
         let path = match event_type {
             true => ACCOUNT_SENT_EVENT_PATH.to_vec(),
             false => ACCOUNT_RECEIVED_EVENT_PATH.to_vec(),
@@ -1222,14 +1229,17 @@ impl ViolasClient {
     }
 
     /// Query events ex
-    pub fn query_events_ex(
+    pub fn query_events(
         &mut self,
-        access_path: AccessPath,
+        event_key: &EventKey,
         start_seq_number: u64,
         limit: u64,
-    ) -> Result<(Vec<jsonrpc::Event>, jsonrpc::Account)> {
-        self.client
-            .get_events_by_access_path(access_path, start_seq_number, limit)
+    ) -> Result<Vec<EventView>> {
+        self.client.get_events(
+            hex::encode(event_key.as_bytes()).as_str(),
+            start_seq_number,
+            limit,
+        )
     }
 }
 

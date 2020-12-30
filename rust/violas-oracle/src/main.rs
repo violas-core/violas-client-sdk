@@ -16,6 +16,8 @@ use chrono::prelude::*;
 use hyper_timeout::TimeoutConnector;
 use oracle::Oracle;
 
+const ALL_CURRENCIES_CODE: [&str; 5] = ["BTC", "USD", "EUR", "GBP", "SGD"]; //"JPY", "CNY"]
+
 #[derive(Clone, Debug, StructOpt)]
 struct Args {
     /// Chain ID of the network this client is connecting to
@@ -56,6 +58,10 @@ enum Command {
     /// service
     #[structopt(name = "service")]
     Service(Args),
+
+    /// service
+    #[structopt(name = "view-events")]
+    View(Args),
 }
 
 //
@@ -65,13 +71,6 @@ enum Command {
 //async fn main() -> Result<()>
 fn main() -> Result<()> {
     let command = Command::from_args();
-    //println!("{:?}", command);
-    // let mut s = String::new();
-
-    // stdin()
-    //     .read_line(&mut s)
-    //     .expect("Did not enter a correct string");
-
     process_command(command)?;
 
     Ok(())
@@ -137,8 +136,6 @@ fn process_command(command: Command) -> Result<()> {
             }
 
             println!("");
-
-            oracle.get_the_last_event()?;
         }
         Command::Test(args) => {
             task::block_in_place(|| -> Result<()> {
@@ -212,6 +209,17 @@ fn process_command(command: Command) -> Result<()> {
 
             //println!("{} : finished running service.", Local::now());
         }
+        Command::View(args) => {
+            task::block_in_place(|| -> Result<()> {
+                let mut oracle = create_oracle(args)?;
+
+                for currency_code in ALL_CURRENCIES_CODE.iter() {
+                    oracle.get_last_event(currency_code)?;
+                }
+
+                Ok(())
+            })?;
+        }
     }
 
     Ok(())
@@ -236,9 +244,9 @@ async fn gather_exchange_rate_from_coinbase() -> Result<Vec<(String, f64)>> {
 
     let data: serde_json::Value = serde_json::from_reader(body.reader())?;
 
-    let syms = vec!["BTC", "USD", "EUR", "GBP", "SGD"]; //"JPY", "CNY"
+    //let syms = vec!["BTC", "USD", "EUR", "GBP", "SGD"]; //"JPY", "CNY"
 
-    let rates: Vec<(String, f64)> = syms
+    let rates: Vec<(String, f64)> = ALL_CURRENCIES_CODE
         .iter()
         .map(|sym| {
             (

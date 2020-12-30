@@ -3,8 +3,10 @@
 
 use anyhow::{bail, ensure, Result};
 use diem_json_rpc_client::async_client::{
-    types as jsonrpc, Client, Retry, WaitForTransactionError,
+    types as jsonrpc, Client, Retry, WaitForTransactionError, 
 };
+use diem_json_rpc_client::views::EventView;
+
 use diem_logger::prelude::info;
 use diem_types::{
     access_path::AccessPath,
@@ -16,6 +18,7 @@ use diem_types::{
     transaction::{SignedTransaction, Version},
     trusted_state::{TrustedState, TrustedStateChange},
     waypoint::Waypoint,
+    
 };
 use reqwest::Url;
 use std::time::Duration;
@@ -111,10 +114,10 @@ impl DiemClient {
         event_key: &str,
         start: u64,
         limit: u64,
-    ) -> Result<Vec<jsonrpc::Event>> {
+    ) -> Result<Vec<EventView>> {
         self.runtime
             .lock()
-            .block_on(self.client.get_events(event_key, start, limit))
+            .block_on(self.client.get_events_ex(event_key, start, limit))
             .map(|r| r.result)
             .map_err(anyhow::Error::new)
     }
@@ -266,7 +269,7 @@ impl DiemClient {
         access_path: AccessPath,
         start_event_seq_num: u64,
         limit: u64,
-    ) -> Result<(Vec<jsonrpc::Event>, jsonrpc::Account)> {
+    ) -> Result<(Vec<EventView>, jsonrpc::Account)> {
         // get event key from access_path
         match self.get_account(&access_path.address)? {
             None => bail!("No account found for address {:?}", access_path.address),

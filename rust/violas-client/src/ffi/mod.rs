@@ -795,7 +795,7 @@ namespace violas
                 out_json_string : *mut *mut c_char as "char **"
                 ] -> bool as "bool" {
 
-                    let ret = rust_violas_client.query_events(
+                    let ret = rust_violas_client.query_payment_events(
                                                         AccountAddress::new(*in_address),
                                                         in_event_type,
                                                         start_version, limit);

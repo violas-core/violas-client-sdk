@@ -3,7 +3,26 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [              
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch violas-demo",
+            "program": "${workspaceFolder}/rust/violas-demo/target/debug/violas-demo",
+            "args": [
+                "-u",
+                "http://localhost:39991",
+                "-m",
+                "/tmp/libra/mint.key",
+                "-w",
+                "0:488dec2c0dcd32b31472a79aa667763462121ca79fb5fd5c0f58a9be975f822a",
+                "-c",
+                "4",
+                "-n",
+                "/home/hunter/Projects/work/bin/Violas0.6.2/mnemonic/oracle.mne"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
         {
             "type": "lldb",
             "request": "attach",
@@ -61,7 +80,7 @@
                 "waypoint",
                 "0:1940f1677ad173c5214bd3e66cc60839e33d4e1c91aa4270ebc6e868696f0031",
                 "4"
-            ],            
+            ],
             "cwd": "${workspaceFolder}/build/debug"
         },
         {

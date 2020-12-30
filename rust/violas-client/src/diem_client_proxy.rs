@@ -48,6 +48,7 @@ use std::{
     str::{self, FromStr},
     time,
 };
+use diem_json_rpc_client::views::EventView;
 
 const CLIENT_WALLET_MNEMONIC_FILE: &str = "client.mnemonic";
 const GAS_UNIT_PRICE: u64 = 0;
@@ -1122,7 +1123,7 @@ impl ClientProxy {
     pub fn get_events_by_account_and_type(
         &mut self,
         space_delim_strings: &[&str],
-    ) -> Result<(Vec<jsonrpc::Event>, jsonrpc::Account)> {
+    ) -> Result<(Vec<EventView>, jsonrpc::Account)> {
         ensure!(
             space_delim_strings.len() == 5,
             "Invalid number of arguments, required 5, given {}",
@@ -1259,7 +1260,7 @@ impl ClientProxy {
     }
 
     /// Update account seq
-    fn update_account_seq(&mut self, address: &AccountAddress, seq: u64) {
+    pub fn update_account_seq(&mut self, address: &AccountAddress, seq: u64) {
         if let Some(diem_root_account) = &mut self.diem_root_account {
             if &diem_root_account.address == address {
                 diem_root_account.sequence_number = seq;

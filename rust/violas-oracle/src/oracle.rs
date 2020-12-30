@@ -1,6 +1,7 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
+use chrono::{offset::TimeZone, DateTime, Local, NaiveDateTime};
 use diem_types::{
-    access_path::AccessPath,
+    //access_path::AccessPath,
     account_address::AccountAddress,
     account_config::CORE_CODE_ADDRESS,
     event::EventHandle,
@@ -8,6 +9,7 @@ use diem_types::{
 };
 use serde::{Deserialize, Serialize};
 use violas_client::{
+    views::EventDataView, //EventView
     violas_account::{make_currency_tag, make_struct_tag},
     violas_client::ViolasClient,
 };
@@ -20,8 +22,15 @@ pub fn oracle_admin_address() -> AccountAddress {
 #[derive(Serialize, Debug, Deserialize)]
 struct ExchangeRateReource {
     pub fixed_point32: u64,
-    pub timestamp: u64,
+    pub timestamp: u64, // micro second
     update_events: EventHandle,
+}
+
+#[derive(Serialize, Debug, Deserialize)]
+struct UpdateEvent {
+    pub value: u64,
+    pub timestamp: u64, // micro second
+    pub currency_code: Vec<u8>,
 }
 
 /// Oracle
@@ -133,7 +142,7 @@ impl Oracle {
                 TransactionArgument::U64(numerator),
                 TransactionArgument::U64(denominator),
             ],
-            true,
+            false,
         )?;
 
         self.client.execute_raw_script_bytecode(
@@ -212,18 +221,52 @@ impl Oracle {
         println!("{} : {}", currency_code, rate.unwrap());
         Ok(rate)
     }
-
     /// Print the last Oracle update event
-    pub fn get_the_last_event(&mut self) -> Result<()> {
+    pub fn get_last_event(&mut self, currency_code: &str) -> Result<()> {
         let sender = oracle_admin_address();
 
-        let tag_path =
-            make_struct_tag(&CORE_CODE_ADDRESS, "Oracle", "UpdateEvent", vec![]).access_vector();
+        let resource_path = make_struct_tag(
+            &CORE_CODE_ADDRESS,
+            "Oracle",
+            "ExchangeRate",
+            vec![make_currency_tag(currency_code)],
+        );
 
-        let access_path = AccessPath::new(sender, tag_path);
-        let sn = self.client.accounts[0].sequence_number;
+        let ret: Result<Option<ExchangeRateReource>> =
+            self.client.get_account_resource(&sender, &resource_path);
 
-        self.client.query_events_ex(access_path, sn, 10)?;
+        let updated_event = match ret {
+            Ok(Some(exchange_rate)) => exchange_rate.update_events,
+            Ok(None) => bail!("exchange rate resource is none"),
+            Err(e) => bail!("{}", e),
+        };
+
+        let count = if updated_event.count() >= 3 { 3 } else { 1 };
+
+        let events =
+            self.client
+                .query_events(updated_event.key(), updated_event.count() - count, count)?;
+
+        for event in events.iter() {
+            let update_event: UpdateEvent = match &event.data {
+                EventDataView::Unknown { raw } => {
+                    let data = raw.clone().into_bytes()?;
+                    bcs::from_bytes(&data)?
+                }
+                _ => bail!("EventDataView type was error"),
+            };
+
+            let dt = NaiveDateTime::from_timestamp((update_event.timestamp / 1_000_000) as i64, 0);
+            let date_time: DateTime<Local> = Local.from_local_datetime(&dt).unwrap();
+
+            println!(
+                "{} - {} - {} ",
+                String::from_utf8(update_event.currency_code)?,
+                update_event.value as f64 / (0x100000000_u64 as f64),
+                date_time, //dt.format("%Y-%m-%d %H:%M:%S").to_string()
+            );
+        }
+
         Ok(())
     }
 }

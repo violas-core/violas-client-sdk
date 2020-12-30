@@ -8,7 +8,9 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+bcs = "0.1.2"
 bytes = "0.5"
+hex = "0.4.2"
 hyper = "0.13"
 hyper-timeout = "0.3"
 hyper-tls = "0.4"

@@ -150,7 +150,7 @@ impl Oracle {
             update_price_from_oracle,
             vec![make_currency_tag(currency_code)],
             vec![],
-            true,
+            false,
         )?;
 
         Ok(())

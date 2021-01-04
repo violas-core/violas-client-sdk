@@ -119,7 +119,7 @@ fn process_command(command: Command) -> Result<()> {
             let currency_rates =
                 rt.block_on(async { gather_exchange_rate_from_coinbase().await })?;
 
-            let mut oracle = create_oracle(args)?;
+            let mut oracle = create_oracle(args.clone())?;
             oracle.create_admin_account()?;
 
             for currency_rate in currency_rates {
@@ -131,6 +131,10 @@ fn process_command(command: Command) -> Result<()> {
                     }
                     Err(e) => {
                         println!("failed to update exchange rate, error : {}", e);
+                        match create_oracle(args.clone()) {
+                            Ok(ret) => oracle = ret,
+                            Err(e) => println!("failed to create oracle client, {}.", e),
+                        }
                     }
                 }
             }

@@ -105,7 +105,12 @@ impl Oracle {
         Ok(())
     }
 
-    pub fn update_exchange_rate(&mut self, currency_code: &str, exchange_rate: f64) -> Result<()> {
+    pub fn update_exchange_rate(
+        &mut self,
+        currency_code: &str,
+        exchange_rate: f64,
+        is_blocking: bool,
+    ) -> Result<()> {
         // let script_bytecode = fs::read(
         //     "/home/hunter/Projects/work/ViolasClientSdk/move/oracle/update_exchange_rate.mv",
         // )?;
@@ -142,7 +147,7 @@ impl Oracle {
                 TransactionArgument::U64(numerator),
                 TransactionArgument::U64(denominator),
             ],
-            false,
+            is_blocking,
         )?;
 
         self.client.execute_raw_script_bytecode(
@@ -150,7 +155,7 @@ impl Oracle {
             update_price_from_oracle,
             vec![make_currency_tag(currency_code)],
             vec![],
-            false,
+            is_blocking,
         )?;
 
         Ok(())

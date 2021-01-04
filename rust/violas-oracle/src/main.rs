@@ -124,18 +124,35 @@ fn process_command(command: Command) -> Result<()> {
 
             for currency_rate in currency_rates {
                 let (currency, ex_rate) = currency_rate;
-                let ret = oracle.update_exchange_rate(currency.as_str(), ex_rate);
+
+                let ret = oracle.update_exchange_rate(currency.as_str(), ex_rate, false);
                 match ret {
                     Ok(_) => {
                         print!("{} : {}, ", currency, ex_rate);
                     }
                     Err(e) => {
                         println!("failed to update exchange rate, error : {}", e);
-                        match create_oracle(args.clone()) {
-                            Ok(ret) => oracle = ret,
-                            Err(e) => println!("failed to create oracle client, {}.", e),
-                        }
                     }
+                }
+            }
+
+            //
+            // Update USDT
+            //
+            let usdt = "USDT";
+            let rate = 1.0;
+
+            let ret = oracle.update_exchange_rate(usdt, rate, true);
+            match ret {
+                Ok(_) => {
+                    print!("{} : {}, ", usdt, rate);
+                }
+                Err(e) => {
+                    eprintln!(
+                        "{} : failed to update exchange rate, error : {}",
+                        Local::now(),
+                        e
+                    );
                 }
             }
 
@@ -183,10 +200,10 @@ fn process_command(command: Command) -> Result<()> {
                     "{} : started to udpate Oracle Exchange Rates.",
                     Local::now()
                 );
-
+                // Update all currencies Violas supported
                 for currency_rate in currency_rates {
                     let (currency, ex_rate) = currency_rate;
-                    let ret = oracle.update_exchange_rate(currency.as_str(), ex_rate);
+                    let ret = oracle.update_exchange_rate(currency.as_str(), ex_rate, false);
                     match ret {
                         Ok(_) => {
                             print!("{} : {}, ", currency, ex_rate);
@@ -197,6 +214,29 @@ fn process_command(command: Command) -> Result<()> {
                                 Local::now(),
                                 e
                             );
+                        }
+                    }
+                }
+                //
+                // Update USDT
+                //
+                let usdt = "USDT";
+                let rate = 1.0;
+
+                let ret = oracle.update_exchange_rate(usdt, rate, true);
+                match ret {
+                    Ok(_) => {
+                        print!("{} : {}, ", usdt, rate);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "{} : failed to update exchange rate, error : {}",
+                            Local::now(),
+                            e
+                        );
+                        match create_oracle(args.clone()) {
+                            Ok(ret) => oracle = ret,
+                            Err(e) => println!("failed to create oracle client, {}.", e),
                         }
                     }
                 }
@@ -220,6 +260,7 @@ fn process_command(command: Command) -> Result<()> {
                 for currency_code in ALL_CURRENCIES_CODE.iter() {
                     oracle.get_last_event(currency_code)?;
                 }
+                oracle.get_last_event("USDT")?;
 
                 Ok(())
             })?;

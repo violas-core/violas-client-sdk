@@ -97,7 +97,7 @@ impl Oracle {
         }
 
         println!(
-            "update Oracle exchange rate  with account address {} and authentication key {:x?}",
+            "Created Oracle administrator account address {} and authentication key {:x?}",
             oracle_admin_address(),
             self.client.accounts[0].authentication_key.as_ref().unwrap()
         );

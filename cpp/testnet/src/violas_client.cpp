@@ -15,16 +15,16 @@ using namespace std;
 using namespace violas;
 
 string currency_codes[] = {
-    "VLSUSD",
-    "VLSEUR",
-    "VLSGBP",
-    "VLSSGD",
-    "USD",
-    "EUR",
-    "GBP",
-    "SGD",
-    "BTC",
-    "USDT",
+    // "VLSUSD",
+    // "VLSEUR",
+    // "VLSGBP",
+    // "VLSSGD",
+    // "USD",
+    // "EUR",
+    // "GBP",
+    // "SGD",
+    "vBTC",
+    "vUSDT",
 };
 
 enum account_type
@@ -265,7 +265,6 @@ void deploy_exchange(client_ptr client)
     cout << "Violas client is using mnemonic file "
          << color::GREEN << mnemonic << color::RESET
          << endl;
-    
 
     auto admin = client->create_next_account(EXCHANGE_ADMIN_ADDRESS);
     auto user1 = client->create_next_account();
@@ -360,29 +359,29 @@ void deploy_exchange(client_ptr client)
         cout << color::GREEN << "add all currencies for Exchange" << color::RESET << endl;
     });
 
-    exchange->add_liquidity(user1.index, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 2 * MICRO_COIN, 0});
+    // exchange->add_liquidity(user1.index, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 2 * MICRO_COIN, 0});
 
-    exchange->add_liquidity(user1.index, {currency_codes[1], 2 * MICRO_COIN, 0}, {currency_codes[2], 4 * MICRO_COIN, 0});
+    // exchange->add_liquidity(user1.index, {currency_codes[1], 2 * MICRO_COIN, 0}, {currency_codes[2], 4 * MICRO_COIN, 0});
 
-    exchange->add_liquidity(user1.index, {currency_codes[2], 4 * MICRO_COIN, 0}, {currency_codes[3], 8 * MICRO_COIN, 0});
+    // exchange->add_liquidity(user1.index, {currency_codes[2], 4 * MICRO_COIN, 0}, {currency_codes[3], 8 * MICRO_COIN, 0});
 
-    //exchange->add_liquidity(user0, {currency_codes[3], 1 * MICRO_COIN, 0}, {currency_codes[4], 4 * MICRO_COIN, 0});
-    cout << "added liquidity with account 1 for Exchange" << endl;
+    // //exchange->add_liquidity(user0, {currency_codes[3], 1 * MICRO_COIN, 0}, {currency_codes[4], 4 * MICRO_COIN, 0});
+    // cout << "added liquidity with account 1 for Exchange" << endl;
 
-    auto currencies = exchange->get_currencies();
-    copy(begin(currencies), end(currencies), ostream_iterator<string>(cout, ", "));
-    cout << endl;
+    // auto currencies = exchange->get_currencies();
+    // copy(begin(currencies), end(currencies), ostream_iterator<string>(cout, ", "));
+    // cout << endl;
 
-    auto reserve = exchange->get_reserves();
-    cout << reserve << endl;
+    // auto reserve = exchange->get_reserves();
+    // cout << reserve << endl;
 
-    auto liquidity_balance = exchange->get_liquidity_balance();
-    cout << "liquidity balance is :" << liquidity_balance << endl;
+    // auto liquidity_balance = exchange->get_liquidity_balance();
+    // cout << "liquidity balance is :" << liquidity_balance << endl;
 
-    exchange->swap(user1.index, user1.address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
+    // exchange->swap(user1.index, user1.address, currency_codes[0], 1 * MICRO_COIN, currency_codes[2], 0);
 
-    print_all_balance(user1.address);
-    print_all_balance(user2.address);
+    // print_all_balance(user1.address);
+    // print_all_balance(user2.address);
 }
 
 void deploy_bank(client_ptr client)
@@ -481,15 +480,14 @@ void deploy_bank(client_ptr client)
 
     cout << "finished Initialization for Bank module" << endl;
 
-    // try_catch([=]() {
-    // });
+    try_catch([=]() {
+    });
 
-    // bank->update_currency_price(currency_codes[0], Bank::MANTISSA_1_0 / 10);
-    // bank->update_currency_price(currency_codes[1], Bank::MANTISSA_1_0 / 10);
+    bank->update_currency_price(currency_codes[0], Bank::MANTISSA_1_0 / 10);
+    bank->update_currency_price(currency_codes[1], Bank::MANTISSA_1_0 / 10);
     // bank->update_currency_price(currency_codes[2], Bank::MANTISSA_1_0 / 10);
-    string currencies[] = {"USD", "EUR", "GBP"};
 
-    for (auto currency_code : currencies)
+    for (auto currency_code : currency_codes)
     {
         bank->update_currency_price(currency_code, Bank::MANTISSA_1_0 / 10);
 
@@ -500,29 +498,29 @@ void deploy_bank(client_ptr client)
     }
 
     //  lock currency 0 with 10 MICRO_COIN
-    bank->lock(user1.index, currencies[0], 100 * MICRO_COIN);
+    bank->lock(user1.index, currency_codes[0], 100 * MICRO_COIN);
 
     //
     //  lock  200 and redeem 100 for currency 1
     //
-    bank->lock(user1.index, currencies[1], 200 * MICRO_COIN);
-    bank->redeem(user1.index, currencies[1], 100 * MICRO_COIN);
+    bank->lock(user1.index, currency_codes[1], 200 * MICRO_COIN);
+    bank->redeem(user1.index, currency_codes[1], 100 * MICRO_COIN);
     cout << "finished to redeem currency." << endl;
     //
     // borrow  and repay 100 for currency 2
     //
-    bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
-    bank->repay_borrow(user1.index, currencies[2], 100 * MICRO_COIN);
-    cout << "finished to repay_borrow currency." << endl;
+    // bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
+    // bank->repay_borrow(user1.index, currencies[2], 100 * MICRO_COIN);
+    // cout << "finished to repay_borrow currency." << endl;
 
-    bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
+    // bank->borrow(user1.index, currencies[2], 100 * MICRO_COIN);
 
-    bank->update_currency_price(currencies[2], Bank::MANTISSA_1_0 / 5); //20%
-    cout << "finished to update currency price." << endl;
+    // bank->update_currency_price(currencies[2], Bank::MANTISSA_1_0 / 5); //20%
+    // cout << "finished to update currency price." << endl;
 
     // bank->enter(user1, "VLSEUR", 10 * MICRO_COIN);
 
-    bank->liquidate_borrow(user2.index, currencies[2], user1.address, 90 * MICRO_COIN, currencies[0]);
+    bank->liquidate_borrow(user2.index, currency_codes[1], user1.address, 90 * MICRO_COIN, currency_codes[0]);
 }
 
 void create_bridge_accounts(client_ptr client)
@@ -533,7 +531,7 @@ void create_bridge_accounts(client_ptr client)
         {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'F', 'U', 'N', 'D'}, DD, "Bridge Fund"},
         {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', 'U', 'S', 'D', 'T'}, DD, "Bridge USDT"},
         {{0, 0, 0, 0, 0, 0, 0, 0, 0, 'B', 'R', 'G', '-', 'B', 'T', 'C'}, DD, "Bridge BTC"},
-        {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, VASP, "Bridge Parent VASP"},
+        //{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, VASP, "Bridge Parent VASP"},
     };
 
     string mnemonic = "mnemonic/bridge.mne";

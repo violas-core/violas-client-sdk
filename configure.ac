@@ -55,7 +55,9 @@ AC_ARG_ENABLE([debug],
         *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
     esac],
     [debug=false])
+    
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+AM_CONDITIONAL([ANDROID], [test x$android = xtrue])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])

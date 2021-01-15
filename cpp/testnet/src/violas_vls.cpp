@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
                  << color::GREEN << mnemonic << color::RESET
                  << endl;
         }
-        
+
         if (args.distrbuting)
         {
             distribute_vls_to_all_service_admins(client);
@@ -186,4 +186,6 @@ void recover_vls_fees_to_association(client_ptr client)
 
     vls_balance = client->get_currency_balance(accounts[ASSOCIATION_INDEX_ID].address, "VLS");
     cout << "Association account's VLS balance : " << vls_balance << endl;
+
+    //cout << format("Association account's VLS balance : %d", vls_balance) << endl;
 }

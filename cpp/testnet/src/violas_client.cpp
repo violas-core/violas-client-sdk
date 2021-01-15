@@ -41,6 +41,7 @@ void deploy_bank(client_ptr client);
 void mint_currency(client_ptr client);
 void register_currency(client_ptr client);
 void create_bridge_accounts(client_ptr client);
+void rotate_mint_key(client_ptr client);
 
 int main(int argc, const char *argv[])
 {
@@ -73,6 +74,7 @@ int main(int argc, const char *argv[])
             {4, [=]() { deploy_bank(client); }},
             {5, [=]() { mint_currency(client); }},
             {6, [=]() { create_bridge_accounts(client); }},
+            {7, [=]() { rotate_mint_key(client); }},
         };
 
         cout << "1 for deploying all currencies \n"
@@ -81,7 +83,7 @@ int main(int argc, const char *argv[])
                 "4 for deploying Bank Contract.\n"
                 "5 for minting curreny to DD account.\n"
                 "6 for creating all accounts for Bridge service.\n"
-                "7 for rotate authentication key.\n"
+                "7 for rotate mint key.\n"
                 "Please input index : ";
 
         int index;
@@ -608,8 +610,12 @@ void create_bridge_accounts(client_ptr client)
     }
 }
 
-void rotate_authentication_key(client_ptr client)
+void rotate_mint_key(client_ptr client)
 {
+    cout << color::GREEN << "Rotate mint key ..." << color::RESET << endl;
+
+    check_password();
+    
     client->create_next_account();
     auto accounts = client->get_all_accounts();
 

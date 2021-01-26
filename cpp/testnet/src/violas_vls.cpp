@@ -57,12 +57,14 @@ int main(int argc, char *argv[])
             map<int, handler> handlers = {
                 {1, [=]() { initialize_timestamp(client); }},
                 {2, [=]() { distribute_vls_to_all_service_admins(client); }},
-                {3, [=]() { recover_vls_fees_to_association(client); }},
+                {3, [=]() { mine_vls(client); }},
+                {4, [=]() { recover_vls_fees_to_association(client); }},
             };
 
             cout << "1 for initialize vls timestamp \n"
-                    "2 for distribuate vls to all Violas adminitrators\n"
-                    "3 for recover vls fees toassociation\n"
+                    "2 for distribute vls to all Violas adminitrators\n"
+                    "3 for mint VLS to all distributers\n"
+                    "4 for recover vls fees toassociation\n"
                     "Please input index : ";
 
             int index;

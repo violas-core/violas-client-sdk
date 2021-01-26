@@ -3,7 +3,7 @@
 
 use anyhow::{bail, ensure, Result};
 use diem_json_rpc_client::async_client::{
-    types as jsonrpc, Client, Retry, WaitForTransactionError, 
+    types as jsonrpc, Client, Retry, WaitForTransactionError,
 };
 use diem_json_rpc_client::views::EventView;
 
@@ -18,7 +18,6 @@ use diem_types::{
     transaction::{SignedTransaction, Version},
     trusted_state::{TrustedState, TrustedStateChange},
     waypoint::Waypoint,
-    
 };
 use reqwest::Url;
 use std::time::Duration;
@@ -109,12 +108,7 @@ impl DiemClient {
         }
     }
 
-    pub fn get_events(
-        &self,
-        event_key: &str,
-        start: u64,
-        limit: u64,
-    ) -> Result<Vec<EventView>> {
+    pub fn get_events(&self, event_key: &str, start: u64, limit: u64) -> Result<Vec<EventView>> {
         self.runtime
             .lock()
             .block_on(self.client.get_events_ex(event_key, start, limit))

@@ -3,7 +3,7 @@ bin_PROGRAMS    = violas_client violas_vls violas_swap
 if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/debug    
     # file cpp_closures.o was compiled by rust
-    RUST_CPP_CLIENT = $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-da3e388b1e991ea8/out/rust_cpp/cpp_closures.o
+    RUST_CPP_CLIENT = $(top_srcdir)/rust/violas-client/target/debug/build/violas-client-12e67b2d95dba2e6/out/rust_cpp/cpp_closures.o
 else
     # CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/aarch64-linux-android/release    
     # RUST_CPP_CLIENT = $(top_srcdir)/rust/violas-client/target/aarch64-linux-android/release/build/violas-client-1ea0705af08078ac/out/rust_cpp/cpp_closures.o

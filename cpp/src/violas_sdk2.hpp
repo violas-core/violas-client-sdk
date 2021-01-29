@@ -12,7 +12,8 @@ namespace violas
     public:
         static std::shared_ptr<Exchange>
         create(client_ptr client,
-               std::string_view exchange_contracts_path);
+               std::string_view exchange_contracts_path,
+               const AddressAndIndex &admin);
 
         virtual ~Exchange() {}
 

@@ -345,7 +345,7 @@ void deploy_exchange(client_ptr client)
     //////////////////////////////////////////////////////////////////////////////////////////
     const Address reward_admin_address = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x56, 0x4C, 0x53, 0x01}; //000000000000000000000000564C5301
     const string script_path = "move/exchange/";
-    auto exchange = Exchange::create(client, script_path);
+    auto exchange = Exchange::create(client, script_path, admin);
 
     try_catch([&]() {
         exchange->deploy_with_root_account();
@@ -360,6 +360,12 @@ void deploy_exchange(client_ptr client)
         }
         cout << color::GREEN << "add all currencies for Exchange" << color::RESET << endl;
     });
+
+    // for (auto currency : {"VLSUSD", "NEOUSD", "PAMUSD", "GNIUSD", "VUSDC", "VBUSD", "VHUSD"})
+    // {
+    //     exchange->add_currency(currency);
+    //     cout << "Add currency " << currency << endl;
+    // }
 
     // exchange->add_liquidity(user1.index, {currency_codes[0], 1 * MICRO_COIN, 0}, {currency_codes[1], 2 * MICRO_COIN, 0});
 
@@ -615,7 +621,7 @@ void rotate_mint_key(client_ptr client)
     cout << color::GREEN << "Rotate mint key ..." << color::RESET << endl;
 
     check_password();
-    
+
     client->create_next_account();
     auto accounts = client->get_all_accounts();
 

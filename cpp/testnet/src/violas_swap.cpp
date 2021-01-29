@@ -148,13 +148,24 @@ void test_swap(client_ptr client)
     client->execute_script_file(2, "move/swap/swap.mv", {USD, EUR}, {1 * MICRO_COIN, 6 * MICRO_COIN});    
     cout << "exec swap.mv" << endl;
 
+    // client->execute_script_file(1, "move/swap/withdraw_liquidity.mv", {USD, EUR}, {6 * MICRO_COIN});
+    // cout << "exec withdraw_liquidity.mv" << endl;
+
+    client->execute_script_file(1, "move/swap/deposit_liquidity.mv", {USD, EUR}, {2 * MICRO_COIN, 18 * MICRO_COIN});
+    cout << "exec deposit_liquidity.mv" << endl;
+    
+    client->execute_script_file(2, "move/swap/swap.mv", {EUR, USD}, {6 * MICRO_COIN, uint64_t(0 * MICRO_COIN)});
+    cout << "exec swap.mv" << endl;
+
     client->execute_script_file(1, "move/swap/withdraw_liquidity.mv", {USD, EUR}, {6 * MICRO_COIN});
     cout << "exec withdraw_liquidity.mv" << endl;
-
+    //
+    //  test swap3
+    //
     // client->execute_script_file(1, "move/swap/deposit_liquidity.mv", {USD, EUR}, {2 * MICRO_COIN, 18 * MICRO_COIN});
     // cout << "exec deposit_liquidity.mv" << endl;
     
-    // client->execute_script_file(2, "move/swap/swap.mv", {EUR, USD}, {6 * MICRO_COIN, uint64_t(0 * MICRO_COIN)});
+    // client->execute_script_file(2, "move/swap/swap3.mv", {EUR, USD}, {6 * MICRO_COIN, uint64_t(0 * MICRO_COIN)});
     // cout << "exec swap.mv" << endl;
 
     // client->execute_script_file(1, "move/swap/withdraw_liquidity.mv", {USD, EUR}, {6 * MICRO_COIN});

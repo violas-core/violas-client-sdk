@@ -16,8 +16,10 @@ namespace violas
 
     public:
         ExchangeImp(client_ptr client,
-                    std::string_view exchange_contracts_path)
-            : m_client(client),
+                    std::string_view exchange_contracts_path,
+                    const AddressAndIndex &admin)
+            : m_client(client),              
+              m_admin(admin),
               m_script_path(exchange_contracts_path)
         {
         }
@@ -260,9 +262,10 @@ namespace violas
     };
 
     std::shared_ptr<Exchange> Exchange::create(client_ptr client,
-                                               std::string_view exchange_contracts_path)
+                                               std::string_view exchange_contracts_path,
+                                               const AddressAndIndex &admin)
     {
-        return make_shared<ExchangeImp>(client, exchange_contracts_path);
+        return make_shared<ExchangeImp>(client, exchange_contracts_path, admin);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////

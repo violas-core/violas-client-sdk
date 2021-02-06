@@ -1,11 +1,13 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <sstream>
 #include <tuple>
 #include <functional>
 #include <client.hpp>
 #include "utils.h"
 #include "argument.hpp"
+#include "json.hpp"
 
 using namespace std;
 using namespace violas;
@@ -14,6 +16,7 @@ void initialize_timestamp(client_ptr client);
 void mine_vls(client_ptr client);
 void distribute_vls_to_all_service_admins(client_ptr client);
 void recover_vls_fees_to_association(client_ptr client);
+void view_vls_info(client_ptr client);
 
 const tuple<Address, string> VLS_ADDRESSES[] = {
     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x00}, "VLS-TRASH"}, // 000000000000000000000000564C5300
@@ -50,28 +53,41 @@ int main(int argc, char *argv[])
         if (args.distrbuting)
         {
             distribute_vls_to_all_service_admins(client);
+            return 0;
         }
-        else
+
+        using handler = function<void()>;
+        map<uint, handler> handlers = {
+            {1, [=]() { initialize_timestamp(client); }},
+            {2, [=]() { distribute_vls_to_all_service_admins(client); }},
+            {3, [=]() { mine_vls(client); }},
+            {4, [=]() { recover_vls_fees_to_association(client); }},
+            {5, [=]() { view_vls_info(client); }},
+        };
+
+        uint index = 0;
+        do
         {
-            using handler = function<void()>;
-            map<int, handler> handlers = {
-                {1, [=]() { initialize_timestamp(client); }},
-                {2, [=]() { distribute_vls_to_all_service_admins(client); }},
-                {3, [=]() { mine_vls(client); }},
-                {4, [=]() { recover_vls_fees_to_association(client); }},
-            };
+            cout << "Function list\n"
+                 << color::CYAN
+                 << left << setw(10) << "Index"
+                 << left << setw(50) << "Description"
+                 << color::RESET
+                 << endl;
 
-            cout << "1 for initialize vls timestamp \n"
-                    "2 for distribute vls to all Violas adminitrators\n"
-                    "3 for mint VLS to all distributers\n"
-                    "4 for recover vls fees toassociation\n"
-                    "Please input index : ";
+            cout << left << setw(10) << "0" << left << setw(50) << "Quit" << endl
+                 << left << setw(10) << "1" << left << setw(50) << "Initialize vls timestamp" << endl
+                 << left << setw(10) << "2" << left << setw(50) << "Distribute vls to all Violas adminitrators" << endl
+                 << left << setw(10) << "3" << left << setw(50) << "Mint VLS and distribute to all receivers" << endl
+                 << left << setw(10) << "4" << left << setw(50) << "Recover vls transaction fees to Violas association" << endl
+                 << left << setw(10) << "5" << left << setw(50) << "View curreny VLS information" << endl
+                 << "Please input index : ";
 
-            int index;
             cin >> index;
 
-            handlers[index]();
-        }
+            if (handlers.find(index) != end(handlers))
+                handlers[index]();
+        } while (index != 0);
     }
     catch (const std::exception &e)
     {
@@ -82,25 +98,6 @@ int main(int argc, char *argv[])
     }
 
     return 0;
-}
-
-void mine_vls(client_ptr client)
-{
-    vector<uint8_t> mint_vls_bytecode = {
-        161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 1, 7, 8, 21, 8, 29, 16, 0, 0, 0, 1, 0, 0, 0, 0,
-        11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 8, 109, 105, 110, 101, 95, 118, 108, 115, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 17, 0, 2};
-
-    //string
-    auto [address0, name] = VLS_ADDRESSES[0];
-    client->create_next_account(address0);
-    cout << "account 0' address : " << address0 << endl;
-
-    auto accounts = client->get_all_accounts();
-
-    client->execute_script(0, mint_vls_bytecode);
-
-    cout << color::GREEN << "succeeded to mine VLS." << color::RESET << endl;
 }
 
 void initialize_timestamp(client_ptr client)
@@ -143,6 +140,30 @@ void initialize_timestamp(client_ptr client)
     cout << color::GREEN << "Initialized timestamp for VLS module." << color::RESET << endl;
 }
 
+void mine_vls(client_ptr client)
+{
+    vector<uint8_t> mint_vls_bytecode = {
+        161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 1, 7, 8, 21, 8, 29, 16, 0, 0, 0, 1, 0, 0, 0, 0,
+        11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 8, 109, 105, 110, 101, 95, 118, 108, 115, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 17, 0, 2};
+
+    //string
+    auto [address0, name] = VLS_ADDRESSES[0];
+    client->create_next_account(address0);
+    //cout << "account 0' address : " << address0 << endl;
+
+    auto accounts = client->get_all_accounts();
+
+    client->execute_script(0, mint_vls_bytecode);
+
+    time_t rawtime = time(NULL);
+    cout << color::GREEN
+         << put_time(localtime(&rawtime), "%Y-%m-%d %X") << "succeeded to mine VLS."
+         << color::RESET << endl;
+}
+//
+//  distribute VLS to all  service admins
+//
 void distribute_vls_to_all_service_admins(client_ptr client)
 {
     static VecU8 script_bytecode = {
@@ -161,8 +182,10 @@ void distribute_vls_to_all_service_admins(client_ptr client)
     client->execute_script(1, script_bytecode, {}, {});
 
     time_t rawtime = time(NULL);
-    cout << put_time(localtime(&rawtime), "%Y-%m-%d %X")
-         << " - distribute VLS from VLS-COMM to all service adminitrators" << endl;
+    cout << color::GREEN
+         << put_time(localtime(&rawtime), "%Y-%m-%d %X")
+         << " - distribute VLS from VLS-COMM to all service adminitrators"
+         << color::RESET << endl;
 }
 
 void recover_vls_fees_to_association(client_ptr client)
@@ -190,4 +213,83 @@ void recover_vls_fees_to_association(client_ptr client)
     cout << "Association account's VLS balance : " << vls_balance << endl;
 
     //cout << format("Association account's VLS balance : %d", vls_balance) << endl;
+}
+
+void view_vls_info(client_ptr client)
+{
+    using json = nlohmann::json;
+
+    cout << "all currency info : " << endl;
+
+    cout << color::CYAN
+         << left << setw(20) << "Code"
+         << left << setw(20) << "Total/scaling"
+         << left << setw(20) << "Total value"
+         << left << setw(20) << "Preburn value"
+         << left << setw(20) << "Scaling factor"
+         << color::RESET << endl;
+
+    auto currencies = json::parse(client->get_all_currency_info());
+
+    for (auto &currency : currencies)
+    {
+        //{"code":"VLS","fractional_part":1000,"preburn_value":0,"scaling_factor":1000000,"to_lbr_exchange_rate":1.0,"total_value":2136950000000}
+        auto total_div_scaling = uint64_t(currency["total_value"]) / uint64_t(currency["scaling_factor"]);
+        auto row_color = currency["code"] == "VLS" ? color::GREEN : color::YELLOW;
+
+        cout << row_color
+             << left << setw(20) << string(currency["code"])
+             << left << setw(20) << total_div_scaling
+             << left << setw(20) << currency["total_value"].dump()
+             << left << setw(20) << currency["preburn_value"].dump()
+             << left << setw(20) << currency["scaling_factor"].dump()
+             << color::RESET << endl;
+    }
+
+    cout << "VLS Receiver info :" << endl;
+    cout << color::CYAN
+         << left << setw(20) << "Name"
+         << left << setw(40) << "Address"
+         << left << setw(20) << "VLS balance"
+         << color::RESET << endl;
+
+    for (auto &[address, name] : VLS_ADDRESSES)
+    {
+        ostringstream oss;
+        oss << address;
+
+        cout << color::GREEN
+             << left << setw(20) << name
+             << left << setw(40) << oss.str()
+             << left << setw(20) << client->get_currency_balance(address, "VLS") / (double)1'000'000
+             << color::RESET << endl;
+    }
+    //
+    //
+    //
+    tuple<Address, string> DEFI_admins[] =
+        {
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0x41, 0x4E, 0x4B}, "Bank DD admin"},
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x45, 0x58, 0x43, 0x48}, "Exchange DD amdin"},
+            {{0x58, 0x5c, 0x6a, 0xa3, 0x1d, 0xfb, 0x19, 0xc4, 0xaf, 0x20, 0xe8, 0xe1, 0x41, 0x12, 0xcb, 0x3f}, "Backend DD admin"},
+        };
+
+    cout << "Violas DEFI administrator accounts info" << endl;
+    cout << color::CYAN
+         << left << setw(20) << "Name"
+         << left << setw(40) << "Address"
+         << left << setw(20) << "VLS balance"
+         << color::RESET << endl;
+
+    for (auto &[address, name] : DEFI_admins)
+    {
+        ostringstream oss;
+        oss << address;
+
+        cout << color::GREEN
+             << left << setw(20) << name
+             << left << setw(40) << oss.str()
+             << left << setw(20) << client->get_currency_balance(address, "VLS") / (double)1'000'000
+             << color::RESET << endl;
+    }
 }

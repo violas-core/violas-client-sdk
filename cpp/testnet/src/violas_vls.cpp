@@ -191,10 +191,7 @@ void distribute_vls_to_all_service_admins(client_ptr client)
 void recover_vls_fees_to_association(client_ptr client)
 {
     static VecU8 script_bytecode = {
-        161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 5, 7, 12, 44, 8, 56, 16, 0, 0, 0, 1, 0, 1, 0,
-        2, 6, 12, 5, 0, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 31, 114, 101, 99, 111, 118, 101,
-        114, 95, 118, 108, 115, 95, 102, 101, 101, 115, 95, 116, 111, 95, 97, 115, 115, 111, 99, 105, 97, 116,
-        105, 111, 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 4, 11, 0, 10, 1, 17, 0, 2};
+        161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 5, 7, 12, 44, 8, 56, 16, 0, 0, 0, 1, 0, 1, 0, 2, 6, 12, 5, 0, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 31, 114, 101, 99, 111, 118, 101, 114, 95, 118, 108, 115, 95, 102, 101, 101, 115, 95, 116, 111, 95, 97, 115, 115, 111, 99, 105, 97, 116, 105, 111, 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 4, 11, 0, 10, 1, 17, 0, 2};
 
     for (auto [address, name] : VLS_ADDRESSES)
     {
@@ -203,11 +200,12 @@ void recover_vls_fees_to_association(client_ptr client)
 
     auto accounts = client->get_all_accounts();
     const size_t ASSOCIATION_INDEX_ID = 2;
+    const auto & association_address = accounts[ASSOCIATION_INDEX_ID].address;
 
-    auto vls_balance = client->get_currency_balance(accounts[ASSOCIATION_INDEX_ID].address, "VLS");
+    auto vls_balance = client->get_currency_balance(association_address, "VLS");
     cout << "Association account's VLS balance : " << vls_balance << endl;
 
-    client->execute_script(VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID, script_bytecode, {}, {});
+    client->execute_script(VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID, script_bytecode, {}, {association_address});
 
     vls_balance = client->get_currency_balance(accounts[ASSOCIATION_INDEX_ID].address, "VLS");
     cout << "Association account's VLS balance : " << vls_balance << endl;

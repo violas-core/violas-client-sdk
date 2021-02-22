@@ -147,6 +147,9 @@ impl Oracle {
                 TransactionArgument::U64(numerator),
                 TransactionArgument::U64(denominator),
             ],
+            None,
+            None,
+            None,
             is_blocking,
         )?;
 
@@ -155,6 +158,9 @@ impl Oracle {
             update_price_from_oracle,
             vec![make_currency_tag(currency_code)],
             vec![],
+            None,
+            None,
+            None,
             is_blocking,
         )?;
 
@@ -200,6 +206,9 @@ impl Oracle {
                 TransactionArgument::U64(amount_crc1),
                 TransactionArgument::U64(amount_crc2),
             ],
+            None,
+            None,
+            None,
             false,
         )?;
         println!(

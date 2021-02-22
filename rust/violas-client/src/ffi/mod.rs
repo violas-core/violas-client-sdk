@@ -483,6 +483,9 @@ namespace violas
                        std::string_view script_file_name,
                        const std::vector<TypeTag> &type_tags,
                        const std::vector<TransactionAugment> & arguments,
+                       uint64_t max_gas_amount,
+                       uint64_t gas_unit_price,
+                       std::string gas_currency_code,
                        bool is_blocking) override
         {
             ifstream script(script_file_name.data(), ios::binary);
@@ -492,7 +495,7 @@ namespace violas
             istreambuf_iterator<char> fbeg(script), fend;
             vector<uint8_t> script_bytecode(fbeg, fend);
 
-            execute_script(account_index, script_bytecode, type_tags, arguments, is_blocking);
+            execute_script(account_index, script_bytecode, type_tags, arguments, max_gas_amount, gas_unit_price, gas_currency_code, is_blocking);
         }
 
         /**
@@ -508,6 +511,9 @@ namespace violas
                         const std::vector<uint8_t>& script,
                         const std::vector<TypeTag> &type_tags,
                         const std::vector<TransactionAugment> &arguments,
+                        uint64_t max_gas_amount,
+                       uint64_t gas_unit_price,
+                       std::string gas_currency_code,
                         bool is_blocking) override
         {
             auto in_script = script.data();
@@ -562,6 +568,7 @@ namespace violas
             auto in_c_type_tags_len = c_type_tags.size();
             auto in_args = args.data();
             auto in_args_len = args.size();
+            auto in_gas_currency_code = gas_currency_code.data();
 
             bool ret = rust!( client_execute_script [
                 rust_violas_client : &mut ViolasClient as "void *",
@@ -572,6 +579,9 @@ namespace violas
                 in_c_type_tags_len : usize as "size_t",
                 in_args : *const *const c_char as "const char * *",
                 in_args_len : usize as "size_t",
+                max_gas_amount : u64 as "uint64_t",
+                gas_unit_price : u64 as "uint64_t",
+                in_gas_currency_code : * const c_char as "const char *",
                 is_blocking : bool as "bool"
                 ] -> bool as "bool" {
 
@@ -580,7 +590,7 @@ namespace violas
                                                             .iter()
                                                             .map(|x| make_type_tag(x))
                                                             .collect();
-
+                    let gas_currency_code = CStr::from_ptr(in_gas_currency_code).to_str().unwrap();
                     let args : Vec<&str> = slice::from_raw_parts(in_args, in_args_len)
                                         .iter()
                                         .map( |x| CStr::from_ptr(*x).to_str().unwrap() )
@@ -591,6 +601,9 @@ namespace violas
                                 script_bytecode,
                                 type_tags,
                                 &args,
+                                Some(max_gas_amount),
+                                Some(gas_unit_price),
+                                Some(gas_currency_code.to_string()),
                                 is_blocking);
                     match ret {
                         Ok(_) => true,

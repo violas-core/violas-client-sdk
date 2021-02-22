@@ -417,6 +417,9 @@ impl ViolasClient {
         script_bytecode: Vec<u8>,
         tags: Vec<TypeTag>,
         args: &[&str],
+        max_gas_amount: Option<u64>,
+        gas_unit_price: Option<u64>,
+        gas_currency_code: Option<String>,
         is_blocking: bool,
     ) -> Result<()> {
         let arguments: Vec<_> = args[0..]
@@ -429,6 +432,9 @@ impl ViolasClient {
             script_bytecode,
             tags,
             arguments,
+            max_gas_amount,
+            gas_unit_price,
+            gas_currency_code,
             is_blocking,
         )
     }
@@ -440,10 +446,22 @@ impl ViolasClient {
         script_file_name: &str,
         tags: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
+        max_gas_amount: Option<u64>,
+        gas_unit_price: Option<u64>,
+        gas_currency_code: Option<String>,
         is_blocking: bool,
     ) -> Result<()> {
         let script_bytecode = fs::read(script_file_name)?;
-        self.execute_raw_script_bytecode(sender_ref_id, script_bytecode, tags, args, is_blocking)
+        self.execute_raw_script_bytecode(
+            sender_ref_id,
+            script_bytecode,
+            tags,
+            args,
+            max_gas_amount,
+            gas_unit_price,
+            gas_currency_code,
+            is_blocking,
+        )
     }
 
     /// execute script with json format
@@ -453,10 +471,20 @@ impl ViolasClient {
         script_bytecode: Vec<u8>,
         tags: Vec<TypeTag>,
         script_arguments: Vec<TransactionArgument>,
+        max_gas_amount: Option<u64>,
+        gas_unit_price: Option<u64>,
+        gas_currency_code: Option<String>,
         is_blocking: bool,
     ) -> Result<()> {
         let script = Script::new(script_bytecode, tags, script_arguments);
-        self.execute_raw_script(sender_ref_id, script, is_blocking)
+        self.execute_raw_script(
+            sender_ref_id,
+            script,
+            max_gas_amount,
+            gas_unit_price,
+            gas_currency_code,
+            is_blocking,
+        )
     }
 
     /// execute script with json format
@@ -464,6 +492,9 @@ impl ViolasClient {
         &mut self,
         sender_ref_id: u64,
         script: Script,
+        max_gas_amount: Option<u64>,
+        gas_unit_price: Option<u64>,
+        gas_currency_code: Option<String>,
         is_blocking: bool,
     ) -> Result<()> {
         let sender_opt = match sender_ref_id {
@@ -480,9 +511,9 @@ impl ViolasClient {
         let txn = self.create_txn_to_submit(
             TransactionPayload::Script(script),
             sender,
-            None,
-            None,
-            None,
+            max_gas_amount,
+            gas_unit_price,
+            gas_currency_code,
         )?;
         let proxy = &mut self.diem_client_proxy;
 
@@ -1041,6 +1072,9 @@ impl ViolasClient {
                 TransactionArgument::U8Vector(human_name),
                 TransactionArgument::Bool(add_all_currencies),
             ],
+            None,
+            None,
+            None,
             is_blocking,
         )
     }
@@ -1141,7 +1175,7 @@ impl ViolasClient {
             new_auth_key.to_vec(),
         );
 
-        self.execute_raw_script(account_index, script, is_blocking)
+        self.execute_raw_script(account_index, script, None, None, None, is_blocking)
     }
     ///
     /// Save private key

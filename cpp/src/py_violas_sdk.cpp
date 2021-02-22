@@ -132,6 +132,9 @@ public:
                         std::string_view script_file_name,
                         const std::vector<TypeTag> &type_tags = {},
                         const std::vector<TransactionAugment> &arguments = {},
+                        uint64_t max_gas_amount = 1'000'000,
+                        uint64_t gas_unit_price = 0,
+                        std::string gas_currency_code = "VLS",
                         bool is_blocking = true) override
     {
     }
@@ -143,6 +146,9 @@ public:
                    const std::vector<uint8_t> &script,
                    const std::vector<TypeTag> &type_tags = {},
                    const std::vector<TransactionAugment> &arguments = {},
+                   uint64_t max_gas_amount = 1'000'000,
+                   uint64_t gas_unit_price = 0,
+                   std::string gas_currency_code = "VLS",
                    bool is_blocking = true) override
     {
     }

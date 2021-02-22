@@ -211,6 +211,9 @@ namespace violas
                             std::string_view script_file_name,
                             const std::vector<TypeTag> &type_tags = {},
                             const std::vector<TransactionAugment> &arguments = {},
+                            uint64_t max_gas_amount = 1'000'000,
+                            uint64_t gas_unit_price = 0,
+                            std::string gas_currency_code = "VLS",
                             bool is_blocking = true) = 0;
 
         /**
@@ -226,6 +229,9 @@ namespace violas
                        const std::vector<uint8_t> &script,
                        const std::vector<TypeTag> &type_tags = {},
                        const std::vector<TransactionAugment> &arguments = {},
+                       uint64_t max_gas_amount = 1'000'000,
+                       uint64_t gas_unit_price = 0,
+                       std::string gas_currency_code = "VLS",
                        bool is_blocking = true) = 0;
 
         /**
@@ -364,13 +370,13 @@ namespace violas
 
         virtual void
         create_designated_dealer_ex(std::string_view currency_code,
-                                         uint64_t nonce,
-                                         const Address &new_account_address,
-                                         const AuthenticationKey &auth_key,
-                                         std::string_view human_name,
-                                         std::string_view base_url,
-                                         PublicKey compliance_public_key,
-                                         bool add_all_currencies) = 0;
+                                    uint64_t nonce,
+                                    const Address &new_account_address,
+                                    const AuthenticationKey &auth_key,
+                                    std::string_view human_name,
+                                    std::string_view base_url,
+                                    PublicKey compliance_public_key,
+                                    bool add_all_currencies) = 0;
 
         //
         // Create parent VASP account
@@ -398,7 +404,7 @@ namespace violas
                                              uint64_t sliding_nonce,
                                              const AuthenticationKey &new_auth_key,
                                              bool is_blocking = true) = 0;
-        
+
         /**
          * @brief recover account of wallet from specified 
          * 
@@ -415,7 +421,7 @@ namespace violas
          */
         virtual void
         save_private_key(size_t account_index, std::string_view path_file_str) = 0;
-        
+
         /**
          * @brief Update daul attestation limit
          * 

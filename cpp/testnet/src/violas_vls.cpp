@@ -78,9 +78,9 @@ int main(int argc, char *argv[])
             cout << left << setw(10) << "0" << left << setw(50) << "Quit" << endl
                  << left << setw(10) << "1" << left << setw(50) << "Initialize vls timestamp" << endl
                  << left << setw(10) << "2" << left << setw(50) << "Distribute vls to all Violas adminitrators" << endl
-                 << left << setw(10) << "3" << left << setw(50) << "Mint VLS and distribute to all receivers" << endl
+                 << left << setw(10) << "3" << left << setw(50) << "Mint VLS and distribute it to all receivers" << endl
                  << left << setw(10) << "4" << left << setw(50) << "Recover vls transaction fees to Violas association" << endl
-                 << left << setw(10) << "5" << left << setw(50) << "View curreny VLS information" << endl
+                 << left << setw(10) << "5" << left << setw(50) << "View currency VLS information" << endl
                  << "Please input index : ";
 
             cin >> index;

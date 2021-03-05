@@ -1,4 +1,4 @@
-bin_PROGRAMS    = violas_client violas_vls violas_swap
+bin_PROGRAMS    = violas_client violas_vls violas_swap violas_crypto
 
 if DEBUG
     CLIENT_PROXY_PATH = -L$(top_srcdir)/rust/violas-client/target/debug    
@@ -27,3 +27,8 @@ violas_swap_SOURCES = violas_swap.cpp
 violas_swap_CXXFLAGS = -std=c++17 -I$(top_srcdir)/cpp/src -I$(top_srcdir)/rust/violas-client/src/ffi
 violas_swap_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib -L../../src/.libs $(CLIENT_PROXY_PATH)
 violas_swap_LDADD = -lviolas_client -lviolas_sdk $(RUST_CPP_CLIENT)
+
+violas_crypto_SOURCES = violas_crypto.cpp 
+violas_crypto_CXXFLAGS = -std=c++17 -I$(top_srcdir)/cpp/src -I$(top_srcdir)/rust/violas-client/src/ffi
+violas_crypto_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib -L../../src/.libs $(CLIENT_PROXY_PATH)
+violas_crypto_LDADD = -lviolas_client -lviolas_sdk $(RUST_CPP_CLIENT)

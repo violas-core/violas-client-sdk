@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
         args.parse_command_line(argc, argv);
         args.show();
 
-        auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemoic, args.waypoint);
+        auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemonic, args.waypoint);
 
         client->test_connection();
 

@@ -7,21 +7,21 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Launch violas-demo",
-            "program": "${workspaceFolder}/rust/violas-demo/target/debug/violas-demo",
+            "name": "Launch violas_cli",
+            "program": "${workspaceFolder}/build/debug/bin/violas_cli",
             "args": [
                 "-u",
-                "http://localhost:39991",
+                "http://localhost:41497",
                 "-m",
-                "/tmp/libra/mint.key",
+                "/tmp/diem/mint.key",
                 "-w",
-                "0:488dec2c0dcd32b31472a79aa667763462121ca79fb5fd5c0f58a9be975f822a",
+                "0:a9d5140ee98af9369877e2d1c88b63ab5d45bddfcab53e429ce8cee2b78e9050",
                 "-c",
-                "4",
+                "5",
                 "-n",
-                "/home/hunter/Projects/work/bin/Violas0.6.2/mnemonic/oracle.mne"
+                "cli.mne"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/build/debug"
         },        
         {
             "type": "lldb",

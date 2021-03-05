@@ -6,7 +6,7 @@ struct Arguments
 {
     std::string url;
     std::string mint_key;
-    std::string mnemoic;
+    std::string mnemonic;
     std::string waypoint;
     uint8_t chain_id = -1;
     bool distrbuting = false;
@@ -26,7 +26,7 @@ struct Arguments
                 mint_key = optarg;
                 break;
             case 'n':
-                mnemoic = optarg;
+                mnemonic = optarg;
                 break;
             case 'w':
                 waypoint = optarg;
@@ -49,7 +49,7 @@ struct Arguments
     {
         std::cout << url << " : "
                   << mint_key << " : "
-                  << mnemoic << " : "
+                  << mnemonic << " : "
                   << waypoint << " : "
                   << chain_id << " : "
                   << distrbuting

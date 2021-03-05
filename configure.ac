@@ -65,7 +65,8 @@ AM_SILENT_RULES([yes])
 LT_INIT
 
 AC_CONFIG_FILES([Makefile
-                cpp/src/Makefile               
+                cpp/src/Makefile
+                cpp/violas_cli/src/Makefile               
                 cpp/testnet/src/Makefile
                 java/src/jni/Makefile])
 AC_OUTPUT

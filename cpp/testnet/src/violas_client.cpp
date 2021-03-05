@@ -314,10 +314,10 @@ void deploy_exchange(client_ptr client)
             client->add_currency(admin.index, currency_code);
 
             client->add_currency(user1.index, currency_code);
-            client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
+            //client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
 
             client->add_currency(user2.index, currency_code);
-            client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
+            //client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
         }
 
         cout << "created all accounts for Exchange" << endl;
@@ -448,10 +448,10 @@ void deploy_bank(client_ptr client)
             client->add_currency(admin.index, currency_code);
 
             client->add_currency(user1.index, currency_code);
-            client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
+            //client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
 
             client->add_currency(user2.index, currency_code);
-            client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
+            //client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
         }
 
         cout << "created all accounts for Bank contract." << endl;
@@ -487,6 +487,7 @@ void deploy_bank(client_ptr client)
     });
 
     cout << "finished Initialization for Bank module" << endl;
+    return;
 
     try_catch([=]() {
     });

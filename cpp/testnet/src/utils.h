@@ -1,5 +1,7 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <array>
 #include <iomanip>
@@ -41,6 +43,44 @@ std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
     return os << std::dec;
 }
 
+template <size_t N>
+std::istream &operator>>(std::istream &is, std::array<uint8_t, N> &bytes)
+{
+    std::string temp;
+
+    is >> temp;
+
+    size_t numbytes = temp.size() / 2;
+
+    for (size_t i = 0, x = 0; i < numbytes && i < N; ++i, x += 2)
+    {
+        std::istringstream iss(temp.substr(x, 2));
+        unsigned short b = 0;
+
+        if (!(iss >> std::hex >> b))
+        {
+            // error!
+            break;
+        }
+
+        // set from high to low bit 
+        //bytes[N - 1 - i] = b;
+        bytes[i] = b;
+    }
+
+    return is;
+}
+
+template <size_t N>
+std::istream &operator>>(std::istream &&is, std::array<uint8_t, N> &bytes)
+{
+    std::__rvalue_istream_type<std::istream> __ret_is = is;
+
+    __ret_is >> bytes;
+
+    return __ret_is;
+}
+
 inline void set_stdin_echo(bool enable)
 {
     struct termios tty;
@@ -59,9 +99,9 @@ std::string format(std::string_view format, Args... args)
     size_t size = snprintf(nullptr, 0, format.data(), args...) + 1; // Extra space for '\0'
     //std::unique_ptr<char[]> buf(new char[size]);
     auto buf = std::make_unique<char[]>(size);
-    
+
     snprintf(buf.get(), size, format.data(), args...);
-    
+
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 

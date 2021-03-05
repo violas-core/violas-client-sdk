@@ -1,0 +1,3 @@
+/home/hunter/Projects/work/violas-client-sdk/cpp/violas_cli/build/debug/CMakeFiles/rebuild_cache.dir
+/home/hunter/Projects/work/violas-client-sdk/cpp/violas_cli/build/debug/CMakeFiles/edit_cache.dir
+/home/hunter/Projects/work/violas-client-sdk/cpp/violas_cli/build/debug/CMakeFiles/violas_cli.dir

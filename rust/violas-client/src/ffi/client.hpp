@@ -390,6 +390,17 @@ namespace violas
                                    std::string_view base_url,
                                    PublicKey compliance_public_key,
                                    bool add_all_currencies) = 0;
+        //
+        // create child vasp account
+        //
+        virtual void
+        create_child_vasp_account(std::string_view currency_code,
+                                  size_t parent_account_index,
+                                  const Address &new_account_address,
+                                  const AuthenticationKey &auth_key,
+                                  bool add_all_currencies,
+                                  uint64_t initial_balance,
+                                  bool is_blocking = true) = 0;
 
         /**
          * @brief rotate authentication key with nonce
@@ -446,6 +457,26 @@ namespace violas
         //
         virtual std::string
         get_liquidity_balance(const Address &address) = 0;
+
+        /**
+         * @brief preburn
+         * 
+         * @param currency_code 
+         * @param account_index 
+         * @param amount 
+         */
+        virtual void
+        preburn(std::string_view currency_code, size_t account_index, uint64_t amount, bool is_blocking) = 0;
+
+        /**
+         * @brief Permanently destroy the `Token`s stored in the oldest burn request under the `Preburn` resource
+         * 
+         * @param currency_code 
+         * @param sliding_nonce 
+         * @param preburn_address 
+         */
+        virtual void
+        burn(std::string_view currency_code, uint64_t sliding_nonce, const Address &preburn_address, bool is_blocking) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

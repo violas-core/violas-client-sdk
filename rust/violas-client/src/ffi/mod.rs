@@ -597,7 +597,7 @@ namespace violas
                                         .collect();
 
                     let ret = rust_violas_client.execute_script(
-                                account_index as u64,
+                                account_index,
                                 script_bytecode,
                                 type_tags,
                                 &args,
@@ -1242,6 +1242,53 @@ namespace violas
             check_result(ret);
         }
 
+        //
+        // create child vasp account
+        //
+        virtual void
+        create_child_vasp_account(std::string_view currency_code,
+                                  size_t parent_account_index,
+                                  const Address &new_account_address,
+                                  const AuthenticationKey &auth_key,
+                                  bool add_all_currencies,
+                                  uint64_t initial_balance,
+                                  bool is_blocking) override
+        {
+            auto in_currency_code = currency_code.data();
+            auto in_address = new_account_address.data();
+            auto in_auth_key = auth_key.data();
+
+            bool ret = rust!( client_create_child_vasp_account [
+                rust_violas_client : &mut ViolasClient as "void *",
+                parent_account_index : usize as "size_t",
+                in_currency_code : *const c_char as "const char *",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                in_auth_key : &[u8;ADDRESS_LENGTH*2] as "const uint8_t *",
+                add_all_currencies : bool as "bool",
+                initial_balance : u64 as "uint64_t",
+                is_blocking : bool as "bool"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.create_child_vasp_account(
+                                    make_currency_tag(in_currency_code),
+                                    parent_account_index,
+                                    AccountAddress::new(*in_address),
+                                    AuthenticationKey::new(*in_auth_key).prefix().to_vec(),
+                                    add_all_currencies,
+                                    initial_balance,
+                                    is_blocking);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::create_parent_vasp_account, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+        }
         /**
          * @brief recover account of wallet from specified
          *
@@ -1290,7 +1337,7 @@ namespace violas
 
             bool ret = rust!( client_rotate_authentication_key_with_nonce [
                 rust_violas_client : &mut ViolasClient as "void *",
-                account_index : u64 as "size_t",
+                account_index : usize as "size_t",
                 sliding_nonce : u64 as "uint64_t",
                 //in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
                 in_new_auth_key : &[u8;ADDRESS_LENGTH*2] as "const uint8_t *",
@@ -1546,6 +1593,82 @@ namespace violas
             free_rust_string(json_string);
 
             return result;
+        }
+
+        /**
+         * @brief preburn
+         *
+         * @param currency_code
+         * @param account_index
+         * @param amount
+         */
+        virtual void
+        preburn(std::string_view currency_code, size_t account_index, uint64_t amount, bool is_blocking) override
+        {
+            auto in_currency_code = currency_code.data();
+
+            bool ret = rust!( client_preburn [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_currency_code : *const c_char as "const char *",
+                account_index : usize as "size_t",
+                amount : u64 as "uint64_t",
+                is_blocking : bool as "bool"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.preburn(
+                                    make_currency_tag(in_currency_code),
+                                    account_index,
+                                    amount,
+                                    is_blocking);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::create_parent_vasp_account, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+        }
+
+        /**
+         * @brief Permanently destroy the `Token`s stored in the oldest burn request under the `Preburn` resource
+         *
+         */
+        virtual void
+        burn(std::string_view currency_code, uint64_t sliding_nonce, const Address &preburn_address, bool is_blocking) override
+        {
+            auto in_currency_code = currency_code.data();
+            auto in_address = preburn_address.data();
+
+            bool ret = rust!( client_burn [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_currency_code : *const c_char as "const char *",
+                sliding_nonce : u64 as "uint64_t",
+                in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
+                is_blocking : bool as "bool"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.burn(
+                                    make_currency_tag(in_currency_code),
+                                    sliding_nonce,
+                                    AccountAddress::new(*in_address),
+                                    is_blocking);
+                    match ret {
+                        Ok(_) => true,
+                        Err(e) => {
+                            let err = format_err!("ffi::create_parent_vasp_account, {}",e);
+                            set_last_error(err);
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
         }
     };
 

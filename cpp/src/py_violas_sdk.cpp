@@ -277,7 +277,14 @@ public:
         PublicKey compliance_public_key,
         bool add_all_currencies) override
     {
-        m_client->create_designated_dealer_account(currency_code, nonce, new_account_address, auth_key, human_name, base_url, compliance_public_key, add_all_currencies);
+        m_client->create_designated_dealer_account(currency_code,
+                                                   nonce,
+                                                   new_account_address,
+                                                   auth_key,
+                                                   human_name,
+                                                   base_url,
+                                                   compliance_public_key,
+                                                   add_all_currencies);
     }
 
     virtual void
@@ -290,7 +297,14 @@ public:
                                 PublicKey compliance_public_key,
                                 bool add_all_currencies) override
     {
-        m_client->create_designated_dealer_ex(currency_code, nonce, new_account_address, auth_key, human_name, base_url, compliance_public_key, add_all_currencies);
+        m_client->create_designated_dealer_ex(currency_code,
+                                              nonce,
+                                              new_account_address,
+                                              auth_key,
+                                              human_name,
+                                              base_url,
+                                              compliance_public_key,
+                                              add_all_currencies);
     }
 
     virtual void
@@ -363,6 +377,38 @@ public:
                                          add_all_currencies);
     }
 
+    //
+    virtual void
+    create_child_vasp_account(std::string_view currency_code,
+                              size_t parent_account_index,
+                              const Address &new_account_address,
+                              const AuthenticationKey &auth_key,
+                              bool add_all_currencies,
+                              uint64_t initial_balance,
+                              bool is_blocking) override
+    {
+        m_client->create_child_vasp_account(currency_code,
+                                            parent_account_index,
+                                            new_account_address,
+                                            auth_key,
+                                            add_all_currencies,
+                                            initial_balance,
+                                            is_blocking);
+    }
+
+    virtual void
+    preburn(std::string_view currency_code, size_t account_index, uint64_t amount, bool is_blocking) override
+    {
+        m_client->preburn(currency_code, account_index, amount, is_blocking);
+    }
+
+    virtual void
+    burn(std::string_view currency_code, uint64_t sliding_nonce, const Address &preburn_address, bool is_blocking) override
+    {
+        m_client->burn(currency_code, sliding_nonce, preburn_address, is_blocking);
+    }
+
+    
     /**
          * @brief Query accout status infomation
          * 

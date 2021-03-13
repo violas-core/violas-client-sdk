@@ -53,9 +53,9 @@ const GAS_UNIT_PRICE: u64 = 0;
 const MAX_GAS_AMOUNT: u64 = 1_000_000;
 const TX_EXPIRATION: i64 = 100;
 
-pub const VIOLAS_ROOT_ACCOUNT_ID: u64 = u64::MAX;
-pub const VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 1;
-pub const VIOLAS_TESTNET_DD_ACCOUNT_ID: u64 = VIOLAS_ROOT_ACCOUNT_ID - 2;
+pub const VIOLAS_ROOT_ACCOUNT_ID: usize = u64::MAX as usize;
+pub const VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID: usize = VIOLAS_ROOT_ACCOUNT_ID - 1;
+pub const VIOLAS_TESTNET_DD_ACCOUNT_ID: usize = VIOLAS_ROOT_ACCOUNT_ID - 2;
 
 ///
 /// struct ViolasClient
@@ -413,7 +413,7 @@ impl ViolasClient {
     /// if sender ref id is u64::MAX, then execute module with association account
     pub fn execute_script(
         &mut self,
-        sender_ref_id: u64,
+        sender_ref_id: usize,
         script_bytecode: Vec<u8>,
         tags: Vec<TypeTag>,
         args: &[&str],
@@ -442,7 +442,7 @@ impl ViolasClient {
     /// execute script with json format
     pub fn execute_raw_script_file(
         &mut self,
-        sender_ref_id: u64,
+        sender_ref_id: usize,
         script_file_name: &str,
         tags: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
@@ -467,7 +467,7 @@ impl ViolasClient {
     /// execute script with json format
     pub fn execute_raw_script_bytecode(
         &mut self,
-        sender_ref_id: u64,
+        sender_ref_id: usize,
         script_bytecode: Vec<u8>,
         tags: Vec<TypeTag>,
         script_arguments: Vec<TransactionArgument>,
@@ -490,7 +490,7 @@ impl ViolasClient {
     /// execute script with json format
     pub fn execute_raw_script(
         &mut self,
-        sender_ref_id: u64,
+        sender_ref_id: usize,
         script: Script,
         max_gas_amount: Option<u64>,
         gas_unit_price: Option<u64>,
@@ -842,71 +842,36 @@ impl ViolasClient {
     pub fn preburn(
         &mut self,
         type_tag: TypeTag,
+        sender_ref_id: usize,
         amount: u64,
-        account_ref_id: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        if account_ref_id == u64::MAX {
-            match &self.diem_root_account {
-                Some(_) => {
-                    let script = transaction_builder::encode_preburn_script(type_tag, amount);
-                    self.association_transaction_with_local_diem_root_account(
-                        TransactionPayload::Script(script),
-                        is_blocking,
-                    )
-                }
-                None => unimplemented!(),
-            }
-        } else {
-            self.submit_transction_with_account(
-                account_ref_id as usize,
-                transaction_builder::encode_preburn_script(type_tag.clone(), amount),
-                None,
-                None,
-                Some(type_tag),
-                is_blocking,
-            )
-        }
+        self.execute_raw_script(
+            sender_ref_id,
+            transaction_builder::encode_preburn_script(type_tag, amount),
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     ///  Permanently destroy the `Token`s stored in the oldest burn request under the `Preburn` resource
     pub fn burn(
         &mut self,
         type_tag: TypeTag,
-        account_ref_id: u64,
         sliding_nonce: u64,
         preburn_address: AccountAddress,
         is_blocking: bool,
     ) -> Result<()> {
-        if account_ref_id == u64::MAX {
-            match &self.diem_root_account {
-                Some(_) => {
-                    let script = transaction_builder::encode_burn_script(
-                        type_tag,
-                        sliding_nonce,
-                        preburn_address,
-                    );
-                    self.association_transaction_with_local_diem_root_account(
-                        TransactionPayload::Script(script),
-                        is_blocking,
-                    )
-                }
-                None => unimplemented!(),
-            }
-        } else {
-            self.submit_transction_with_account(
-                account_ref_id as usize,
-                transaction_builder::encode_burn_script(
-                    type_tag.clone(),
-                    sliding_nonce,
-                    preburn_address,
-                ),
-                None,
-                None,
-                Some(type_tag),
-                is_blocking,
-            )
-        }
+        self.execute_raw_script(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            transaction_builder::encode_burn_script(type_tag, sliding_nonce, preburn_address),
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     /// Create a testnet account
@@ -972,18 +937,13 @@ impl ViolasClient {
     pub fn create_child_vasp_account(
         &mut self,
         type_tag: TypeTag,
-        parent_account_index: u64,
+        parent_account_index: usize,
         new_account_address: AccountAddress,
         auth_key_prefix: Vec<u8>,
         add_all_currencies: bool,
         initial_balance: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        // match &self.diem_root_account {
-        //     Some(_) => {}
-        //     None => unimplemented!(),
-        // }
-
         let script = transaction_builder::encode_create_child_vasp_account_script(
             type_tag.clone(),
             new_account_address,
@@ -993,7 +953,7 @@ impl ViolasClient {
         );
 
         self.submit_transction_with_account(
-            parent_account_index as usize,
+            parent_account_index,
             script,
             None,
             None,
@@ -1165,7 +1125,7 @@ impl ViolasClient {
     ///
     pub fn rotate_authentication_key_with_nonce(
         &mut self,
-        account_index: u64,
+        account_index: usize,
         sliding_nonce: u64,
         new_auth_key: AuthenticationKey,
         is_blocking: bool,

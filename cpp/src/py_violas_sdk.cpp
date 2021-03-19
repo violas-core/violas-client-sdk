@@ -408,7 +408,6 @@ public:
         m_client->burn(currency_code, sliding_nonce, preburn_address, is_blocking);
     }
 
-    
     /**
          * @brief Query accout status infomation
          * 
@@ -446,19 +445,28 @@ public:
          */
     virtual std::string
     query_transaction_range(uint64_t start_version,
-                           uint64_t limit,
-                           bool is_fetching_events) override
+                            uint64_t limit,
+                            bool is_fetching_events) override
     {
         return m_client->query_transaction_range(start_version, limit, is_fetching_events);
     }
 
     virtual std::string
-    query_events(const Address &address,
-                 event_type type,
-                 uint64_t start_version,
-                 uint64_t limit) override
+    query_payment_events(const Address &address,
+                         payment_event_type type,
+                         uint64_t start_version,
+                         uint64_t limit) override
     {
-        return m_client->query_events(address, type, start_version, limit);
+        return m_client->query_payment_events(address, type, start_version, limit);
+    }
+
+    virtual std::string
+    query_currency_events(std::string_view currency_code,
+                          currency_event_type type,
+                          uint64_t start_sn,
+                          uint64_t limit) override
+    {
+        return m_client->query_currency_events(currency_code, type, start_sn, limit);
     }
 
     /// get the balance of currency for the account address

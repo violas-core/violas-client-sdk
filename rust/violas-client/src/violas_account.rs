@@ -58,6 +58,14 @@ impl From<&CurrencyInfoResource> for CurrencyInfoViewEx {
     }
 }
 
+pub enum CurrencyEventType {
+    Minted = 0,
+    Burned = 1,
+    Preburned = 2,
+    CancelledBurn = 3,
+    UpdatedExchangeRate = 4,
+}
+
 pub mod exchange {
     use serde::{Deserialize, Serialize};
     //

@@ -1,4 +1,8 @@
-use crate::{violas_account, violas_client::ViolasClient, AccountAddress, AccountStatus};
+use crate::{
+    violas_account::{self, CurrencyEventType},
+    violas_client::ViolasClient,
+    AccountAddress, AccountStatus,
+};
 use anyhow::{format_err, Error};
 use cpp::cpp;
 use diem_types::{
@@ -786,24 +790,24 @@ namespace violas
             return result;
         }
         ///
-        /// Query events
+        /// Query payment events
         ///
         virtual std::string
-        query_events(const Address &address,
-                     event_type type,
-                     uint64_t start_version,
-                     uint64_t limit) override
+        query_payment_events(const Address &address,
+                             payment_event_type type,
+                             uint64_t start_sn,
+                            uint64_t limit) override
         {
             auto in_address = address.data();
             char * json_string = nullptr;
             char ** out_json_string = &json_string;
-            bool in_event_type = (type == event_type::sent)? true : false;
+            bool in_event_type = (type == payment_event_type::sent)? true : false;
 
-            bool ret = rust!( client_query_events [
+            bool ret = rust!( client_query_payment_events [
                 rust_violas_client : &mut ViolasClient as "void *",
                 in_address : &[u8;ADDRESS_LENGTH] as "const uint8_t *",
                 in_event_type : bool as "bool",
-                start_version : u64 as "uint64_t",
+                start_sn : u64 as "uint64_t",
                 limit : u64 as "uint64_t",
                 out_json_string : *mut *mut c_char as "char **"
                 ] -> bool as "bool" {
@@ -811,11 +815,76 @@ namespace violas
                     let ret = rust_violas_client.query_payment_events(
                                                         AccountAddress::new(*in_address),
                                                         in_event_type,
-                                                        start_version, limit);
+                                                        start_sn, limit);
 
                     match ret {
                         Ok(events_account ) => {
                             let json_currencies = serde_json::to_string(&events_account).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new CString error")
+                                    .into_raw();
+                                true
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to query events with error, {}", e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
+        }
+
+        ///
+        /// Query payment events
+        ///
+        virtual std::string
+        query_currency_events(std::string_view currency_code,
+                            currency_event_type event_type,
+                            uint64_t start_sn,
+                            uint64_t limit) override
+        {
+            auto in_currency_code = currency_code.data();
+            size_t in_event_type = (size_t)event_type;
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_query_currency_events [
+                rust_violas_client : &mut ViolasClient as "void *",
+                in_currency_code : *const c_char as "const char *",
+                in_event_type : usize as "size_t",
+                start_sn : u64 as "uint64_t",
+                limit : u64 as "uint64_t",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+                    let event_type = match in_event_type {
+                        0 =>  CurrencyEventType::Minted,
+                        1 => CurrencyEventType::Burned,
+                        2 => CurrencyEventType::Preburned,
+                        3 => CurrencyEventType::CancelledBurn,
+                        4 => CurrencyEventType::UpdatedExchangeRate,
+                        _ => {
+                            set_last_error(format_err!("currency event type is not matched"));
+                            return false;
+                        }
+                    };
+
+                    let ret = rust_violas_client.query_currency_events(
+                                                        CStr::from_ptr(in_currency_code).to_str().unwrap(),
+                                                        event_type,
+                                                        start_sn,
+                                                        limit);
+
+                    match ret {
+                        Ok(events) => {
+                            let json_currencies = serde_json::to_string(&events).unwrap();
                                 *out_json_string = CString::new(json_currencies)
                                     .expect("new CString error")
                                     .into_raw();

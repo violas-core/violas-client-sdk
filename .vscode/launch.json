@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/debug/bin/violas_cli",
             "args": [
                 "-u",
-                "http://localhost:45529",
+                "http://localhost:45253",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",

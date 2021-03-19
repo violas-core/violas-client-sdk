@@ -1,8 +1,8 @@
 use crate::{
     diem_client::DiemClient,
     diem_client_proxy::ClientProxy,
-    violas_account::CurrencyInfoViewEx, //make_currency_tag
-    AccountData,                        //AccountStatus
+    violas_account::{CurrencyEventType, CurrencyInfoViewEx},
+    AccountData, //AccountStatus
     AccountStatus,
 };
 use anyhow::{bail, ensure, format_err, Result}; //ensure, Error
@@ -874,6 +874,22 @@ impl ViolasClient {
         )
     }
 
+    pub fn canncle_burn(
+        &mut self,
+        type_tag: TypeTag,
+        preburn_address: AccountAddress,
+        is_blocking: bool,
+    ) -> Result<()> {
+        self.execute_raw_script(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            transaction_builder::encode_cancel_burn_script(type_tag, preburn_address),
+            None,
+            None,
+            None,
+            is_blocking,
+        )
+    }
+
     /// Create a testnet account
     pub fn create_validator_account(
         self: &mut Self,
@@ -1234,6 +1250,35 @@ impl ViolasClient {
             start_seq_number,
             limit,
         )
+    }
+
+    pub fn query_currency_events(
+        &mut self,
+        currency_code: &str,
+        event_type: CurrencyEventType,
+        start_sn: u64,
+        limit: u64,
+    ) -> Result<Vec<EventView>> {
+        let event_key = if let Some(crc_info) = self
+            .client
+            .get_currency_info()?
+            .iter()
+            .find(|currency| currency.code == currency_code)
+        {
+            match event_type {
+                CurrencyEventType::Minted => crc_info.mint_events_key.clone(),
+                CurrencyEventType::Burned => crc_info.burn_events_key.clone(),
+                CurrencyEventType::Preburned => crc_info.preburn_events_key.clone(),
+                CurrencyEventType::CancelledBurn => crc_info.cancel_burn_events_key.clone(),
+                CurrencyEventType::UpdatedExchangeRate => {
+                    crc_info.exchange_rate_update_events_key.clone()
+                } //_ => bail!("event type is not matched."),
+            }
+        } else {
+            bail!("didn't find currency code ");
+        };
+
+        self.client.get_events(&event_key, start_sn, limit)
     }
 }
 

@@ -265,17 +265,17 @@ namespace violas
          */
         virtual std::string
         query_transaction_range(uint64_t start_version,
-                               uint64_t limit,
-                               bool is_fetching_events) = 0;
+                                uint64_t limit,
+                                bool is_fetching_events) = 0;
         /**
          * @brief evnet type
          * 
          */
-        enum event_type
+        enum payment_event_type
         {
             sent,
             received,
-            burned,
+
         };
 
         /**
@@ -288,10 +288,25 @@ namespace violas
          * @return std::string  with json format
          */
         virtual std::string
-        query_events(const Address &address,
-                     event_type type,
-                     uint64_t start_version,
-                     uint64_t limit) = 0;
+        query_payment_events(const Address &address,
+                             payment_event_type type,
+                             uint64_t start_sn,
+                             uint64_t limit) = 0;
+
+        enum currency_event_type
+        {
+            minted = 0,
+            burned,
+            preburned,
+            cancelled_burn,
+            updated_exchange_rate,
+        };
+
+        virtual std::string
+        query_currency_events(std::string_view currency_code,
+                              currency_event_type type,
+                              uint64_t start_sn,
+                              uint64_t limit) = 0;
 
         //
         //  Execute script file with specified arguments

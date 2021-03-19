@@ -47,8 +47,9 @@ public:
         _handlers["save-private-key"] = bind(&CommandImp::save_private_key, this, _1);
         _handlers["query-transaction"] = bind(&CommandImp::query_transaction, this, _1);
         _handlers["query-txn-range"] = bind(&CommandImp::query_txn_range, this, _1);
-        _handlers["query-events"] = bind(&CommandImp::query_events, this, _1);
+        _handlers["query-payment-events"] = bind(&CommandImp::query_payment_events, this, _1);
         _handlers["query-balances"] = bind(&CommandImp::query_balances, this, _1);
+        _handlers["query-currency-events"] = bind(&CommandImp::query_currency_events, this, _1);
     };
 
     virtual bool
@@ -463,13 +464,13 @@ protected:
         cout << txs.dump(4) << endl;
     }
 
-    violas::Client::event_type string_to_event_type(string_view str)
+    violas::Client::payment_event_type string_to_event_type(string_view str)
     {
-        map<string_view, violas::Client::event_type> event_types =
+        map<string_view, violas::Client::payment_event_type> event_types =
             {
-                {"sent", violas::Client::event_type::sent},
-                {"received", violas::Client::event_type::received},
-                {"burned", violas::Client::event_type::burned},
+                {"sent", violas::Client::payment_event_type::sent},
+                {"received", violas::Client::payment_event_type::received},
+                //{"burned", violas::Client::payment_event_type::burned},
             };
 
         auto iter = event_types.find(str);
@@ -480,7 +481,7 @@ protected:
             __throw_invalid_argument(fmt("\"", str, "\" is not a event type, pleas input correct event type such as \"sent, receivied, burned\"").c_str());
     }
 
-    void query_events(const vector<string> &args)
+    void query_payment_events(const vector<string> &args)
     {
         if (args.size() < 4)
             __throw_invalid_argument("query-events address event-type start limit");
@@ -489,7 +490,16 @@ protected:
         size_t account_index;
         uint64_t start_event_sn;
         uint64_t limit;
-        violas::Client::event_type event_type = string_to_event_type(args[1]);
+        auto event_type = [](string_view type) -> auto
+        {
+            if (type == "sent")
+                return violas::Client::payment_event_type::sent;
+            else if (type == "received")
+                return violas::Client::payment_event_type::received;
+
+            __throw_invalid_argument(fmt("\"", type, "\" is not a payment event type, pleas input correct event type such as \"sent, receivied\"").c_str());
+        }
+        (args[1]);
 
         if (args[0].length() == 32)
             istringstream(args[0]) >> address;
@@ -504,7 +514,44 @@ protected:
         istringstream(args[2]) >> start_event_sn;
         istringstream(args[3]) >> limit;
 
-        auto transactions = _client->query_events(address, event_type, start_event_sn, limit);
+        auto transactions = _client->query_payment_events(address, event_type, start_event_sn, limit);
+
+        using json = nlohmann::json;
+        auto txs = json::parse(transactions);
+
+        cout << txs.dump(4) << endl;
+    }
+
+    void query_currency_events(const vector<string> &args)
+    {
+        if (args.size() < 4)
+            __throw_invalid_argument("query-currency-events currency event-type(minted, burned, preburned, cancelled-burn, updated-exchange-rate) start limit");
+
+        string_view currency_code = args[0];
+        uint64_t start_event_sn;
+        uint64_t limit;
+
+        auto event_type = [](const string &type) -> auto
+        {
+            if (type == "minted")
+                return violas::Client::currency_event_type::minted;
+            else if (type == "burned")
+                return violas::Client::currency_event_type::burned;
+            else if (type == "preburned")
+                return violas::Client::currency_event_type::preburned;
+            else if (type == "cancelled-burn")
+                return violas::Client::currency_event_type::cancelled_burn;
+            else if (type == "updated_exchange_rate")
+                return violas::Client::currency_event_type::updated_exchange_rate;
+            else
+                __throw_invalid_argument(fmt("\"", type, "\" is not a payment event type, pleas input correct event type such as \"minted, burned, preburned, cancelled-burn, updated-exchange-rate\"").c_str());
+        }
+        (args[1]);
+
+        istringstream(args[2]) >> start_event_sn;
+        istringstream(args[3]) >> limit;
+
+        auto transactions = _client->query_currency_events(currency_code, event_type, start_event_sn, limit);
 
         using json = nlohmann::json;
         auto txs = json::parse(transactions);

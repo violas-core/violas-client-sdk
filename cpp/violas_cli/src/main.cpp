@@ -8,9 +8,10 @@
 #include <functional>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <client.hpp> //rust/client-proxy/ffi/client.hpp
-#include "../../testnet/src/argument.hpp"
+#include <client.hpp>   //rust/client-proxy/ffi/client.hpp
+#include <argument.hpp> //cpp/include
 #include "command.hpp"
+#include "utils.h"
 
 using namespace std;
 using namespace violas;
@@ -83,10 +84,10 @@ int main(int argc, char *argv[])
             string cmd = line;
             free(line);
 
-            // string trim 
+            // string trim
             cmd.erase(0, cmd.find_first_not_of(" "));
             cmd.erase(cmd.find_last_not_of(" ") + 1);
-            
+
             if (cmd == "quit")
                 break;
 
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
             }
             catch (const std::exception &e)
             {
-                std::cerr << e.what() << '\n';
+                std::cerr << color::RED <<"error : " << e.what() << color::RESET << endl;
             }
 
             add_history(cmd.c_str());

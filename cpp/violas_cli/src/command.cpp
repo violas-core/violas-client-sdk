@@ -5,9 +5,11 @@
 #include <functional>
 #include <fstream>
 #include <sstream>
+// cpp/include
+#include <utils.h>
+#include <ssl_aes.hpp>
+#include <json.hpp>
 #include "command.hpp"
-#include "../../testnet/src/utils.h"
-#include "../../testnet/src/ssl_aes.hpp"
 
 using namespace std;
 
@@ -38,10 +40,15 @@ public:
         _handlers["mint"] = bind(&CommandImp::mint_to_dd, this, _1);
         _handlers["preburn"] = bind(&CommandImp::prebrun, this, _1);
         _handlers["burn"] = bind(&CommandImp::burn, this, _1);
+        _handlers["transfer"] = bind(&CommandImp::transfer, this, _1);
         _handlers["rotate-authentication-key"] = bind(&CommandImp::rotate_authentication_key, this, _1);
         _handlers["encrypt"] = bind(&CommandImp::encrypt, this, _1);
         _handlers["decrypt"] = bind(&CommandImp::decrypt, this, _1);
-        _handlers["save_private_key"] = bind(&CommandImp::save_private_key, this, _1);
+        _handlers["save-private-key"] = bind(&CommandImp::save_private_key, this, _1);
+        _handlers["query-transaction"] = bind(&CommandImp::query_transaction, this, _1);
+        _handlers["query-txn-range"] = bind(&CommandImp::query_txn_range, this, _1);
+        _handlers["query-events"] = bind(&CommandImp::query_events, this, _1);
+        _handlers["query-balances"] = bind(&CommandImp::query_balances, this, _1);
     };
 
     virtual bool
@@ -150,9 +157,21 @@ protected:
 
         string_view currency_code = args[0];
 
+        cout << "You are about to register currency '" << currency_code << "' to Violas, are you sure? yes or no" << endl;
+
+        string confirmation;
+        cin >> confirmation;
+        if (confirmation != "yes")
+        {
+            cout << "You aborted registering currency." << endl;
+            return;
+        }
+
         _client->publish_curency(currency_code);
 
         _client->register_currency(currency_code, 1, 2, false, 1'000'000, 100);
+
+        cout << "You registered currency " << currency_code << " successfully." << endl;
     }
 
     void create_dd_account(const vector<string> &args)
@@ -314,6 +333,38 @@ protected:
     // pear to pear transaction
     void transfer(const vector<string> &args)
     {
+        if (args.size() < 4)
+            __throw_invalid_argument("transfer account_index account_index|address currency amount gas_unit_price max_gas_amount gas_currency_code");
+
+        size_t account_index;
+        violas::Address address;
+        uint64_t amount;
+        string_view currency = args[2];
+        uint64_t gas_unit_price = 0;
+        uint64_t max_gas_amount = 1000000;
+        string_view gas_currency_code = "VLS";
+
+        istringstream(args[0]) >> account_index;
+        istringstream(args[1]) >> address;
+        istringstream(args[3]) >> amount;
+
+        if (args.size() >= 5)
+            istringstream(args[4]) >> gas_unit_price;
+
+        if (args.size() >= 6)
+            istringstream(args[6]) >> max_gas_amount;
+
+        if (args.size() >= 7)
+            gas_currency_code = args[6];
+
+        _client->transfer(account_index, address, currency, amount, gas_unit_price, max_gas_amount, gas_currency_code);
+
+        auto accounts = _client->get_all_accounts();
+
+        cout << "use \""
+             << "query-transaction " << account_index << " " << accounts[account_index].sequence_number - 1 << " true"
+             << "\"to query transaction result."
+             << endl;
     }
 
     // encrypt or decrypt mnemonic
@@ -349,6 +400,124 @@ protected:
         using ofs_iterator = ostreambuf_iterator<char>;
 
         aes_256_cbc_decrypt(password, ifs_iterator(ifs), ifs_iterator(), ofs_iterator(ofs));
+    }
+
+    void query_transaction(const vector<string> &args)
+    {
+        if (args.size() < 3)
+            __throw_invalid_argument("query-transactions account_index|address sequence_number fectch_events(ture or false)");
+
+        violas::Address address;
+        size_t account_index;
+        uint64_t seq_num;
+        bool is_fectching_event;
+
+        if (args[0].length() == 32)
+            istringstream(args[0]) >> address;
+        else
+        {
+            istringstream(args[0]) >> account_index;
+
+            auto accounts = _client->get_all_accounts();
+            address = accounts[account_index].address;
+        }
+
+        istringstream(args[1]) >> seq_num;
+        istringstream(args[2]) >> std::boolalpha >> is_fectching_event;
+
+        auto transactions = _client->query_transaction_info(address, seq_num, is_fectching_event);
+
+        using json = nlohmann::json;
+        auto txs = json::parse(transactions);
+
+        cout << txs.dump(4) << endl;
+
+        // cout << color::GREEN << "version : " << color::RESET << txs["version"] << endl;
+        // cout << color::GREEN << "transaction : " << color::RESET << endl << txs["transaction"].dump(4) << endl;
+        // cout << color::GREEN << "events : " << color::RESET << endl << txs["events"].dump(4) << endl;
+        // cout << "hash : " << txs["hash"] << endl;
+        // cout << "bytes : " << txs["bytes"] << endl;
+        // cout << color::GREEN << "vm_status : " << color::RESET << txs["vm_status"].dump(4) << endl;
+        // cout << color::GREEN << "gas_used : " << color::RESET << txs["gas_used"].dump(4) << endl;
+    }
+
+    void query_txn_range(const vector<string> &args)
+    {
+        if (args.size() < 3)
+            __throw_invalid_argument("query-txn-range start_version limit fectch_events(ture|false)");
+
+        uint64_t start_version;
+        uint64_t limit;
+        bool is_fectching_events;
+
+        istringstream(args[0]) >> start_version;
+
+        istringstream(args[1]) >> limit;
+        istringstream(args[2]) >> std::boolalpha >> is_fectching_events;
+
+        auto transactions = _client->query_transaction_range(start_version, limit, is_fectching_events);
+
+        using json = nlohmann::json;
+        auto txs = json::parse(transactions);
+
+        cout << txs.dump(4) << endl;
+    }
+
+    violas::Client::event_type string_to_event_type(string_view str)
+    {
+        map<string_view, violas::Client::event_type> event_types =
+            {
+                {"sent", violas::Client::event_type::sent},
+                {"received", violas::Client::event_type::received},
+                {"burned", violas::Client::event_type::burned},
+            };
+
+        auto iter = event_types.find(str);
+
+        if (iter != end(event_types))
+            return iter->second;
+        else
+            __throw_invalid_argument(fmt("\"", str, "\" is not a event type, pleas input correct event type such as \"sent, receivied, burned\"").c_str());
+    }
+
+    void query_events(const vector<string> &args)
+    {
+        if (args.size() < 4)
+            __throw_invalid_argument("query-events address event-type start limit");
+
+        violas::Address address;
+        size_t account_index;
+        uint64_t start_event_sn;
+        uint64_t limit;
+        violas::Client::event_type event_type = string_to_event_type(args[1]);
+
+        if (args[0].length() == 32)
+            istringstream(args[0]) >> address;
+        else
+        {
+            istringstream(args[0]) >> account_index;
+
+            auto accounts = _client->get_all_accounts();
+            address = accounts[account_index].address;
+        }
+
+        istringstream(args[2]) >> start_event_sn;
+        istringstream(args[3]) >> limit;
+
+        auto transactions = _client->query_events(address, event_type, start_event_sn, limit);
+
+        using json = nlohmann::json;
+        auto txs = json::parse(transactions);
+
+        cout << txs.dump(4) << endl;
+    }
+
+    void query_balances(const vector<string> &args)
+    {
+    }
+
+    void multisign_auth()
+    {
     }
 };
 

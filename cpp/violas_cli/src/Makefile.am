@@ -14,6 +14,6 @@ else
 endif      
 
 violas_cli_SOURCES = main.cpp  command.cpp
-violas_cli_CXXFLAGS = -std=c++17 -I$(top_srcdir)/cpp/src -I$(top_srcdir)/rust/violas-client/src/ffi
+violas_cli_CXXFLAGS = -std=c++17 -I$(top_srcdir)/cpp/include -I$(top_srcdir)/rust/violas-client/src/ffi
 violas_cli_LDFLAGS = -Wl,-rpath=./lib,-rpath=../lib,-rpath=/usr/local/lib -L../../src/.libs $(CLIENT_PROXY_PATH)
 violas_cli_LDADD = -lviolas_client -lviolas_sdk -lreadline -lssl -lcrypto $(RUST_CPP_CLIENT) 

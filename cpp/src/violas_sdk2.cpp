@@ -1,8 +1,8 @@
 #include <vector>
 #include <stack>
 #include <queue>
-#include <json.hpp>
-#include "violas_sdk2.hpp"
+#include "../include/json.hpp"
+#include "../include/violas_sdk2.hpp"
 
 using namespace std;
 using json = nlohmann::json;

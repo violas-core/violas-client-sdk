@@ -105,4 +105,14 @@ std::string format(std::string_view format, Args... args)
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
+template <typename... Args>
+std::string fmt(Args... args)
+{
+    std::ostringstream oss;
+
+    ((oss << args), ...);
+    
+    return oss.str(); // We don't want the '\0' inside
+}
+
 #endif

@@ -445,11 +445,11 @@ public:
          * @return std::string  with json format
          */
     virtual std::string
-    query_transaction_info(uint64_t start_version,
+    query_transaction_range(uint64_t start_version,
                            uint64_t limit,
                            bool is_fetching_events) override
     {
-        return m_client->query_transaction_info(start_version, limit, is_fetching_events);
+        return m_client->query_transaction_range(start_version, limit, is_fetching_events);
     }
 
     virtual std::string

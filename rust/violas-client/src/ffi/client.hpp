@@ -165,7 +165,7 @@ namespace violas
                  uint64_t amount,
                  uint64_t gas_unit_price = 0,
                  uint64_t max_gas_amount = 1000000,
-                 std::string_view gas_currency_code = "LBR") = 0;
+                 std::string_view gas_currency_code = "VLS") = 0;
 
         ////////////////////////////////////////////////////////////////
         //  management methods
@@ -264,7 +264,7 @@ namespace violas
          * @return std::string  with json format
          */
         virtual std::string
-        query_transaction_info(uint64_t start_version,
+        query_transaction_range(uint64_t start_version,
                                uint64_t limit,
                                bool is_fetching_events) = 0;
         /**
@@ -274,7 +274,8 @@ namespace violas
         enum event_type
         {
             sent,
-            received
+            received,
+            burned,
         };
 
         /**

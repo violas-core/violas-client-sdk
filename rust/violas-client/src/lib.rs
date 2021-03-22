@@ -5,8 +5,8 @@ mod diem_client;
 pub mod diem_client_proxy;
 pub mod ffi;
 //pub mod move_compiler;
-pub mod violas_account;
 pub mod violas_client;
+pub mod violas_resource;
 pub use diem_json_rpc_client::views;
 
 use diem_crypto::{

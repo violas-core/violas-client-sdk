@@ -49,7 +49,8 @@ public:
         _handlers["query-txn-range"] = bind(&CommandImp::query_txn_range, this, _1);
         _handlers["query-payment-events"] = bind(&CommandImp::query_payment_events, this, _1);
         _handlers["query-balances"] = bind(&CommandImp::query_balances, this, _1);
-        _handlers["query-currency-events"] = bind(&CommandImp::query_currency_events, this, _1);
+        _handlers["query-currency-events"] = bind(&CommandImp::query_currency_events, this, _1);        
+        _handlers["query-account-creation-events"] = bind(&CommandImp::query_account_creation_events, this, _1);
     };
 
     virtual bool
@@ -552,6 +553,25 @@ protected:
         istringstream(args[3]) >> limit;
 
         auto transactions = _client->query_currency_events(currency_code, event_type, start_event_sn, limit);
+
+        using json = nlohmann::json;
+        auto txs = json::parse(transactions);
+
+        cout << txs.dump(4) << endl;
+    }
+
+    void query_account_creation_events(const vector<string> &args)
+    {
+        if (args.size() < 2)
+            __throw_invalid_argument("usage : query_account_creation_events start limit");
+
+        uint64_t start_event_sn;
+        uint64_t limit;
+
+        istringstream(args[0]) >> start_event_sn;
+        istringstream(args[1]) >> limit;
+
+        auto transactions = _client->query_account_creation_events(start_event_sn, limit);
 
         using json = nlohmann::json;
         auto txs = json::parse(transactions);

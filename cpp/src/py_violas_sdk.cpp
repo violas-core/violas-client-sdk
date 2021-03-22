@@ -469,6 +469,13 @@ public:
         return m_client->query_currency_events(currency_code, type, start_sn, limit);
     }
 
+    virtual std::string
+        query_account_creation_events(uint64_t start_sn,
+                                      uint64_t limit) override
+    {
+        return m_client->query_account_creation_events(start_sn, limit);
+    }
+    
     /// get the balance of currency for the account address
     virtual uint64_t
     get_currency_balance(const Address &address,

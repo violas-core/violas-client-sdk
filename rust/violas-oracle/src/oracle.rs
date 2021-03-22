@@ -10,8 +10,8 @@ use diem_types::{
 use serde::{Deserialize, Serialize};
 use violas_client::{
     views::EventDataView, //EventView
-    violas_account::{make_currency_tag, make_struct_tag},
-    violas_client::ViolasClient,
+    violas_client::{ViolasClient, VIOLAS_ROOT_ACCOUNT_ID},
+    violas_resource::{make_currency_tag, make_struct_tag},
 };
 
 pub fn oracle_admin_address() -> AccountAddress {
@@ -196,7 +196,7 @@ impl Oracle {
             0, 0, 0, 0, 39, 2,
         ];
         self.client.execute_raw_script_bytecode(
-            u64::MAX,
+            VIOLAS_ROOT_ACCOUNT_ID,
             script_bytecode,
             vec![
                 make_currency_tag(currency_code1),

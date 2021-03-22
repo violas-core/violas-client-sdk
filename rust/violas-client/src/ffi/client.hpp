@@ -308,6 +308,9 @@ namespace violas
                               uint64_t start_sn,
                               uint64_t limit) = 0;
 
+        virtual std::string
+        query_account_creation_events(uint64_t start_sn,
+                                      uint64_t limit) = 0;
         //
         //  Execute script file with specified arguments
         //

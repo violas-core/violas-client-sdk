@@ -1,6 +1,6 @@
 use diem_types::{
     account_address::AccountAddress, account_config::currency_info::CurrencyInfoResource,
-    account_config::*,
+    account_config::*, event::EventHandle,
 };
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::{Deserialize, Serialize};
@@ -64,6 +64,19 @@ pub enum CurrencyEventType {
     Preburned = 2,
     CancelledBurn = 3,
     UpdatedExchangeRate = 4,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct AccountLimitMutationCapability {
+    pub dummy_field: bool,
+}
+///
+/// Account Operations Capbility
+///
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct AccountOperationsCapability {
+    pub limits_cap: AccountLimitMutationCapability,
+    pub creation_events: EventHandle,
 }
 
 pub mod exchange {

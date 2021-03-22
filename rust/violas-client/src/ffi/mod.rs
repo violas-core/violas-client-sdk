@@ -1,5 +1,5 @@
 use crate::{
-    violas_account::{self, CurrencyEventType},
+    violas_resource::{self, CurrencyEventType},
     violas_client::ViolasClient,
     AccountAddress, AccountStatus,
 };
@@ -52,13 +52,13 @@ pub struct RustTypeTag {
 fn make_currency_tag(currency_code: *const c_char) -> TypeTag {
     unsafe {
         let code = CStr::from_ptr(currency_code).to_str().unwrap();
-        violas_account::make_currency_tag(code)
+        violas_resource::make_currency_tag(code)
     }
 }
 
 fn make_type_tag(rust_type_tag: &RustTypeTag) -> TypeTag {
     unsafe {
-        violas_account::make_type_tag(
+        violas_resource::make_type_tag(
             &AccountAddress::new(rust_type_tag.address),
             CStr::from_ptr(rust_type_tag.module_name).to_str().unwrap(),
             CStr::from_ptr(rust_type_tag.resource_name)
@@ -906,7 +906,49 @@ namespace violas
 
             return result;
         }
+        
+        virtual std::string
+        query_account_creation_events(uint64_t start_sn,
+                                      uint64_t limit) override
+        {            
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
 
+            bool ret = rust!( client_query_account_creation_events [
+                rust_violas_client : &mut ViolasClient as "void *",                
+                start_sn : u64 as "uint64_t",
+                limit : u64 as "uint64_t",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+                    
+                    let ret = rust_violas_client.query_account_creation_events(                                                        
+                                                        start_sn,
+                                                        limit);
+
+                    match ret {
+                        Ok(events) => {
+                            let json_currencies = serde_json::to_string(&events).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new CString error")
+                                    .into_raw();
+                                true
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to query account creation events with error, {}", e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
+        }
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// multi currency methods
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1516,7 +1558,7 @@ namespace violas
                         type_params: vec![],
                     };
 
-                    let ret: Result<Option<violas_account::exchange::RegisteredCurrencies>, Error> =
+                    let ret: Result<Option<violas_resource::exchange::RegisteredCurrencies>, Error> =
                     rust_violas_client.get_account_resource(&AccountAddress::new(*in_address), &resource_tag);
 
                     match ret {
@@ -1573,7 +1615,7 @@ namespace violas
                         type_params: vec![],
                     };
 
-                    let ret: Result<Option<violas_account::exchange::Reserves>, Error> =
+                    let ret: Result<Option<violas_resource::exchange::Reserves>, Error> =
                     rust_violas_client.get_account_resource(&AccountAddress::new(*in_address), &resource_tag);
 
                     match ret {
@@ -1630,7 +1672,7 @@ namespace violas
                         type_params: vec![],
                     };
 
-                    let ret: Result<Option<violas_account::exchange::Tokens>, Error> =
+                    let ret: Result<Option<violas_resource::exchange::Tokens>, Error> =
                     rust_violas_client.get_account_resource(&AccountAddress::new(*in_address), &resource_tag);
 
                     match ret {

@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/debug/bin/violas_cli",
             "args": [
                 "-u",
-                "http://localhost:45403",
+                "http://localhost:41527",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
@@ -19,10 +19,10 @@
                 "-c",
                 "4",
                 "-n",
-                "cli.mne"
-            ],
+                "mnemonic/vls.mne",
+            ],  
             "cwd": "${workspaceFolder}/build/debug"
-        },        
+        },
         {
             "type": "lldb",
             "request": "launch",
@@ -43,10 +43,15 @@
             "name": "Launch violas_vls",
             "program": "${workspaceFolder}/build/debug/bin/violas_vls",
             "args": [
-                "http://localhost:35761",
+                "-u",
+                "http://localhost:41527",
+                "-m",
                 "/tmp/diem/mint.key",
-                "waypoint",
-                "0:2be928a2375c08fb7ddef617d7cc1ee4a463e4954a6c1afe524db953e8f8044d",
+                "-n",
+                "mnemonic/vls.mne",
+                "-w",
+                "0:ab3f64514466f5cbb0b8197ec7db0e51b14ba3ae941d1dc6bfdb5a12c70e13e3",
+                "-c",
                 "4"
             ],
             "cwd": "${workspaceFolder}/build/debug"
@@ -57,11 +62,16 @@
             "name": "Launch violas_swap",
             "program": "${workspaceFolder}/build/debug/bin/violas_swap",
             "args": [
-                "-u", "http://localhost:37471",
-                "-m", "/tmp/diem/mint.key",
-                "-n", "build/debug/swap",
-                "-w", "0:2be928a2375c08fb7ddef617d7cc1ee4a463e4954a6c1afe524db953e8f8044d",
-                "-c","4"
+                "-u",
+                "http://localhost:37471",
+                "-m",
+                "/tmp/diem/mint.key",
+                "-n",
+                "build/debug/swap",
+                "-w",
+                "0:2be928a2375c08fb7ddef617d7cc1ee4a463e4954a6c1afe524db953e8f8044d",
+                "-c",
+                "4"
             ],
             "cwd": "${workspaceFolder}"
         },

@@ -17,7 +17,7 @@ const BACKEND_ADDRESS : address = 0x585c6aa31dfb19c4af20e8e14112cb3f;
 ///
 /// distribute VLS from Violas community to Bank administrator account, Exchange adminitrator account and backend(VLS-USER) account
 ///
-fun distribute_vls_from_community(account : &signer) {
+fun distribute_vls_from_community(account : &signer, is_paying_to_bank: bool) {
     let sender = Signer::address_of(account);    
 
     // Mine VLS to VLS-COMM account
@@ -42,6 +42,7 @@ fun distribute_vls_from_community(account : &signer) {
     let backend_distribution_ratio = FixedPoint32::create_from_rational(15, 100);
 
     // 1. Distribute VLS to Bank adminitrator
+    if(is_paying_to_bank)   // Bank admin only receives VLS once per 24 hours
     {
         if(ViolasBank::is_published(account) == false) {
 	        ViolasBank::publish(account, x"00");

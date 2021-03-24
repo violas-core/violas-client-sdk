@@ -56,7 +56,7 @@ const GAS_UNIT_PRICE: u64 = 0;
 const MAX_GAS_AMOUNT: u64 = 1_000_000;
 const TX_EXPIRATION: i64 = 100;
 
-pub const VIOLAS_ROOT_ACCOUNT_ID: usize = u64::MAX as usize;
+pub const VIOLAS_ROOT_ACCOUNT_ID: usize = usize::MAX;
 pub const VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID: usize = VIOLAS_ROOT_ACCOUNT_ID - 1;
 pub const VIOLAS_TESTNET_DD_ACCOUNT_ID: usize = VIOLAS_ROOT_ACCOUNT_ID - 2;
 
@@ -148,67 +148,6 @@ impl ViolasClient {
         Ok((addr_index.address, addr_index.index))
     }
 
-    // pub fn association_transaction_with_local_diem_root_account(
-    //     &mut self,
-    //     payload: TransactionPayload,
-    //     is_blocking: bool,
-    // ) -> Result<()> {
-    //     ensure!(
-    //         self.diem_root_account.is_some(),
-    //         "No assoc root account loaded"
-    //     );
-    //     let sender = self.diem_root_account.as_ref().unwrap();
-    //     let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
-
-    //     self.diem_client_proxy.client.submit_transaction(&txn)?;
-    //     if is_blocking {
-    //         self.wait_for_transaction(&txn)?;
-    //     }
-    //     Ok(())
-    // }
-
-    // pub fn association_transaction_with_local_testnet_dd_account(
-    //     &mut self,
-    //     payload: TransactionPayload,
-    //     is_blocking: bool,
-    // ) -> Result<()> {
-    //     ensure!(
-    //         self.testnet_designated_dealer_account.is_some(),
-    //         "No testnet Designated Dealer account loaded"
-    //     );
-    //     let sender = self.testnet_designated_dealer_account.as_ref().unwrap();
-    //     let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
-
-    //     self.diem_client_proxy.client.submit_transaction(&txn)?;
-    //     if is_blocking {
-    //         self.wait_for_transaction(&txn)?;
-    //     }
-    //     Ok(())
-    // }
-
-    // pub fn association_transaction_with_local_tc_account(
-    //     &mut self,
-    //     payload: TransactionPayload,
-    //     is_blocking: bool,
-    // ) -> Result<()> {
-    //     ensure!(
-    //         self.tc_account.is_some(),
-    //         "No treasury compliance account loaded"
-    //     );
-    //     //  create txn to submit
-    //     let sender = self.tc_account.as_ref().unwrap();
-    //     let txn = self.create_txn_to_submit(payload, sender, None, None, None)?;
-
-    //     // submit txn
-    //     let resp = self.diem_client_proxy.client.submit_transaction(&txn)?;
-
-    //     // wait for txn
-    //     if is_blocking {
-    //         self.wait_for_transaction(&txn)?;
-    //     }
-    //     Ok(resp)
-    // }
-
     /// Craft a transaction to be submitted.
     fn create_txn_to_submit(
         &self,
@@ -293,53 +232,10 @@ impl ViolasClient {
         }
     }
 
-    /// submit a transaction with specified account index
-    fn submit_transction_with_account(
-        &mut self,
-        account_ref_id: usize,
-        program: Script,
-        gas_unit_price: Option<u64>,
-        max_gas_amount: Option<u64>,
-        gas_currency_type: Option<TypeTag>,
-        is_blocking: bool,
-    ) -> Result<()> {
-        let proxy: &mut ClientProxy = &mut self.diem_client_proxy;
-        let sender = proxy
-            .accounts
-            .get(account_ref_id)
-            .ok_or_else(|| format_err!("Unable to find sender account: {}", account_ref_id))?;
-
-        let gas_currency_code = match gas_currency_type {
-            Some(TypeTag::Struct(tag)) => Some(tag.module.into_string()),
-            _ => None,
-        };
-
-        let txn = proxy.create_txn_to_submit(
-            TransactionPayload::Script(program),
-            sender,
-            max_gas_amount, /* max_gas_amount */
-            gas_unit_price, /* gas_unit_price */
-            gas_currency_code,
-        )?;
-
-        proxy.client.submit_transaction(&txn)?;
-
-        if is_blocking {
-            self.wait_for_transaction(&txn)
-        } else {
-            Ok(())
-        }
-
-        // Ok(IndexAndSequence {
-        //     account_index: AccountEntry::Index(account_ref_id),
-        //     sequence_number: sender_sequence - 1,
-        // })
-    }
-
     /// Allow custom script
     pub fn allow_custom_script(&mut self, is_blocking: bool) -> Result<()> {
         // let script_bytes = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_custom_script.mv",
+        //     "move/stdlib/allow_custom_script.mv",
         // )?;
         let script_bytes = vec![
             161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 4, 7, 11, 48, 8, 59, 16, 0, 0,
@@ -349,27 +245,20 @@ impl ViolasClient {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 11, 0, 17, 0, 2,
         ];
 
-        match self.diem_root_account {
-            // Some(_) => self.association_transaction_with_local_diem_root_account(
-            //     TransactionPayload::Script(Script::new(script_bytes, vec![], vec![])),
-            //     is_blocking,
-            // ),
-            Some(_) => self.execute_raw_script(
-                VIOLAS_ROOT_ACCOUNT_ID,
-                Script::new(script_bytes, vec![], vec![]),
-                None,
-                None,
-                None,
-                is_blocking,
-            ),
-            None => unimplemented!(),
-        }
+        self.execute_raw_script(
+            VIOLAS_ROOT_ACCOUNT_ID,
+            Script::new(script_bytes, vec![], vec![]),
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     /// Allow publishing module
     pub fn allow_publishing_module(&mut self, open: bool, is_blocking: bool) -> Result<()> {
         // let script_bytes = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/move/stdlib/allow_publishing_module.mv",
+        //     "move/stdlib/allow_publishing_module.mv",
         // )?;
         let script_bytes = vec![
             161, 28, 235, 11, 1, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 5, 7, 12, 48, 8, 60, 16, 0, 0,
@@ -379,53 +268,34 @@ impl ViolasClient {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 4, 11, 0, 10, 1, 17, 0, 2,
         ];
 
-        match self.diem_root_account {
-            // Some(_) => self.association_transaction_with_local_diem_root_account(
-            //     TransactionPayload::Script(Script::new(
-            //         script_bytes,
-            //         vec![],
-            //         vec![TransactionArgument::Bool(open)],
-            //     )),
-            //     is_blocking,
-            // ),
-            Some(_) => self.execute_raw_script(
-                VIOLAS_ROOT_ACCOUNT_ID,
-                Script::new(script_bytes, vec![], vec![TransactionArgument::Bool(open)]),
-                None,
-                None,
-                None,
-                is_blocking,
-            ),
-            None => unimplemented!(),
-        }
+        self.execute_raw_script(
+            VIOLAS_ROOT_ACCOUNT_ID,
+            Script::new(script_bytes, vec![], vec![TransactionArgument::Bool(open)]),
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
-    /// Publish Move module
-    /// if sender ref id is u64::MAX, then publish module with association account
+    ///
+    /// Publish Move module    
     ///
     pub fn publish_module(&mut self, sender_ref_id: usize, module_file_name: &str) -> Result<()> {
-        let sender = if sender_ref_id as u64 == u64::MAX {
-            if self.diem_root_account.is_none() {
-                bail!("No faucet account loaded");
-            }
-            self.diem_root_account.as_ref().unwrap()
-        } else {
-            self.accounts.get(sender_ref_id as usize).unwrap()
-        };
-
         let module_bytes = fs::read(module_file_name)?;
         let program = TransactionPayload::Module(Module::new(module_bytes));
 
-        let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
-        let proxy = &mut self.diem_client_proxy;
+        // let txn = self.create_txn_to_submit(program, sender, None, None, None)?;
+        // let proxy = &mut self.diem_client_proxy;
 
-        let resp = if sender_ref_id as u64 == u64::MAX {
-            proxy.client.submit_transaction(&txn)
-        } else {
-            proxy.client.submit_transaction(&txn)
-        };
+        // let resp = if sender_ref_id as u64 == u64::MAX {
+        //     proxy.client.submit_transaction(&txn)
+        // } else {
+        //     proxy.client.submit_transaction(&txn)
+        // };
 
-        self.wait_for_transaction(&txn)?;
-        resp
+        // self.wait_for_transaction(&txn)?;
+        // resp
+        self.execute_transaction(sender_ref_id, program, None, None, None, true)
     }
 
     /// Execute custom script with association account
@@ -535,15 +405,25 @@ impl ViolasClient {
         gas_currency_code: Option<String>,
         is_blocking: bool,
     ) -> Result<()> {
-        let sender_opt = match sender_ref_id {
-            VIOLAS_ROOT_ACCOUNT_ID => self.diem_root_account.as_ref(),
-            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => self.tc_account.as_ref(),
-            VIOLAS_TESTNET_DD_ACCOUNT_ID => self.testnet_designated_dealer_account.as_ref(),
-            _ => self.accounts.get(sender_ref_id),
+        let (sender_opt, id_name) = match sender_ref_id {
+            VIOLAS_ROOT_ACCOUNT_ID => (
+                self.diem_root_account.as_ref(),
+                "VIOLAS_ROOT_ACCOUNT_ID".to_string(),
+            ),
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID => (
+                self.tc_account.as_ref(),
+                "VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID".to_string(),
+            ),
+            VIOLAS_TESTNET_DD_ACCOUNT_ID => (
+                self.testnet_designated_dealer_account.as_ref(),
+                "VIOLAS_TESTNET_DD_ACCOUNT_ID".to_string(),
+            ),
+            _ => (self.accounts.get(sender_ref_id), sender_ref_id.to_string()),
         };
+
         let sender = match sender_opt {
             Some(sender) => sender,
-            None => bail!("sener reference ID does not exists."),
+            None => bail!("Sender's reference ID ({}) does not exist, you need load mint.key or add account by 'wallet-add-account'", id_name),
         };
 
         let txn = self.create_txn_to_submit(
@@ -646,24 +526,18 @@ impl ViolasClient {
         //     };
         //     compiler.into_module_blob("file_name", code.as_str())?
         // };
-        match self.diem_root_account {
-            // Some(_) => self.association_transaction_with_local_diem_root_account(
-            //     TransactionPayload::Module(Module::new(module_byte_code)),
-            //     true,
-            // ),
-            Some(_) => self.execute_transaction(
-                VIOLAS_ROOT_ACCOUNT_ID,
-                TransactionPayload::Module(Module::new(module_byte_code)),
-                None,
-                None,
-                None,
-                true,
-            ),
-            None => unimplemented!(),
-        }
+
+        self.execute_transaction(
+            VIOLAS_ROOT_ACCOUNT_ID,
+            TransactionPayload::Module(Module::new(module_byte_code)),
+            None,
+            None,
+            None,
+            true,
+        )
     }
     ///
-    /// add a new currency with association account
+    /// Register a new currency by Root account
     ///
     pub fn register_currency(
         &mut self,
@@ -685,7 +559,7 @@ impl ViolasClient {
             1, 1, 0, 1, 9, 11, 0, 10, 1, 10, 2, 10, 3, 10, 4, 10, 5, 11, 6, 56, 0, 2,
         ];
 
-        // costruct register currency script
+        // construct register currency script
         let script = Script::new(
             script_bytecode,
             vec![type_tag],
@@ -699,21 +573,14 @@ impl ViolasClient {
             ],
         );
 
-        match self.diem_root_account {
-            // Some(_) => self.association_transaction_with_local_diem_root_account(
-            //     TransactionPayload::Script(script),
-            //     is_blocking,
-            // ),
-            Some(_) => self.execute_raw_script(
-                VIOLAS_ROOT_ACCOUNT_ID,
-                script,
-                None,
-                None,
-                None,
-                is_blocking,
-            ),
-            None => unimplemented!(),
-        }
+        self.execute_raw_script(
+            VIOLAS_ROOT_ACCOUNT_ID,
+            script,
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     /// add currency for the designated dealer account
@@ -724,7 +591,7 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         // let script_bytecode = fs::read(
-        //     "/home/hunter/Projects/work/ViolasClientSdk/cppSdk/move/currencies/add_currency_for_designated_dealer.mv",
+        //     "move/currencies/add_currency_for_designated_dealer.mv",
         // )?;
 
         let script_bytecode = vec![
@@ -736,31 +603,18 @@ impl ViolasClient {
             0, 10, 1, 56, 0, 2,
         ];
 
-        // costruct register_currency_for_designated_dealer script
-        let script = Script::new(
-            script_bytecode,
-            vec![currency],
-            vec![TransactionArgument::Address(dd_address)],
-        );
-
-        match &self.diem_root_account {
-            // Some(_) => {
-            //     //add currency for testnet dd account
-            //     self.association_transaction_with_local_tc_account(
-            //         TransactionPayload::Script(script),
-            //         is_blocking,
-            //     ),
-            // }
-            Some(_) => self.execute_raw_script(
-                VIOLAS_ROOT_ACCOUNT_ID,
-                script,
-                None,
-                None,
-                None,
-                is_blocking,
+        self.execute_raw_script(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            Script::new(
+                script_bytecode,
+                vec![currency],
+                vec![TransactionArgument::Address(dd_address)],
             ),
-            None => unimplemented!(),
-        }
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     pub fn add_currency(
@@ -789,43 +643,26 @@ impl ViolasClient {
         tier_index: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        let module = match type_tag.clone() {
-            TypeTag::Struct(tag) => tag.module.into_string(),
-            _ => String::from(""),
-        };
+        let script = transaction_builder::encode_tiered_mint_script(
+            type_tag,
+            sliding_nonce,
+            dd_address,
+            amount,
+            tier_index,
+        );
 
-        let script = if module == "LBR" {
-            //transaction_builder::encode_mint_lbr_script(amount)
-            bail!("LBR is not allowed");
-        } else {
-            transaction_builder::encode_tiered_mint_script(
-                type_tag,
-                sliding_nonce,
-                dd_address,
-                amount,
-                tier_index,
-            )
-        };
-
-        match &self.diem_root_account {
-            // Some(_faucet) => self.association_transaction_with_local_tc_account(
-            //     TransactionPayload::Script(script),
-            //     is_blocking,
-            // ),
-            Some(_) => self.execute_raw_script(
-                VIOLAS_ROOT_ACCOUNT_ID,
-                script,
-                None,
-                None,
-                None,
-                is_blocking,
-            ),
-            None => unimplemented!(),
-        }
+        self.execute_raw_script(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            script,
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     /// transfer currency
-    pub fn transfer_currency(
+    pub fn transfer(
         &mut self,
         sender_account_ref_id: usize,
         receiver_address: &AccountAddress,
@@ -833,10 +670,10 @@ impl ViolasClient {
         num_coins: u64,
         gas_unit_price: Option<u64>,
         max_gas_amount: Option<u64>,
-        gas_currency_tag: Option<TypeTag>,
+        gas_currency_tag: Option<String>,
         is_blocking: bool,
     ) -> Result<()> {
-        let program = transaction_builder::encode_peer_to_peer_with_metadata_script(
+        let script = transaction_builder::encode_peer_to_peer_with_metadata_script(
             currency_tag.clone(),
             *receiver_address,
             num_coins,
@@ -844,16 +681,14 @@ impl ViolasClient {
             vec![],
         );
 
-        self.submit_transction_with_account(
+        self.execute_raw_script(
             sender_account_ref_id,
-            program,
-            gas_unit_price,
+            script,
             max_gas_amount,
+            gas_unit_price,
             gas_currency_tag,
             is_blocking,
-        )?;
-
-        Ok(())
+        )
     }
 
     /// get balance of currency for account
@@ -954,29 +789,20 @@ impl ViolasClient {
         human_name: Vec<u8>,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.diem_root_account {
-            Some(_) => {
-                let script = transaction_builder::encode_create_validator_account_script(
-                    sliding_nonce,
-                    new_account_address,
-                    auth_key_prefix,
-                    human_name,
-                );
-                // self.association_transaction_with_local_diem_root_account(
-                //     TransactionPayload::Script(script),
-                //     is_blocking,
-                // )
-                self.execute_raw_script(
-                    VIOLAS_ROOT_ACCOUNT_ID,
-                    script,
-                    None,
-                    None,
-                    None,
-                    is_blocking,
-                )
-            }
-            None => unimplemented!(),
-        }
+        let script = transaction_builder::encode_create_validator_account_script(
+            sliding_nonce,
+            new_account_address,
+            auth_key_prefix,
+            human_name,
+        );
+        self.execute_raw_script(
+            VIOLAS_ROOT_ACCOUNT_ID,
+            script,
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
     /// Create a parent vasp account
     pub fn create_parent_vasp_account(
@@ -991,33 +817,25 @@ impl ViolasClient {
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.tc_account {
-            Some(_) => {
-                let script = transaction_builder::encode_create_parent_vasp_account_script(
-                    type_tag,
-                    sliding_nonce,
-                    new_account_address,
-                    auth_key_prefix,
-                    human_name,
-                    //base_url,
-                    //compliance_public_key,
-                    add_all_currencies,
-                );
-                // self.association_transaction_with_local_tc_account(
-                //     TransactionPayload::Script(script),
-                //     is_blocking,
-                // )
-                self.execute_raw_script(
-                    VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
-                    script,
-                    None,
-                    None,
-                    None,
-                    is_blocking,
-                )
-            }
-            None => unimplemented!(),
-        }
+        let script = transaction_builder::encode_create_parent_vasp_account_script(
+            type_tag,
+            sliding_nonce,
+            new_account_address,
+            auth_key_prefix,
+            human_name,
+            //base_url,
+            //compliance_public_key,
+            add_all_currencies,
+        );
+
+        self.execute_raw_script(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            script,
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     /// Create a child vasp account
@@ -1039,14 +857,7 @@ impl ViolasClient {
             initial_balance,
         );
 
-        self.submit_transction_with_account(
-            parent_account_index,
-            script,
-            None,
-            None,
-            Some(type_tag),
-            is_blocking,
-        )
+        self.execute_raw_script(parent_account_index, script, None, None, None, is_blocking)
     }
 
     /// Create a designed dealer vasp account
@@ -1062,33 +873,25 @@ impl ViolasClient {
         add_all_currencies: bool,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.tc_account {
-            Some(_) => {
-                let script = transaction_builder::encode_create_designated_dealer_script(
-                    type_tag,
-                    nonce,
-                    new_account_address,
-                    auth_key_prefix,
-                    human_name,
-                    //base_url,
-                    //compliance_public_key,
-                    add_all_currencies,
-                );
-                // self.association_transaction_with_local_tc_account(
-                //     TransactionPayload::Script(script),
-                //     is_blocking,
-                // )
-                self.execute_raw_script(
-                    VIOLAS_ROOT_ACCOUNT_ID,
-                    script,
-                    None,
-                    None,
-                    None,
-                    is_blocking,
-                )
-            }
-            None => unimplemented!(),
-        }
+        let script = transaction_builder::encode_create_designated_dealer_script(
+            type_tag,
+            nonce,
+            new_account_address,
+            auth_key_prefix,
+            human_name,
+            //base_url,
+            //compliance_public_key,
+            add_all_currencies,
+        );
+
+        self.execute_raw_script(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            script,
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     /// Create a designed dealer vasp account
@@ -1159,31 +962,22 @@ impl ViolasClient {
         amount: u64,
         is_blocking: bool,
     ) -> Result<()> {
-        match &self.diem_root_account {
-            Some(_) => {
-                let script = transaction_builder::encode_peer_to_peer_with_metadata_script(
-                    currency_tag,
-                    receiver,
-                    amount,
-                    vec![],
-                    vec![],
-                );
+        let script = transaction_builder::encode_peer_to_peer_with_metadata_script(
+            currency_tag,
+            receiver,
+            amount,
+            vec![],
+            vec![],
+        );
 
-                // self.association_transaction_with_local_testnet_dd_account(
-                //     TransactionPayload::Script(script),
-                //     is_blocking,
-                // )
-                self.execute_raw_script(
-                    VIOLAS_TESTNET_DD_ACCOUNT_ID,
-                    script,
-                    None,
-                    None,
-                    None,
-                    is_blocking,
-                )
-            }
-            None => unimplemented!(),
-        }
+        self.execute_raw_script(
+            VIOLAS_TESTNET_DD_ACCOUNT_ID,
+            script,
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     ///
@@ -1200,22 +994,14 @@ impl ViolasClient {
             new_micro_lbr_limit,
         );
 
-        match self.testnet_designated_dealer_account {
-            // Some(_) => self.association_transaction_with_local_tc_account(
-            //     TransactionPayload::Script(script),
-            //     is_blocking,
-            // ),
-            Some(_) => self.execute_raw_script(
-                VIOLAS_ROOT_ACCOUNT_ID,
-                script,
-                None,
-                None,
-                None,
-                is_blocking,
-            ),
-
-            None => unimplemented!(),
-        }
+        self.execute_raw_script(
+            VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+            script,
+            None,
+            None,
+            None,
+            is_blocking,
+        )
     }
 
     ///

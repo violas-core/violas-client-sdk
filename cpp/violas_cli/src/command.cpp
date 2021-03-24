@@ -27,30 +27,45 @@ public:
         using std::placeholders::_1;
 
         _handlers["help"] = bind(&CommandImp::show_all_cmds, this);
+
         _handlers["wallet-add-account"] = bind(&CommandImp::add_account, this, _1);
         _handlers["wallet-list-account"] = bind(&CommandImp::list_accounts, this);
         _handlers["add-currency"] = bind(&CommandImp::add_currency, this, _1);
-        _handlers["register-currency"] = bind(&CommandImp::register_currency, this, _1);
+
         _handlers["aollow-publish"] = bind(&CommandImp::allow_publish, this, _1);
         _handlers["aollow-customer-script"] = bind(&CommandImp::allow_custom_script, this, _1);
+        //
+        //  Create acount functions
+        //
         _handlers["create-designed-dealer"] = bind(&CommandImp::create_dd_account, this, _1);
-        _handlers["add-currency-for-dd"] = bind(&CommandImp::add_currency_for_dd, this, _1);
         _handlers["create-vasp"] = bind(&CommandImp::create_vasp_account, this, _1);
         _handlers["create-child-vasp"] = bind(&CommandImp::create_child_vasp_account, this, _1);
+        _handlers["add-currency-for-dd"] = bind(&CommandImp::add_currency_for_dd, this, _1);
+
         _handlers["mint"] = bind(&CommandImp::mint_to_dd, this, _1);
         _handlers["preburn"] = bind(&CommandImp::prebrun, this, _1);
         _handlers["burn"] = bind(&CommandImp::burn, this, _1);
-        _handlers["transfer"] = bind(&CommandImp::transfer, this, _1);
+
         _handlers["rotate-authentication-key"] = bind(&CommandImp::rotate_authentication_key, this, _1);
+        _handlers["register-currency"] = bind(&CommandImp::register_currency, this, _1);
+
+        //
+        //  Query functions
+        //
+        _handlers["query-account-balances"] = bind(&CommandImp::query_account_balances, this, _1);
+        _handlers["query-account-status"] = bind(&CommandImp::query_account_status, this, _1);
+        _handlers["query-account-transaction"] = bind(&CommandImp::query_account_transaction, this, _1);
+        _handlers["query-txn-range"] = bind(&CommandImp::query_txn_range, this, _1);
+        _handlers["query-payment-events"] = bind(&CommandImp::query_payment_events, this, _1);
+        _handlers["query-currency-events"] = bind(&CommandImp::query_currency_events, this, _1);
+        _handlers["query-creation-events"] = bind(&CommandImp::query_account_creation_events, this, _1);
+        _handlers["query-vls-info"] = bind(&CommandImp::query_vls_info, this);
+
         _handlers["encrypt"] = bind(&CommandImp::encrypt, this, _1);
         _handlers["decrypt"] = bind(&CommandImp::decrypt, this, _1);
         _handlers["save-private-key"] = bind(&CommandImp::save_private_key, this, _1);
-        _handlers["query-transaction"] = bind(&CommandImp::query_transaction, this, _1);
-        _handlers["query-txn-range"] = bind(&CommandImp::query_txn_range, this, _1);
-        _handlers["query-payment-events"] = bind(&CommandImp::query_payment_events, this, _1);
-        _handlers["query-balances"] = bind(&CommandImp::query_balances, this, _1);
-        _handlers["query-currency-events"] = bind(&CommandImp::query_currency_events, this, _1);        
-        _handlers["query-account-creation-events"] = bind(&CommandImp::query_account_creation_events, this, _1);
+
+        _handlers["transfer"] = bind(&CommandImp::transfer, this, _1);
     };
 
     virtual bool
@@ -70,7 +85,7 @@ public:
         if (handler != end(_handlers))
             handler->second(args);
         else
-            return false;
+            system(line.data()); // call system commands
 
         return true;
     }
@@ -100,27 +115,52 @@ protected:
 
     void add_account(const vector<string> &args)
     {
-        _client->create_next_account();
+        if (args.size() >= 1)
+        {
+            violas::Address address;
+            istringstream(args[0]) >> address;
+
+            auto account = _client->create_next_account(address);
+            cout << "account " << account.index << " with address " << account.address << " was added to wallet." << endl;
+        }
+        else
+        {
+            auto account = _client->create_next_account();
+            cout << "account " << account.index << " with address " << account.address << " was added to wallet." << endl;
+        }
     }
 
     void list_accounts()
     {
+        ostream os(cout.rdbuf());
         auto accounts = _client->get_all_accounts();
+
+        os << color::CYAN
+           << left << setw(22) << "Index"
+           << left << setw(16) << "Sequence Num"
+           << left << setw(40) << "Address"
+           << left << setw(66) << "Authentication Key"
+           << left << setw(10) << "Status"
+           << color::RESET << endl;
 
         for (const auto &account : accounts)
         {
-            cout << "Index : " << account.index << ", "
-                 << "Address : " << account.address << ", "
-                 << "Authentication Key : " << account.auth_key << ", "
-                 //<< "Publick Key : " << account.pub_key
-                 << endl;
+            ostringstream oss;
+            oss << account.address;
+
+            os << left << setw(22) << account.index
+               << left << setw(16) << account.sequence_number
+               << left << setw(40) << oss.str()
+               << left << setw(66) << account.auth_key
+               << left << setw(10) << account.status
+               << endl;
         }
     }
 
     void add_currency(const vector<string> &args)
     {
         if (args.size() < 2)
-            __throw_invalid_argument("user-add-currency index currency");
+            __throw_invalid_argument("add-currency index currency");
 
         size_t account_index;
 
@@ -217,7 +257,7 @@ protected:
     void create_child_vasp_account(const vector<string> &args)
     {
         if (args.size() < 6)
-            __throw_invalid_argument("usage : create_child_vasp_account currency_code dd_address authentication_key human_name add_all_currencies(bool) ");
+            __throw_invalid_argument("usage : create-child-vasp currency_code parent_account_index address authentication_key add_all_currencies(true|false) initial_balance");
 
         string_view currency_code;
         size_t parent_account_index;
@@ -336,18 +376,18 @@ protected:
     void transfer(const vector<string> &args)
     {
         if (args.size() < 4)
-            __throw_invalid_argument("transfer account_index account_index|address currency amount gas_unit_price max_gas_amount gas_currency_code");
+            __throw_invalid_argument("usage : transfer currency payer_account_index payee_address amount (gas_unit_price max_gas_amount gas_currency_code)");
 
         size_t account_index;
         violas::Address address;
         uint64_t amount;
-        string_view currency = args[2];
+        string_view currency = args[0];
         uint64_t gas_unit_price = 0;
         uint64_t max_gas_amount = 1000000;
         string_view gas_currency_code = "VLS";
 
-        istringstream(args[0]) >> account_index;
-        istringstream(args[1]) >> address;
+        istringstream(args[1]) >> account_index;
+        istringstream(args[2]) >> address;
         istringstream(args[3]) >> amount;
 
         if (args.size() >= 5)
@@ -404,7 +444,68 @@ protected:
         aes_256_cbc_decrypt(password, ifs_iterator(ifs), ifs_iterator(), ofs_iterator(ofs));
     }
 
-    void query_transaction(const vector<string> &args)
+    void query_account_balances(const vector<string> &args)
+    {
+        if (args.size() < 1)
+            __throw_invalid_argument("query-account-status account_index|address");
+
+        violas::Address address;
+        size_t account_index;
+
+        if (args[0].length() == 32)
+            istringstream(args[0]) >> address;
+        else
+        {
+            istringstream(args[0]) >> account_index;
+
+            auto accounts = _client->get_all_accounts();
+            address = accounts[account_index].address;
+        }
+
+        auto ac_info = _client->query_account_info(address);
+
+        using json = nlohmann::json;
+        auto ac = json::parse(ac_info);
+
+        for (auto &balance : ac["balances"])
+        {
+            double amount = 0.0f;
+            string currency = balance["currency"];
+
+            if (!balance["amount"].is_null())
+                amount = ((double)(uint64_t)balance["amount"]) / (double)violas::MICRO_COIN;
+
+            cout << fixed << setprecision(6) << amount << " " << currency << endl;
+        }
+    }
+
+    void query_account_status(const vector<string> &args)
+    {
+        if (args.size() < 1)
+            __throw_invalid_argument("query-account-status account_index|address");
+
+        violas::Address address;
+        size_t account_index;
+
+        if (args[0].length() == 32)
+            istringstream(args[0]) >> address;
+        else
+        {
+            istringstream(args[0]) >> account_index;
+
+            auto accounts = _client->get_all_accounts();
+            address = accounts[account_index].address;
+        }
+
+        auto ac_info = _client->query_account_info(address);
+
+        using json = nlohmann::json;
+        auto ac = json::parse(ac_info);
+
+        cout << ac.dump(4) << endl;
+    }
+
+    void query_account_transaction(const vector<string> &args)
     {
         if (args.size() < 3)
             __throw_invalid_argument("query-transactions account_index|address sequence_number fectch_events(ture or false)");
@@ -463,23 +564,6 @@ protected:
         auto txs = json::parse(transactions);
 
         cout << txs.dump(4) << endl;
-    }
-
-    violas::Client::payment_event_type string_to_event_type(string_view str)
-    {
-        map<string_view, violas::Client::payment_event_type> event_types =
-            {
-                {"sent", violas::Client::payment_event_type::sent},
-                {"received", violas::Client::payment_event_type::received},
-                //{"burned", violas::Client::payment_event_type::burned},
-            };
-
-        auto iter = event_types.find(str);
-
-        if (iter != end(event_types))
-            return iter->second;
-        else
-            __throw_invalid_argument(fmt("\"", str, "\" is not a event type, pleas input correct event type such as \"sent, receivied, burned\"").c_str());
     }
 
     void query_payment_events(const vector<string> &args)
@@ -579,8 +663,94 @@ protected:
         cout << txs.dump(4) << endl;
     }
 
-    void query_balances(const vector<string> &args)
+    void query_vls_info()
     {
+        using json = nlohmann::json;
+        using namespace violas;
+        ostream os(cout.rdbuf());
+
+        static const tuple<Address, string> VLS_ADDRESSES[] = {
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x00}, "VLS-TRASH"}, // 000000000000000000000000564C5300
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x01}, "VLS-COMM"},
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x02}, "VLS-ASSOCA"},
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x03}, "VLS-TEAM"},
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x04}, "VLS-ADVS"},
+            {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'V', 'L', 'S', 0x05}, "VLS-OPEN"},
+        };
+
+        os << "All currencies info : " << endl;
+
+        os << color::CYAN
+           << left << setw(20) << "Code"
+           << left << setw(20) << "Total/scaling"
+           << left << setw(20) << "Total value"
+           << left << setw(20) << "Preburn value"
+           << left << setw(20) << "Scaling factor"
+           << color::RESET << endl;
+
+        auto currencies = json::parse(_client->get_all_currency_info());
+
+        for (auto &currency : currencies)
+        {
+            //{"code":"VLS","fractional_part":1000,"preburn_value":0,"scaling_factor":1000000,"to_lbr_exchange_rate":1.0,"total_value":2136950000000}
+            auto total_div_scaling = uint64_t(currency["total_value"]) / uint64_t(currency["scaling_factor"]);
+            auto row_color = currency["code"] == "VLS" ? color::GREEN : color::YELLOW;
+
+            cout << row_color
+                 << left << setw(20) << string(currency["code"])
+                 << left << setw(20) << total_div_scaling
+                 << left << setw(20) << currency["total_value"].dump()
+                 << left << setw(20) << currency["preburn_value"].dump()
+                 << left << setw(20) << currency["scaling_factor"].dump()
+                 << color::RESET << endl;
+        }
+
+        os << "VLS Receivers info :" << endl;
+        os << color::CYAN
+           << left << setw(20) << "Name"
+           << left << setw(40) << "Address"
+           << left << setw(20) << "VLS balance"
+           << color::RESET << endl;
+
+        for (const auto &[address, name] : VLS_ADDRESSES)
+        {
+            ostringstream oss;
+            oss << address;
+
+            os << color::GREEN
+               << left << setw(20) << name
+               << left << setw(40) << oss.str()
+               << left << setw(20) << _client->get_currency_balance(address, "VLS") / (double)1'000'000
+               << color::RESET << endl;
+        }
+        //
+        //
+        //
+        tuple<Address, string> DeFi_admins[] =
+            {
+                {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0x41, 0x4E, 0x4B}, "Bank DD admin"},
+                {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x45, 0x58, 0x43, 0x48}, "Exchange DD amdin"},
+                {{0x58, 0x5c, 0x6a, 0xa3, 0x1d, 0xfb, 0x19, 0xc4, 0xaf, 0x20, 0xe8, 0xe1, 0x41, 0x12, 0xcb, 0x3f}, "Backend DD admin"},
+            };
+
+        os << "Violas DeFi administrators info" << endl;
+        os << color::CYAN
+           << left << setw(20) << "Name"
+           << left << setw(40) << "Address"
+           << left << setw(20) << "VLS balance"
+           << color::RESET << endl;
+
+        for (const auto &[address, name] : DeFi_admins)
+        {
+            ostringstream oss;
+            oss << address;
+
+            os << color::GREEN
+               << left << setw(20) << name
+               << left << setw(40) << oss.str()
+               << left << setw(20) << _client->get_currency_balance(address, "VLS") / (double)1'000'000
+               << color::RESET << endl;
+        }
     }
 
     void multisign_auth()

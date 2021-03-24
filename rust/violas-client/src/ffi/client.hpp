@@ -100,10 +100,10 @@ namespace violas
     };
 
     const uint64_t MICRO_COIN = 1E+6;
-    const uint64_t ASSOCIATION_ID = std::numeric_limits<uint64_t>::max();
-    const uint64_t VIOLAS_ROOT_ACCOUNT_ID = std::numeric_limits<uint64_t>::max();
-    const uint64_t VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID = VIOLAS_ROOT_ACCOUNT_ID - 1;
-    const uint64_t VIOLAS_TESTNET_DD_ACCOUNT_ID = VIOLAS_ROOT_ACCOUNT_ID - 2;
+    const size_t ASSOCIATION_ID = std::numeric_limits<size_t>::max();
+    const size_t VIOLAS_ROOT_ACCOUNT_ID = std::numeric_limits<size_t>::max();
+    const size_t VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID = VIOLAS_ROOT_ACCOUNT_ID - 1;
+    const size_t VIOLAS_TESTNET_DD_ACCOUNT_ID = VIOLAS_ROOT_ACCOUNT_ID - 2;
 
     const Address ASSOCIATION_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x0A, 0x55, 0x0C, 0x18};
     const Address TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
@@ -311,28 +311,7 @@ namespace violas
         virtual std::string
         query_account_creation_events(uint64_t start_sn,
                                       uint64_t limit) = 0;
-        //
-        //  Execute script file with specified arguments
-        //
-        // template <typename... Args>
-        // void execute_script(size_t account_index,
-        //                     std::string_view script_file_name,
-        //                     const std::vector<TypeTag> &type_tags,
-        //                     const Args &... args)
-        // {
-        //     using namespace std;
-
-        //     std::vector<TransactionAugment> txn_args;
-        //     auto parse_arg = [&](const auto &arg) {
-        //         txn_args.push_back(arg);
-        //     };
-
-        //     ((parse_arg(args)), ...);
-        //     //(args.push_back(std::forward<TransactionAugment>(args)), ...);
-
-        //     execute_script(account_index, script_file_name, type_tags, txn_args);
-        // }
-
+        
         ///////////////////////////////////////////////////////
         // multi-currency method
         ///////////////////////////////////////////////////////

@@ -34,13 +34,15 @@ void try_catch(F f, bool showing_exp = true)
 
 template <size_t N>
 std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
-{
+{    
+    std::ostream tos(os.rdbuf());   // temp os for setting io manipulator
+
     for (auto v : bytes)
     {
-        os << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+        tos << std::setfill('0') << std::setw(2) << std::hex << (int)v;
     }
-
-    return os << std::dec;
+    
+    return os;
 }
 
 template <size_t N>
@@ -112,7 +114,7 @@ std::string fmt(Args... args)
 
     ((oss << args), ...);
     
-    return oss.str(); // We don't want the '\0' inside
+    return oss.str();
 }
 
 #endif

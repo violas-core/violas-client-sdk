@@ -1,6 +1,9 @@
 use crate::{
+    violas_client::{
+        ViolasClient, VIOLAS_ROOT_ACCOUNT_ID, VIOLAS_TESTNET_DD_ACCOUNT_ID,
+        VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
+    },
     violas_resource::{self, CurrencyEventType},
-    violas_client::ViolasClient,
     AccountAddress, AccountStatus,
 };
 use anyhow::{format_err, Error};
@@ -39,6 +42,10 @@ fn get_last_error() -> *const c_char {
         let err = prev.borrow_mut();
         CString::new(err.clone()).unwrap().into_raw()
     })
+}
+
+fn cstr_to_string(str: *const c_char) -> String {
+    unsafe { CStr::from_ptr(str).to_string_lossy().into_owned() }
 }
 
 // for Rust
@@ -241,7 +248,20 @@ namespace violas
             size_t accounts_size = rust!(client_get_accounts_size[
                                         rust_violas_client : &mut ViolasClient as "void *"]
                                         -> usize as "size_t" {
-                rust_violas_client.accounts.len()
+                let mut count = rust_violas_client.accounts.len();
+
+                if let Some(_) = rust_violas_client.diem_root_account {
+                    count += 1;
+                }
+                if let Some(_) = rust_violas_client.tc_account {
+                    count += 1;
+                }
+
+                if let Some(_) = rust_violas_client.testnet_designated_dealer_account {
+                    count += 1;
+                }
+
+                count
             });
 
             std::vector<Account> accounts(accounts_size, Account());
@@ -249,8 +269,9 @@ namespace violas
             for(size_t i = 0; i<accounts.size(); i++)
             {
                 auto & account = accounts[i];
+                account.index = i;
 
-                accounts[i].index = i;
+                auto out_index = &account.index;
                 auto out_address = &account.address[0];
                 auto out_auth_key = &account.auth_key[0];
                 auto out_pubkey = account.pub_key.data();
@@ -259,22 +280,38 @@ namespace violas
 
                 rust!(client_get_account[
                                         rust_violas_client : &mut ViolasClient as "void *",
-                                        i : usize as "size_t",
+                                        out_index : &mut usize as "size_t*",
                                         out_address : &mut [c_uchar; ADDRESS_LENGTH] as "uint8_t *",
                                         out_auth_key : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
                                         out_pubkey : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
                                         out_sequence_num : &mut u64 as "uint64_t *",
                                         out_status : &mut AccountStatus as "AccountStatus *"
                                         ] {
-                    let account = & rust_violas_client.accounts[i];
 
-                    out_address.copy_from_slice(&account.address.as_ref());
-                    out_auth_key.copy_from_slice(&account.authentication_key.as_ref().unwrap());
-                    if account.key_pair.is_some() {
-                        out_pubkey.copy_from_slice(&account.key_pair.as_ref().unwrap().public_key.to_bytes());
+                    let opt_account = if *out_index < rust_violas_client.accounts.len() {
+                        rust_violas_client.accounts.get(*out_index)
+                    } else if *out_index == rust_violas_client.accounts.len() {
+                        *out_index = VIOLAS_ROOT_ACCOUNT_ID;
+                        rust_violas_client.diem_root_account.as_ref()
+                    } else if *out_index == rust_violas_client.accounts.len() +1 {
+                        *out_index = VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID;
+                        rust_violas_client.tc_account.as_ref()
+                    } else if *out_index == rust_violas_client.accounts.len() +2 {
+                        *out_index = VIOLAS_TESTNET_DD_ACCOUNT_ID;
+                        rust_violas_client.testnet_designated_dealer_account.as_ref()
+                    } else {
+                        None
+                    };
+
+                    if let Some(account) = opt_account {
+                        out_address.copy_from_slice(&account.address.as_ref());
+                        out_auth_key.copy_from_slice(&account.authentication_key.as_ref().unwrap());
+                        if account.key_pair.is_some() {
+                            out_pubkey.copy_from_slice(&account.key_pair.as_ref().unwrap().public_key.to_bytes());
+                        }
+                        *out_sequence_num = account.sequence_number;
+                        *out_status = account.status.clone();
                     }
-                    *out_sequence_num = account.sequence_number;
-                    *out_status = account.status.clone();
                 });
             }
 
@@ -374,14 +411,14 @@ namespace violas
                     max_gas_amount : u64 as "uint64_t",
                     in_gas_currency_tag : *const c_char as "const char *"
                 ] -> bool as "bool" {
-                    let ret = rust_violas_client.transfer_currency(
+                    let ret = rust_violas_client.transfer(
                             sender_account_ref_id,
                             &AccountAddress::new(*in_receiver_address),
                             make_currency_tag(in_currency_tag),
                             amount,
                             Some(gas_unit_price),
                             Some(max_gas_amount),
-                            Some(make_currency_tag(in_gas_currency_tag)),
+                            Some(cstr_to_string(in_gas_currency_tag)),
                             true);
 
                     match ret {
@@ -557,6 +594,10 @@ namespace violas
                     {
                         auto str128 = to_string((uint64_t)(var >> 64)) + to_string((uint64_t)var);
                         str_args.push_back(str128);
+                    }
+                    else if constexpr (std::is_same_v<T, bool>)
+                    {
+                        str_args.push_back(var?"true":"false");
                     }
                     else
                     {
@@ -906,22 +947,21 @@ namespace violas
 
             return result;
         }
-        
         virtual std::string
         query_account_creation_events(uint64_t start_sn,
                                       uint64_t limit) override
-        {            
+        {
             char * json_string = nullptr;
             char ** out_json_string = &json_string;
 
             bool ret = rust!( client_query_account_creation_events [
-                rust_violas_client : &mut ViolasClient as "void *",                
+                rust_violas_client : &mut ViolasClient as "void *",
                 start_sn : u64 as "uint64_t",
                 limit : u64 as "uint64_t",
                 out_json_string : *mut *mut c_char as "char **"
                 ] -> bool as "bool" {
-                    
-                    let ret = rust_violas_client.query_account_creation_events(                                                        
+
+                    let ret = rust_violas_client.query_account_creation_events(
                                                         start_sn,
                                                         limit);
 

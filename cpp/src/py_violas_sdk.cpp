@@ -44,6 +44,12 @@ public:
         return m_client->create_next_account(address);
     }
 
+    virtual Account
+        get_account(size_t index) override
+    {
+        return m_client->get_account(index);
+    }
+
     virtual std::vector<Account>
     get_all_accounts() override
     {

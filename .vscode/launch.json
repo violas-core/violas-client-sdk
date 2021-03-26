@@ -11,11 +11,11 @@
             "program": "${workspaceFolder}/build/debug/bin/violas_cli",
             "args": [
                 "-u",
-                "http://localhost:41527",
+                "http://localhost:40925",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
-                "0:ab3f64514466f5cbb0b8197ec7db0e51b14ba3ae941d1dc6bfdb5a12c70e13e3",
+                "0:abe08a448e92d5c906c693485fa855aa735a9edbcfd8080e82e8c7189cae2f4a",
                 "-c",
                 "4",
                 "-n",
@@ -29,10 +29,10 @@
             "name": "Launch violas_client",
             "program": "${workspaceFolder}/build/debug/bin/violas_client",
             "args": [
-                "http://localhost:34409",
+                "http://localhost:40925",
                 "/tmp/diem/mint.key",
                 "build/debug/client.mne",
-                "0:ab3f64514466f5cbb0b8197ec7db0e51b14ba3ae941d1dc6bfdb5a12c70e13e3",
+                "0:abe08a448e92d5c906c693485fa855aa735a9edbcfd8080e82e8c7189cae2f4a",
                 "4",
             ],
             "cwd": "${workspaceFolder}"
@@ -44,15 +44,15 @@
             "program": "${workspaceFolder}/build/debug/bin/violas_vls",
             "args": [
                 "-u",
-                "http://localhost:41527",
+                "http://localhost:40925",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-n",
                 "mnemonic/vls.mne",
                 "-w",
-                "0:ab3f64514466f5cbb0b8197ec7db0e51b14ba3ae941d1dc6bfdb5a12c70e13e3",
+                "0:abe08a448e92d5c906c693485fa855aa735a9edbcfd8080e82e8c7189cae2f4a",
                 "-c",
-                "4"
+                "5"
             ],
             "cwd": "${workspaceFolder}/build/debug"
         },

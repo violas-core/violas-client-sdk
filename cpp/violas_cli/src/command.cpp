@@ -32,8 +32,8 @@ public:
         _handlers["wallet-list-account"] = bind(&CommandImp::list_accounts, this);
         _handlers["add-currency"] = bind(&CommandImp::add_currency, this, _1);
 
-        _handlers["aollow-publish"] = bind(&CommandImp::allow_publish, this, _1);
-        _handlers["aollow-customer-script"] = bind(&CommandImp::allow_custom_script, this, _1);
+        _handlers["allow-publish"] = bind(&CommandImp::allow_publish, this, _1);
+        _handlers["allow-customer-script"] = bind(&CommandImp::allow_custom_script, this, _1);
         //
         //  Create acount functions
         //
@@ -134,6 +134,23 @@ protected:
     {
         ostream os(cout.rdbuf());
         auto accounts = _client->get_all_accounts();
+
+        //try get the system accounts
+        try
+        {
+            auto root = _client->get_account(violas::VIOLAS_ROOT_ACCOUNT_ID);
+            accounts.push_back(root);
+
+            auto tc = _client->get_account(violas::VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID);
+            accounts.push_back(tc);
+
+            auto dd = _client->get_account(violas::VIOLAS_TESTNET_DD_ACCOUNT_ID);
+            accounts.push_back(dd);
+        }
+        catch (const std::exception &e)
+        {
+            //std::cerr << e.what() << '\n';
+        }
 
         os << color::CYAN
            << left << setw(22) << "Index"
@@ -380,7 +397,7 @@ protected:
 
         size_t account_index;
         violas::Address address;
-        uint64_t amount;
+        double amount;
         string_view currency = args[0];
         uint64_t gas_unit_price = 0;
         uint64_t max_gas_amount = 1000000;
@@ -399,7 +416,13 @@ protected:
         if (args.size() >= 7)
             gas_currency_code = args[6];
 
-        _client->transfer(account_index, address, currency, amount, gas_unit_price, max_gas_amount, gas_currency_code);
+        _client->transfer(account_index,
+                          address,
+                          currency,
+                          amount * violas::MICRO_COIN,
+                          gas_unit_price,
+                          max_gas_amount,
+                          gas_currency_code);
 
         auto accounts = _client->get_all_accounts();
 
@@ -475,7 +498,8 @@ protected:
             if (!balance["amount"].is_null())
                 amount = ((double)(uint64_t)balance["amount"]) / (double)violas::MICRO_COIN;
 
-            cout << fixed << setprecision(6) << amount << " " << currency << endl;
+            cout << right << setw(16) << fixed << setprecision(6) << amount
+                 << " " << currency << endl;
         }
     }
 
@@ -693,7 +717,7 @@ protected:
         for (auto &currency : currencies)
         {
             //{"code":"VLS","fractional_part":1000,"preburn_value":0,"scaling_factor":1000000,"to_lbr_exchange_rate":1.0,"total_value":2136950000000}
-            auto total_div_scaling = uint64_t(currency["total_value"]) / uint64_t(currency["scaling_factor"]);
+            auto total_div_scaling = (double)uint64_t(currency["total_value"]) / uint64_t(currency["scaling_factor"]);
             auto row_color = currency["code"] == "VLS" ? color::GREEN : color::YELLOW;
 
             cout << row_color

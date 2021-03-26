@@ -242,62 +242,36 @@ namespace violas
             return addr_index;
         }
 
-        virtual std::vector<Account>
-        get_all_accounts() override
+        virtual Account
+        get_account(size_t index) override
         {
-            size_t accounts_size = rust!(client_get_accounts_size[
-                                        rust_violas_client : &mut ViolasClient as "void *"]
-                                        -> usize as "size_t" {
-                let mut count = rust_violas_client.accounts.len();
+            Account account;
+            account.index = index;
 
-                if let Some(_) = rust_violas_client.diem_root_account {
-                    count += 1;
-                }
-                if let Some(_) = rust_violas_client.tc_account {
-                    count += 1;
-                }
+            auto out_index = &account.index;
+            auto out_address = &account.address[0];
+            auto out_auth_key = &account.auth_key[0];
+            auto out_pubkey = account.pub_key.data();
+            auto out_sequence_num = &account.sequence_number;
+            auto out_status = &account.status;
 
-                if let Some(_) = rust_violas_client.testnet_designated_dealer_account {
-                    count += 1;
-                }
-
-                count
-            });
-
-            std::vector<Account> accounts(accounts_size, Account());
-
-            for(size_t i = 0; i<accounts.size(); i++)
-            {
-                auto & account = accounts[i];
-                account.index = i;
-
-                auto out_index = &account.index;
-                auto out_address = &account.address[0];
-                auto out_auth_key = &account.auth_key[0];
-                auto out_pubkey = account.pub_key.data();
-                auto out_sequence_num = &account.sequence_number;
-                auto out_status = &account.status;
-
-                rust!(client_get_account[
-                                        rust_violas_client : &mut ViolasClient as "void *",
-                                        out_index : &mut usize as "size_t*",
-                                        out_address : &mut [c_uchar; ADDRESS_LENGTH] as "uint8_t *",
-                                        out_auth_key : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
-                                        out_pubkey : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
-                                        out_sequence_num : &mut u64 as "uint64_t *",
-                                        out_status : &mut AccountStatus as "AccountStatus *"
-                                        ] {
-
+            bool ret = rust!(client_get_account[
+                rust_violas_client : &mut ViolasClient as "void *",
+                out_index : &mut usize as "size_t*",
+                out_address : &mut [c_uchar; ADDRESS_LENGTH] as "uint8_t *",
+                out_auth_key : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
+                out_pubkey : &mut [c_uchar; ADDRESS_LENGTH * 2] as "uint8_t *",
+                out_sequence_num : &mut u64 as "uint64_t *",
+                out_status : &mut AccountStatus as "AccountStatus *"
+                ] -> bool as "bool"
+                {
                     let opt_account = if *out_index < rust_violas_client.accounts.len() {
                         rust_violas_client.accounts.get(*out_index)
-                    } else if *out_index == rust_violas_client.accounts.len() {
-                        *out_index = VIOLAS_ROOT_ACCOUNT_ID;
+                    } else if *out_index == VIOLAS_ROOT_ACCOUNT_ID {
                         rust_violas_client.diem_root_account.as_ref()
-                    } else if *out_index == rust_violas_client.accounts.len() +1 {
-                        *out_index = VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID;
+                    } else if *out_index == VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID {
                         rust_violas_client.tc_account.as_ref()
-                    } else if *out_index == rust_violas_client.accounts.len() +2 {
-                        *out_index = VIOLAS_TESTNET_DD_ACCOUNT_ID;
+                    } else if *out_index == VIOLAS_TESTNET_DD_ACCOUNT_ID {
                         rust_violas_client.testnet_designated_dealer_account.as_ref()
                     } else {
                         None
@@ -305,15 +279,43 @@ namespace violas
 
                     if let Some(account) = opt_account {
                         out_address.copy_from_slice(&account.address.as_ref());
-                        out_auth_key.copy_from_slice(&account.authentication_key.as_ref().unwrap());
-                        if account.key_pair.is_some() {
-                            out_pubkey.copy_from_slice(&account.key_pair.as_ref().unwrap().public_key.to_bytes());
+                        if let Some(auth_key) = &account.authentication_key{
+                            //out_auth_key.copy_from_slice(&account.authentication_key.as_ref().unwrap());
+                            out_auth_key.copy_from_slice(&auth_key.as_ref());
+                        }
+                        if let Some(key_pair) = &account.key_pair {
+                            //out_pubkey.copy_from_slice(&key_pair.as_ref().unwrap().public_key.to_bytes());
+                            out_pubkey.copy_from_slice(&key_pair.public_key.to_bytes());
                         }
                         *out_sequence_num = account.sequence_number;
                         *out_status = account.status.clone();
+
+                        true
+                    } else {
+                        false
                     }
+
                 });
-            }
+
+            check_result(ret);
+            return account;
+        }
+
+        virtual std::vector<Account>
+        get_all_accounts() override
+        {
+            size_t accounts_size = rust!(client_get_accounts_size[
+                                        rust_violas_client : &mut ViolasClient as "void *"]
+                                        -> usize as "size_t" {
+                let mut count = rust_violas_client.accounts.len();
+                count
+            });
+
+            std::vector<Account> accounts(accounts_size, Account());
+            for(size_t i = 0; i<accounts.size(); i++)
+            {
+                accounts[i] = get_account(i);
+            }            
 
             return accounts;
         }

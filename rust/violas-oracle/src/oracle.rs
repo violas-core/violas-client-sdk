@@ -44,12 +44,16 @@ impl Oracle {
     }
     /// publish Oracle module mv file
     pub fn publish(&mut self, oracle_module_file_name: &str) -> Result<()> {
-        self.client.publish_module(
+        let ret = self.client.publish_module(
             violas_client::violas_client::VIOLAS_ROOT_ACCOUNT_ID as usize,
             oracle_module_file_name,
-        )?;
+        );
 
-        println!("succeded to publish Oracle moudle");
+        if let Ok(_) = ret {
+            println!("succeded to publish Oracle moudle");
+        } else {
+            println!("failed to publish Oracle moudle");
+        }
 
         self.client.create_next_account(None, false)?;
         let auth_key_data = self.client.accounts[0]

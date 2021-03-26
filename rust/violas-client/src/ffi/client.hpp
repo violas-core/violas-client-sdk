@@ -135,6 +135,9 @@ namespace violas
         virtual AddressAndIndex
         create_next_account(const std::optional<Address> &address = std::nullopt) = 0;
 
+        virtual Account
+        get_account(size_t index) = 0;
+        
         virtual std::vector<Account>
         get_all_accounts() = 0;
 

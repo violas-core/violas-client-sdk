@@ -33,16 +33,30 @@ void try_catch(F f, bool showing_exp = true)
 }
 
 template <size_t N>
-std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
-{    
-    std::ostream tos(os.rdbuf());   // temp os for setting io manipulator
-
+std::ostringstream &operator<<(std::ostringstream &oss, const std::array<uint8_t, N> &bytes)
+{
     for (auto v : bytes)
     {
-        tos << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+        oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
     }
-    
-    return os;
+
+    return oss;
+}
+
+template <size_t N>
+std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
+{
+    //std::ostream tos(os.rdbuf());   // temp os for setting io manipulator
+    std::ostringstream oss;
+
+    oss << bytes;
+
+    // for (auto v : bytes)
+    // {
+    //     oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+    // }
+
+    return os << oss.str();
 }
 
 template <size_t N>
@@ -65,7 +79,7 @@ std::istream &operator>>(std::istream &is, std::array<uint8_t, N> &bytes)
             break;
         }
 
-        // set from high to low bit 
+        // set from high to low bit
         //bytes[N - 1 - i] = b;
         bytes[i] = b;
     }
@@ -113,7 +127,7 @@ std::string fmt(Args... args)
     std::ostringstream oss;
 
     ((oss << args), ...);
-    
+
     return oss.str();
 }
 

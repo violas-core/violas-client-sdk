@@ -45,7 +45,7 @@ public:
     }
 
     virtual Account
-        get_account(size_t index) override
+    get_account(size_t index) override
     {
         return m_client->get_account(index);
     }
@@ -476,10 +476,16 @@ public:
     }
 
     virtual std::string
-        query_account_creation_events(uint64_t start_sn,
-                                      uint64_t limit) override
+    query_account_creation_events(uint64_t start_sn,
+                                  uint64_t limit) override
     {
         return m_client->query_account_creation_events(start_sn, limit);
+    }
+
+    virtual std::string
+    query_violas_status() override
+    {
+        return m_client->query_violas_status();
     }
     
     /// get the balance of currency for the account address

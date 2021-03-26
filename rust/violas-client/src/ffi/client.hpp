@@ -315,6 +315,9 @@ namespace violas
         query_account_creation_events(uint64_t start_sn,
                                       uint64_t limit) = 0;
         
+        virtual std::string
+        query_violas_status() = 0;
+        
         ///////////////////////////////////////////////////////
         // multi-currency method
         ///////////////////////////////////////////////////////

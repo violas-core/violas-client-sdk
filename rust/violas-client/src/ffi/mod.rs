@@ -315,7 +315,7 @@ namespace violas
             for(size_t i = 0; i<accounts.size(); i++)
             {
                 accounts[i] = get_account(i);
-            }            
+            }
 
             return accounts;
         }
@@ -991,6 +991,45 @@ namespace violas
 
             return result;
         }
+
+        virtual std::string
+        query_violas_status() override
+        {
+            char * json_string = nullptr;
+            char ** out_json_string = &json_string;
+
+            bool ret = rust!( client_query_violas_status [
+                rust_violas_client : &mut ViolasClient as "void *",
+                out_json_string : *mut *mut c_char as "char **"
+                ] -> bool as "bool" {
+
+                    let ret = rust_violas_client.query_vioas_status();
+
+                    match ret {
+                        Ok(status) => {
+                            let json_currencies = serde_json::to_string(&status).unwrap();
+                                *out_json_string = CString::new(json_currencies)
+                                    .expect("new CString error")
+                                    .into_raw();
+                                true
+                        },
+                        Err(e) => {
+                            set_last_error(format_err!(
+                                "failed to query account creation events with error, {}", e
+                            ));
+                            false
+                        }
+                    }
+            });
+
+            check_result(ret);
+
+            string result = json_string;
+            free_rust_string(json_string);
+
+            return result;
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// multi currency methods
         /////////////////////////////////////////////////////////////////////////////////////////////////////////

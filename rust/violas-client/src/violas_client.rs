@@ -3,6 +3,7 @@ use crate::{
     diem_client_proxy::ClientProxy,
     violas_resource::{
         make_struct_tag, AccountOperationsCapability, CurrencyEventType, CurrencyInfoViewEx,
+        ViolasStatus,
     },
     AccountData, //AccountStatus
     AccountStatus,
@@ -1074,9 +1075,7 @@ impl ViolasClient {
         &mut self,
         address: AccountAddress,
     ) -> Result<Option<jsonrpc::Account>> {
-        let account = self.client.get_account(&address)?;
-
-        Ok(account)
+        self.get_account_and_update(&address)
     }
 
     /// query transaction by account address and sequence number
@@ -1185,6 +1184,30 @@ impl ViolasClient {
         } else {
             bail!("failed to get account resource from root address.");
         }
+    }
+
+    pub fn query_vioas_status(&mut self) -> Result<ViolasStatus> {
+        self.client.update_and_verify_state_proof()?;
+
+        let result: Option<AccountOperationsCapability> = self.get_account_resource(
+            &diem_root_address(),
+            &make_struct_tag(
+                &CORE_CODE_ADDRESS,
+                "DiemAccount",
+                "AccountOperationsCapability",
+                vec![],
+            ),
+        )?;
+
+        let status = ViolasStatus {
+            latest_version: self.client.trusted_state().latest_version(),
+            account_amount: match result {
+                Some(ao_cap) => ao_cap.creation_events.count(),
+                None => 0,
+            },
+        };
+
+        Ok(status)
     }
 }
 

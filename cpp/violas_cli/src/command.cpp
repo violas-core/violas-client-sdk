@@ -60,6 +60,7 @@ public:
         _handlers["query-currency-events"] = bind(&CommandImp::query_currency_events, this, _1);
         _handlers["query-creation-events"] = bind(&CommandImp::query_account_creation_events, this, _1);
         _handlers["query-vls-info"] = bind(&CommandImp::query_vls_info, this);
+        _handlers["query-violas-status"] = bind(&CommandImp::query_violas_status, this);
 
         _handlers["encrypt"] = bind(&CommandImp::encrypt, this, _1);
         _handlers["decrypt"] = bind(&CommandImp::decrypt, this, _1);
@@ -775,6 +776,16 @@ protected:
                << left << setw(20) << _client->get_currency_balance(address, "VLS") / (double)1'000'000
                << color::RESET << endl;
         }
+    }
+
+    void query_violas_status()
+    {
+        auto status = _client->query_violas_status();
+
+        using json = nlohmann::json;
+        auto txs = json::parse(status);
+
+        cout << txs.dump(4) << endl;
     }
 
     void multisign_auth()

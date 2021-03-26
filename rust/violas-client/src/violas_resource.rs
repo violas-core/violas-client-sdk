@@ -67,6 +67,12 @@ pub enum CurrencyEventType {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct ViolasStatus {
+    pub latest_version: u64,
+    pub account_amount: u64,    
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct AccountLimitMutationCapability {
     pub dummy_field: bool,
 }

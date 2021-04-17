@@ -25,6 +25,21 @@ string currency_codes[] = {
     // "SGD",
     "vBTC",
     "vUSDT",
+    ///////////////////////////
+    "vWBTC",
+    "vHBTC",
+    "vRNBTC",   // RENBTC
+    "vUSDC",
+    "vBUSD",
+    "vDAI",
+    "vWETH",
+    "vUNI",
+    "vSUSHI",
+    "vLINK",
+    "vCOMP",
+    "vAAVE",
+    "vBNB",
+    "vWFIL",
 };
 
 enum account_type
@@ -128,29 +143,36 @@ void initialize_all_currencies(client_ptr client)
 
     for (auto currency_code : currency_codes)
     {
-        cout << color::GREEN << currency_code << color::RESET << "\t: ";
+        try
+        {
+            cout << color::GREEN << currency_code << color::RESET << "\t: ";
 
-        client->publish_curency(currency_code);
-        cout << "published, ";
+            client->publish_curency(currency_code);
+            cout << "published, ";
 
-        client->register_currency(currency_code,
-                                  1,
-                                  2,
-                                  false,
-                                  1000000,
-                                  100);
-        cout << "registered, ";
+            client->register_currency(currency_code,
+                                      1,
+                                      2,
+                                      false,
+                                      1000000,
+                                      100);
+            cout << "registered, ";
 
-        client->add_currency_for_designated_dealer(currency_code,
-                                                   TESTNET_DD_ADDRESS);
-        cout << "added currency for DD account, ";
+            client->add_currency_for_designated_dealer(currency_code,
+                                                       TESTNET_DD_ADDRESS);
+            cout << "added currency for DD account, ";
 
-        client->mint_currency_for_designated_dealer(currency_code,
-                                                    0,
-                                                    TESTNET_DD_ADDRESS,
-                                                    1'000'000 * MICRO_COIN,
-                                                    3);
-        cout << "minted 1,000,000 coins to DD account " << endl;
+            client->mint_currency_for_designated_dealer(currency_code,
+                                                        0,
+                                                        TESTNET_DD_ADDRESS,
+                                                        1'000'000 * MICRO_COIN,
+                                                        3);
+            cout << "minted 1,000,000 coins to DD account " << endl;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     cout << "all currency info : " << client->get_all_currency_info() << endl;

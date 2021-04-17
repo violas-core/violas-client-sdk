@@ -9,10 +9,10 @@ echo "copied libclient_proxy.so ."$1"/lib"
 cp rust/violas-oracle/target/release/violas-oracle $1/bin
 echo "copied violas-oracle to "$1"/bin"
 
-cp build/release/lib $1 -r
+cp build/release/lib $1 -rf
 echo "copied build/release/lib to "$1"/lib"
 
-cp build/release/bin $1 -r
+cp build/release/bin $1 -rf
 echo "copied build/release/bin to "$1"/bin"
 
 cp ../Violas/target/release/cli $1/bin

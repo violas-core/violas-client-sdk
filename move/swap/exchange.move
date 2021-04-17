@@ -127,6 +127,9 @@ use 0x1::Event::{ Self, EventHandle };
         });
     }
     
+    // native fun create_signer(addr: address): signer;
+    // native fun destroy_signer(sig: signer);
+
     /// add reserve info by admin account
     public fun add_reserve<Token1, Token2>(admin : &signer) 
     acquires ReserveInfo {
@@ -149,14 +152,16 @@ use 0x1::Event::{ Self, EventHandle };
             };
 
         move_to(admin, reserve);  
+        // let admin_signer = create_signer(admin_address());
+        // move_to(&admin_signer, reserve);  
+        // destroy_signer(admin_signer);
 
         // add reserver info
         let reserve_info = borrow_global_mut<ReserveInfo>(admin_address());
         Vector::push_back(&mut reserve_info.currency_pair_codes, CurrencyPairCode {
             currency1_code : Diem::currency_code<Token1>(),
             currency2_code : Diem::currency_code<Token2>(),
-        });
-        
+        });        
     }
     ///
     /// deposit liquidity by user account

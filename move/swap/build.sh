@@ -2,6 +2,10 @@ echo "biulding swap.move ..."
 ../build.sh exchange.move 0x0
 mv build/modules/0_Exchange.mv exchange.mv
 
+echo "biulding vlswap.move ..."
+../build.sh vlswap.move 0x0 Fee.move
+mv build/modules/0_Exchange.mv exchange.mv
+
 echo "biulding verify_sqrt.move ..."
 ../build.sh verify_sqrt.move 0x0 exchange.move
 mv build/scripts/verify_sqrt.mv .

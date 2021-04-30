@@ -3,7 +3,7 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [
+    "configurations": [        
         {
             "type": "lldb",
             "request": "launch",
@@ -11,15 +11,15 @@
             "program": "${workspaceFolder}/build/debug/bin/violas_cli",
             "args": [
                 "-u",
-                "http://localhost:45827",
+                "http://localhost:38255",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
-                "0:abe08a448e92d5c906c693485fa855aa735a9edbcfd8080e82e8c7189cae2f4a",
+                "0:f361f38409f41f97670aa6d748b5b541afddef2015e78496853853015cd9eb25",
                 "-c",
-                "5",
+                "4",
                 "-n",
-                "mnemonic/vls.mne",
+                "client.mne",
             ],  
             "cwd": "${workspaceFolder}/build/debug"
         },
@@ -32,7 +32,7 @@
                 "http://localhost:40925",
                 "/tmp/diem/mint.key",
                 "build/debug/client.mne",
-                "0:abe08a448e92d5c906c693485fa855aa735a9edbcfd8080e82e8c7189cae2f4a",
+                "0:4b95edf8787b84bf1c06c4c262673484f13eb35acd16bbd8690520b75f882eb5",
                 "4",
             ],
             "cwd": "${workspaceFolder}"
@@ -50,7 +50,7 @@
                 "-n",
                 "mnemonic/vls.mne",
                 "-w",
-                "0:abe08a448e92d5c906c693485fa855aa735a9edbcfd8080e82e8c7189cae2f4a",
+                "0:4b95edf8787b84bf1c06c4c262673484f13eb35acd16bbd8690520b75f882eb5",
                 "-c",
                 "5"
             ],

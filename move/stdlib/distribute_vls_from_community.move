@@ -15,10 +15,10 @@ const E_EXCHANGE_PAYMENT_IS_INCORRECT: u64 = 1002;
 const BACKEND_ADDRESS : address = 0x585c6aa31dfb19c4af20e8e14112cb3f;
 
 ///
-/// distribute VLS from Violas community to Bank administrator account, Exchange adminitrator account and backend(VLS-USER) account
+/// distribute VLS from Violas community account to Bank administrator account, Exchange adminitrator account and backend(VLS-USER) account
 ///
-fun distribute_vls_from_community(account : &signer, is_paying_to_bank: bool) {
-    let sender = Signer::address_of(account);    
+fun distribute_vls_from_community(vls_1_account : signer, is_paying_to_bank: bool) {
+    let sender = Signer::address_of(vls_1_account);    
 
     // Mine VLS to VLS-COMM account
     DiemAccount::mine_vls();
@@ -44,17 +44,17 @@ fun distribute_vls_from_community(account : &signer, is_paying_to_bank: bool) {
     // 1. Distribute VLS to Bank adminitrator
     if(is_paying_to_bank)   // Bank admin only receives VLS once per 24 hours
     {
-        if(ViolasBank::is_published(account) == false) {
-	        ViolasBank::publish(account, x"00");
-        };
+        // if(ViolasBank::is_published(account) == false) {
+	    //     ViolasBank::publish(account, x"00");
+        // };
 
-        let distribution_amount = FixedPoint32::multiply_u64(total, bank_distribution_ratio);
+        // let distribution_amount = FixedPoint32::multiply_u64(total, bank_distribution_ratio);
         
-        balance = DiemAccount::balance<VLS>(sender);
-        ViolasBank::set_incentive_rate(account, distribution_amount);
+        // balance = DiemAccount::balance<VLS>(sender);
+        // ViolasBank::set_incentive_rate(account, distribution_amount);
 
-        // Make sure that the amount of VLS ViolasBank::set_incentive_rate extracted is distribution_amount   
-        assert(DiemAccount::balance<VLS>(sender) == balance - distribution_amount, Errors::limit_exceeded(E_BANK_PAYMENT_IS_INCORRECT));
+        // // Make sure that the amount of VLS ViolasBank::set_incentive_rate extracted is distribution_amount   
+        // assert(DiemAccount::balance<VLS>(sender) == balance - distribution_amount, Errors::limit_exceeded(E_BANK_PAYMENT_IS_INCORRECT));
     };
     
     // 2. Distribute VLS to Exchange adminitrator

@@ -3,7 +3,7 @@ script  {
 use 0x1::Oracle;
 use 0x1::FixedPoint32;
 
-fun main<CoinType1, CoinType2>(        
+fun main<CoinType1: store, CoinType2: store>(        
         amount_coin1 : u64, 
         amount_coin2: u64
     ){    

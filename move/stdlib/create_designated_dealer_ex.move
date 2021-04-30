@@ -2,8 +2,8 @@ script {
 use 0x1::DiemAccount;
 use 0x1::SlidingNonce;
 
-fun create_designated_dealer_ex<CoinType>(
-        tc_account: &signer,
+fun create_designated_dealer_ex<CoinType: store>(
+        tc_account: signer,
         sliding_nonce: u64,
         new_account_address: address,
         auth_key: vector<u8>,
@@ -11,9 +11,10 @@ fun create_designated_dealer_ex<CoinType>(
         add_all_currencies: bool,
     )
 {
-    SlidingNonce::record_nonce_or_abort(tc_account, sliding_nonce);
+    SlidingNonce::record_nonce_or_abort(&tc_account, sliding_nonce);
+    
     DiemAccount::create_designated_dealer_ex<CoinType>(
-        tc_account, 
+        &tc_account, 
         new_account_address, 
         auth_key,
         human_name,

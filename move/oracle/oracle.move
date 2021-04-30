@@ -10,14 +10,14 @@ use 0x1::FixedPoint32::{Self, FixedPoint32};
 use 0x1::Event::{ Self, EventHandle };
 
     /// Evnet for updating
-    struct UpdateEvent {
+    struct UpdateEvent has store, drop {
         value : FixedPoint32,
         timestamp : u64,
         currency_code : vector<u8>        
     }
 
     /// Exchange rate for a currency / USD
-    resource struct ExchangeRate<CoinType> { 
+    struct ExchangeRate<CoinType: store> has store, key { 
         value : FixedPoint32,
         timestamp : u64,    //Unix time in microseconds
         /// Event stream for updating exchange rate and where `update_exchange_rate`s will be emitted.
@@ -27,7 +27,7 @@ use 0x1::Event::{ Self, EventHandle };
     const EINVALID_SINGLETON_ADDRESS: u64 = 0;
     const ENOT_A_REGISTERED_CURRENCY: u64 = 1;
 
-    fun emit_updating_events<CoinType>( exchange_rate: &mut ExchangeRate<CoinType>)
+    fun emit_updating_events<CoinType: store>( exchange_rate: &mut ExchangeRate<CoinType>)
     {
         Event::emit_event(
                 &mut exchange_rate.update_events,                
@@ -44,7 +44,7 @@ use 0x1::Event::{ Self, EventHandle };
     }
 
     /// update exchange rate, if the exchange rate for CoinType doesn't exist then create it 
-    public fun update_exchange_rate<CoinType>(
+    public fun update_exchange_rate<CoinType: store>(
         admin_account : &signer, 
         numerator : u64, 
         denominator: u64
@@ -82,7 +82,7 @@ use 0x1::Event::{ Self, EventHandle };
     }
 
     /// get exchange rate for CoinType
-    public fun get_exchange_rate<CoinType>() : (FixedPoint32, u64) acquires ExchangeRate    
+    public fun get_exchange_rate<CoinType: store>() : (FixedPoint32, u64) acquires ExchangeRate    
     {
         assert(Diem::is_currency<CoinType>(), ENOT_A_REGISTERED_CURRENCY);        
 

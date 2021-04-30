@@ -22,27 +22,29 @@ rustyline = "6.2.0"
 rust_decimal = "1.7.0"
 num-traits = "0.2.12"
 reqwest = { version = "0.10.6", features = ["blocking", "json", "rustls-tls"], default-features = false }
-serde = { version = "=1.0.118", features = ["derive"] }
+serde = { version = "1.0.124", features = ["derive"] }
 tokio = { version = "0.2.22", features = ["full"] }
 walkdir = "2.3.1"
-bcs = "0.1.1"
+bcs = "0.1.2"
 
-diem-config = { path = "../../../Violas/config", version = "0.1.0" }
-generate-key = { path = "../../../Violas/config/generate-key", version = "0.1.0" }
-crash-handler = { path = "../../../Violas/common/crash-handler", version = "0.1.0" }
-diem-crypto = { path = "../../../Violas/crypto/crypto", version = "0.1.0" }
-diem-wallet = { path = "../../../Violas/testsuite/cli/diem-wallet", version = "0.1.0" }
-diem-json-rpc-client = { path = "../../../Violas/client/json-rpc", version = "0.1.0" }
-diem-infallible = { path = "../../../Violas/common/infallible", version = "0.1.0" }
-diem-logger =  { path = "../../../Violas/common/logger", version = "0.1.0" }
-diem-metrics = { path = "../../../Violas/common/metrics", version = "0.1.0" }
-diem-temppath = { path = "../../../Violas/common/temppath/", version = "0.1.0" }
-diem-workspace-hack = { path = "../../../Violas/common/workspace-hack", version = "0.1.0" }
-diem-network-address = { path = "../../../Violas/network/network-address", version = "0.1.0" }
-resource-viewer = { path = "../../../Violas/language/tools/resource-viewer", version = "0.1.0" }
-compiled-stdlib = { path = "../../../Violas/language/stdlib/compiled",  version = "0.1.0" }
-transaction-builder = { path = "../../../Violas/language/transaction-builder", version = "0.1.0" }
-diem-types = { path = "../../../Violas/types", version = "0.1.0" }
+diem-client = { path = "../../../Violas/sdk/client" }
+diem-config = { path = "../../../Violas/config" }
+generate-key = { path = "../../../Violas/config/generate-key" }
+crash-handler = { path = "../../../Violas/common/crash-handler" }
+diem-crypto = { path = "../../../Violas/crypto/crypto" }
+diem-wallet = { path = "../../../Violas/testsuite/cli/diem-wallet" }
+diem-json-rpc-client = { path = "../../../Violas/client/json-rpc" }
+diem-infallible = { path = "../../../Violas/common/infallible" }
+diem-logger =  { path = "../../../Violas/common/logger" }
+diem-metrics = { path = "../../../Violas/common/metrics" }
+diem-temppath = { path = "../../../Violas/common/temppath/" }
+diem-workspace-hack = { path = "../../../Violas/common/workspace-hack" }
+resource-viewer = { path = "../../../Violas/language/tools/resource-viewer" }
+diem-framework = { path = "../../../Violas/language/diem-framework" }
+diem-framework-releases = { path = "../../../Violas/language/diem-framework/releases" }
+diem-transaction-builder = { path = "../../../Violas/sdk/transaction-builder" }
+
+diem-types = { path = "../../../Violas/types" }
 
 #move-lang = { path = "../../../Violas/language/move-lang", version = "0.0.1" }
 move-core-types = { path = "../../../Violas/language/move-core/types"}

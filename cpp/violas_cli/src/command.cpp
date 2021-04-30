@@ -33,7 +33,7 @@ public:
         _handlers["add-currency"] = bind(&CommandImp::add_currency, this, _1);
 
         _handlers["allow-publish"] = bind(&CommandImp::allow_publish, this, _1);
-        _handlers["allow-customer-script"] = bind(&CommandImp::allow_custom_script, this, _1);
+        _handlers["allow-custome-script"] = bind(&CommandImp::allow_custom_script, this, _1);
         //
         //  Create acount functions
         //

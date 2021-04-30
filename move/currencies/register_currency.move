@@ -1,8 +1,8 @@
 script {
 use 0x1::DiemAccount;
 
-fun main<NewCurrency>(
-    association: &signer,
+fun main<NewCurrency: store>(
+    dr_root: signer,
     exchange_rate_denom: u64,
     exchange_rate_num: u64,
     is_synthetic: bool,
@@ -12,7 +12,7 @@ fun main<NewCurrency>(
 )  {
 
     DiemAccount::register_currency_with_tc_account<NewCurrency>(
-        association, 
+        &dr_root, 
         exchange_rate_denom, 
         exchange_rate_num,
         is_synthetic,

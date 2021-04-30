@@ -2,7 +2,7 @@ address 0x1 {
 
 module USD {
 
-    struct USD { }
+    struct USD has store { }
 
 }
 

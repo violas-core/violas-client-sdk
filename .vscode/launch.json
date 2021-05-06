@@ -3,7 +3,7 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [        
+    "configurations": [
         {
             "type": "lldb",
             "request": "launch",
@@ -11,16 +11,16 @@
             "program": "${workspaceFolder}/build/debug/bin/violas_cli",
             "args": [
                 "-u",
-                "http://localhost:38255",
+                "http://localhost:39929",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
-                "0:f361f38409f41f97670aa6d748b5b541afddef2015e78496853853015cd9eb25",
+                "0:c047fe739c948c3d3ce0636bf457d631c88060e561bf34dd4acfd2f6b47b0037",
                 "-c",
                 "4",
                 "-n",
                 "client.mne",
-            ],  
+            ],
             "cwd": "${workspaceFolder}/build/debug"
         },
         {
@@ -44,17 +44,17 @@
             "program": "${workspaceFolder}/build/debug/bin/violas_vls",
             "args": [
                 "-u",
-                "http://localhost:40925",
+                "http://localhost:39929",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-n",
-                "mnemonic/vls.mne",
+                "vls.mne",
                 "-w",
-                "0:4b95edf8787b84bf1c06c4c262673484f13eb35acd16bbd8690520b75f882eb5",
+                "0:c047fe739c948c3d3ce0636bf457d631c88060e561bf34dd4acfd2f6b47b0037",
                 "-c",
-                "5"
+                "4"
             ],
-            "cwd": "${workspaceFolder}/build/debug"
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
@@ -135,29 +135,22 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "(lldb) Launch",
-            "program": "${workspaceFolder}/cppSdk/test/test",
-            "args": [],
-            "cwd": "${workspaceFolder}/cppSdk/test"
-        },
-        {
-            "name": "(gdb) Launch",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/cppSdk/test/test",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/cppSdk/test",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
+            "name": "violas-oracle Launch",
+            "program": "${workspaceFolder}/rust/violas-oracle/target/debug/violas-oracle",
+            "args": [
+                "view-events",
+                "-u",
+                "http://localhost:43955",
+                "-m",
+                "/tmp/diem/mint.key",
+                "-w",
+                "0:1521165dab335c7ccb48aa5e460c9e751ea59debcdba7642f19c43efaf368db0",
+                "-c",
+                "4",
+                "-n",
+                "$PWD/oracle.mne"
+            ],
+            "cwd": "${workspaceFolder}"
         },
     ]
 }

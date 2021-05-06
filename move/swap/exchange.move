@@ -10,7 +10,7 @@ use 0x1::Vector;
 use 0x1::DiemAccount::{Self};
 use 0x1::Event::{ Self, EventHandle };
     
-    struct AddLiquidityEvent {      
+    struct AddLiquidityEvent has drop, store {      
         currency1_code: vector<u8>,
         
         currency1_amount: u64,
@@ -20,7 +20,7 @@ use 0x1::Event::{ Self, EventHandle };
         currency2_amount: u64,        
     }
 
-    struct RemoveLiquidityEvent {                
+    struct RemoveLiquidityEvent has drop, store {                
          currency1_code: vector<u8>,
         
         currency1_amount: u64,
@@ -30,7 +30,7 @@ use 0x1::Event::{ Self, EventHandle };
         currency2_amount: u64,        
     }
 
-    struct DepositeLiquidityEvent {        
+    struct DepositeLiquidityEvent has drop, store {        
         
         currency1_code: vector<u8>,
         
@@ -41,7 +41,7 @@ use 0x1::Event::{ Self, EventHandle };
         currency2_amount: u64,
     }
 
-    struct WithdrawLiquidityEvent {        
+    struct WithdrawLiquidityEvent has drop, store {        
         
         currency1_code: vector<u8>,
         
@@ -52,7 +52,7 @@ use 0x1::Event::{ Self, EventHandle };
         currency2_amount: u64,
     }
 
-    struct SwapEvent {        
+    struct SwapEvent has drop, store {        
         
         currency1_code: vector<u8>,
         
@@ -63,18 +63,18 @@ use 0x1::Event::{ Self, EventHandle };
         currency2_amount: u64,
     }
 
-    struct CurrencyPairCode {
+    struct CurrencyPairCode has store {
         currency1_code : vector<u8>,
         currency2_code : vector<u8>
     }
 
-    resource struct ReserveInfo {
+    struct ReserveInfo has key, store {
         currency_pair_codes : vector<CurrencyPairCode>
     }
     ///
     /// Fund pool held under administrator account 
     //
-    resource struct Reserve<Token1, Token2>{
+    struct Reserve<Token1: store, Token2: store> has key, store {
         token1_amount : u64,
         token2_amount : u64,
         add_liquidity_events: EventHandle<AddLiquidityEvent>,
@@ -83,14 +83,14 @@ use 0x1::Event::{ Self, EventHandle };
     ///
     /// Liquidity held under sender account
     ///
-    resource struct Liquidity<Token1, Token2>{
+    struct Liquidity<Token1: store, Token2: store> has key, store {
         amount : u64,        
         deposite_liquidity_events: EventHandle<DepositeLiquidityEvent>,
         withdraw_liquidity_events: EventHandle<WithdrawLiquidityEvent>,
         swap_events: EventHandle<SwapEvent>,        
     }
     
-    resource struct Capability {
+    struct Capability has key, store {
         withdraw_cap: DiemAccount::WithdrawCapability,
     }
     //
@@ -131,7 +131,7 @@ use 0x1::Event::{ Self, EventHandle };
     // native fun destroy_signer(sig: signer);
 
     /// add reserve info by admin account
-    public fun add_reserve<Token1, Token2>(admin : &signer) 
+    public fun add_reserve<Token1: store, Token2:store>(admin : &signer) 
     acquires ReserveInfo {
         assert(
             Signer::address_of(admin) == admin_address(), 
@@ -166,7 +166,7 @@ use 0x1::Event::{ Self, EventHandle };
     ///
     /// deposit liquidity by user account
     ///
-    public fun deposit_liquidity<Token1, Token2>(
+    public fun deposit_liquidity<Token1: store, Token2: store>(
         sender : &signer,
         token1_amount : u64,
         token2_amount : u64
@@ -198,7 +198,7 @@ use 0x1::Event::{ Self, EventHandle };
         };              
     }
 
-    public fun withdraw_liquidity<Token1, Token2>(
+    public fun withdraw_liquidity<Token1: store, Token2: store>(
         sender : &signer,
         amount : u64
     ) acquires Reserve, Liquidity, Capability {        
@@ -229,7 +229,7 @@ use 0x1::Event::{ Self, EventHandle };
 
     // }
 
-    public fun swap<Token1, Token2>(
+    public fun swap<Token1: store, Token2: store>(
         sender : &signer,
         token1_input_amount : u64,
         token2_output_min_amount : u64
@@ -344,7 +344,7 @@ use 0x1::Event::{ Self, EventHandle };
     }
 
     /// Check if token1 before token2 in reserve pair
-    fun check_tokens_foward<Token1, Token2>() : bool {
+    fun check_tokens_foward<Token1: store, Token2: store>() : bool {
         if (exists<Reserve<Token1, Token2>>(admin_address())) {            
             true
         } else if (exists<Reserve<Token2, Token1>>(admin_address())) {            
@@ -354,7 +354,7 @@ use 0x1::Event::{ Self, EventHandle };
         }
     }
 
-    fun pay_to_admin<Token>(account: &signer, amount: u64) {
+    fun pay_to_admin<Token: store>(account: &signer, amount: u64) {
         let withdraw_cap = DiemAccount::extract_withdraw_capability(account);
 
         DiemAccount::pay_from<Token>(
@@ -368,7 +368,7 @@ use 0x1::Event::{ Self, EventHandle };
         DiemAccount::restore_withdraw_capability(withdraw_cap);
     }
 
-    fun pay_to_sender<Token>(payee: address, amount: u64) acquires Capability {
+    fun pay_to_sender<Token: store>(payee: address, amount: u64) acquires Capability {
         let cap = borrow_global<Capability>(admin_address());
 
         DiemAccount::pay_from<Token>(
@@ -380,7 +380,7 @@ use 0x1::Event::{ Self, EventHandle };
         )
     }
 
-    fun deposit_reserve_liquidity<Token1, Token2>(token1_amount : u64, token2_amount : u64) : (u64, u64)
+    fun deposit_reserve_liquidity<Token1: store, Token2: store>(token1_amount : u64, token2_amount : u64) : (u64, u64)
     acquires Reserve {
         assert(exists<Reserve<Token1, Token2>>(admin_address()), 
             Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
@@ -408,7 +408,7 @@ use 0x1::Event::{ Self, EventHandle };
     }
 
     
-    fun withdraw_reserve_liquidity<Token1, Token2>(liquidity_amount : u64) : (u64, u64)
+    fun withdraw_reserve_liquidity<Token1: store, Token2: store>(liquidity_amount : u64) : (u64, u64)
     acquires Reserve {
         assert(exists<Reserve<Token1, Token2>>(admin_address()), 
             Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));

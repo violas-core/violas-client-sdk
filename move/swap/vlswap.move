@@ -15,7 +15,7 @@ use 0x1::Fee500::Fee500;
 use 0x1::Fee3000::Fee3000;
 use 0x1::Fee10000::Fee10000;
     
-    struct AddLiquidityEvent {      
+    struct AddLiquidityEvent has drop, store {      
         currency1_code: vector<u8>,
         
         currency1_amount: u64,
@@ -25,7 +25,7 @@ use 0x1::Fee10000::Fee10000;
         currency2_amount: u64,        
     }
 
-    struct RemoveLiquidityEvent {                
+    struct RemoveLiquidityEvent has drop, store {                
          currency1_code: vector<u8>,
         
         currency1_amount: u64,
@@ -35,7 +35,7 @@ use 0x1::Fee10000::Fee10000;
         currency2_amount: u64,        
     }
 
-    struct DepositeLiquidityEvent {        
+    struct DepositeLiquidityEvent has drop, store {        
         
         currency1_code: vector<u8>,
         
@@ -46,7 +46,7 @@ use 0x1::Fee10000::Fee10000;
         currency2_amount: u64,
     }
 
-    struct WithdrawLiquidityEvent {        
+    struct WithdrawLiquidityEvent has drop, store {        
         
         currency1_code: vector<u8>,
         
@@ -57,7 +57,7 @@ use 0x1::Fee10000::Fee10000;
         currency2_amount: u64,
     }
 
-    struct SwapEvent {        
+    struct SwapEvent has drop, store {        
         
         currency1_code: vector<u8>,
         
@@ -68,51 +68,51 @@ use 0x1::Fee10000::Fee10000;
         currency2_amount: u64,
     }
 
-    struct CurrencyPairCode {
+    struct CurrencyPairCode has store {
         currency1_code : vector<u8>,
         currency2_code : vector<u8>
     }
 
-    resource struct ReserveInfo {
+    struct ReserveInfo has key, store {
         currency_pair_codes : vector<CurrencyPairCode>
     }
     ///
     /// Fund pool held under administrator account 
     //
-    resource struct Reserve<Token1, Token2>{
+    struct Reserve<Token1, Token2> has key, store {
         token1_amount : u64,
         token2_amount : u64,
         add_liquidity_events: EventHandle<AddLiquidityEvent>,
-        //remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,
+        remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,
     }
     ///
     /// Liquidity held under sender account
     ///
-    resource struct Liquidity<Token1, Token2>{
+    struct Liquidity<Token1, Token2> has key, store {
         amount : u64,        
         deposite_liquidity_events: EventHandle<DepositeLiquidityEvent>,
         withdraw_liquidity_events: EventHandle<WithdrawLiquidityEvent>,
         swap_events: EventHandle<SwapEvent>,        
     }
     
-    resource struct Capability {
+    struct Capability has key, store {
         withdraw_cap: DiemAccount::WithdrawCapability,
     }
 
-    resource struct Fee<FeeType> {
+    struct Fee<FeeType> has key, store {
         fee : u64,
         tick_spacing : u64,
         fee_code : vector<u8>
     }
     
-    resource struct RegisteredFees {
+    struct RegisteredFees has key, store {
         fee_codes : vector<vector<u8>>
     }
 
     ///
     /// Reseve Pool held under admin account
     ///
-    resource struct Pool<Currency1, Currency2, FeeType> {        
+    struct Pool<Currency1, Currency2, FeeType> has key, store {        
         sqrt_price : FixedPoint32,
         tick : u64,
 
@@ -123,7 +123,7 @@ use 0x1::Fee10000::Fee10000;
         //remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,
     }
 
-    struct PoolInfo {
+    struct PoolInfo has store {
         currency1_code : vector<u8>,
         currency2_code : vector<u8>,
         fee_code : vector<u8>
@@ -132,14 +132,14 @@ use 0x1::Fee10000::Fee10000;
     ///
     /// RegisteredPools for enuming all pool info in client
     ///
-    resource struct RegisteredPools {
+    struct RegisteredPools has key, store {
         pool_codes : vector<PoolInfo>,   
     }
 
     ///
     /// Liquidity held under provider account
     ///
-    resource struct LiquidityT<Currency1, Currency2, FeeType>{
+    struct LiquidityT<Currency1, Currency2, FeeType> has key, store {
         tick_lower : u64,
         tick_upper : u64,
         amount : u64,        
@@ -197,7 +197,7 @@ use 0x1::Fee10000::Fee10000;
     ///
     /// register a new fee rate with tick spacing
     ///
-    public fun register_fee_tick_spacing<FeeType>(admin : &signer, fee : u64, tick_spacing : u64, fee_code : vector<u8>) 
+    public fun register_fee_tick_spacing<FeeType: store>(admin : &signer, fee : u64, tick_spacing : u64, fee_code : vector<u8>) 
     acquires RegisteredFees {
         
         let sender =  Signer::address_of(admin);
@@ -220,7 +220,7 @@ use 0x1::Fee10000::Fee10000;
     /// Register a new Pool
     /// Price is represented as a sqrt(amountToken1/amountToken0)
     ///
-    public fun register_pool<Currency1, Currency2, FeeType>(
+    public fun register_pool<Currency1: store, Currency2: store, FeeType: store>(
         admin : &signer, 
         sqrt_price : FixedPoint32
     ) {        
@@ -257,7 +257,7 @@ use 0x1::Fee10000::Fee10000;
     ///
     /// Add liqudity
     ///
-    public fun add_liqudity<Currency1, Currency2, FeeType>(
+    public fun add_liqudity<Currency1: store, Currency2: store, FeeType: store>(
         sender : &signer, 
         tick_lower : u64,
         tick_upper : u64,
@@ -280,7 +280,7 @@ use 0x1::Fee10000::Fee10000;
     // native fun destroy_signer(sig: signer);
 
     /// add reserve info by admin account
-    public fun add_reserve<Token1, Token2>(admin : &signer) 
+    public fun add_reserve<Token1: store, Token2: store>(admin : &signer) 
     acquires ReserveInfo {
         assert(
             Signer::address_of(admin) == admin_address(), 
@@ -298,7 +298,7 @@ use 0x1::Fee10000::Fee10000;
                 token1_amount : 0,
                 token2_amount : 0,
                 add_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(admin),
-                remove_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(admin),
+                remove_liquidity_events : Event::new_event_handle<RemoveLiquidityEvent>(admin),
             };
 
         move_to(admin, reserve);  
@@ -316,7 +316,7 @@ use 0x1::Fee10000::Fee10000;
     ///
     /// deposit liquidity by user account
     ///
-    public fun deposit_liquidity<Token1, Token2>(
+    public fun deposit_liquidity<Token1: store, Token2: store>(
         sender : &signer,
         token1_amount : u64,
         token2_amount : u64
@@ -348,7 +348,7 @@ use 0x1::Fee10000::Fee10000;
         };              
     }
 
-    public fun withdraw_liquidity<Token1, Token2>(
+    public fun withdraw_liquidity<Token1: store, Token2: store>(
         sender : &signer,
         amount : u64
     ) acquires Reserve, Liquidity, Capability {        
@@ -379,7 +379,7 @@ use 0x1::Fee10000::Fee10000;
 
     // }
 
-    public fun swap<Token1, Token2>(
+    public fun swap<Token1: store, Token2: store>(
         sender : &signer,
         token1_input_amount : u64,
         token2_output_min_amount : u64
@@ -494,7 +494,7 @@ use 0x1::Fee10000::Fee10000;
     }
 
     /// Check if token1 before token2 in reserve pair
-    fun check_tokens_foward<Token1, Token2>() : bool {
+    fun check_tokens_foward<Token1: store, Token2: store>() : bool {
         if (exists<Reserve<Token1, Token2>>(admin_address())) {            
             true
         } else if (exists<Reserve<Token2, Token1>>(admin_address())) {            
@@ -504,7 +504,7 @@ use 0x1::Fee10000::Fee10000;
         }
     }
 
-    fun pay_to_admin<Token>(account: &signer, amount: u64) {
+    fun pay_to_admin<Token: store>(account: &signer, amount: u64) {
         let withdraw_cap = DiemAccount::extract_withdraw_capability(account);
 
         DiemAccount::pay_from<Token>(
@@ -518,7 +518,7 @@ use 0x1::Fee10000::Fee10000;
         DiemAccount::restore_withdraw_capability(withdraw_cap);
     }
 
-    fun pay_to_sender<Token>(payee: address, amount: u64) acquires Capability {
+    fun pay_to_sender<Token: store>(payee: address, amount: u64) acquires Capability {
         let cap = borrow_global<Capability>(admin_address());
 
         DiemAccount::pay_from<Token>(
@@ -530,7 +530,7 @@ use 0x1::Fee10000::Fee10000;
         )
     }
 
-    fun deposit_reserve_liquidity<Token1, Token2>(token1_amount : u64, token2_amount : u64) : (u64, u64)
+    fun deposit_reserve_liquidity<Token1: store, Token2: store>(token1_amount : u64, token2_amount : u64) : (u64, u64)
     acquires Reserve {
         assert(exists<Reserve<Token1, Token2>>(admin_address()), 
             Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
@@ -558,7 +558,7 @@ use 0x1::Fee10000::Fee10000;
     }
 
     
-    fun withdraw_reserve_liquidity<Token1, Token2>(liquidity_amount : u64) : (u64, u64)
+    fun withdraw_reserve_liquidity<Token1: store, Token2: store>(liquidity_amount : u64) : (u64, u64)
     acquires Reserve {
         assert(exists<Reserve<Token1, Token2>>(admin_address()), 
             Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));

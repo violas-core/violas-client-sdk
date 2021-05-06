@@ -21,8 +21,8 @@ use diem_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{
-        diem_root_address, BalanceResource, ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH,
-        CORE_CODE_ADDRESS,
+        constants::allowed_currency_code_string, diem_root_address, BalanceResource,
+        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH, CORE_CODE_ADDRESS,
     },
     account_state::AccountState,
     chain_id::ChainId,
@@ -192,7 +192,7 @@ impl ViolasClient {
                 Ok(resp) => match resp {
                     Some(account_view) => (
                         account_view.sequence_number,
-                        Some(hex::decode(account_view.authentication_key)?),
+                        Some(account_view.authentication_key.into_inner().into()),
                         AccountStatus::Persisted,
                     ),
                     None => (0, authentication_key_opt, AccountStatus::Local),
@@ -457,6 +457,10 @@ impl ViolasClient {
     /// publish a new module with specified module name
     ///
     pub fn publish_currency(&mut self, currency_code: &str) -> Result<()> {
+        if !allowed_currency_code_string(currency_code) {
+            bail!("Currency code is not allowed.");
+        }
+
         let module_name = currency_code.as_bytes().to_owned();
         let module_size: u8 = module_name.len() as u8;
 
@@ -510,7 +514,7 @@ impl ViolasClient {
             let tail = &module_byte_code[position + 6..]; //skip VLSUSD from current to end
             [head, &module_name[..], tail].concat()
         } else {
-            bail!("The length of module name must be between 3 and 6 character.");
+            bail!("The length of currency code must be between 3 and 6 character.");
         };
 
         // let module_byte_code = {
@@ -1180,7 +1184,7 @@ impl ViolasClient {
                 "DiemAccount",
                 "AccountOperationsCapability",
                 vec![],
-            ),
+            )?,
         )?;
 
         if let Some(ao_cap) = result {
@@ -1200,7 +1204,7 @@ impl ViolasClient {
                 "DiemAccount",
                 "AccountOperationsCapability",
                 vec![],
-            ),
+            )?,
         )?;
 
         let status = ViolasStatus {

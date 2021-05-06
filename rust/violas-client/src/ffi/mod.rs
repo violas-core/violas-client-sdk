@@ -6,7 +6,7 @@ use crate::{
     violas_resource::{self, CurrencyEventType},
     AccountAddress, AccountStatus,
 };
-use anyhow::{format_err, Error};
+use anyhow::{format_err, Error, Result};
 use cpp::cpp;
 use diem_types::{
     account_config::CORE_CODE_ADDRESS, chain_id::ChainId,
@@ -59,19 +59,36 @@ pub struct RustTypeTag {
 fn make_currency_tag(currency_code: *const c_char) -> TypeTag {
     unsafe {
         let code = CStr::from_ptr(currency_code).to_str().unwrap();
-        violas_resource::make_currency_tag(code)
+        let ret = violas_resource::make_currency_tag(code);
+
+        match ret {
+            Ok(type_tag) => type_tag,
+            Err(err) => {
+                panic!(
+                    "make_currency_code error = {}, currency code = {}",
+                    err, code
+                );
+            }
+        }
     }
 }
 
 fn make_type_tag(rust_type_tag: &RustTypeTag) -> TypeTag {
     unsafe {
-        violas_resource::make_type_tag(
+        let ret = violas_resource::make_type_tag(
             &AccountAddress::new(rust_type_tag.address),
             CStr::from_ptr(rust_type_tag.module_name).to_str().unwrap(),
             CStr::from_ptr(rust_type_tag.resource_name)
                 .to_str()
                 .unwrap(),
-        )
+        );
+
+        match ret {
+            Ok(type_tag) => type_tag,
+            Err(err) => {
+                panic!("type_tag error = {}", err);
+            }
+        }
     }
 }
 
@@ -631,12 +648,12 @@ namespace violas
                 in_gas_currency_code : * const c_char as "const char *",
                 is_blocking : bool as "bool"
                 ] -> bool as "bool" {
-
                     let script_bytecode: Vec<u8> = slice::from_raw_parts(in_script, in_scirpt_len).to_vec();
                     let type_tags : Vec<TypeTag> = slice::from_raw_parts(in_c_type_tags, in_c_type_tags_len)
-                                                            .iter()
-                                                            .map(|x| make_type_tag(x))
-                                                            .collect();
+                                                        .iter()
+                                                        .map(|x| make_type_tag(x) )
+                                                        .collect();
+
                     let gas_currency_code = CStr::from_ptr(in_gas_currency_code).to_str().unwrap();
                     let args : Vec<&str> = slice::from_raw_parts(in_args, in_args_len)
                                         .iter()
@@ -652,6 +669,7 @@ namespace violas
                                 Some(gas_unit_price),
                                 Some(gas_currency_code.to_string()),
                                 is_blocking);
+
                     match ret {
                         Ok(_) => true,
                         Err(e) => {

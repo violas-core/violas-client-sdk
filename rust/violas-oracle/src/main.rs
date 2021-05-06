@@ -126,7 +126,7 @@ fn process_command(command: Command) -> Result<()> {
                 let (currency, ex_rate) = currency_rate;
 
                 let ret = oracle.update_exchange_rate(
-                    (String::from("v") + &currency).as_str(),
+                    (String::from("V") + &currency).as_str(),
                     ex_rate,
                     false,
                 );
@@ -143,7 +143,7 @@ fn process_command(command: Command) -> Result<()> {
             //
             // Update USDT
             //
-            let usdt = "vUSDT";
+            let usdt = "VUSDT";
             let rate = 1.0;
 
             let ret = oracle.update_exchange_rate(usdt, rate, true);
@@ -235,7 +235,7 @@ fn process_command(command: Command) -> Result<()> {
                 //
                 // Update USDT
                 //
-                let usdt = "vUSDT";
+                let usdt = "VUSDT";
                 let rate = 1.0;
 
                 let ret = oracle.update_exchange_rate(usdt, rate, true);
@@ -274,13 +274,13 @@ fn process_command(command: Command) -> Result<()> {
                 let mut oracle = create_oracle(args)?;
 
                 for currency_code in ALL_CURRENCIES_CODE.iter() {
-                    let mut currency = String::from("v");
+                    let mut currency = String::from("V");
                     currency.push_str(currency_code);
 
                     oracle.get_last_event(currency.as_str())?;
                 }
 
-                oracle.get_last_event("vUSDT")?;
+                oracle.get_last_event("VUSDT")?;
 
                 Ok(())
             })?;

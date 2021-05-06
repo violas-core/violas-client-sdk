@@ -1,8 +1,16 @@
+use anyhow::Result;
 use diem_types::{
-    account_address::AccountAddress, account_config::currency_info::CurrencyInfoResource,
-    account_config::*, event::EventHandle,
+    account_address::AccountAddress,
+    account_config::{
+        constants::{from_currency_code_string, type_tag_for_currency_code},
+        currency_info::CurrencyInfoResource,
+    },
+    event::EventHandle,
 };
-use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::{
+    identifier::Identifier,
+    language_storage::{StructTag, TypeTag},
+};
 use serde::{Deserialize, Serialize};
 
 /// make struct tag
@@ -11,28 +19,30 @@ pub fn make_struct_tag(
     module: &str,
     resource: &str,
     type_params: Vec<TypeTag>,
-) -> StructTag {
-    StructTag {
+) -> Result<StructTag> {
+    Ok(StructTag {
         address: *addr,
-        module: from_currency_code_string(module).unwrap(),
-        name: from_currency_code_string(resource).unwrap(),
+        module: Identifier::new(module)?,
+        name: Identifier::new(resource)?,
         type_params,
-    }
+    })
 }
 
 /// make type tag
-pub fn make_type_tag(addr: &AccountAddress, module: &str, resource: &str) -> TypeTag {
-    TypeTag::Struct(make_struct_tag(addr, module, resource, vec![]))
+pub fn make_type_tag(addr: &AccountAddress, module: &str, resource: &str) -> Result<TypeTag> {
+    Ok(TypeTag::Struct(make_struct_tag(
+        addr,
+        module,
+        resource,
+        vec![],
+    )?))
 }
 
 /// make currency tag
-pub fn make_currency_tag(currency_code: &str) -> TypeTag {
-    TypeTag::Struct(make_struct_tag(
-        &CORE_CODE_ADDRESS,
+pub fn make_currency_tag(currency_code: &str) -> Result<TypeTag> {
+    Ok(type_tag_for_currency_code(from_currency_code_string(
         currency_code,
-        currency_code,
-        vec![],
-    ))
+    )?))
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -69,7 +79,7 @@ pub enum CurrencyEventType {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ViolasStatus {
     pub latest_version: u64,
-    pub account_amount: u64,    
+    pub account_amount: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

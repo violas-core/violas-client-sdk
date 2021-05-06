@@ -74,7 +74,7 @@ impl Oracle {
         let auth_key = AuthenticationKey::new(data);
 
         self.client.create_designated_dealer_ex(
-            make_currency_tag("VLS"),
+            make_currency_tag("VLS")?,
             0,
             oracle_admin_address(),
             auth_key,
@@ -146,7 +146,7 @@ impl Oracle {
         self.client.execute_raw_script_bytecode(
             0,
             update_exchange_rate,
-            vec![make_currency_tag(currency_code)],
+            vec![make_currency_tag(currency_code)?],
             vec![
                 TransactionArgument::U64(numerator),
                 TransactionArgument::U64(denominator),
@@ -160,7 +160,7 @@ impl Oracle {
         self.client.execute_raw_script_bytecode(
             0,
             update_price_from_oracle,
-            vec![make_currency_tag(currency_code)],
+            vec![make_currency_tag(currency_code)?],
             vec![],
             None,
             None,
@@ -199,8 +199,8 @@ impl Oracle {
             VIOLAS_ROOT_ACCOUNT_ID,
             script_bytecode,
             vec![
-                make_currency_tag(currency_code1),
-                make_currency_tag(currency_code2),
+                make_currency_tag(currency_code1)?,
+                make_currency_tag(currency_code2)?,
             ],
             vec![
                 TransactionArgument::U64(amount_crc1),
@@ -225,8 +225,8 @@ impl Oracle {
                 &CORE_CODE_ADDRESS,
                 "Oracle",
                 "ExchangeRate",
-                vec![make_currency_tag(currency_code)],
-            ),
+                vec![make_currency_tag(currency_code)?],
+            )?,
         )?;
         let rate: Option<f64> = match ex_rate {
             Some(rate) => Some((rate.fixed_point32 as f64) / (0x100000000_u64 as f64)),
@@ -243,8 +243,8 @@ impl Oracle {
             &CORE_CODE_ADDRESS,
             "Oracle",
             "ExchangeRate",
-            vec![make_currency_tag(currency_code)],
-        );
+            vec![make_currency_tag(currency_code)?],
+        )?;
 
         let ret: Result<Option<ExchangeRateReource>> =
             self.client.get_account_resource(&sender, &resource_path);

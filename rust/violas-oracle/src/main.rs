@@ -17,6 +17,7 @@ use hyper_timeout::TimeoutConnector;
 use oracle::Oracle;
 
 const ALL_CURRENCIES_CODE: [&str; 1] = ["BTC"]; //, "USD", "EUR", "GBP", "SGD", "JPY", "CNY"]
+const PREFIX_CURRENCY: &str = "V";
 
 #[derive(Clone, Debug, StructOpt)]
 struct Args {
@@ -126,7 +127,7 @@ fn process_command(command: Command) -> Result<()> {
                 let (currency, ex_rate) = currency_rate;
 
                 let ret = oracle.update_exchange_rate(
-                    (String::from("V") + &currency).as_str(),
+                    (String::from(PREFIX_CURRENCY) + &currency).as_str(),
                     ex_rate,
                     false,
                 );
@@ -211,7 +212,7 @@ fn process_command(command: Command) -> Result<()> {
                     let (currency, ex_rate) = currency_rate;
 
                     let ret = oracle.update_exchange_rate(
-                        (String::from("v") + &currency).as_str(),
+                        (String::from(PREFIX_CURRENCY) + &currency).as_str(),
                         ex_rate,
                         false,
                     );
@@ -274,7 +275,7 @@ fn process_command(command: Command) -> Result<()> {
                 let mut oracle = create_oracle(args)?;
 
                 for currency_code in ALL_CURRENCIES_CODE.iter() {
-                    let mut currency = String::from("V");
+                    let mut currency = String::from(PREFIX_CURRENCY);
                     currency.push_str(currency_code);
 
                     oracle.get_last_event(currency.as_str())?;

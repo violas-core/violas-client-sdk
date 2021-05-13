@@ -28,7 +28,7 @@ string currency_codes[] = {
     ///////////////////////////
     "VWBTC",
     "VHBTC",
-    "VRNBTC",   // RENBTC
+    "VRNBTC", // RENBTC
     "VUSDC",
     "VBUSD",
     "VDAI",
@@ -82,14 +82,22 @@ int main(int argc, const char *argv[])
 
         using handler = function<void()>;
         map<int, handler> handlers = {
-            {0, [=]() { register_currency(client); }},
-            {1, [=]() { initialize_all_currencies(client); }},
-            {2, [=]() { update_dual_attestation_limit(client); }},
-            {3, [=]() { deploy_exchange(client); }},
-            {4, [=]() { deploy_bank(client); }},
-            {5, [=]() { mint_currency(client); }},
-            {6, [=]() { create_bridge_accounts(client); }},
-            {7, [=]() { rotate_mint_key(client); }},
+            {0, [=]()
+             { register_currency(client); }},
+            {1, [=]()
+             { initialize_all_currencies(client); }},
+            {2, [=]()
+             { update_dual_attestation_limit(client); }},
+            {3, [=]()
+             { deploy_exchange(client); }},
+            {4, [=]()
+             { deploy_bank(client); }},
+            {5, [=]()
+             { mint_currency(client); }},
+            {6, [=]()
+             { create_bridge_accounts(client); }},
+            {7, [=]()
+             { rotate_mint_key(client); }},
         };
 
         cout << "1 for deploying all currencies \n"
@@ -252,14 +260,15 @@ void mint_currency(client_ptr client)
 
         cin >> amount;
 
-        try_catch([&]() {
-            client->mint_currency_for_designated_dealer(currency_code,
-                                                        0,
-                                                        TESTNET_DD_ADDRESS,
-                                                        amount * MICRO_COIN,
-                                                        3);
-            cout << "minted " << amount << " " << currency_code << " to DD account " << endl;
-        });
+        try_catch([&]()
+                  {
+                      client->mint_currency_for_designated_dealer(currency_code,
+                                                                  0,
+                                                                  TESTNET_DD_ADDRESS,
+                                                                  amount * MICRO_COIN,
+                                                                  3);
+                      cout << "minted " << amount << " " << currency_code << " to DD account " << endl;
+                  });
     }
 }
 
@@ -303,50 +312,53 @@ void deploy_exchange(client_ptr client)
         cout << "address : " << account.address << endl;
     }
 
-    try_catch([&]() {
-        client->create_designated_dealer_ex("VLS",
-                                            0,
-                                            EXCHANGE_ADMIN_ADDRESS,
-                                            admin_account.auth_key, //only auth key prefix is applied
-                                            "Exchange Administrator",
-                                            "www.violas.io",
-                                            admin_account.pub_key,
-                                            true);
+    try_catch([&]()
+              {
+                  client->create_designated_dealer_ex("VLS",
+                                                      0,
+                                                      EXCHANGE_ADMIN_ADDRESS,
+                                                      admin_account.auth_key, //only auth key prefix is applied
+                                                      "Exchange Administrator",
+                                                      "www.violas.io",
+                                                      admin_account.pub_key,
+                                                      true);
 
-        client->create_parent_vasp_account("VLS",
-                                           0,
-                                           user1_account.address,
-                                           user1_account.auth_key,
-                                           "Exchange user1",
-                                           "www.violas.io",
-                                           user1_account.pub_key,
-                                           true);
+                  client->create_parent_vasp_account("VLS",
+                                                     0,
+                                                     user1_account.address,
+                                                     user1_account.auth_key,
+                                                     "Exchange user1",
+                                                     "www.violas.io",
+                                                     user1_account.pub_key,
+                                                     true);
 
-        client->create_parent_vasp_account("VLS",
-                                           0,
-                                           user2_account.address,
-                                           user2_account.auth_key,
-                                           "Exchange user2",
-                                           "www.violas.io",
-                                           user2_account.pub_key,
-                                           true);
+                  client->create_parent_vasp_account("VLS",
+                                                     0,
+                                                     user2_account.address,
+                                                     user2_account.auth_key,
+                                                     "Exchange user2",
+                                                     "www.violas.io",
+                                                     user2_account.pub_key,
+                                                     true);
 
-        for (auto currency_code : currency_codes)
+                  for (auto currency_code : currency_codes)
+                  {
+                      client->add_currency(admin.index, currency_code);
+
+                      client->add_currency(user1.index, currency_code);
+                      //client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
+
+                      client->add_currency(user2.index, currency_code);
+                      //client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
+                  }
+
+                  cout << "created all accounts for Exchange" << endl;
+              });
+
+    auto print_all_balance = [&](const Address &addr)
+    {
+        auto fmt_balance = [=](string_view currency) -> string
         {
-            client->add_currency(admin.index, currency_code);
-
-            client->add_currency(user1.index, currency_code);
-            //client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
-
-            client->add_currency(user2.index, currency_code);
-            //client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
-        }
-
-        cout << "created all accounts for Exchange" << endl;
-    });
-
-    auto print_all_balance = [&](const Address &addr) {
-        auto fmt_balance = [=](string_view currency) -> string {
             TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
 
             auto balance = 0; //client->get_currency_balance(tag, addr);
@@ -369,19 +381,20 @@ void deploy_exchange(client_ptr client)
     const string script_path = "move/exchange/";
     auto exchange = Exchange::create(client, script_path, admin);
 
-    try_catch([&]() {
-        exchange->deploy_with_root_account();
-        cout << color::GREEN << "deploied Exchange contracts on Violas blockchain." << color::RESET << endl;
+    try_catch([&]()
+              {
+                  exchange->deploy_with_root_account();
+                  cout << color::GREEN << "Deployed Exchange contracts." << color::RESET << endl;
 
-        exchange->initialize(admin, reward_admin_address);
-        cout << color::GREEN << "Initialize Exchange contracts with admin account." << color::RESET << endl;
+                  exchange->initialize(admin, reward_admin_address);
+                  cout << color::GREEN << "Initialized Exchange contracts with admin account." << color::RESET << endl;
 
-        for (auto currency : currency_codes)
-        {
-            exchange->add_currency(currency);
-        }
-        cout << color::GREEN << "add all currencies for Exchange" << color::RESET << endl;
-    });
+                  for (auto currency : currency_codes)
+                  {
+                      exchange->add_currency(currency);
+                  }
+                  cout << color::GREEN << "Added all currencies for Exchange" << color::RESET << endl;
+              });
 
     // for (auto currency : {"VLSUSD", "NEOUSD", "PAMUSD", "GNIUSD", "VUSDC", "VBUSD", "VHUSD"})
     // {
@@ -416,6 +429,17 @@ void deploy_exchange(client_ptr client)
 
 void deploy_bank(client_ptr client)
 {
+    cout << color::RED << "Please ensure the contract Oracle has already been published. \n"
+         << "yes for continue, or else for exit. " << color::RESET << endl;
+
+    string in;
+    cin >> in;
+    if (in != "yes")
+    {
+        cout << "you exited deploying Bank." << endl;
+        return;
+    }
+
     cout << color::RED << "Deploy Bank Contract and initialize it ..." << color::RESET << endl;
     const string mnemonic = "mnemonic/bank.mne";
 
@@ -437,82 +461,83 @@ void deploy_bank(client_ptr client)
         cout << "address : " << account.address << endl;
     }
 
-    try_catch([&]() {
-        client->create_designated_dealer_ex("VLS",
-                                            0,
-                                            BANK_ADMIN_ADDRESS,
-                                            admin_account.auth_key, //only auth key prefix is applied
-                                            "Bank Administrator",
-                                            "www.violas.io",
-                                            admin_account.pub_key,
-                                            true);
+    try_catch([&]()
+              {
+                  client->create_designated_dealer_ex("VLS",
+                                                      0,
+                                                      BANK_ADMIN_ADDRESS,
+                                                      admin_account.auth_key, //only auth key prefix is applied
+                                                      "Bank Administrator",
+                                                      "www.violas.io",
+                                                      admin_account.pub_key,
+                                                      true);
 
-        client->create_parent_vasp_account("VLS",
-                                           0,
-                                           user1_account.address,
-                                           user1_account.auth_key,
-                                           "Bank user1",
-                                           "www.violas.io",
-                                           user1_account.pub_key,
-                                           true);
+                  client->create_parent_vasp_account("VLS",
+                                                     0,
+                                                     user1_account.address,
+                                                     user1_account.auth_key,
+                                                     "Bank user1",
+                                                     "www.violas.io",
+                                                     user1_account.pub_key,
+                                                     true);
 
-        client->create_parent_vasp_account("VLS",
-                                           0,
-                                           user2_account.address,
-                                           user2_account.auth_key,
-                                           "Bank user2",
-                                           "www.violas.io",
-                                           user2_account.pub_key,
-                                           true);
+                  client->create_parent_vasp_account("VLS",
+                                                     0,
+                                                     user2_account.address,
+                                                     user2_account.auth_key,
+                                                     "Bank user2",
+                                                     "www.violas.io",
+                                                     user2_account.pub_key,
+                                                     true);
 
-        for (auto currency_code : currency_codes)
-        {
-            client->add_currency(admin.index, currency_code);
+                  for (auto currency_code : currency_codes)
+                  {
+                      client->add_currency(admin.index, currency_code);
 
-            client->add_currency(user1.index, currency_code);
-            //client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
+                      client->add_currency(user1.index, currency_code);
+                      //client->mint_for_testnet(currency_code, user1_account.address, 1000 * MICRO_COIN);
 
-            client->add_currency(user2.index, currency_code);
-            //client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
-        }
+                      client->add_currency(user2.index, currency_code);
+                      //client->mint_for_testnet(currency_code, user2_account.address, 1000 * MICRO_COIN);
+                  }
 
-        cout << "created all accounts for Bank contract." << endl;
-    });
+                  cout << "created all accounts for Bank contract." << endl;
+              });
 
     auto bank = Bank::create_bank(client, "move/bank/"); //../../move/bank/
     //
     //  initialize
     //
-    try_catch([=]() {
-        bank->deploy_with_root_account();
-        cout << "deployed bank module successfully." << endl;
+    try_catch([=]()
+              {
+                  bank->deploy_with_root_account();
+                  cout << "deployed bank module successfully." << endl;
 
-        bank->initialize(admin);
+                  bank->initialize(admin);
 
-        bank->publish(user1.index);
-        bank->publish(user2.index);
+                  bank->publish(user1.index);
+                  bank->publish(user2.index);
 
-        cout << "published successfully." << endl;
+                  cout << "published successfully." << endl;
 
-        for (auto currency_code : currency_codes)
-        {
-            bank->add_currency(currency_code,
-                               admin.address,
-                               Bank::MANTISSA_1_0 / 2,       // 50%
-                               Bank::MANTISSA_1_0 / 20,      // 5%
-                               Bank::MANTISSA_1_0 / 10,      // 10%
-                               Bank::MANTISSA_1_0 / 5,       // 20%
-                               Bank::MANTISSA_1_0 * 8 / 10); // 80%
-        }
+                  for (auto currency_code : currency_codes)
+                  {
+                      bank->add_currency(currency_code,
+                                         admin.address,
+                                         Bank::MANTISSA_1_0 / 2,       // 50%
+                                         Bank::MANTISSA_1_0 / 20,      // 5%
+                                         Bank::MANTISSA_1_0 / 10,      // 10%
+                                         Bank::MANTISSA_1_0 / 5,       // 20%
+                                         Bank::MANTISSA_1_0 * 8 / 10); // 80%
+                  }
 
-        cout << "added currencies successfully." << endl;
-    });
+                  cout << "added currencies successfully." << endl;
+              });
 
     cout << "finished Initialization for Bank module" << endl;
     return;
 
-    try_catch([=]() {
-    });
+    try_catch([=]() {});
 
     bank->update_currency_price(currency_codes[0], Bank::MANTISSA_1_0 / 10);
     bank->update_currency_price(currency_codes[1], Bank::MANTISSA_1_0 / 10);

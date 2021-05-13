@@ -13,8 +13,8 @@ echo "build create_designated_dealer_ex.move"
 mv build/scripts/create_designated_dealer_ex.mv .
 
 # echo "build distribute_vls_from_community.move"
-# ../build.sh distribute_vls_from_community.move 0x0 ../bank/bank.move ../oracle/oracle.move ../exchange/exchange.move
-# mv build/scripts/distribute_vls_from_community.mv .
+../build.sh distribute_vls_from_community.move 0x0 ../bank/bank.move ../oracle/oracle.move ../exchange/exchange.move
+mv build/scripts/distribute_vls_from_community.mv .
 
 echo "build add_currency_for_designated_dealer.move"
 ../build.sh add_currency_for_designated_dealer.move 0x0

@@ -6,7 +6,7 @@ module Exchange {
 use 0x1::Signer;
 use 0x1::Errors;
 use 0x1::FixedPoint32::{FixedPoint32};    //Self
-use 0x1::Diem; //::{Self};
+//use 0x1::Diem; //::{Self};
 use 0x1::Vector;
 use 0x1::DiemAccount::{Self};
 use 0x1::Event::{ Self, EventHandle };
@@ -142,7 +142,8 @@ use 0x1::Fee10000::Fee10000;
     struct LiquidityT<Currency1, Currency2, FeeType> has key, store {
         tick_lower : u64,
         tick_upper : u64,
-        amount : u64,        
+        c1_amount : u64,
+        c2_amount : u64,        
         add_liquidity_events: EventHandle<AddLiquidityEvent>,
         remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,               
     }
@@ -217,7 +218,7 @@ use 0x1::Fee10000::Fee10000;
     }
 
     ///
-    /// Register a new Pool
+    /// Register a new Pool by adminitrator
     /// Price is represented as a sqrt(amountToken1/amountToken0)
     ///
     public fun register_pool<Currency1: store, Currency2: store, FeeType: store>(
@@ -249,104 +250,73 @@ use 0x1::Fee10000::Fee10000;
             sqrt_price,
             tick : 0,            
             c1_amount : 0,
-            c2_amount : 1,
+            c2_amount : 0,
             add_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(admin),
         });
     }
 
     ///
-    /// Add liqudity
+    /// Add liqudity by Provider
     ///
-    public fun add_liqudity<Currency1: store, Currency2: store, FeeType: store>(
+    public fun add_liquidity<Currency1: store, Currency2: store, FeeType: store>(
         sender : &signer, 
         tick_lower : u64,
         tick_upper : u64,
-        amount : u64
-    ) {
+        c1_amount : u64,
+        c2_amount : u64
+    ) acquires Pool {
         let sender_address = Signer::address_of(sender);
 
         assert(exists<LiquidityT<Currency1, Currency2, FeeType>>(sender_address), Errors::already_published(E_LIQUIDITY));
 
+        let (required_c1_amount, required_c2_amount) = add_pool_liquidity<Currency1, Currency2, FeeType>(tick_lower, tick_upper, c1_amount, c2_amount);
+
         move_to(sender, LiquidityT<Currency1, Currency2, FeeType> {
             tick_lower,
             tick_upper,
-            amount,
+            c1_amount : required_c1_amount,
+            c2_amount : required_c2_amount,
             add_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(sender),
             remove_liquidity_events : Event::new_event_handle<RemoveLiquidityEvent>(sender)
         });
-    }
-
-    // native fun create_signer(addr: address): signer;
-    // native fun destroy_signer(sig: signer);
-
-    /// add reserve info by admin account
-    public fun add_reserve<Token1: store, Token2: store>(admin : &signer) 
-    acquires ReserveInfo {
-        assert(
-            Signer::address_of(admin) == admin_address(), 
-            Errors::requires_address(E_NOT_ADMIN_ACCOUNT)
-        ); 
-        
-        DiemAccount::accepts_currency<Token1>(admin_address());
-        DiemAccount::accepts_currency<Token2>(admin_address());
-
-        assert( !exists<Reserve<Token1, Token2>>(admin_address()) && 
-                !exists<Reserve<Token2, Token1>>(admin_address()),
-                Errors::already_published(E_POOL_HAS_ALREADY_PUBLISHED));
-        
-        let reserve = Reserve<Token1, Token2> {
-                token1_amount : 0,
-                token2_amount : 0,
-                add_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(admin),
-                remove_liquidity_events : Event::new_event_handle<RemoveLiquidityEvent>(admin),
-            };
-
-        move_to(admin, reserve);  
-        // let admin_signer = create_signer(admin_address());
-        // move_to(&admin_signer, reserve);  
-        // destroy_signer(admin_signer);
-
-        // add reserver info
-        let reserve_info = borrow_global_mut<ReserveInfo>(admin_address());
-        Vector::push_back(&mut reserve_info.currency_pair_codes, CurrencyPairCode {
-            currency1_code : Diem::currency_code<Token1>(),
-            currency2_code : Diem::currency_code<Token2>(),
-        });        
+       
+       pay_to_admin<Currency1>(sender, c1_amount);
+       pay_to_admin<Currency1>(sender, c2_amount);
     }
     ///
     /// deposit liquidity by user account
     ///
-    public fun deposit_liquidity<Token1: store, Token2: store>(
-        sender : &signer,
-        token1_amount : u64,
-        token2_amount : u64
-    ) acquires Reserve, Liquidity {      
-        let sender_address = Signer::address_of(sender);
+    // public fun deposit_liquidity<Token1: store, Token2: store>(
+    //     sender : &signer,
+    //     token1_amount : u64,
+    //     token2_amount : u64
+    // ) acquires Reserve, Liquidity {      
+    //     let sender_address = Signer::address_of(sender);
 
-        // 1. add liquidity to reserver
-        (token1_amount, token2_amount) = deposit_reserve_liquidity<Token1, Token2>(token1_amount, token2_amount);
+    //     // 1. add liquidity to reserver
+    //     (token1_amount, token2_amount) = deposit_reserve_liquidity<Token1, Token2>(token1_amount, token2_amount);
 
-        // 2. pay token1 and token2 to admin
-        pay_to_admin<Token1>(sender, token1_amount);
-        pay_to_admin<Token2>(sender, token2_amount); 
+    //     // 2. pay token1 and token2 to admin
+    //     pay_to_admin<Token1>(sender, token1_amount);
+    //     pay_to_admin<Token2>(sender, token2_amount); 
 
-        // 3. update liquidity for sender account
-        if( !exists<Liquidity<Token1, Token2>>(sender_address) ) {
-            let reserve = Liquidity<Token1, Token2> {
-                amount : sqrt(token1_amount, token2_amount),
-                deposite_liquidity_events : Event::new_event_handle<DepositeLiquidityEvent>(sender),
-                withdraw_liquidity_events : Event::new_event_handle<WithdrawLiquidityEvent>(sender),
-                swap_events : Event::new_event_handle<SwapEvent>(sender),
-            };
+    //     // 3. update liquidity for sender account
+    //     if( !exists<Liquidity<Token1, Token2>>(sender_address) ) {
+    //         let reserve = Liquidity<Token1, Token2> {
+    //             amount : sqrt(token1_amount, token2_amount),
+    //             deposite_liquidity_events : Event::new_event_handle<DepositeLiquidityEvent>(sender),
+    //             withdraw_liquidity_events : Event::new_event_handle<WithdrawLiquidityEvent>(sender),
+    //             swap_events : Event::new_event_handle<SwapEvent>(sender),
+    //         };
 
-            move_to(sender, reserve);            
-        } else {
-            // Update local liquidity
-            let liquidity = borrow_global_mut<Liquidity<Token1, Token2>>(sender_address); 
+    //         move_to(sender, reserve);            
+    //     } else {
+    //         // Update local liquidity
+    //         let liquidity = borrow_global_mut<Liquidity<Token1, Token2>>(sender_address); 
 
-            liquidity.amount  = liquidity.amount + sqrt(token1_amount, token2_amount)            
-        };              
-    }
+    //         liquidity.amount  = liquidity.amount + sqrt(token1_amount, token2_amount)            
+    //     };              
+    // }
 
     public fun withdraw_liquidity<Token1: store, Token2: store>(
         sender : &signer,
@@ -552,6 +522,38 @@ use 0x1::Fee10000::Fee10000;
 
             reserve.token1_amount = reserve.token1_amount + token1_amount;
             reserve.token2_amount = reserve.token2_amount + need_token2_amount;
+
+            (token1_amount, need_token2_amount)
+        }           
+    }
+
+
+    fun add_pool_liquidity<Token1: store, Token2: store, FeeType: store>(
+        _tick_lower : u64,
+        _tick_upper : u64,
+        token1_amount : u64, 
+        token2_amount : u64) : (u64, u64)
+    acquires Pool {
+        assert(exists<Pool<Token1, Token2, FeeType>>(admin_address()), 
+            Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
+              
+        // Update reserve liquidity
+        let pool = borrow_global_mut<Pool<Token1, Token2, FeeType>>(admin_address()); 
+        if( pool.c1_amount == 0 && pool.c2_amount == 0) {
+            pool.c1_amount = token1_amount;
+            pool.c2_amount = token2_amount;
+
+            (pool.c1_amount, pool.c2_amount)
+        } else {
+            // let exchange_rate = FixedPoint32::create_from_rational(reserve.token1_amount, reserve.token2_amount);
+            // let need_token2_amount = FixedPoint32::divide_u64(token1_amount, exchange_rate);
+
+            let need_token2_amount = (((token1_amount as u128) * (pool.c2_amount as u128) / (pool.c1_amount as u128)) as u64);
+            
+            assert(token2_amount >= need_token2_amount, Errors::invalid_argument(E_TOKEN2_AMOUNT_IS_NOT_ENOUGH));
+
+            pool.c1_amount = pool.c1_amount + token1_amount;
+            pool.c2_amount = pool.c2_amount + need_token2_amount;
 
             (token1_amount, need_token2_amount)
         }           

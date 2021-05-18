@@ -16,9 +16,9 @@ use chrono::prelude::*;
 use hyper_timeout::TimeoutConnector;
 use oracle::Oracle;
 
-const ALL_CURRENCIES_CODE: [&str; 14] = [
+const ALL_CURRENCIES_CODE: [&str; 15] = [
     "BTC", "WBTC", "REN", "USDC", "BUSD", "DAI", "WETH", "UNI", "SUSHI", "LINK", "COMP", "AAVE",
-    "BNB", "WFIL",
+    "BNB", "WFIL", "USDT",
     //, "USD", "EUR", "GBP", "SGD", "JPY", "CNY"]
 ];
 const PREFIX_CURRENCY: &str = "V";
@@ -145,26 +145,6 @@ fn process_command(command: Command) -> Result<()> {
                 }
             }
 
-            //
-            // Update USDT
-            //
-            let usdt = "VUSDT";
-            let rate = 1.0;
-
-            let ret = oracle.update_exchange_rate(usdt, rate, true);
-            match ret {
-                Ok(_) => {
-                    print!("{} : {}, ", usdt, rate);
-                }
-                Err(e) => {
-                    eprintln!(
-                        "{} : failed to update exchange rate, error : {}",
-                        Local::now(),
-                        e
-                    );
-                }
-            }
-
             println!("");
         }
         Command::Test(args) => {
@@ -284,8 +264,6 @@ fn process_command(command: Command) -> Result<()> {
 
                     let _ret = oracle.get_last_event(currency.as_str());
                 }
-
-                oracle.get_last_event("VUSDT")?;
 
                 Ok(())
             })?;

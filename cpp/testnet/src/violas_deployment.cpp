@@ -50,7 +50,7 @@ enum account_type
 };
 
 void update_dual_attestation_limit(client_ptr client);
-void initialize_all_currencies(client_ptr client);
+void register_all_currencies(client_ptr client, uint8_t chain_id);
 void deploy_exchange(client_ptr client);
 void deploy_bank(client_ptr client);
 void mint_currency(client_ptr client);
@@ -85,7 +85,7 @@ int main(int argc, const char *argv[])
             {0, [=]()
              { register_currency(client); }},
             {1, [=]()
-             { initialize_all_currencies(client); }},
+             { register_all_currencies(client, chain_id); }},
             {2, [=]()
              { update_dual_attestation_limit(client); }},
             {3, [=]()
@@ -138,14 +138,14 @@ void check_password()
     cout << "\nPassword was verified successfully." << endl;
 }
 
-void initialize_all_currencies(client_ptr client)
+void register_all_currencies(client_ptr client, uint8_t chain_id)
 {
     client->allow_publishing_module(true);
     client->allow_custom_script();
 
     cout << "allow custom script and  publishing module." << endl;
 
-    cout << color::RED << "initialize all currencies ..." << color::RESET << endl;
+    cout << color::RED << "registering all currencies ..." << color::RESET << endl;
 
     auto accounts = client->get_all_accounts();
 
@@ -165,6 +165,12 @@ void initialize_all_currencies(client_ptr client)
                                       1000000,
                                       100);
             cout << "registered, ";
+
+            if (chain_id == 5 || chain_id == 1) // PREMAIN or MAIN
+            {
+                cout << endl;
+                continue;
+            }
 
             client->add_currency_for_designated_dealer(currency_code,
                                                        TESTNET_DD_ADDRESS);
@@ -597,9 +603,9 @@ void create_bridge_accounts(client_ptr client)
          << color::GREEN << mnemonic << color::RESET
          << endl;
 
-    try
+    for (const auto &[address, type, name] : bridge_address_type)
     {
-        for (const auto &[address, type, name] : bridge_address_type)
+        try
         {
             auto [_, index] = client->create_next_account(type == DD ? optional(address) : nullopt);
             auto accounts = client->get_all_accounts();
@@ -628,10 +634,10 @@ void create_bridge_accounts(client_ptr client)
                 client->add_currency(index, currency);
             }
         }
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << '\n';
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     //

@@ -461,11 +461,17 @@ protected:
         string_view password = args[0];
         ifstream ifs(args[1]);
         ofstream ofs(args[2]);
+        vector<uint8_t> buffer;
 
         using ifs_iterator = istreambuf_iterator<char>;
         using ofs_iterator = ostreambuf_iterator<char>;
 
-        aes_256_cbc_decrypt(password, ifs_iterator(ifs), ifs_iterator(), ofs_iterator(ofs));
+        aes_256_cbc_decrypt(password, ifs_iterator(ifs), ifs_iterator(), back_inserter<>(buffer));
+
+        if(buffer.size() != 48)
+            __throw_runtime_error("the length of decrypted buffer is not 48.");
+
+        copy(begin(buffer), begin(buffer)+33, ofs_iterator(ofs));
     }
 
     void query_account_balances(const vector<string> &args)

@@ -1117,7 +1117,7 @@ namespace violas
             char * all_currency_info = nullptr;
             auto out_all_currency_info = &all_currency_info;
 
-            rust!( client_get_all_currency_info [
+            bool ret = rust!( client_get_all_currency_info [
                 rust_violas_client : &mut ViolasClient as "void *",
                 out_all_currency_info : *mut *mut c_char as "char **"
             ] -> bool as "bool" {
@@ -1138,8 +1138,10 @@ namespace violas
                 }
             });
 
+            check_result(ret);
+
             string temp = all_currency_info;
-            free_rust_string(all_currency_info);
+            free_rust_string(all_currency_info);            
 
             return temp;
         }

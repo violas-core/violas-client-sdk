@@ -16,7 +16,11 @@ use chrono::prelude::*;
 use hyper_timeout::TimeoutConnector;
 use oracle::Oracle;
 
-const ALL_CURRENCIES_CODE: [&str; 1] = ["BTC"]; //, "USD", "EUR", "GBP", "SGD", "JPY", "CNY"]
+const ALL_CURRENCIES_CODE: [&str; 14] = [
+    "BTC", "WBTC", "REN", "USDC", "BUSD", "DAI", "WETH", "UNI", "SUSHI", "LINK", "COMP", "AAVE",
+    "BNB", "WFIL",
+    //, "USD", "EUR", "GBP", "SGD", "JPY", "CNY"]
+];
 const PREFIX_CURRENCY: &str = "V";
 
 #[derive(Clone, Debug, StructOpt)]
@@ -278,7 +282,7 @@ fn process_command(command: Command) -> Result<()> {
                     let mut currency = String::from(PREFIX_CURRENCY);
                     currency.push_str(currency_code);
 
-                    oracle.get_last_event(currency.as_str())?;
+                    let _ret = oracle.get_last_event(currency.as_str());
                 }
 
                 oracle.get_last_event("VUSDT")?;
@@ -314,13 +318,13 @@ async fn gather_exchange_rate_from_coinbase() -> Result<Vec<(String, f64)>> {
 
     let rates: Vec<(String, f64)> = ALL_CURRENCIES_CODE
         .iter()
+        .filter(|sym| data["data"]["rates"][sym].as_str().is_some())
         .map(|sym| {
+            let rate = data["data"]["rates"][sym].as_str().unwrap();
+
             (
                 String::from(*sym),
-                1 as f64
-                    / String::from(data["data"]["rates"][sym].as_str().unwrap())
-                        .parse::<f64>()
-                        .unwrap(),
+                1 as f64 / String::from(rate).parse::<f64>().unwrap(),
             )
         })
         .collect();

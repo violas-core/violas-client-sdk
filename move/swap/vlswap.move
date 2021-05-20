@@ -110,15 +110,37 @@ use 0x1::Fee10000::Fee10000;
     }
 
     ///
+    /// Liquidity held under provider account
+    ///
+    struct LiquidityT<Currency1, Currency2, FeeType> has key, store {
+        tick_lower : u64,
+        tick_upper : u64,
+        c1_amount : u64,
+        c2_amount : u64,        
+        add_liquidity_events: EventHandle<AddLiquidityEvent>,
+        remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,               
+    }
+
+    struct Position has key, store {
+        liquidity : u64,
+        tick_lower : u64,
+        tick_upper : u64,
+        fee_currency1 : u64,
+        fee_currency2 : u64,
+    }
+
+    ///
     /// Reseve Pool held under admin account
     ///
     struct Pool<Currency1, Currency2, FeeType> has key, store {        
         sqrt_price : FixedPoint32,
         tick : u64,
-
+        
         c1_amount : u64,
         c2_amount : u64,
         
+        positions : vector<Position>,
+
         add_liquidity_events: EventHandle<AddLiquidityEvent>,
         //remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,
     }
@@ -136,17 +158,7 @@ use 0x1::Fee10000::Fee10000;
         pool_codes : vector<PoolInfo>,   
     }
 
-    ///
-    /// Liquidity held under provider account
-    ///
-    struct LiquidityT<Currency1, Currency2, FeeType> has key, store {
-        tick_lower : u64,
-        tick_upper : u64,
-        c1_amount : u64,
-        c2_amount : u64,        
-        add_liquidity_events: EventHandle<AddLiquidityEvent>,
-        remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,               
-    }
+    
 
     //
     //  Error code
@@ -251,38 +263,44 @@ use 0x1::Fee10000::Fee10000;
             tick : 0,            
             c1_amount : 0,
             c2_amount : 0,
+            positions : Vector::empty<Position>(),
             add_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(admin),
         });
     }
 
     ///
-    /// Add liqudity by Provider
+    /// Add liqudity by provider
     ///
     public fun add_liquidity<Currency1: store, Currency2: store, FeeType: store>(
         sender : &signer, 
         tick_lower : u64,
         tick_upper : u64,
-        c1_amount : u64,
-        c2_amount : u64
-    ) acquires Pool {
+        liquidity : u64,
+        c1_amount_max : u64,
+        c2_amount_max : u64
+    ) acquires Pool {        
         let sender_address = Signer::address_of(sender);
 
         assert(exists<LiquidityT<Currency1, Currency2, FeeType>>(sender_address), Errors::already_published(E_LIQUIDITY));
 
-        let (required_c1_amount, required_c2_amount) = add_pool_liquidity<Currency1, Currency2, FeeType>(tick_lower, tick_upper, c1_amount, c2_amount);
+        let (c1_amount, c2_amount) = add_liquidity_to_pool<Currency1, Currency2, FeeType>(tick_lower, tick_upper, liquidity);
+
+        assert(c1_amount <= c1_amount_max, 1);
+        assert(c2_amount <= c2_amount_max, 1);
 
         move_to(sender, LiquidityT<Currency1, Currency2, FeeType> {
             tick_lower,
             tick_upper,
-            c1_amount : required_c1_amount,
-            c2_amount : required_c2_amount,
+            c1_amount,
+            c2_amount,
             add_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(sender),
             remove_liquidity_events : Event::new_event_handle<RemoveLiquidityEvent>(sender)
         });
-       
-       pay_to_admin<Currency1>(sender, c1_amount);
-       pay_to_admin<Currency1>(sender, c2_amount);
+              
+        pay_to_admin<Currency1>(sender, c1_amount);
+        pay_to_admin<Currency1>(sender, c2_amount);
     }
+
     ///
     /// deposit liquidity by user account
     ///
@@ -528,9 +546,10 @@ use 0x1::Fee10000::Fee10000;
     }
 
 
-    fun add_pool_liquidity<Token1: store, Token2: store, FeeType: store>(
-        _tick_lower : u64,
-        _tick_upper : u64,
+    fun add_liquidity_to_pool<Token1: store, Token2: store, FeeType: store>(
+        tick_lower : u64,
+        tick_upper : u64,
+        liquidity : u64,
         token1_amount : u64, 
         token2_amount : u64) : (u64, u64)
     acquires Pool {
@@ -540,6 +559,17 @@ use 0x1::Fee10000::Fee10000;
         // Update reserve liquidity
         let pool = borrow_global_mut<Pool<Token1, Token2, FeeType>>(admin_address()); 
         if( pool.c1_amount == 0 && pool.c2_amount == 0) {
+            
+            Vector::push_back<Position>(&mut pool.positions, 
+                Position {  
+                    liquidity: 0, 
+                    tick_lower, 
+                    tick_upper, 
+                    fee_currency1: 0 , 
+                    fee_currency2: 0
+                }
+            );
+            
             pool.c1_amount = token1_amount;
             pool.c2_amount = token2_amount;
 

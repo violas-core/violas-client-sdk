@@ -6,9 +6,9 @@
 #include <fstream>
 #include <sstream>
 // cpp/include
+#include <json.hpp>
 #include <utils.h>
 #include <ssl_aes.hpp>
-#include <json.hpp>
 #include "command.hpp"
 
 using namespace std;
@@ -86,7 +86,7 @@ public:
         if (handler != end(_handlers))
             handler->second(args);
         else
-            system(line.data()); // call system commands
+            int ret = system(line.data()); // call system commands
 
         return true;
     }
@@ -468,10 +468,10 @@ protected:
 
         aes_256_cbc_decrypt(password, ifs_iterator(ifs), ifs_iterator(), back_inserter<>(buffer));
 
-        if(buffer.size() != 48)
+        if (buffer.size() != 48)
             __throw_runtime_error("the length of decrypted buffer is not 48.");
 
-        copy(begin(buffer), begin(buffer)+33, ofs_iterator(ofs));
+        copy(begin(buffer), begin(buffer) + 33, ofs_iterator(ofs));
     }
 
     void query_account_balances(const vector<string> &args)

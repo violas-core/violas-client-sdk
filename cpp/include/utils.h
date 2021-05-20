@@ -2,6 +2,7 @@
 #define TERMINAL_H
 #include <iostream>
 #include <sstream>
+#include <iterator>
 #include <string>
 #include <array>
 #include <iomanip>
@@ -60,17 +61,11 @@ std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
 }
 
 template <size_t N>
-std::istream &operator>>(std::istream &is, std::array<uint8_t, N> &bytes)
+void operator>>(const std::string &str, std::array<uint8_t, N> &bytes)
 {
-    std::string temp;
-
-    is >> temp;
-
-    size_t numbytes = temp.size() / 2;
-
-    for (size_t i = 0, x = 0; i < numbytes && i < N; ++i, x += 2)
+    for (size_t i = 0, x = 0; i < str.length() && i < N; ++i, x += 2)
     {
-        std::istringstream iss(temp.substr(x, 2));
+        std::istringstream iss(str.substr(x, 2));
         unsigned short b = 0;
 
         if (!(iss >> std::hex >> b))
@@ -83,19 +78,65 @@ std::istream &operator>>(std::istream &is, std::array<uint8_t, N> &bytes)
         //bytes[N - 1 - i] = b;
         bytes[i] = b;
     }
-
-    return is;
 }
 
 template <size_t N>
-std::istream &operator>>(std::istream &&is, std::array<uint8_t, N> &bytes)
+std::istringstream &operator>>(std::istringstream &iss, std::array<uint8_t, N> &bytes)
 {
-    std::__rvalue_istream_type<std::istream> __ret_is = is;
+    std::string str;
 
-    __ret_is >> bytes;
+    iss >> str;
+    str >> bytes;
 
-    return __ret_is;
+    return iss;
 }
+
+template <size_t N>
+void operator>>(std::istringstream &&iss, std::array<uint8_t, N> &bytes)
+{
+    std::string str;
+
+    iss >> str;
+    str >> bytes;
+}
+
+// template <size_t N>
+// std::istream &operator>>(std::istream &is, std::array<uint8_t, N> &bytes)
+// {
+//     std::string temp;
+
+//     is >> temp;
+
+//     size_t numbytes = temp.size() / 2;
+
+//     for (size_t i = 0, x = 0; i < numbytes && i < N; ++i, x += 2)
+//     {
+//         std::istringstream iss(temp.substr(x, 2));
+//         unsigned short b = 0;
+
+//         if (!(iss >> std::hex >> b))
+//         {
+//             // error!
+//             break;
+//         }
+
+//         // set from high to low bit
+//         //bytes[N - 1 - i] = b;
+//         bytes[i] = b;
+//     }
+
+//     return is;
+// }
+
+// template <size_t N>
+// std::istream &operator>>(std::istream &&is, std::array<uint8_t, N> &bytes)
+// {
+//     std::__rvalue_istream_type<std::istream> __ret_is = is;
+
+//     __ret_is >> bytes;
+
+//     return __ret_is;
+// }
 
 inline void set_stdin_echo(bool enable)
 {

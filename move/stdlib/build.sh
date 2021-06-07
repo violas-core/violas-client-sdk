@@ -32,13 +32,20 @@ echo "build recover_vls_fees_to_association.move"
 ../build.sh recover_vls_fees_to_association.move 0x0
 mv build/scripts/recover_vls_fees_to_association.mv .
 
-# echo "build remove_liquidity.move"
+# echo "build SortedLinkedList.move"
 # ../build.sh remove_liquidity.move 0x0 exchange.move exdep.move
 # mv build/scripts/main.mv remove_liquidity.mv
 
-# echo "build swap.move"
-# ../build.sh swap.move 0x0 exchange.move exdep.move
-# mv build/scripts/main.mv swap.mv
+echo "build modules/Set.move"
+../build.sh modules/Set.move 0x0
+mv build/modules/0_Set.mv modules/Set.mv
 
+echo "build modules/Map.move"
+../build.sh modules/Map.move 0x0
+mv build/modules/0_Map.mv modules/Map.mv
+
+echo "build modules/NonFungibleToken.move"
+../build.sh modules/NonFungibleToken.move 0x0  modules/SimpleSortedLinkedList.move modules/SortedLinkedList.move modules/Map.move
+mv build/modules/0_NonFungibleToken.mv modules/NonFungibleToken.mv
 
 rm -rf build

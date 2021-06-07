@@ -5,6 +5,7 @@
 #include <iterator>
 #include <string>
 #include <array>
+#include <algorithm>
 #include <iomanip>
 #include <termios.h>
 #include <unistd.h>
@@ -74,7 +75,7 @@ void operator>>(const std::string &str, std::array<uint8_t, N> &bytes)
             break;
         }
 
-        // set from high to low bit
+        // set bit from high to low
         //bytes[N - 1 - i] = b;
         bytes[i] = b;
     }
@@ -171,5 +172,29 @@ std::string fmt(Args... args)
 
     return oss.str();
 }
+
+// inline bool is_not_space(char ch)
+// {
+//     return !std::isspace(ch);
+// }
+
+// std::string trim_left(std::string s)
+// {
+//     s.erase(s.begin(),
+//             std::find_if(s.begin(), s.end(), is_not_space));
+//     return s;
+// }
+
+// std::string trim_right(std::string s)
+// {
+//     s.erase(std::find_if(s.rbegin(), s.rend(), is_not_space).base(),
+//             s.end());
+//     return s;
+// }
+
+// std::string trim(std::string s)
+// {
+//     return trim_left(trim_right(std::move(s)));
+// }
 
 #endif

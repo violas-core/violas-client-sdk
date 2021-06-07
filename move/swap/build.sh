@@ -3,7 +3,7 @@ echo "biulding swap.move ..."
 mv build/modules/0_Exchange.mv exchange.mv
 
 echo "biulding vlswap.move ..."
-../build.sh vlswap.move 0x0 Fee.move
+../build.sh module/vlswap.move 0x0 Fee.move
 mv build/modules/0_Exchange.mv exchange.mv
 
 echo "biulding verify_sqrt.move ..."

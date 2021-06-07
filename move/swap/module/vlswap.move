@@ -79,12 +79,12 @@ use 0x1::Fee10000::Fee10000;
     ///
     /// Fund pool held under administrator account 
     //
-    struct Reserve<Token1, Token2> has key, store {
-        token1_amount : u64,
-        token2_amount : u64,
-        add_liquidity_events: EventHandle<AddLiquidityEvent>,
-        remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,
-    }
+    // struct Reserve<Token1, Token2> has key, store {
+    //     token1_amount : u64,
+    //     token2_amount : u64,
+    //     add_liquidity_events: EventHandle<AddLiquidityEvent>,
+    //     remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,
+    // }
     ///
     /// Liquidity held under sender account
     ///
@@ -109,24 +109,35 @@ use 0x1::Fee10000::Fee10000;
         fee_codes : vector<vector<u8>>
     }
 
-    ///
-    /// Liquidity held under provider account
-    ///
+   
     struct LiquidityT<Currency1, Currency2, FeeType> has key, store {
         tick_lower : u64,
         tick_upper : u64,
-        c1_amount : u64,
-        c2_amount : u64,        
-        add_liquidity_events: EventHandle<AddLiquidityEvent>,
-        remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,               
+        liquidity : u64,        
     }
 
+    struct LiquidityTS<Currency1, Currency2, FeeType> has key, store {
+        liquiditys : vector<LiquidityT<Currency1, Currency2, FeeType>>,
+        add_liquidity_events: EventHandle<AddLiquidityEvent>,
+        remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,             
+    } 
+
     struct Position has key, store {
+        owner : address,
         liquidity : u64,
         tick_lower : u64,
         tick_upper : u64,
         fee_currency1 : u64,
         fee_currency2 : u64,
+    }
+
+    ///
+    /// Range liquidity held under provider account
+    ///
+    struct RangeLiquiditys<Currency1, Currency2, FeeType> has key, store {
+        liquiditys : vector<LiquidityT<Currency1, Currency2, FeeType>>,
+        add_liquidity_events: EventHandle<AddLiquidityEvent>,
+        remove_liquidity_events: EventHandle<RemoveLiquidityEvent>,               
     }
 
     ///
@@ -283,16 +294,13 @@ use 0x1::Fee10000::Fee10000;
 
         assert(exists<LiquidityT<Currency1, Currency2, FeeType>>(sender_address), Errors::already_published(E_LIQUIDITY));
 
-        let (c1_amount, c2_amount) = add_liquidity_to_pool<Currency1, Currency2, FeeType>(tick_lower, tick_upper, liquidity);
+        let (c1_amount, c2_amount) = add_liquidity_to_pool<Currency1, Currency2, FeeType>(sender_address, tick_lower, tick_upper, liquidity);
 
         assert(c1_amount <= c1_amount_max, 1);
         assert(c2_amount <= c2_amount_max, 1);
 
-        move_to(sender, LiquidityT<Currency1, Currency2, FeeType> {
-            tick_lower,
-            tick_upper,
-            c1_amount,
-            c2_amount,
+        move_to(sender, LiquidityTS<Currency1, Currency2, FeeType> {
+            liquiditys : Vector::singleton<LiquidityT<Currency1, Currency2, FeeType>>(LiquidityT<Currency1, Currency2, FeeType>{ tick_lower, tick_upper, liquidity }),
             add_liquidity_events : Event::new_event_handle<AddLiquidityEvent>(sender),
             remove_liquidity_events : Event::new_event_handle<RemoveLiquidityEvent>(sender)
         });
@@ -336,29 +344,29 @@ use 0x1::Fee10000::Fee10000;
     //     };              
     // }
 
-    public fun withdraw_liquidity<Token1: store, Token2: store>(
-        sender : &signer,
-        amount : u64
-    ) acquires Reserve, Liquidity, Capability {        
-        let sender_address = Signer::address_of(sender);
+    // public fun withdraw_liquidity<Token1: store, Token2: store>(
+    //     sender : &signer,
+    //     amount : u64
+    // ) acquires Reserve, Liquidity, Capability {        
+    //     let sender_address = Signer::address_of(sender);
         
-        assert(exists<Liquidity<Token1, Token2>>(sender_address), Errors::not_published(E_LIQUIDITY_IS_NOT_PUBLISHED));
+    //     assert(exists<Liquidity<Token1, Token2>>(sender_address), Errors::not_published(E_LIQUIDITY_IS_NOT_PUBLISHED));
 
-        // Update liquidity for sender account
-        let liquidity = borrow_global_mut<Liquidity<Token1, Token2>>(sender_address); 
+    //     // Update liquidity for sender account
+    //     let liquidity = borrow_global_mut<Liquidity<Token1, Token2>>(sender_address); 
         
-        assert(liquidity.amount >= amount, EDO_NOT_HAVE_ENOUGH_LIQUIDITY); // Errors::invalid_argument(EDO_NOT_HAVE_ENOUGH_LIQUIDITY)
+    //     assert(liquidity.amount >= amount, EDO_NOT_HAVE_ENOUGH_LIQUIDITY); // Errors::invalid_argument(EDO_NOT_HAVE_ENOUGH_LIQUIDITY)
 
-        liquidity.amount = liquidity.amount - amount;        
+    //     liquidity.amount = liquidity.amount - amount;        
         
-        // 2. remove reserve liquidity
-        let (token1_amount, token2_amount) = withdraw_reserve_liquidity<Token1, Token2>(amount);
+    //     // 2. remove reserve liquidity
+    //     let (token1_amount, token2_amount) = withdraw_reserve_liquidity<Token1, Token2>(amount);
         
-        // 3. pay token1 and token2 to sender
-        pay_to_sender<Token1>(sender_address, token1_amount);
-        pay_to_sender<Token2>(sender_address, token2_amount); 
+    //     // 3. pay token1 and token2 to sender
+    //     pay_to_sender<Token1>(sender_address, token1_amount);
+    //     pay_to_sender<Token2>(sender_address, token2_amount); 
 
-    }
+    // }
 
     // public fun get_liquidity_balance<Token1, Token2>( addr : address)
     // acquires Liquidity {
@@ -367,63 +375,63 @@ use 0x1::Fee10000::Fee10000;
 
     // }
 
-    public fun swap<Token1: store, Token2: store>(
-        sender : &signer,
-        token1_input_amount : u64,
-        token2_output_min_amount : u64
-        ) : u64 
-        acquires Reserve, Capability {
+    // public fun swap<Token1: store, Token2: store>(
+    //     sender : &signer,
+    //     token1_input_amount : u64,
+    //     token2_output_min_amount : u64
+    //     ) : u64 
+    //     acquires Reserve, Capability {
         
-        let is_forward = check_tokens_foward<Token1, Token2>();
+    //     let is_forward = check_tokens_foward<Token1, Token2>();
 
-        // Get reference for (x, y) of reserve liquidity
-        let (x, y) = if ( is_forward ) {            
-            let reserve = borrow_global_mut<Reserve<Token1, Token2>>(admin_address());
-            (&mut reserve.token1_amount, &mut reserve.token2_amount)
-        } else {            
-            let reserve = borrow_global_mut<Reserve<Token2, Token1>>(admin_address());
-            (&mut reserve.token2_amount, &mut reserve.token1_amount)
-        };
+    //     // Get reference for (x, y) of reserve liquidity
+    //     let (x, y) = if ( is_forward ) {            
+    //         let reserve = borrow_global_mut<Reserve<Token1, Token2>>(admin_address());
+    //         (&mut reserve.token1_amount, &mut reserve.token2_amount)
+    //     } else {            
+    //         let reserve = borrow_global_mut<Reserve<Token2, Token1>>(admin_address());
+    //         (&mut reserve.token2_amount, &mut reserve.token1_amount)
+    //     };
 
-        assert(*x !=0 && *y !=0 , E_DO_NOT_HAVE_ENOUGH_RESERVE); //Errors::invalid_argument(E_DO_NOT_HAVE_ENOUGH_RESERVE)
+    //     assert(*x !=0 && *y !=0 , E_DO_NOT_HAVE_ENOUGH_RESERVE); //Errors::invalid_argument(E_DO_NOT_HAVE_ENOUGH_RESERVE)
 
-        let dx = token1_input_amount;
+    //     let dx = token1_input_amount;
 
-        // // a = dx / x;
-        // let a = FixedPoint32::create_from_rational(dx, *x);
-        // // b = 1 + a;
-        // let b = FixedPoint32::create_from_rational(*x + dx, *x);
-        // // dy = y * a / (1 + a) = y * a / b, 
-        // let dy = FixedPoint32::divide_u64(FixedPoint32::multiply_u64(*y, a), b) ;
+    //     // // a = dx / x;
+    //     // let a = FixedPoint32::create_from_rational(dx, *x);
+    //     // // b = 1 + a;
+    //     // let b = FixedPoint32::create_from_rational(*x + dx, *x);
+    //     // // dy = y * a / (1 + a) = y * a / b, 
+    //     // let dy = FixedPoint32::divide_u64(FixedPoint32::multiply_u64(*y, a), b) ;
 
-        let dy = calculate_exchange_output(*x, *y, dx);
+    //     let dy = calculate_exchange_output(*x, *y, dx);
 
-        // dy > min token2 output
-        assert(dy >= token2_output_min_amount, E_DO_NOT_MEET_TOKEN2_OUTPUT_AMOUNT);    // Errors::invalid_argument(E_DO_NOT_MEET_TOKEN2_OUTPUT_AMOUNT)
+    //     // dy > min token2 output
+    //     assert(dy >= token2_output_min_amount, E_DO_NOT_MEET_TOKEN2_OUTPUT_AMOUNT);    // Errors::invalid_argument(E_DO_NOT_MEET_TOKEN2_OUTPUT_AMOUNT)
         
-        let k = (*x) * (*y);        
-        // update reserve liquidity
-        *x = *x + dx;
-        *y = *y - dy;
+    //     let k = (*x) * (*y);        
+    //     // update reserve liquidity
+    //     *x = *x + dx;
+    //     *y = *y - dy;
 
-        // assert calculation model x' * y' = x * y 
-        assert( (*x) * (*y) == k, E_CALCULATION_ERROR);  // Errors::invalid_argument(E_CALCULATION_ERROR)
+    //     // assert calculation model x' * y' = x * y 
+    //     assert( (*x) * (*y) == k, E_CALCULATION_ERROR);  // Errors::invalid_argument(E_CALCULATION_ERROR)
 
-        // pay_to_admin token1 and pay_to_sender token2 for reserve
-        pay_to_admin<Token1>(sender, dx);
-        pay_to_sender<Token2>(Signer::address_of(sender), dy);
+    //     // pay_to_admin token1 and pay_to_sender token2 for reserve
+    //     pay_to_admin<Token1>(sender, dx);
+    //     pay_to_sender<Token2>(Signer::address_of(sender), dy);
 
-        // if( is_forward ) {
-        //     pay_to_admin<Token1>(sender, dx);
-        //     pay_to_sender<Token2>(Signer::address_of(sender), dy);
-        // } 
-        // else {
-        //     pay_to_admin<Token2>(sender, dx);
-        //     pay_to_sender<Token1>(Signer::address_of(sender), dy);
-        // };
+    //     // if( is_forward ) {
+    //     //     pay_to_admin<Token1>(sender, dx);
+    //     //     pay_to_sender<Token2>(Signer::address_of(sender), dy);
+    //     // } 
+    //     // else {
+    //     //     pay_to_admin<Token2>(sender, dx);
+    //     //     pay_to_sender<Token1>(Signer::address_of(sender), dy);
+    //     // };
 
-        dy        
-    }
+    //     dy        
+    // }
 
     public fun verify_sqrt() {
         let x :u64 = 18446744073709551615; //0xFFFFFFFFFFFFFFFF;
@@ -474,6 +482,34 @@ use 0x1::Fee10000::Fee10000;
         (g0 as u64)
     }
 
+    /// Newton iteration method
+    fun sqrt(x : u64, y : u64) : u64
+    {
+        let z = (x as u128) * (y as u128);
+        let z1 = z -1;   
+        let s: u8  = 1; // shift bits
+
+        // Initialize s
+        if (z1 > ((1 as u128) << 64) - 1) {s = s + 32; z1 = z1 >> 64;};
+        if (z1 > ((1 as u128) << 32) - 1) {s = s + 16; z1 = z1 >> 32;};
+        if (z1 > 65535) {s = s + 8; z1 = z1 >> 16;};
+        if (z1 > 255)   {s = s + 4; z1 = z1 >> 8;};
+        if (z1 > 15)    {s = s + 2; z1 = z1 >> 4;};
+        if (z1 > 3)     {s = s + 1; };  //z1 = z1 >> 2;
+
+        // iterate
+        let g0 : u128 = 1 << s;
+        let g1 = (g0 + (z >> s)) >> 1;
+        
+        while(g1 < g0)
+        {
+            g0 = g1;
+            g1 = (g0 + z / g0) >> 1;
+        };
+
+        (g0 as u64)
+    }
+
     fun calculate_exchange_output(x: u64, y: u64, token1_input_amount: u64) : u64 {
         let k = (x as u128) * (y as u128);
         let y1 = k / ( x + token1_input_amount as u128);
@@ -482,15 +518,15 @@ use 0x1::Fee10000::Fee10000;
     }
 
     /// Check if token1 before token2 in reserve pair
-    fun check_tokens_foward<Token1: store, Token2: store>() : bool {
-        if (exists<Reserve<Token1, Token2>>(admin_address())) {            
-            true
-        } else if (exists<Reserve<Token2, Token1>>(admin_address())) {            
-            false
-        } else {
-            abort(Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED))
-        }
-    }
+    // fun check_tokens_foward<Token1: store, Token2: store>() : bool {
+    //     if (exists<Reserve<Token1, Token2>>(admin_address())) {            
+    //         true
+    //     } else if (exists<Reserve<Token2, Token1>>(admin_address())) {            
+    //         false
+    //     } else {
+    //         abort(Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED))
+    //     }
+    // }
 
     fun pay_to_admin<Token: store>(account: &signer, amount: u64) {
         let withdraw_cap = DiemAccount::extract_withdraw_capability(account);
@@ -518,40 +554,40 @@ use 0x1::Fee10000::Fee10000;
         )
     }
 
-    fun deposit_reserve_liquidity<Token1: store, Token2: store>(token1_amount : u64, token2_amount : u64) : (u64, u64)
-    acquires Reserve {
-        assert(exists<Reserve<Token1, Token2>>(admin_address()), 
-            Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
+    // fun deposit_reserve_liquidity<Token1: store, Token2: store>(token1_amount : u64, token2_amount : u64) : (u64, u64)
+    // acquires Reserve {
+    //     assert(exists<Reserve<Token1, Token2>>(admin_address()), 
+    //         Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
               
-        // Update reserve liquidity
-        let reserve = borrow_global_mut<Reserve<Token1, Token2>>(admin_address()); 
-        if( reserve.token1_amount == 0 && reserve.token2_amount == 0) {
-            reserve.token1_amount = token1_amount;
-            reserve.token2_amount = token2_amount;
+    //     // Update reserve liquidity
+    //     let reserve = borrow_global_mut<Reserve<Token1, Token2>>(admin_address()); 
+    //     if( reserve.token1_amount == 0 && reserve.token2_amount == 0) {
+    //         reserve.token1_amount = token1_amount;
+    //         reserve.token2_amount = token2_amount;
 
-            (reserve.token1_amount, reserve.token2_amount)
-        } else {
-            // let exchange_rate = FixedPoint32::create_from_rational(reserve.token1_amount, reserve.token2_amount);
-            // let need_token2_amount = FixedPoint32::divide_u64(token1_amount, exchange_rate);
+    //         (reserve.token1_amount, reserve.token2_amount)
+    //     } else {
+    //         // let exchange_rate = FixedPoint32::create_from_rational(reserve.token1_amount, reserve.token2_amount);
+    //         // let need_token2_amount = FixedPoint32::divide_u64(token1_amount, exchange_rate);
 
-            let need_token2_amount = (((token1_amount as u128) * (reserve.token2_amount as u128) / (reserve.token1_amount as u128)) as u64);
+    //         let need_token2_amount = (((token1_amount as u128) * (reserve.token2_amount as u128) / (reserve.token1_amount as u128)) as u64);
             
-            assert(token2_amount >= need_token2_amount, Errors::invalid_argument(E_TOKEN2_AMOUNT_IS_NOT_ENOUGH));
+    //         assert(token2_amount >= need_token2_amount, Errors::invalid_argument(E_TOKEN2_AMOUNT_IS_NOT_ENOUGH));
 
-            reserve.token1_amount = reserve.token1_amount + token1_amount;
-            reserve.token2_amount = reserve.token2_amount + need_token2_amount;
+    //         reserve.token1_amount = reserve.token1_amount + token1_amount;
+    //         reserve.token2_amount = reserve.token2_amount + need_token2_amount;
 
-            (token1_amount, need_token2_amount)
-        }           
-    }
+    //         (token1_amount, need_token2_amount)
+    //     }           
+    // }
 
 
     fun add_liquidity_to_pool<Token1: store, Token2: store, FeeType: store>(
+        owner : address,
         tick_lower : u64,
         tick_upper : u64,
-        liquidity : u64,
-        token1_amount : u64, 
-        token2_amount : u64) : (u64, u64)
+        liquidity : u64
+        ) : (u64, u64)
     acquires Pool {
         assert(exists<Pool<Token1, Token2, FeeType>>(admin_address()), 
             Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
@@ -561,8 +597,9 @@ use 0x1::Fee10000::Fee10000;
         if( pool.c1_amount == 0 && pool.c2_amount == 0) {
             
             Vector::push_back<Position>(&mut pool.positions, 
-                Position {  
-                    liquidity: 0, 
+                Position {
+                    owner,  
+                    liquidity, 
                     tick_lower, 
                     tick_upper, 
                     fee_currency1: 0 , 
@@ -570,47 +607,64 @@ use 0x1::Fee10000::Fee10000;
                 }
             );
             
-            pool.c1_amount = token1_amount;
-            pool.c2_amount = token2_amount;
+            //pool.c1_amount = token1_amount;
+            //pool.c2_amount = token2_amount;
 
             (pool.c1_amount, pool.c2_amount)
         } else {
             // let exchange_rate = FixedPoint32::create_from_rational(reserve.token1_amount, reserve.token2_amount);
             // let need_token2_amount = FixedPoint32::divide_u64(token1_amount, exchange_rate);
 
-            let need_token2_amount = (((token1_amount as u128) * (pool.c2_amount as u128) / (pool.c1_amount as u128)) as u64);
+            // let need_token2_amount = (((token1_amount as u128) * (pool.c2_amount as u128) / (pool.c1_amount as u128)) as u64);
             
-            assert(token2_amount >= need_token2_amount, Errors::invalid_argument(E_TOKEN2_AMOUNT_IS_NOT_ENOUGH));
+            // assert(token2_amount >= need_token2_amount, Errors::invalid_argument(E_TOKEN2_AMOUNT_IS_NOT_ENOUGH));
 
-            pool.c1_amount = pool.c1_amount + token1_amount;
-            pool.c2_amount = pool.c2_amount + need_token2_amount;
+            //pool.c1_amount = pool.c1_amount + token1_amount;
+            //pool.c2_amount = pool.c2_amount + need_token2_amount;
 
-            (token1_amount, need_token2_amount)
+            // (token1_amount, need_token2_amount)
+            (0, 0)
         }           
     }
 
     
-    fun withdraw_reserve_liquidity<Token1: store, Token2: store>(liquidity_amount : u64) : (u64, u64)
-    acquires Reserve {
-        assert(exists<Reserve<Token1, Token2>>(admin_address()), 
-            Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
+    // fun withdraw_reserve_liquidity<Token1: store, Token2: store>(liquidity_amount : u64) : (u64, u64)
+    // acquires Reserve {
+    //     assert(exists<Reserve<Token1, Token2>>(admin_address()), 
+    //         Errors::not_published(E_RESERVE_HAS_NOT_BEEN_PUBLISHED));
 
-        // Update reserve liquidity
-        let reserve = borrow_global_mut<Reserve<Token1, Token2>>(admin_address());        
-        let liquidity_total = sqrt(reserve.token1_amount, reserve.token2_amount);
+    //     // Update reserve liquidity
+    //     let reserve = borrow_global_mut<Reserve<Token1, Token2>>(admin_address());        
+    //     let liquidity_total = sqrt(reserve.token1_amount, reserve.token2_amount);
         
-        assert(liquidity_amount <= liquidity_total, Errors::invalid_argument(EDO_NOT_HAVE_ENOUGH_LIQUIDITY));
+    //     assert(liquidity_amount <= liquidity_total, Errors::invalid_argument(EDO_NOT_HAVE_ENOUGH_LIQUIDITY));
         
-        // let rate1 = FixedPoint32::create_from_rational(liquidity_amount, liquidity_total);
-        // let rate2 = FixedPoint32::create_from_rational(liquidity_amount, liquidity_total);
+    //     // let rate1 = FixedPoint32::create_from_rational(liquidity_amount, liquidity_total);
+    //     // let rate2 = FixedPoint32::create_from_rational(liquidity_amount, liquidity_total);
 
-        let token1_amount: u64 = ((reserve.token1_amount as u128) * (liquidity_amount as u128) / (liquidity_total as u128) as u64);
-        let token2_amount: u64 = ((reserve.token2_amount as u128) * (liquidity_amount as u128) / (liquidity_total as u128) as u64);
+    //     let token1_amount: u64 = ((reserve.token1_amount as u128) * (liquidity_amount as u128) / (liquidity_total as u128) as u64);
+    //     let token2_amount: u64 = ((reserve.token2_amount as u128) * (liquidity_amount as u128) / (liquidity_total as u128) as u64);
 
-        reserve.token1_amount = reserve.token1_amount - token1_amount;
-        reserve.token2_amount = reserve.token2_amount - token2_amount;
+    //     reserve.token1_amount = reserve.token1_amount - token1_amount;
+    //     reserve.token2_amount = reserve.token2_amount - token2_amount;
 
-        (token1_amount, token2_amount)
+    //     (token1_amount, token2_amount)
+    // }
+
+    //
+    //  get amount delta for currency A 
+    //  
+    fun get_amount_0_delta(price_a: u64, price_b: u64, liqudity: u64) : u64
+    {
+
+    }
+
+    //
+    //  get amount delta for currency B 
+    //
+    fun get_amount_1_delta(price_a: u64, price_b: u64, liqudity: u64) : (u64, u64)
+    {
+
     }
 }
 

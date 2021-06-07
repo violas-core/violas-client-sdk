@@ -483,7 +483,7 @@ protected:
         size_t account_index;
 
         if (args[0].length() == 32)
-            istringstream(args[0]) >> address;
+            args[0] >> address;
         else
         {
             istringstream(args[0]) >> account_index;

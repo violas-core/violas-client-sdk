@@ -14,7 +14,7 @@ module Map {
         value_ : Value,
     }
     
-    struct Map<Key, Value> has copy, drop, key, store { 
+    struct Map<Key, Value> has copy, drop, store { 
         // A vector holds some nodes
         nodes: vector<Node<Key, Value>> 
     }
@@ -52,8 +52,8 @@ module Map {
         if (len == 0) {
             return (0, false)
         };
-
         let right = len - 1;
+
         while (left <= right) {
             let mid = (left + right) / 2;
             let cmp = Compare::cmp_bcs_bytes(&BCS::to_bytes(&Vector::borrow(nodes, mid).key_), &key_bcs);
@@ -75,8 +75,8 @@ module Map {
     }
 
     // return true if `node` is already present in `t`, abort otherwise
-    public fun raw_insert<Key: drop, Value : drop>(map: &mut Map<Key, Value>, node: Node<Key, Value>) : bool {
-        let (insert_at, found) = find(map, &node.key_);
+    public fun insert<Key: drop, Value : drop>(map: &mut Map<Key, Value>, key_: Key, value_: Value) : bool {
+        let (insert_at, found) = find(map, &key_);
         if (found) {
             false
         } else {
@@ -84,7 +84,7 @@ module Map {
             // TODO: Vector::insert(index, e) would be useful here.
             let i = Vector::length(nodes);
             // add e to the end and then move it  to the left until we hit `insert_at`
-            Vector::push_back(nodes, node);
+            Vector::push_back(nodes, Node<Key, Value> { key_, value_, });
             
             while (i > insert_at) {
                 Vector::swap(nodes, i, i - 1);
@@ -92,13 +92,11 @@ module Map {
             };
 
             true
-        }
-
-                
+        }                
     }
 
-    public fun raw_update<Key, Value: drop+copy>(map: &mut Map<Key, Value>, key: &Key, value: Value): bool {
-        let (index, found) = find(map, key);
+    public fun update<Key, Value: drop+copy>(map: &mut Map<Key, Value>, key_: &Key, value: Value): bool {
+        let (index, found) = find(map, key_);
         if(found) {
             let (_, _value) = borrow_mut(map, index);            
             *_value = value; 
@@ -107,7 +105,27 @@ module Map {
         found
     }
 
-    public fun raw_get<Key, Value: copy>(map: &Map<Key, Value>, key: &Key) : Option<Value> {
+    public fun erase<Key: drop, Value : drop>(map: &mut Map<Key, Value>, key_: &Key) : bool {
+        let (i, found) = find(map, key_);
+        if (found) {
+            false
+        } else {
+            let nodes = &mut map.nodes;                        
+            let length = Vector::length(nodes);
+
+            // move node to the end and keep order for the vecotr
+            while (i < length-2) {
+                Vector::swap(nodes, i, i + 1);
+                i = i + 1;
+            };
+            
+            Vector::pop_back(nodes);
+
+            true
+        }  
+    }
+
+    public fun get<Key, Value: copy>(map: &Map<Key, Value>, key: &Key) : Option<Value> {
         let (index, found) = find(map, key);
         if(found) {
             let (_, value) = borrow(map, index);
@@ -117,33 +135,6 @@ module Map {
         }
     }
 
-    //
-    //  wrapper functions
-    //
-
-    public fun create<Key: copy+drop+store, Value: copy+drop+store>(account: &signer) {
-        move_to<Map<Key, Value>>(account, Self::empty());
-    }
-
-    public fun insert<Key: copy+drop+store, Value: copy+drop+store>(owner: address, key_: Key, value_: Value) : bool
-    acquires Map {
-        let map = borrow_global_mut<Map<Key, Value>>(owner);
-        
-        Self::raw_insert(map, Node { key_, value_})
-    }
-
-    public fun get<Key: copy+drop+store, Value: copy+drop+store>(owner: address, key_: &Key) : Option<Value>
-    acquires Map {
-        let map = borrow_global<Map<Key, Value>>(owner);
-
-        raw_get(map, key_)
-    }
-
-    public fun update<Key: copy+drop+store, Value: copy+drop+store>(owner: address, key_: &Key, value_: Value): bool
-    acquires Map {
-        let map = borrow_global_mut<Map<Key, Value>>(owner);
-        
-        raw_update(map, key_, value_)
-    }
+    
 }
 }

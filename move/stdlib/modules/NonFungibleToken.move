@@ -4,13 +4,14 @@ address 0x2 {
 // value is a struct 'NonFungibleToken', contains the non fungible token
 // the account address of each list node is actually the owner of the token
 module NonFungibleToken {
+    use 0x1::BCS;
     use 0x1::Compare;
+    use 0x1::Errors;
+    use 0x1::Event::{Self, EventHandle};
+    use 0x1::Hash;    
     use 0x1::Option::{Option};
     use 0x1::Signer;
     use 0x1::Vector;
-    use 0x1::BCS;
-    use 0x1::Errors;
-    use 0x1::Hash;
     use 0x2::Map::{Self, Map};
 
     const NFT_PUBLISHER: address = 0x2;
@@ -18,17 +19,43 @@ module NonFungibleToken {
     const ESENDER_HAS_ACCEPTED_NFT_TYPE: u64 = 1002;
     const ENFT_TOKEN_HAS_ALREADY_EXISTED: u64 = 1003;
     const ENFT_TOKEN_HAS_NOT_EXISTED: u64 = 1004;    
+    
+    struct MintEvent has drop, store {
+
+    }
+
+    struct BurnEvent has drop, store {
+
+    }
+
+    struct SentEvent has drop, store {
+        token_id: vector<u8>,
+        payee: address,
+        metadata: vector<u8>,
+    }
+
+    struct ReceivedEvent has drop, store {
+        token_id: vector<u8>,
+        payer: address,
+        metadata: vector<u8>,
+    }
 
     struct LimitedMeta<Token> has key, store {
         limited: bool,
         total: u64,
         amount: u64,
-        admin: address,
-        owners : Map<vector<u8>, address>,
+        admin: address, // has minting and burning permission
+        owners: Map<vector<u8>, address>,  // token id maps to owner's address
+        mint_events: EventHandle<MintEvent>,
+        burn_events: EventHandle<BurnEvent>,
     }
 
+    
+
     struct NonFungibleToken<Token> has key, store {
-        tokens: vector<Token>
+        tokens: vector<Token>,                          // store all tokens that has different token id
+        sent_events: EventHandle<SentEvent>,            // sent token events
+        received_events: EventHandle<ReceivedEvent>,    // received token events
     }
 
     struct TokenLock<Token> has key {
@@ -63,8 +90,8 @@ module NonFungibleToken {
         assert(limited_meta.admin == admin, 10001);
     }
 
-    public fun register<Token: store>(account: &signer, limited: bool, total: u64, admin: address) {
-        let sender = Signer::address_of(account);
+    public fun register<Token: store>(sig: &signer, limited: bool, total: u64, admin: address) {
+        let sender = Signer::address_of(sig);
         assert(sender == NFT_PUBLISHER, 8000);
 
         let limited_meta = LimitedMeta<Token> {
@@ -73,9 +100,11 @@ module NonFungibleToken {
             amount: 0,
             admin,
             owners:  Map::empty<vector<u8>, address>(),
+            mint_events: Event::new_event_handle<MintEvent>(sig),
+            burn_events: Event::new_event_handle<BurnEvent>(sig)
         };
 
-        move_to<LimitedMeta<Token>>(account, limited_meta);        
+        move_to<LimitedMeta<Token>>(sig, limited_meta);        
     }    
     //
     //  Get the number of balance for Token
@@ -194,50 +223,61 @@ module NonFungibleToken {
     //
     //
     //
-    public fun accept_token<Token: store>(account: &signer) {
-        let sender = Signer::address_of(account);
+    public fun accept_token<Token: store>(sig: &signer) {
+        let sender = Signer::address_of(sig);
                 
         assert(!exists<NonFungibleToken<Token>>(sender), Errors::already_published(ESENDER_HAS_ACCEPTED_NFT_TYPE));
         
-        move_to<NonFungibleToken<Token>>(account, NonFungibleToken<Token>{tokens: Vector::empty<Token>()});
+        move_to<NonFungibleToken<Token>>(sig, 
+            NonFungibleToken<Token> {
+                tokens: Vector::empty<Token>(),
+                sent_events: Event::new_event_handle<SentEvent>(sig),
+                received_events: Event::new_event_handle<ReceivedEvent>(sig),
+                });
     }
     //
     //  Transfer a NFT token with token id
     //
-    public fun safe_transfer<Token: drop + key + store>(sig: &signer, receiver: address, token_id: &vector<u8>) 
+    public fun safe_transfer<Token: drop + key + store>(sig: &signer, receiver: address, token_id: &vector<u8>, metadata: vector<u8>) 
     acquires NonFungibleToken {
         let sender = Signer::address_of(sig);
         let sender_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(sender);
         let index = get_token_index(&sender_token_ref_mut.tokens, token_id);
         
-        transfer<Token>(sig, receiver, index);
+        transfer<Token>(sig, receiver, index, metadata);
     }
     //
     //  Transfer a NFT token with index
     //
-    public fun transfer<Token: drop + store>(account: &signer, receiver: address, index: u64) 
+    public fun transfer<Token: drop + store>(account: &signer, receiver: address, index: u64, metadata: vector<u8>) 
     acquires NonFungibleToken {
         let sender = Signer::address_of(account);
 
         assert(exists<NonFungibleToken<Token>>(receiver), 8002);                                
         assert(!exists<TokenLock<Token>>(sender), 8004);
 
-        let sender_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(sender);
-        let length = Vector::length<Token>(&sender_token_ref_mut.tokens);
+        let sender_nft = borrow_global_mut<NonFungibleToken<Token>>(sender);
+        let length = Vector::length<Token>(&sender_nft.tokens);
         
         // Ensure the index is valid 
         assert(index < length, 8003);
         
+        // Get token from sender
         if (index < length - 1) //swap element to back
-            Vector::swap<Token>(&mut sender_token_ref_mut.tokens, index, length-1); 
+            Vector::swap<Token>(&mut sender_nft.tokens, index, length-1); 
 
-        let token = Vector::pop_back(&mut sender_token_ref_mut.tokens);
+        let token = Vector::pop_back(&mut sender_nft.tokens);
+        let token_id = make_token_id(&token);
+        
+        // Emit sent event
+        Event::emit_event(&mut sender_nft.sent_events, SentEvent{ token_id: copy token_id, payee: receiver, metadata: copy metadata });
 
-        let receiver_token_ref_mut =  borrow_global_mut<NonFungibleToken<Token>>(receiver);
-        Vector::push_back<Token>(&mut receiver_token_ref_mut.tokens, token);
+        // Put token to receiver
+        let receiver_nft =  borrow_global_mut<NonFungibleToken<Token>>(receiver);
+        Vector::push_back<Token>(&mut receiver_nft.tokens, token);
 
         // Emit transfer event
-        // move_to<NonFungibleToken<Token>>(account, NonFungibleToken<Token>{token: Option::none()});
+        Event::emit_event(&mut receiver_nft.received_events, ReceivedEvent{ token_id, payer: sender, metadata });
     }
 }
 }

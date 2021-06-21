@@ -36,6 +36,10 @@ mv build/scripts/recover_vls_fees_to_association.mv .
 # ../build.sh remove_liquidity.move 0x0 exchange.move exdep.move
 # mv build/scripts/main.mv remove_liquidity.mv
 
+echo "build modules/Compare.move"
+../build.sh modules/Compare.move 0x0
+mv build/modules/0_Compare.mv modules/Compare.mv
+
 echo "build modules/Set.move"
 ../build.sh modules/Set.move 0x0
 mv build/modules/0_Set.mv modules/Set.mv

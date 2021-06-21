@@ -70,7 +70,10 @@
         "concepts": "cpp",
         "ranges": "cpp",
         "stop_token": "cpp",
-        "*.cuh": "cpp"
+        "*.cuh": "cpp",
+        "numbers": "cpp",
+        "hash_set": "cpp",
+        "unordered_set": "cpp"
     },
     "git.ignoreLimitWarning": true,
     "cmake.configureOnOpen": false,

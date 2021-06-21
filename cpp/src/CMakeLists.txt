@@ -1,0 +1,6 @@
+add_library(violas_sdk violas_sdk2.cpp)
+
+# target_link_libraries(violas_client)
+
+install(TARGETS violas_sdk DESTINATION lib)
+install(FILES ../include/violas_sdk2.hpp DESTINATION include)

@@ -8,6 +8,7 @@ using namespace std;
 using namespace violas;
 
 void deploy_stdlib(client_ptr client);
+void register_mountwuyi_tea_nft(client_ptr client);
 
 int main(int argc, char *argv[])
 {
@@ -22,7 +23,11 @@ int main(int argc, char *argv[])
         client->allow_publishing_module(true);
         client->allow_custom_script();
 
+        client->create_next_account();
+        client->create_next_account();
+
         deploy_stdlib(client);
+        register_mountwuyi_tea_nft(client);
     }
     catch (const std::exception &e)
     {
@@ -37,9 +42,11 @@ int main(int argc, char *argv[])
 
 void deploy_stdlib(client_ptr client)
 {
-    string modules[] = {"move/stdlib/modules/Compare.mv",
-                        "move/stdlib/modules/Map.mv",
-                        "move/stdlib/modules/NonFungibleToken.mv"};
+    string modules[] =
+        {"move/stdlib/modules/Compare.mv",
+         "move/stdlib/modules/Map.mv",
+         "move/stdlib/modules/NonFungibleToken.mv",
+         "move/tea/modules/MountWuyi.mv"};
 
     for (auto module : modules)
     {
@@ -54,4 +61,21 @@ void deploy_stdlib(client_ptr client)
             std::cerr << e.what() << '\n';
         }
     }
+}
+
+void register_mountwuyi_tea_nft(client_ptr client)
+{
+    TypeTag tea_tag(VIOLAS_STDLIB_ADDRESS, "MountWuyi", "Tea");
+
+    auto accounts = client->get_all_accounts();
+
+    client->execute_script_file(VIOLAS_ROOT_ACCOUNT_ID,
+                                "move/stdlib/scripts/register_nft.mv",
+                                {tea_tag},
+                                {uint64_t(1000), accounts[0].address});
+
+    client->execute_script_file(0,
+                                "move/tea/scripts/mint_mountwuyi_tea_nft.mv",
+                                {tea_tag},
+                                {});
 }

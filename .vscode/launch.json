@@ -4,25 +4,45 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    {
-        "name": "(gdb) Launch Test BCS",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/cpp/test/build/test_bcs",
-        "args": [],
-        "stopAtEntry": false,
-        "cwd": "${fileDirname}",
-        "environment": [],
-        "externalConsole": false,
-        "MIMode": "gdb",
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            }
-        ]
-    },
+    
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch Deployment",
+            "program": "${workspaceFolder}/cpp/build/deployment/deployment",
+            "args": [
+                "-u",
+                "http://localhost:40079",
+                "-m",
+                "/tmp/diem/mint.key",
+                "-w",
+                "0:b6e7e677b72d2f2fb7d18fa3dde53ad64eb4943b013da3f73024faf9671d85e0",
+                "-c",
+                "2",
+                "-n",
+                "mnemonic/dep.mne"
+            ],
+            "cwd": "${workspaceFolder}/cpp/build"
+        },
+        {
+            "name": "(gdb) Launch Test BCS",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cpp/test/build/test_bcs",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
         {
             "type": "lldb",
             "request": "launch",

@@ -14,18 +14,19 @@ module NonFungibleToken {
     use 0x1::Vector;
     use 0x2::Map::{Self, Map};
 
-    const NFT_PUBLISHER: address = 0x2;
+    const NFT_PUBLISHER: address = 0xA550C18;   // Diem root account
     const EPAYEE_CANT_ACCEPT_NFT_TYPE: u64 = 1001;
     const ESENDER_HAS_ACCEPTED_NFT_TYPE: u64 = 1002;
     const ENFT_TOKEN_HAS_ALREADY_EXISTED: u64 = 1003;
     const ENFT_TOKEN_HAS_NOT_EXISTED: u64 = 1004;    
     
     struct MintEvent has drop, store {
-
+        token_id: vector<u8>,
+        receiver: address,
     }
 
     struct BurnEvent has drop, store {
-
+        token_id: vector<u8>,
     }
 
     struct SentEvent has drop, store {
@@ -48,9 +49,7 @@ module NonFungibleToken {
         owners: Map<vector<u8>, address>,  // token id maps to owner's address
         mint_events: EventHandle<MintEvent>,
         burn_events: EventHandle<BurnEvent>,
-    }
-
-    
+    }    
 
     struct NonFungibleToken<Token> has key, store {
         tokens: vector<Token>,                          // store all tokens that has different token id
@@ -147,7 +146,7 @@ module NonFungibleToken {
     //
     //  get token owner by token id
     //
-    public fun get_token_owner<Token:key+store>(token_id: &vector<u8>): Option<address>
+    public fun owner<Token:key+store>(token_id: &vector<u8>): Option<address>
     acquires LimitedMeta {
         let limited_meta = borrow_global<LimitedMeta<Token>>(NFT_PUBLISHER);
 

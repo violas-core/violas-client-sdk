@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.10)
 
 project(deployment VERSION 1.0)
 
-set(CMAKE_CXX_COMPILER clang++-12)
+# set(CMAKE_CXX_COMPILER clang++-12)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 include_directories(./include ../rust/violas-client/src/ffi)
+link_directories(../../rust/violas-client/target/debug)
 
 # library violas_client 
 add_subdirectory(src)

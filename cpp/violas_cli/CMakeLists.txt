@@ -1,6 +1,6 @@
 set(OBJ_FROM_RUST ${CMAKE_CURRENT_SOURCE_DIR}/../lib/cpp_closures.o)
 
-link_directories(../../rust/violas-client/target/release)
+link_directories(../../rust/violas-client/target/debug)
 
 aux_source_directory(src SRCS)
 

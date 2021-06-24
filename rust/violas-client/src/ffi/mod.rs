@@ -653,6 +653,7 @@ namespace violas
                                                         .iter()
                                                         .map(|x| make_type_tag(x) )
                                                         .collect();
+                    println!("{:?}", type_tags);
 
                     let gas_currency_code = CStr::from_ptr(in_gas_currency_code).to_str().unwrap();
                     let args : Vec<&str> = slice::from_raw_parts(in_args, in_args_len)

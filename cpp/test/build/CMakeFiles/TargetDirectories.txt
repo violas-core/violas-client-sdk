@@ -1,3 +1,0 @@
-/home/hunter/Projects/work/violas-client-sdk/cpp/test/build/CMakeFiles/rebuild_cache.dir
-/home/hunter/Projects/work/violas-client-sdk/cpp/test/build/CMakeFiles/edit_cache.dir
-/home/hunter/Projects/work/violas-client-sdk/cpp/test/build/CMakeFiles/test_bcs.dir

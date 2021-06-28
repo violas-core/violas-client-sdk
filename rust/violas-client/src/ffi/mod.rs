@@ -551,7 +551,7 @@ namespace violas
             ifstream script(script_file_name.data(), ios::binary);
 
             if(!script.is_open())
-                throw runtime_error(string("execute_script_file : script file ") + script_file_name.data() + "is not exist !");
+                throw runtime_error(string("execute_script_file : script file ") + script_file_name.data() + " is not exist !");
             istreambuf_iterator<char> fbeg(script), fend;
             vector<uint8_t> script_bytecode(fbeg, fend);
 
@@ -594,7 +594,7 @@ namespace violas
                     {
                         ostringstream oss;
 
-                        oss << "b\"";
+                        oss << "x\"";
                         for (uint8_t byte : var)
                         {
                             oss << hex << setw(2) << setfill('0') << (uint32_t)byte;
@@ -611,8 +611,13 @@ namespace violas
                     }
                     else if constexpr (std::is_same_v<T, __uint128_t>)
                     {
-                        auto str128 = to_string((uint64_t)(var >> 64)) + to_string((uint64_t)var);
+                        auto str128 = to_string((uint64_t)(var >> 64)) + to_string((uint64_t)var) + "u128";
                         str_args.push_back(str128);
+                    }
+                    else if constexpr (std::is_same_v<T, uint8_t>)
+                    {
+                        auto stru8 = to_string(var) + "u8";
+                        str_args.push_back(stru8);
                     }
                     else if constexpr (std::is_same_v<T, bool>)
                     {
@@ -653,8 +658,7 @@ namespace violas
                                                         .iter()
                                                         .map(|x| make_type_tag(x) )
                                                         .collect();
-                    println!("{:?}", type_tags);
-
+                    
                     let gas_currency_code = CStr::from_ptr(in_gas_currency_code).to_str().unwrap();
                     let args : Vec<&str> = slice::from_raw_parts(in_args, in_args_len)
                                         .iter()
@@ -1493,7 +1497,7 @@ namespace violas
                     match ret {
                         Ok(_) => true,
                         Err(e) => {
-                            let err = format_err!("ffi::create_parent_vasp_account, {}",e);
+                            let err = format_err!("ffi::create_child_vasp_account, {}",e);
                             set_last_error(err);
                             false
                         }

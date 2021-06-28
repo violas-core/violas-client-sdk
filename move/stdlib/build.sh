@@ -32,9 +32,6 @@ echo "build recover_vls_fees_to_association.move"
 ../build.sh scripts/recover_vls_fees_to_association.move 0x0
 mv build/scripts/recover_vls_fees_to_association.mv scripts/
 
-echo "build scripts/register_nft.move"
-../build.sh scripts/register_nft.move 0x0 modules/NonFungibleToken.move modules/Map.move
-mv build/scripts/register_nft.mv scripts/
 
 # echo "build SortedLinkedList.move"
 # ../build.sh remove_liquidity.move 0x0 exchange.move exdep.move
@@ -51,9 +48,25 @@ mv build/modules/0_Set.mv modules/Set.mv
 echo "build modules/Map.move"
 ../build.sh modules/Map.move 0x0
 mv build/modules/0_Map.mv modules/Map.mv
-
+#
+#   Building NFT module and scripts
+#
 echo "build modules/NonFungibleToken.move"
 ../build.sh modules/NonFungibleToken.move 0x0  modules/SimpleSortedLinkedList.move modules/SortedLinkedList.move modules/Map.move
 mv build/modules/0_NonFungibleToken.mv modules/NonFungibleToken.mv
+
+echo "build scripts/nft_register.move"
+../build.sh scripts/nft_register.move 0x0 modules/NonFungibleToken.move modules/Map.move
+mv build/scripts/nft_register.mv scripts/
+
+echo "build scripts/nft_accept.move"
+../build.sh scripts/nft_accept.move 0x0 modules/NonFungibleToken.move modules/Map.move
+mv build/scripts/nft_accept.mv scripts/
+
+echo "build scripts/nft_transfer.move"
+../build.sh scripts/nft_transfer.move 0x0 modules/NonFungibleToken.move modules/Map.move
+mv build/scripts/nft_transfer.mv scripts/
+mv build/scripts/nft_transfer_via_index.mv scripts/
+
 
 rm -rf build

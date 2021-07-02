@@ -2,6 +2,8 @@
 #include <stack>
 #include <queue>
 #include "../include/json.hpp"
+#include "../include/utils.h"
+#include "../include/bcs_serde.hpp"
 #include "../include/violas_sdk2.hpp"
 
 using namespace std;
@@ -18,7 +20,7 @@ namespace violas
         ExchangeImp(client_ptr client,
                     std::string_view exchange_contracts_path,
                     const AddressAndIndex &admin)
-            : m_client(client),              
+            : m_client(client),
               m_admin(admin),
               m_script_path(exchange_contracts_path)
         {
@@ -163,9 +165,11 @@ namespace violas
             vertex dist_to[32] = {{0, 0}};
 
             map<size_t, vector<edge>> v_to_e; //vertex index maps to edges
-            auto vertex_comp = [](const vertex &a, const vertex &b) { return a.second > b.second; };
+            auto vertex_comp = [](const vertex &a, const vertex &b)
+            { return a.second > b.second; };
             priority_queue<vertex, vector<vertex>, decltype(vertex_comp)> minpq(vertex_comp);
-            auto relax = [&](const vertex &v, const edge &e) -> void {
+            auto relax = [&](const vertex &v, const edge &e) -> void
+            {
                 size_t coin_a = get<0>(e);
                 uint64_t coin_a_value = get<1>(e);
                 size_t coin_b = get<2>(e);
@@ -441,5 +445,43 @@ namespace violas
                       std::string_view bank_contracts_path)
     {
         return make_shared<BankImp>(client, bank_contracts_path);
+    }
+
+    AccountState::AccountState(const std::string &hex)
+    {
+        auto bytes = hex_to_bytes(hex);
+
+        // Deserialize to vector
+        vector<uint8_t> data;
+        {
+            BcsSerde serde(move(bytes));
+            serde &&data;
+        }
+
+        BcsSerde serde(move(data));
+
+        serde &&_resources;
+    }
+
+    void AccountState::get_account_state(Address address)
+    {
+        ostringstream oss;
+        oss << address;
+
+        auto as = _client->get_account_state_blob(oss.str());
+
+        auto bytes = hex_to_bytes(as.blob);
+
+        // Deserialize to vector
+        vector<uint8_t> data;
+        {
+            BcsSerde serde(bytes);
+            serde &&data;
+        }
+
+        // Deserialize to map
+        BcsSerde serde(data);
+
+        serde &&_resources;
     }
 } // namespace violas

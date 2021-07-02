@@ -6,7 +6,7 @@ link_directories(../../rust/violas-client/target/debug)
 add_executable(deployment src/main.cpp)
 
 #target_link_options(deployment )
-target_link_libraries(deployment violas_client ${OBJ_FROM_RUST})
+target_link_libraries(deployment violas_client violas_sdk ${OBJ_FROM_RUST} cpprest ssl crypto pthread)
 
 install(TARGETS deployment DESTINATION bin)
 install(FILES ../lib/libviolas_client.so DESTINATION lib)

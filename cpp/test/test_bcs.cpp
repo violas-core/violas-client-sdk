@@ -23,7 +23,7 @@ struct Employer
     vector<uint8_t> courses;
     map<int, string> score;
 
-    BinSerde &serde(BinSerde &bs)
+    BcsSerde &serde(BcsSerde &bs)
     {
         return bs && name && age && gender && courses && score;
         //bs << name << age << gender << nums;
@@ -62,7 +62,7 @@ struct Company
     tuple<int16_t, string> libray_record;
     set<Employer> employers;
 
-    BinSerde &serde(BinSerde &bs)
+    BcsSerde &serde(BcsSerde &bs)
     {
         return bs && name && libray_record && employers;
     }
@@ -71,12 +71,12 @@ struct Company
 template <class P>
 concept check_serde = requires(P p)
 {
-    std::same_as<decltype(p.serde(declval<BinSerde &>())), BinSerde &>;
+    std::same_as<decltype(p.serde(declval<BcsSerde &>())), BcsSerde &>;
 };
 
 void test_serialization()
 {
-    BinSerde bs;
+    BcsSerde bs;
     Employer e;
     Company Dell;
     Employer Tom = {"Tom", 20, true, {1, 2, 3}, {{0, "English"}}};

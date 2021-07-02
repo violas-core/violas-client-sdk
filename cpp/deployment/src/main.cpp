@@ -5,6 +5,9 @@
 #include <violas_sdk2.hpp>
 #include <utils.h>
 #include <argument.hpp>
+#include <bcs_serde.hpp>
+#include <json_rpc.hpp>
+#include <utils.h>
 
 using namespace std;
 using namespace violas;
@@ -15,6 +18,7 @@ void deploy_stdlib(client_ptr client);
 void register_mountwuyi_tea_nft(client_ptr client);
 void mint_tea_nft(client_ptr client);
 void transfer(client_ptr client);
+void query_nft(client_ptr client, string url);
 
 int main(int argc, char *argv[])
 {
@@ -36,23 +40,29 @@ int main(int argc, char *argv[])
              << "Dealer 1   : " << dealer1.address << "\n"
              << "Dealer 2   : " << dealer2.address << endl;
 
-        //using handler = function<void(client_ptr ptr)>;
-        using handler = void (*)(client_ptr client);
+        using handler = function<void(client_ptr ptr)>;
+        //using handler = void (*)(client_ptr client);
         map<int, handler> handlers = {
             {0, deploy_stdlib},
             {1, register_mountwuyi_tea_nft},
             {2, mint_tea_nft},
-            {3, transfer}};
+            {3, transfer},
+            {4, [=](client_ptr client)
+             {
+                 query_nft(client, args.url);
+             }},
+        };
 
-        int index;
+        size_t index;
         do
         {
             cout << "0 - Deploy all modules\n"
                     "1 - Register Tea NFT\n"
-                    "2 - Mint a Tea Nft\n"
+                    "2 - Mint a Tea NFT\n"
                     "3 - Transfer Tea NFT from dealer 1 to dealer 2\n"
-                 << "Please input function index :"
-                 << endl;
+                    "4 - view Tea NFT\n"
+                 << "Please input function index :";
+
             cin >> index;
 
             auto fun = handlers.find(index);
@@ -196,4 +206,65 @@ void transfer(client_ptr client)
                                 "move/stdlib/scripts/nft_transfer_via_index.mv",
                                 {tea_tag},
                                 {dealer2.address, uint64_t(0), vector<uint8_t>{0x1, 0x2, 0x3}});
+}
+
+struct Tea
+{
+    vector<uint8_t> identity;
+    uint8_t kind;
+    vector<uint8_t> manufacture;
+    uint64_t date;
+
+    BcsSerde &serde(BcsSerde &bs)
+    {
+        return bs && identity && kind && manufacture && date;
+    }
+};
+
+void query_nft(client_ptr client, string url)
+{
+    using namespace json_rpc;
+
+    auto accounts = client->get_all_accounts();
+    auto &admin = accounts[0];
+    auto &dealer1 = accounts[1];
+    auto &dealer2 = accounts[2];
+
+    auto rpc_cli = json_rpc::Client::create(url);
+
+    // ostringstream oss;
+    // oss << dealer2.address;
+
+    // auto as = rpc_cli->get_account_state_blob(oss.str());
+
+    // cout << as.blob << endl;
+
+    // auto bytes = hex_to_bytes(as.blob);
+
+    // vector<uint8_t> data;
+    // {
+    //     BcsSerde serde(move(bytes));
+    //     serde &&data;
+    // }
+
+    // //std::pair<vector<uint8_t>, vector<uint8_t>> data;
+
+    // map<vector<uint8_t>, vector<uint8_t>> account_data;
+
+    // BcsSerde serde(move(data));
+    // serde &&account_data;
+
+    TypeTag tag{Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}, "MountWuyi", "Tea"};
+    // {
+    //     BcsSerde serde;
+    //     auto tag_ser = (serde && tag).bytes();
+
+    //     auto size = tag_ser.size();
+    // }
+    violas::AccountState state(rpc_cli);
+
+    auto t = state.get_resource<Tea>(dealer2.address, tag);
+    if (t != std::nullopt)
+    {
+    }
 }

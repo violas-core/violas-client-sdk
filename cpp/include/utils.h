@@ -139,6 +139,30 @@ void operator>>(std::istringstream &&iss, std::array<uint8_t, N> &bytes)
 //     return __ret_is;
 // }
 
+inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
+{
+    std::vector<uint8_t> bytes;
+
+    auto beg = std::begin(str);
+    auto end = std::end(str);
+
+    if (*beg == '0' && *(beg + 1) == 'x')
+        beg += 2;
+
+    while (beg != end)
+    {
+        std::stringstream ss;
+        uint16_t byte = 0;
+
+        ss << *beg++ << *beg++; // read two chars
+        ss >> std::hex >> byte;
+
+        bytes.push_back(byte);
+    }
+
+    return bytes;
+}
+
 inline void set_stdin_echo(bool enable)
 {
     struct termios tty;
@@ -173,28 +197,28 @@ std::string fmt(Args... args)
     return oss.str();
 }
 
-// inline bool is_not_space(char ch)
-// {
-//     return !std::isspace(ch);
-// }
+inline bool is_not_space(char ch)
+{
+    return !std::isspace(ch);
+}
 
-// std::string trim_left(std::string s)
-// {
-//     s.erase(s.begin(),
-//             std::find_if(s.begin(), s.end(), is_not_space));
-//     return s;
-// }
+inline std::string trim_left(std::string s)
+{
+    s.erase(s.begin(),
+            std::find_if(s.begin(), s.end(), is_not_space));
+    return s;
+}
 
-// std::string trim_right(std::string s)
-// {
-//     s.erase(std::find_if(s.rbegin(), s.rend(), is_not_space).base(),
-//             s.end());
-//     return s;
-// }
+inline std::string trim_right(std::string s)
+{
+    s.erase(std::find_if(s.rbegin(), s.rend(), is_not_space).base(),
+            s.end());
+    return s;
+}
 
-// std::string trim(std::string s)
-// {
-//     return trim_left(trim_right(std::move(s)));
-// }
+inline std::string trim(std::string s)
+{
+    return trim_left(trim_right(std::move(s)));
+}
 
 #endif

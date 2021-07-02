@@ -1,4 +1,4 @@
-add_library(violas_sdk violas_sdk2.cpp)
+add_library(violas_sdk violas_sdk2.cpp json_rpc.cpp)
 
 # target_link_libraries(violas_client)
 

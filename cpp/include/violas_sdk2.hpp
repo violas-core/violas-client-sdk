@@ -1,6 +1,10 @@
 #include <string_view>
 #include <string>
+#include <optional>
+#include <variant>
 #include <client.hpp>
+#include "bcs_serde.hpp"
+#include "json_rpc.hpp"
 
 namespace violas
 {
@@ -148,4 +152,89 @@ namespace violas
     using bank_ptr = std::shared_ptr<Bank>;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    inline BcsSerde &operator&&(BcsSerde &serde, TypeTag &tag)
+    {
+        return serde && tag.address && tag.module_name && tag.resource_name;
+    }
+
+    // std::variant TypeTag
+    // {
+    //     bool,
+    //     uint8_t,
+    //     uint64_t,
+    //     __uint128__,
+    //     Address,
+    //     Signer,
+    //     std::vector<TypeTag>,
+    //     StructTag,
+    // };
+
+    struct StructTag
+    {
+        Address address;
+        std::string module;
+        std::string name;
+        // TODO: rename to "type_args" (or better "ty_args"?)
+        std::vector<StructTag> type_params;
+    };
+
+    struct ModuleId
+    {
+        Address AccountAddress;
+        std::string name;
+    };
+
+    struct AccessPath
+    {
+        std::variant<ModuleId, StructTag> path;
+
+        AccessPath(const StructTag &tag)
+        {
+            path = tag;
+        }
+
+        BcsSerde& serde(BcsSerde& serde)
+        {
+           return  serde && path;
+            
+        }
+    };
+
+    class AccountState
+    {
+        std::map<std::vector<uint8_t>, std::vector<uint8_t>> _resources;
+        json_rpc::client_ptr _client;
+
+    public:
+        AccountState(const std::string &hex);
+
+        AccountState(json_rpc::client_ptr client) : _client(client) {}
+
+        template <typename T>
+        std::optional<T> get_resource(Address address, TypeTag tag)
+        {
+            get_account_state(address);
+
+            BcsSerde serde;
+            serde &&tag;
+
+            auto iter = _resources.find(serde.bytes());
+            if (iter != end(_resources))
+            {
+                T t;
+
+                BcsSerde serde(iter->second);
+
+                serde &&t;
+
+                return t;
+            }
+            else
+                return {};
+        }
+
+    protected:
+        void get_account_state(Address address);
+    };
+
 } // namespace violas

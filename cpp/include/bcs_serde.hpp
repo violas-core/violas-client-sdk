@@ -2,8 +2,10 @@
 #define SERDE_BCS_HPP
 #include <iomanip>
 #include <sstream>
+#include <optional>
+#include <variant>
 
-class BinSerde;
+class BcsSerde;
 
 template <typename T>
 concept has_serde = requires(T t)
@@ -11,15 +13,15 @@ concept has_serde = requires(T t)
     // check if T has the method serde
     // struct T
     // {
-    //      BinSerde& serde(BomSerde& bs) { return bs; }
+    //      BcsSerde& serde(BomSerde& bs) { return bs; }
     // }
-    std::same_as<decltype(t.serde(std::declval<BinSerde &>())), BinSerde &>;
+    std::same_as<decltype(t.serde(std::declval<BcsSerde &>())), BcsSerde &>;
 };
 
 //
 //  Binary Serialization and Deserialization
 //
-class BinSerde
+class BcsSerde
 {
     std::vector<uint8_t> _bytes;
     std::vector<uint8_t>::iterator _iterator = std::begin(_bytes);
@@ -50,35 +52,39 @@ class BinSerde
         size_t value = 0;
         uint8_t v = 0;
 
-        do
+        for (size_t i = 0; i < 4; i++)
         {
-            //is.read((char *)&v, 1);
             v = *_iterator++;
 
             // get the low 7 bits
-            value = v & 0b01111111; //0x80
+            size_t t = v & 0b01111111; //0x80
 
-            // remain the highest bit
-            v >>= 7;
+            // Shift 7 bits to left
+            t <<= 7 * i;
 
-            if (v)
-                value <<= 7;
-        } while (v);
+            // and low bits
+            value |= t;
+
+            // break loop if the highest bit is zero
+            if (!(v & 0b10000000))
+                break;
+        }
 
         return value;
     }
 
 public:
-    BinSerde() { _is_serialization = true; }
+    BcsSerde() { _is_serialization = true; }
 
-    BinSerde(std::vector<u_int8_t> &) = delete;
-    const BinSerde &operator=(const BinSerde &bs) = delete;
-
-    BinSerde(std::vector<u_int8_t> &&bytes)
+    BcsSerde(const std::vector<uint8_t> &bytes) : _is_serialization(false)
     {
-        _is_serialization = false;
-        _bytes = move(bytes);
+        _bytes = bytes;
+        _iterator = std::begin(_bytes);
     }
+
+    const BcsSerde &operator=(const BcsSerde &bs) = delete;
+
+    std::vector<uint8_t> bytes() { return _bytes; }
 
     void reset() { _iterator = std::begin(_bytes); }
     void set_des()
@@ -107,7 +113,7 @@ public:
     //  Serialize a class that has serde
     //
     template <has_serde T>
-    BinSerde &operator&&(T &t)
+    BcsSerde &operator&&(T &t)
     {
         return t.serde(*this);
     }
@@ -116,7 +122,7 @@ public:
     //  Integer, sunch char, short, int, long
     //
     template <std::integral T>
-    BinSerde &operator&&(const T &t)
+    BcsSerde &operator&&(const T &t)
     {
         if (_is_serialization)
         {
@@ -140,7 +146,7 @@ public:
     //
     //  for string
     //
-    BinSerde &operator&&(std::string &t)
+    BcsSerde &operator&&(std::string &t)
     {
         if (_is_serialization)
         {
@@ -164,7 +170,7 @@ public:
     //
     template <typename T,
               template <class TElem, typename Alloc = std::allocator<TElem>> class Container>
-    BinSerde &operator&&(Container<T> &container)
+    BcsSerde &operator&&(Container<T> &container)
     {
         if (_is_serialization)
         {
@@ -194,7 +200,7 @@ public:
     template <typename T,
               template <typename Key, class Compare = std::less<Key>, class Allocator = std::allocator<Key>>
               typename Set>
-    BinSerde &operator&&(Set<T> &set)
+    BcsSerde &operator&&(Set<T> &set)
     {
         if (_is_serialization)
         {
@@ -226,10 +232,10 @@ public:
     // For std::pair
     //
     template <typename Key, typename Value>
-    BinSerde &operator&&(std::pair<Key, Value> &p)
+    BcsSerde &operator&&(std::pair<Key, Value> &p)
     {
-        *this &&p.first;
-        *this &&p.second;
+        (*this) && p.first;
+        (*this) && p.second;
 
         return *this;
     }
@@ -238,7 +244,7 @@ public:
     //  For container with key and value
     //
     template <typename Key, typename Value>
-    BinSerde &operator&&(std::map<Key, Value> &container)
+    BcsSerde &operator&&(std::map<Key, Value> &container)
     {
         if (_is_serialization)
         {
@@ -246,7 +252,10 @@ public:
 
             for (auto v : container)
             {
-                *this &&v;
+                Key k = v.first;
+
+                (*this) && k;
+                (*this) && v.second;
             }
         }
         else //deserialize
@@ -254,11 +263,14 @@ public:
             container.clear();
 
             size_t size = decode_integer();
-            std::pair<Key, Value> p;
+            for (size_t i = 0; i < size; i++)
+            {
+                std::pair<Key, Value> p;
 
-            *this &&p;
+                (*this) && p;
 
-            container.insert(p);
+                container.insert(p);
+            }
         }
 
         return *this;
@@ -268,7 +280,7 @@ public:
     //  serialize std::tuple
     //
     template <typename... Args>
-    BinSerde &operator&&(std::tuple<Args...> &tup)
+    BcsSerde &operator&&(std::tuple<Args...> &tup)
     {
         std::apply([&](auto &...args)
                    { ((*this && args), ...); },
@@ -281,7 +293,7 @@ public:
     //  serialize std::array
     //
     template <typename T, size_t N>
-    BinSerde &operator&&(std::array<T, N> &arr)
+    BcsSerde &operator&&(std::array<T, N> &arr)
     {
         for (auto &a : arr)
             *this &&a;
@@ -293,7 +305,7 @@ public:
     //  serialize std::array
     //
     template <typename T, size_t N>
-    BinSerde &operator&&(T arr[])
+    BcsSerde &operator&&(T arr[])
     {
         std::for_each(arr, arr + N, [this](T &a)
                       { *this &&a; });
@@ -304,7 +316,7 @@ public:
     //  serialize and deserialize for std::optional
     //
     template <typename T>
-    BinSerde &operator&&(std::optional<T> &opt)
+    BcsSerde &operator&&(std::optional<T> &opt)
     {
         if (_is_serialization)
         {
@@ -334,6 +346,29 @@ public:
                 opt = t;
             }
         }
+
+        return *this;
+    }
+
+    template <typename... Args>
+    BcsSerde &operator&&(std::variant<Args...> &var)
+    {
+        if (_is_serialization)
+        {
+            encode_integer(var.index());
+        }
+        else //deserialize
+        {
+            size_t index = decode_integer();
+        }
+
+        std::visit([this](auto &arg)
+                   {
+                       //using T = std::decay_t<decltype(arg)>;
+                       //T t;
+                       //*this && arg;
+                   },
+                   var);
 
         return *this;
     }

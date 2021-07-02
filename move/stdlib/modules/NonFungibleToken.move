@@ -220,7 +220,7 @@ module NonFungibleToken {
         let _token = get_nft_token<Token>(sig, token_id);
     }
     //
-    //
+    //  Accept NFT tokens
     //
     public fun accept<Token: store>(sig: &signer) {
         let sender = Signer::address_of(sig);

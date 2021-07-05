@@ -157,17 +157,16 @@ namespace violas
         return serde && tag.address && tag.module_name && tag.resource_name;
     }
 
-    // std::variant TypeTag
-    // {
-    //     bool,
-    //     uint8_t,
-    //     uint64_t,
-    //     __uint128__,
-    //     Address,
-    //     Signer,
-    //     std::vector<TypeTag>,
-    //     StructTag,
-    // };
+    struct StructTag;
+    using _TypeTag = std::variant<
+        bool,
+        uint8_t,
+        uint64_t,
+        __uint128_t,
+        Address,
+        std::string, // Signer,
+        std::vector<std::string>,
+        StructTag>;
 
     struct StructTag
     {
@@ -175,13 +174,23 @@ namespace violas
         std::string module;
         std::string name;
         // TODO: rename to "type_args" (or better "ty_args"?)
-        std::vector<StructTag> type_params;
+        std::vector<_TypeTag> type_params;
+
+        BcsSerde &serde(BcsSerde &serde)
+        {
+            return serde && address && module && name && type_params;
+        }
     };
 
     struct ModuleId
     {
-        Address AccountAddress;
+        Address address;
         std::string name;
+
+        BcsSerde &serde(BcsSerde &serde)
+        {
+            return serde && address && name;
+        }
     };
 
     struct AccessPath
@@ -193,10 +202,14 @@ namespace violas
             path = tag;
         }
 
-        BcsSerde& serde(BcsSerde& serde)
+        AccessPath(const ModuleId &module_id)
         {
-           return  serde && path;
-            
+            path = module_id;
+        }
+
+        BcsSerde &serde(BcsSerde &serde)
+        {
+            return serde && path;
         }
     };
 
@@ -211,12 +224,14 @@ namespace violas
         AccountState(json_rpc::client_ptr client) : _client(client) {}
 
         template <typename T>
-        std::optional<T> get_resource(Address address, TypeTag tag)
+        std::optional<T> get_resource(Address address, StructTag tag)
         {
             get_account_state(address);
 
+            AccessPath path(tag);
+
             BcsSerde serde;
-            serde &&tag;
+            serde &&path;
 
             auto iter = _resources.find(serde.bytes());
             if (iter != end(_resources))

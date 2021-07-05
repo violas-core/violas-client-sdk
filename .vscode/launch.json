@@ -13,7 +13,7 @@
             "program": "${workspaceFolder}/build/debug/deployment/deployment",
             "args": [
                 "-u",
-                "http://localhost:41785",
+                "http://localhost:45093",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",

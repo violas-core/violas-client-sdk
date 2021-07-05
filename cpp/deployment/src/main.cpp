@@ -160,7 +160,7 @@ void mint_tea_nft(client_ptr client)
 
     cout << "u(e) = " << u(e) << endl;
 
-    vector<uint8_t> identity = {1, 1, 2, 2, 3, 3, 4, (uint8_t)u(e)};
+    vector<uint8_t> identity = {'1', '1', '2', '2', '3', '3', '4', (uint8_t)u(e)};
     string wuyi = "MountWuyi";
     vector<uint8_t> manufacturer(wuyi.begin(), wuyi.end());
 
@@ -221,6 +221,21 @@ struct Tea
     }
 };
 
+ostream &operator<<(ostream &os, const Tea &tea)
+{
+    string identity(tea.identity.begin(), tea.identity.end());
+    string manufacture(begin(tea.manufacture), end(tea.manufacture));
+
+    cout << "{ "
+         << "Identity : " << identity << ", "
+         << "Kind : " << short(tea.kind) << ", "
+         << "manufacture : " << manufacture << ", "
+         << "Date : " << tea.date
+         << " }";
+
+    return os;
+}
+
 void query_nft(client_ptr client, string url)
 {
     using namespace json_rpc;
@@ -254,7 +269,11 @@ void query_nft(client_ptr client, string url)
     // BcsSerde serde(move(data));
     // serde &&account_data;
 
-    TypeTag tag{Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}, "MountWuyi", "Tea"};
+    StructTag tag{
+        Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+        "NonFungibleToken",
+        "NonFungibleToken",
+        {StructTag{Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}, "MountWuyi", "Tea"}}};
     // {
     //     BcsSerde serde;
     //     auto tag_ser = (serde && tag).bytes();
@@ -263,8 +282,12 @@ void query_nft(client_ptr client, string url)
     // }
     violas::AccountState state(rpc_cli);
 
-    auto t = state.get_resource<Tea>(dealer2.address, tag);
-    if (t != std::nullopt)
+    auto opt_tea = state.get_resource<vector<Tea>>(dealer2.address, tag);
+    if (opt_tea != std::nullopt)
     {
+        for (const auto &t : *opt_tea)
+        {
+            cout << t << endl;
+        }
     }
 }

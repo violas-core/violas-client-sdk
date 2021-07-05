@@ -122,7 +122,7 @@ public:
     //  Integer, sunch char, short, int, long
     //
     template <std::integral T>
-    BcsSerde &operator&&(const T &t)
+    BcsSerde &operator&&(T &t)
     {
         if (_is_serialization)
         {
@@ -176,7 +176,7 @@ public:
         {
             encode_integer(container.size());
 
-            for (const auto &v : container)
+            for (auto &v : container)
             {
                 *this &&v;
             }
@@ -186,7 +186,7 @@ public:
             size_t size = decode_integer();
             container.resize(size);
 
-            for (const auto &v : container)
+            for (auto &v : container)
             {
                 *this &&v;
             }
@@ -323,20 +323,24 @@ public:
             if (opt != std::nullopt)
             {
                 auto v = opt.value();
+                uint8_t flag = 1;
 
-                *this && (uint8_t)1;
+                *this &&flag;
                 *this &&v;
             }
             else
-                *this && (uint8_t)0;
+            {
+                uint8_t flag = 0;
+                *this &&flag;
+            }
         }
         else //deserialize
         {
-            uint8_t is_nullopt;
+            uint8_t flag;
 
-            *this &&is_nullopt;
+            *this &&flag;
 
-            if (is_nullopt)
+            if (!flag)
                 opt = std::nullopt;
             else
             {
@@ -366,7 +370,7 @@ public:
                    {
                        //using T = std::decay_t<decltype(arg)>;
                        //T t;
-                       //*this && arg;
+                       (*this) && arg;
                    },
                    var);
 

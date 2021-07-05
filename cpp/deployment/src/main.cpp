@@ -247,39 +247,12 @@ void query_nft(client_ptr client, string url)
 
     auto rpc_cli = json_rpc::Client::create(url);
 
-    // ostringstream oss;
-    // oss << dealer2.address;
-
-    // auto as = rpc_cli->get_account_state_blob(oss.str());
-
-    // cout << as.blob << endl;
-
-    // auto bytes = hex_to_bytes(as.blob);
-
-    // vector<uint8_t> data;
-    // {
-    //     BcsSerde serde(move(bytes));
-    //     serde &&data;
-    // }
-
-    // //std::pair<vector<uint8_t>, vector<uint8_t>> data;
-
-    // map<vector<uint8_t>, vector<uint8_t>> account_data;
-
-    // BcsSerde serde(move(data));
-    // serde &&account_data;
-
     StructTag tag{
         Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
         "NonFungibleToken",
         "NonFungibleToken",
         {StructTag{Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}, "MountWuyi", "Tea"}}};
-    // {
-    //     BcsSerde serde;
-    //     auto tag_ser = (serde && tag).bytes();
 
-    //     auto size = tag_ser.size();
-    // }
     violas::AccountState state(rpc_cli);
 
     auto opt_tea = state.get_resource<vector<Tea>>(dealer2.address, tag);

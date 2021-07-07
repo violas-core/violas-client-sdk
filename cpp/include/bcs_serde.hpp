@@ -143,6 +143,18 @@ public:
 
         return *this;
     }
+
+    BcsSerde &operator&&(bool &t)
+    {
+        uint8_t v = t;
+
+        (*this) && v;
+
+        t = v;
+
+        return *this;
+    }
+
     //
     //  for string
     //

@@ -104,4 +104,21 @@ void aes_256_cbc_decrypt(std::string_view password, InputIterator first, InputIt
     }
 }
 
+inline std::array<uint8_t, 32> sha3_256(void* msg, size_t len)
+{
+    std::array<uint8_t, 32> output;
+    uint32_t size = output.size();
+
+    EVP_MD_CTX *mdctx;
+    mdctx = EVP_MD_CTX_create();
+    
+    EVP_DigestInit_ex(mdctx, EVP_sha3_256(), NULL);
+    EVP_DigestUpdate(mdctx, msg, len);
+    EVP_DigestFinal_ex(mdctx, output.data(), &size);
+    
+    EVP_MD_CTX_destroy(mdctx);
+
+    return output;
+}
+
 #endif

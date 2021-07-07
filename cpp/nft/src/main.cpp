@@ -8,6 +8,9 @@
 #include <bcs_serde.hpp>
 #include <json_rpc.hpp>
 #include <utils.h>
+#include <console.hpp>
+#include <ssl_aes.hpp>
+#include "tea.hpp"
 
 using namespace std;
 using namespace violas;
@@ -19,6 +22,8 @@ void register_mountwuyi_tea_nft(client_ptr client);
 void mint_tea_nft(client_ptr client);
 void transfer(client_ptr client);
 void query_nft(client_ptr client, string url);
+TokenId compute_token_id(const Tea &t);
+optional<Address> get_owner(string url, Address admin, TokenId token_id);
 
 int main(int argc, char *argv[])
 {
@@ -40,37 +45,94 @@ int main(int argc, char *argv[])
              << "Dealer 1   : " << dealer1.address << "\n"
              << "Dealer 2   : " << dealer2.address << endl;
 
-        using handler = function<void(client_ptr ptr)>;
+        auto console = Console::create("NFT$");
+
+        console->add_completion("exit");
+
+        using handler = function<void(istringstream & params)>;
         //using handler = void (*)(client_ptr client);
-        map<int, handler> handlers = {
-            {0, deploy_stdlib},
-            {1, register_mountwuyi_tea_nft},
-            {2, mint_tea_nft},
-            {3, transfer},
-            {4, [=](client_ptr client)
+        map<string, handler> commands = {
+            {"deploy", [=](istringstream &params)
+             { deploy_stdlib(client); }},
+            {"register", [=](istringstream &params)
+             { register_mountwuyi_tea_nft(client); }},
+            {"mint", [=](istringstream &params)
+             { mint_tea_nft(client); }},
+            {"transfer", [=](istringstream &params)
+             { transfer(client); }},
+            {"query", [=](istringstream &params)
              {
                  query_nft(client, args.url);
              }},
-        };
+            {"get_owner", [=](istringstream &params)
+             {
+                 TokenId id;
 
-        size_t index;
-        do
+                 params >> id;
+
+                 auto opt_addr = get_owner(args.url, admin.address, id);
+                 if (opt_addr != nullopt)
+                     cout << *opt_addr << endl;
+             }}};
+
+        for (auto cmd : commands)
         {
-            cout << "0 - Deploy all modules\n"
-                    "1 - Register Tea NFT\n"
-                    "2 - Mint a Tea NFT\n"
-                    "3 - Transfer Tea NFT from dealer 1 to dealer 2\n"
-                    "4 - view Tea NFT\n"
-                 << "Please input function index :";
+            console->add_completion(cmd.first);
+        }
 
-            cin >> index;
+        //
+        //  Loop to read a line
+        //
+        for (auto line = trim(console->read_line());
+             line != "exit";
+             line = trim(console->read_line()))
+        {
+            istringstream iss(line);
+            string cmd;
 
-            auto fun = handlers.find(index);
-            if (fun != end(handlers))
-                fun->second(client);
-            else
-                break;
-        } while (true);
+            // Read a command
+            iss >> cmd;
+
+            auto iter = commands.find(cmd);
+            if (iter != end(commands))
+            {
+                iter->second(iss);
+            }
+
+            console->add_history(line);
+        }
+
+        // using handler = function<void(client_ptr ptr)>;
+        // //using handler = void (*)(client_ptr client);
+        // map<int, handler> handlers = {
+        //     {0, deploy_stdlib},
+        //     {1, register_mountwuyi_tea_nft},
+        //     {2, mint_tea_nft},
+        //     {3, transfer},
+        //     {4, [=](client_ptr client)
+        //      {
+        //          query_nft(client, args.url);
+        //      }},
+        // };
+
+        // size_t index;
+        // do
+        // {
+        //     cout << "0 - Deploy all modules\n"
+        //             "1 - Register Tea NFT\n"
+        //             "2 - Mint a Tea NFT\n"
+        //             "3 - Transfer Tea NFT from dealer 1 to dealer 2\n"
+        //             "4 - view Tea NFT\n"
+        //          << "Please input function index :";
+
+        //     cin >> index;
+
+        //     auto fun = handlers.find(index);
+        //     if (fun != end(handlers))
+        //         fun->second(client);
+        //     else
+        //         break;
+        // } while (true);
     }
     catch (const std::exception &e)
     {
@@ -156,11 +218,11 @@ void mint_tea_nft(client_ptr client)
     auto &dealer2 = accounts[2];
 
     default_random_engine e(clock());
-    uniform_int_distribution<unsigned> u(0, 255);
+    uniform_int_distribution<unsigned> u(0, 26);
 
     cout << "u(e) = " << u(e) << endl;
 
-    vector<uint8_t> identity = {'1', '1', '2', '2', '3', '3', '4', (uint8_t)u(e)};
+    vector<uint8_t> identity = {'1', '2', '3', '4', '5', '6', uint8_t('a' + u(e)), uint8_t('a' + u(e))};
     string wuyi = "MountWuyi";
     vector<uint8_t> manufacturer(wuyi.begin(), wuyi.end());
 
@@ -208,34 +270,6 @@ void transfer(client_ptr client)
                                 {dealer2.address, uint64_t(0), vector<uint8_t>{0x1, 0x2, 0x3}});
 }
 
-struct Tea
-{
-    vector<uint8_t> identity;
-    uint8_t kind;
-    vector<uint8_t> manufacture;
-    uint64_t date;
-
-    BcsSerde &serde(BcsSerde &bs)
-    {
-        return bs && identity && kind && manufacture && date;
-    }
-};
-
-ostream &operator<<(ostream &os, const Tea &tea)
-{
-    string identity(tea.identity.begin(), tea.identity.end());
-    string manufacture(begin(tea.manufacture), end(tea.manufacture));
-
-    cout << "{ "
-         << "Identity : " << identity << ", "
-         << "Kind : " << short(tea.kind) << ", "
-         << "manufacture : " << manufacture << ", "
-         << "Date : " << tea.date
-         << " }";
-
-    return os;
-}
-
 void query_nft(client_ptr client, string url)
 {
     using namespace json_rpc;
@@ -263,4 +297,47 @@ void query_nft(client_ptr client, string url)
             cout << t << endl;
         }
     }
+}
+
+optional<Address> get_owner(string url, Address admin, TokenId token_id)
+{
+    using namespace json_rpc;
+    auto rpc_cli = json_rpc::Client::create(url);
+
+    violas::AccountState state(rpc_cli);
+
+    StructTag tag{
+        Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+        "NonFungibleToken",
+        "Info",
+        {StructTag{Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}, "MountWuyi", "Tea"}}};
+
+    auto opt_tea = state.get_resource<TeaInfo>(VIOLAS_ROOT_ADDRESS, tag);
+    if (opt_tea != nullopt)
+    {
+        vector<uint8_t> id;
+        copy(begin(token_id), end(token_id), back_inserter<>(id));
+
+        auto iter = opt_tea->owners.find(id);
+        if (iter != end(opt_tea->owners))
+        {
+            return iter->second;
+        }
+    }
+
+    return {};
+}
+
+TokenId compute_token_id(const Tea &tea)
+{
+    BcsSerde serde;
+    auto t = tea;
+
+    serde &&t;
+
+    auto bytes = serde.bytes();
+
+    auto token_id = sha3_256(bytes.data(), bytes.size());
+
+    return token_id;
 }

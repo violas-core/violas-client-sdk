@@ -8,6 +8,7 @@
 
 namespace violas
 {
+    const Address VIOLAS_ROOT_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0A, 0x55, 0x0C, 0x18});    //0xA550C18
     const Address BANK_ADMIN_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42, 0x41, 0x4E, 0x4B});     //BANK,00000000000000000000000042414E4B
     const Address EXCHANGE_ADMIN_ADDRESS = Address({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x45, 0x58, 0x43, 0x48}); //EXCH,00000000000000000000000045584348
 

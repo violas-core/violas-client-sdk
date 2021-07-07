@@ -72,10 +72,10 @@ namespace json_rpc
             auto rpc_response = cli.request(methods::POST, "/", method, content_type)
                                     .then([=](http_response response) -> pplx::task<json::value>
                                           {
-                                              printf("Response status code %u returned.\n", response.status_code());
+                                              // printf("Response status code %u returned.\n", response.status_code());
 
-                                              //   if( response.status_code() != 200 )
-                                              //     __throw_runtime_error(response.extract_json().get().serialize().c_str());
+                                              if (response.status_code() != 200)
+                                                  __throw_runtime_error(response.extract_string().get().c_str());
 
                                               return response.extract_json();
                                           })

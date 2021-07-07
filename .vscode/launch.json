@@ -10,10 +10,10 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch Deployment",
-            "program": "${workspaceFolder}/build/debug/deployment/deployment",
+            "program": "${workspaceFolder}/build/debug/nft/nft",
             "args": [
                 "-u",
-                "http://localhost:45093",
+                "http://localhost:39701",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",

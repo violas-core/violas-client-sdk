@@ -13,7 +13,7 @@ link_directories(../../rust/violas-client/target/debug)
 add_subdirectory(src)
 
 # executable deployment
-add_subdirectory(deployment)
+add_subdirectory(nft)
 
 # executable cli
 add_subdirectory(violas_cli)

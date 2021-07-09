@@ -470,6 +470,11 @@ namespace violas
 
         auto as = _client->get_account_state_blob(oss.str());
 
+        if(as.blob.empty())
+            __throw_runtime_error("Failed to get account state due to blob is null.");
+
+        // cout << "blob = " <<  as.blob << endl;
+
         auto bytes = hex_to_bytes(as.blob);
 
         // Deserialize to vector

@@ -87,6 +87,7 @@ public:
     std::vector<uint8_t> bytes() { return _bytes; }
 
     void reset() { _iterator = std::begin(_bytes); }
+    
     void set_des()
     {
         _is_serialization = false;

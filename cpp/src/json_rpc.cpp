@@ -91,10 +91,11 @@ namespace json_rpc
             asp.version = result["version"].as_integer();
 
             auto blob = result["blob"];
-            if (blob.is_null())
-                __throw_runtime_error(("fun : get_account_state_blob, error : " + rpc_response.serialize()).c_str());
+            // if (blob.is_null())
+            //     __throw_runtime_error(("fun : get_account_state_blob, error : " + rpc_response.serialize()).c_str());
 
-            asp.blob = blob.as_string();
+            if (!blob.is_null())
+                asp.blob = blob.as_string();
 
             asp.proof.ledger_info_to_transaction_info_proof = result["proof"]["ledger_info_to_transaction_info_proof"].as_string();
             asp.proof.transaction_info = result["proof"]["transaction_info"].as_string();

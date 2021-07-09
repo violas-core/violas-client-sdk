@@ -73,27 +73,27 @@ module NonFungibleToken {
     //
     fun increment_nft_amount<Token: store>() 
     acquires Info {
-        let limited_meta = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
         
-        * (&mut limited_meta.amount) = limited_meta.amount + 1;
+        * (&mut info.amount) = info.amount + 1;
         
-        assert(limited_meta.amount <= limited_meta.total, 1000);
+        assert(info.amount <= info.total, 1000);
     }
     //
     //  check if the address of admin 
     //
     fun check_admin_permission<Token: store>(admin: address)
     acquires Info {
-        let limited_meta = borrow_global<Info<Token>>(NFT_PUBLISHER);
+        let info = borrow_global<Info<Token>>(NFT_PUBLISHER);
 
-        assert(limited_meta.admin == admin, 10001);
+        assert(info.admin == admin, 10001);
     }
 
     public fun register<Token: store>(sig: &signer, limited: bool, total: u64, admin: address) {
         let sender = Signer::address_of(sig);
         assert(sender == NFT_PUBLISHER, 8000);
 
-        let limited_meta = Info<Token> {
+        let info = Info<Token> {
             limited: limited,
             total: total,
             amount: 0,
@@ -103,7 +103,7 @@ module NonFungibleToken {
             burn_events: Event::new_event_handle<BurnEvent>(sig)
         };
 
-        move_to<Info<Token>>(sig, limited_meta);        
+        move_to<Info<Token>>(sig, info);        
     }    
     //
     //  Get the number of balance for Token
@@ -169,37 +169,45 @@ module NonFungibleToken {
     //
     public fun owner<Token:key+store>(token_id: &vector<u8>): Option<address>
     acquires Info {
-        let limited_meta = borrow_global<Info<Token>>(NFT_PUBLISHER);
+        let info = borrow_global<Info<Token>>(NFT_PUBLISHER);
 
-        Map::get<vector<u8>, address>(&limited_meta.owners, token_id)
+        Map::get<vector<u8>, address>(&info.owners, token_id)
     }
     ///
     /// Mint a NFT to a receiver
     /// 
     public fun mint<Token: copy + drop + store>(sig: &signer, receiver: address, token: Token) : bool
     acquires NonFungibleToken, Info  {
+
         let sender = Signer::address_of(sig);
 
         check_admin_permission<Token>(sender);
+
+        // The receiver must has called method 'accept_token' previously
+        assert(exists<NonFungibleToken<Token>>(receiver), Errors::not_published(EPAYEE_CANT_ACCEPT_NFT_TYPE));
         
-        let token_id = make_token_id<Token>(&token);
-                
-        let limited_meta = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
-        let ret = Map::insert(&mut limited_meta.owners, token_id, receiver);
+        let token_id = make_token_id<Token>(&token);                
+
+        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        
+        // Insert to global map
+        let ret = Map::insert(&mut info.owners, copy token_id, receiver);
         
         // Abort if token id has already existed            
         assert( ret, Errors::invalid_argument(ENFT_TOKEN_HAS_ALREADY_EXISTED) );  
         
+        // Emit sent event
+        Event::emit_event(&mut info.mint_events, MintEvent{ token_id, receiver });
+        
         // Increment NFT amount
         increment_nft_amount<Token>();
-
-        // The receiver must has called method 'accept_token' previously
-        assert(exists<NonFungibleToken<Token>>(receiver), Errors::not_published(EPAYEE_CANT_ACCEPT_NFT_TYPE));
-
+        //
+        //  Deposite NFT to receiver        
+        //
         let receiver_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(receiver);    
+                
+        Vector::push_back<Token>(&mut receiver_token_ref_mut.tokens, token);        
         
-        Vector::push_back<Token>(&mut receiver_token_ref_mut.tokens, token);
-
         true
     }     
     //
@@ -212,12 +220,15 @@ module NonFungibleToken {
         check_admin_permission<Token>(sender);
 
         // Remove owner via token id
-        let limited_meta = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
-        let ret = Map::erase<vector<u8>, address>(&mut limited_meta.owners, token_id);
+        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        let ret = Map::erase<vector<u8>, address>(&mut info.owners, token_id);
         assert(ret, Errors::invalid_argument(ENFT_TOKEN_HAS_NOT_EXISTED));
         
         // drop token by token id
         let _token = get_nft_token<Token>(sig, token_id);
+
+        // Emit sent event        
+        Event::emit_event(&mut info.burn_events, BurnEvent{ token_id: *token_id });
     }
     //
     //  Accept NFT tokens
@@ -240,6 +251,8 @@ module NonFungibleToken {
     public fun transfer<Token: drop + key + store>(sig: &signer, receiver: address, token_id: &vector<u8>, metadata: vector<u8>) 
     acquires NonFungibleToken, Info {
         let sender = Signer::address_of(sig);
+        assert(sender != receiver, 10010);
+
         let sender_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(sender);
         let index = get_token_index(&sender_token_ref_mut.tokens, token_id);
         

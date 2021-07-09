@@ -214,6 +214,17 @@ namespace violas
         }
     };
 
+    struct EventHandle
+    {
+        uint64_t counter;
+        std::vector<uint8_t> guid;
+
+        BcsSerde &serde(BcsSerde &serde)
+        {
+            return serde && counter && guid;
+        }
+    };
+
     class AccountState
     {
         std::map<std::vector<uint8_t>, std::vector<uint8_t>> _resources;

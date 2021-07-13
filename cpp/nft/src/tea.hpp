@@ -42,7 +42,7 @@ struct NftInfo
     uint64_t total;
     uint64_t amount;
     violas::Address admin;
-    std::map<std::vector<uint8_t>, violas::Address> owners;
+    std::map<std::vector<uint8_t>, std::vector<violas::Address>> owners;
     violas::EventHandle mint_event;
     violas::EventHandle burn_event;
 

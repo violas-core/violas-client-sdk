@@ -9,7 +9,7 @@ module NonFungibleToken {
     use 0x1::Errors;
     use 0x1::Event::{Self, EventHandle};
     use 0x1::Hash;    
-    use 0x1::Option::{Option};
+    use 0x1::Option::{Self, Option};
     use 0x1::Signer;
     use 0x1::Vector;
     use 0x2::Map::{Self, Map};
@@ -46,10 +46,10 @@ module NonFungibleToken {
         total: u64,
         amount: u64,
         admin: address, // has minting and burning permission
-        owners: Map<vector<u8>, address>,  // token id maps to owner's address
+        owners: Map<vector<u8>, vector<address>>,  // token id maps to owner's address
         mint_events: EventHandle<MintEvent>,
         burn_events: EventHandle<BurnEvent>,
-    }    
+    }
 
     struct NonFungibleToken<Token> has key, store {
         tokens: vector<Token>,                          // store all tokens that has different token id
@@ -98,7 +98,7 @@ module NonFungibleToken {
             total: total,
             amount: 0,
             admin,
-            owners:  Map::empty<vector<u8>, address>(),
+            owners:  Map::empty<vector<u8>, vector<address>>(),
             mint_events: Event::new_event_handle<MintEvent>(sig),
             burn_events: Event::new_event_handle<BurnEvent>(sig)
         };
@@ -171,7 +171,16 @@ module NonFungibleToken {
     acquires Info {
         let info = borrow_global<Info<Token>>(NFT_PUBLISHER);
 
-        Map::get<vector<u8>, address>(&info.owners, token_id)
+        let (index, found) = Map::find<vector<u8>, vector<address>>(&info.owners, token_id);
+        if( found ) {
+            let(_, owners) = Map::borrow(&info.owners, index);            
+            let length = Vector::length(owners);
+        
+            Option::some(*Vector::borrow(owners, length-1))
+        } else {
+            Option::none()
+        }
+        
     }
     ///
     /// Mint a NFT to a receiver
@@ -191,7 +200,7 @@ module NonFungibleToken {
         let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
         
         // Insert to global map
-        let ret = Map::insert(&mut info.owners, copy token_id, receiver);
+        let ret = Map::insert(&mut info.owners, copy token_id, Vector::singleton(receiver));
         
         // Abort if token id has already existed            
         assert( ret, Errors::invalid_argument(ENFT_TOKEN_HAS_ALREADY_EXISTED) );  
@@ -219,9 +228,9 @@ module NonFungibleToken {
                 
         check_admin_permission<Token>(sender);
 
-        // Remove owner via token id
+        // Erase all owners by token id
         let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
-        let ret = Map::erase<vector<u8>, address>(&mut info.owners, token_id);
+        let ret = Map::erase<vector<u8>, vector<address>>(&mut info.owners, token_id);
         assert(ret, Errors::invalid_argument(ENFT_TOKEN_HAS_NOT_EXISTED));
         
         // drop token by token id
@@ -283,8 +292,14 @@ module NonFungibleToken {
         
         // Update owner of token id
         let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
-        let ret = Map::update(&mut info.owners, &token_id, receiver);
-        assert(ret, 8004);
+        
+        let (index, found) = Map::find(&info.owners, &token_id);
+        if(found) {
+            let (_, value) = Map::borrow_mut(&mut info.owners, index);
+            Vector::push_back(value, receiver);
+        } else {
+            abort(8004)
+        };       
         
         // Emit sent event
         Event::emit_event(&mut sender_nft.sent_events, SentEvent{ token_id: copy token_id, payee: receiver, metadata: copy metadata });

@@ -26,9 +26,12 @@ void mint_tea_nft(client_ptr client);
 void transfer(client_ptr client, size_t account_index, Address receiver);
 optional<NftTea> get_nft(string url, Address addr);
 
-optional<Address> get_owner(string url, const TokenId &token_id);
+optional<vector<Address>> get_owners(string url, const TokenId &token_id);
 
-vector<Address> trace(string url, const TokenId &token_id);
+optional<Address> get_last_owner(string url, const TokenId &token_id);
+
+using handle = function<void(istringstream &params)>;
+map<string, handle> create_commands(client_ptr client, string url);
 
 int main(int argc, char *argv[])
 {
@@ -54,65 +57,7 @@ int main(int argc, char *argv[])
 
         console->add_completion("exit");
 
-        using handle = function<void(istringstream & params)>;
-
-        map<string, handle> commands = {
-            {"deploy", [=](istringstream &params)
-             { deploy_stdlib(client); }},
-            {"register", [=](istringstream &params)
-             { register_mountwuyi_tea_nft(client); }},
-            {"mint", [=](istringstream &params)
-             { mint_tea_nft(client); }},
-            {"transfer", [=](istringstream &params)
-             {
-                 size_t account_index = 0;
-                 Address receiver;
-
-                 check_istream_eof(params, "account_index");
-
-                 params >> account_index;
-
-                 check_istream_eof(params, "receiver address");
-                 params >> receiver;
-
-                 transfer(client, account_index, receiver);
-             }},
-            {"balance", [=](istringstream &params)
-             {
-                 Address addr;
-
-                 check_istream_eof(params, "account address");
-                 params >> addr;
-
-                 auto opt_nft_tea = get_nft(args.url, addr);
-                 if (opt_nft_tea != nullopt)
-                 {
-                     for (const auto &tea : opt_nft_tea->teas)
-                     {
-                         cout << tea << endl;
-                     }
-                 }
-             }},
-            {"owner", [=](istringstream &params)
-             {
-                 TokenId id;
-
-                 params >> id;
-
-                 auto opt_addr = get_owner(args.url, id);
-                 if (opt_addr != nullopt)
-                     cout << *opt_addr << endl;
-             }},
-            {"trace", [=](istringstream &params)
-             {
-                 TokenId token_id;
-
-                 check_istream_eof(params, "token id");
-                 params >> token_id;
-
-                 auto receivers = trace(args.url, token_id);
-             }}};
-
+        auto commands = create_commands(client, args.url);
         for (auto cmd : commands)
         {
             console->add_completion(cmd.first);
@@ -158,6 +103,72 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+map<string, handle> create_commands(client_ptr client, string url)
+{
+    return map<string, handle>{
+        {"deploy", [=](istringstream &params)
+         { deploy_stdlib(client); }},
+        {"register", [=](istringstream &params)
+         { register_mountwuyi_tea_nft(client); }},
+        {"mint", [=](istringstream &params)
+         { mint_tea_nft(client); }},
+        {"transfer", [=](istringstream &params)
+         {
+             size_t account_index = 0;
+             Address receiver;
+
+             check_istream_eof(params, "account_index");
+
+             params >> account_index;
+
+             check_istream_eof(params, "receiver address");
+             params >> receiver;
+
+             transfer(client, account_index, receiver);
+         }},
+        {"balance", [=](istringstream &params)
+         {
+             Address addr;
+
+             check_istream_eof(params, "account address");
+             params >> addr;
+
+             auto opt_nft_tea = get_nft(url, addr);
+             if (opt_nft_tea != nullopt)
+             {
+                 for (const auto &tea : opt_nft_tea->teas)
+                 {
+                     cout << tea << endl;
+                 }
+             }
+         }},
+        {"owner", [=](istringstream &params)
+         {
+             TokenId id;
+
+             params >> id;
+
+             auto opt_addr = get_last_owner(url, id);
+             if (opt_addr != nullopt)
+                 cout << *opt_addr << endl;
+         }},
+        {"trace", [=](istringstream &params)
+         {
+             TokenId token_id;
+
+             check_istream_eof(params, "token id");
+             params >> token_id;
+
+             auto receivers = get_owners(url, token_id);
+             if (receivers != nullopt)
+             {
+                 for (const auto receiver : *receivers)
+                 {
+                     cout << receiver << endl;
+                 }
+             }
+         }}};
+}
 void check_istream_eof(istream &is, string_view err)
 {
     if (is.eof())
@@ -277,7 +288,7 @@ void burn_tea_nft(client_ptr client)
     cout << "Mint a Tea NFT to dealer 1" << endl;
 }
 
-void transfer(client_ptr client, size_t account_index, Address receiver)
+void transfer(client_ptr client, size_t account_index, Address receiver, uint64_t index)
 {
     cout << "transfer Tea NFT ... " << endl;
 
@@ -289,7 +300,7 @@ void transfer(client_ptr client, size_t account_index, Address receiver)
     client->execute_script_file(account_index,
                                 "move/stdlib/scripts/nft_transfer_via_index.mv",
                                 {tea_tag},
-                                {dealer2.address, uint64_t(0), vector<uint8_t>{0x1, 0x2, 0x3}});
+                                {dealer2.address, index, vector<uint8_t>{0x1, 0x2, 0x3}});
 }
 
 TokenId compute_token_id(const Tea &tea)
@@ -348,7 +359,7 @@ optional<NftInfo> get_nft_info(string url)
     return state.get_resource<NftInfo>(VIOLAS_ROOT_ADDRESS, tag);
 }
 
-optional<Address> get_owner(string url, const TokenId &token_id)
+optional<vector<Address>> get_owners(string url, const TokenId &token_id)
 {
     auto opt_nft_info = get_nft_info(url);
     if (opt_nft_info != nullopt)
@@ -366,40 +377,13 @@ optional<Address> get_owner(string url, const TokenId &token_id)
     return {};
 }
 
-vector<Address> trace(string url, const TokenId &token_id)
+optional<Address> get_last_owner(string url, const TokenId &token_id)
 {
-    vector<Address> receivers;
-
-    auto opt_owner = get_owner(url, token_id);
-
-    if (opt_owner != nullopt)
+    auto owners = get_owners(url, token_id);
+    if (owners != nullopt)
     {
-        auto nft_tea = get_nft(url, *opt_owner);
-
-        if (nft_tea != nullopt)
-        {
-            nft_tea->received_event;
-        }
-
-        // StructTag tag{
-        //     Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-        //     "NonFungibleToken",
-        //     "NonFungibleToken",
-        //     {StructTag{Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}, "MountWuyi", "Tea"}}};
-
-        // auto opt_tea = state.get_resource<NftInfo>(VIOLAS_ROOT_ADDRESS, tag);
-        // if (opt_tea != nullopt)
-        // {
-        //     vector<uint8_t> id;
-        //     copy(begin(token_id), end(token_id), back_inserter<>(id));
-
-        //     auto iter = opt_tea->owners.find(id);
-        //     if (iter != end(opt_tea->owners))
-        //     {
-        //         //iter->second;
-        //     }
-        // }
+        return *(owners->rbegin());
     }
 
-    return receivers;
+    return {};
 }

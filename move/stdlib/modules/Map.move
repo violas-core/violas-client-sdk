@@ -5,7 +5,7 @@ address 0x2 {
 module Map {
     use 0x1::Compare;
     use 0x1::BCS;
-    use 0x1::Option::{Self, Option};
+    //use 0x1::Option::{Self, Option};
     use 0x1::Vector;
 
     // Element with key and value
@@ -34,14 +34,14 @@ module Map {
         (&e.key_, &e.value_)
     }
 
-    fun borrow_mut<Key, Value>(map: &mut Map<Key, Value>, index: u64): (&Key, &mut Value) {
+    public fun borrow_mut<Key, Value>(map: &mut Map<Key, Value>, index: u64): (&Key, &mut Value) {
         // Borrow an element by index
         let e = Vector::borrow_mut(&mut map.nodes, index);
         
         (&e.key_, &mut e.value_)
     }
 
-    fun find<Key, Value>(map: &Map<Key, Value>, key_: &Key): (u64, bool) {
+    public fun find<Key, Value>(map: &Map<Key, Value>, key_: &Key): (u64, bool) {
         // BCS seriliazes for Key
         let key_bcs = BCS::to_bytes(key_);
         let nodes = &map.nodes;
@@ -125,15 +125,15 @@ module Map {
         }  
     }
 
-    public fun get<Key, Value: copy>(map: &Map<Key, Value>, key: &Key) : Option<Value> {
-        let (index, found) = find(map, key);
-        if(found) {
-            let (_, value) = borrow(map, index);
-            Option::some<Value>(*value)
-        } else {
-            Option::none<Value>()
-        }
-    }
+    // public fun get<Key, Value: copy>(map: &Map<Key, Value>, key: &Key) : Option<&Value> {
+    //     let (index, found) = find(map, key);
+    //     if(found) {
+    //         let (_, value) = borrow(map, index);
+    //         Option::some<&Value>(value)
+    //     } else {
+    //         Option::none<&Value>()
+    //     }
+    // }
 
     
 }

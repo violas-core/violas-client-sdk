@@ -1,11 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    
-    diem_client::DiemClient,
-    AccountData, AccountStatus,
-};
+use crate::{diem_client::DiemClient, AccountData, AccountStatus};
 use anyhow::{bail, ensure, format_err, Error, Result};
 //use compiler::Compiler;
 use diem_client::{views, WaitForTransactionError};
@@ -21,8 +17,7 @@ use diem_types::{
     account_address::AccountAddress,
     account_config::{
         diem_root_address, from_currency_code_string, testnet_dd_account_address,
-        treasury_compliance_account_address, type_tag_for_currency_code,
-        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH, XDX_NAME, XUS_NAME,
+        treasury_compliance_account_address, type_tag_for_currency_code, XDX_NAME, XUS_NAME,
     },
     account_state::AccountState,
     chain_id::ChainId,
@@ -221,7 +216,12 @@ impl ClientProxy {
         })
     }
 
-    fn get_account_data(&self, address: &AccountAddress) -> Result<(usize, &AccountData)> {
+    /// Gets account data for the indexed address
+    pub fn get_account(&self, address_num: usize) -> Option<&AccountData> {
+        self.accounts.get(address_num)
+    }
+
+    fn get_account_data_and_id(&self, address: &AccountAddress) -> Result<(usize, &AccountData)> {
         for (index, acc) in self.accounts.iter().enumerate() {
             if &acc.address == address {
                 return Ok((index, acc));
@@ -232,6 +232,22 @@ impl ClientProxy {
                      accounts, run: 'account list'",
             address
         )
+    }
+
+    fn get_account_data(&self, address: &AccountAddress) -> Result<&AccountData> {
+        if let Some(account) = &self.diem_root_account {
+            if &account.address == address {
+                return Ok(account);
+            }
+        }
+
+        if let Some(account) = &self.tc_account {
+            if &account.address == address {
+                return Ok(account);
+            }
+        }
+
+        self.get_account_data_and_id(address).map(|(_, data)| data)
     }
 
     /// Returns the account index that should be used by user to reference this account
@@ -426,7 +442,7 @@ impl ClientProxy {
         let (sender_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
 
-        let (_, sender) = self.get_account_data(&sender_address)?;
+        let sender = self.get_account_data(&sender_address)?;
 
         let currency_to_add = space_delim_strings[2];
         let currency_code = from_currency_code_string(currency_to_add).map_err(|_| {
@@ -571,59 +587,6 @@ impl ClientProxy {
             ),
         }
     }
-
-    /// Allow executing arbitrary script in the network.
-    // pub fn enable_custom_script(
-    //     &mut self,
-    //     space_delim_strings: &[&str],
-    //     open_module: bool,
-    //     is_blocking: bool,
-    // ) -> Result<()> {
-    //     ensure!(
-    //         space_delim_strings[0] == "enable_custom_script" || space_delim_strings[0] == "s",
-    //         "inconsistent command '{}' for enable_custom_script",
-    //         space_delim_strings[0]
-    //     );
-    //     ensure!(
-    //         space_delim_strings.len() == 1,
-    //         "Invalid number of arguments for setting publishing option"
-    //     );
-    //     let script_body = {
-    //         let code = format!(
-    //             "
-    //             import 0x1.DiemTransactionPublishingOption;
-
-    //             main(account: signer) {{
-    //                 DiemTransactionPublishingOption.set_open_script(&account);
-    //                 {}
-
-    //                 return;
-    //             }}
-    //         ",
-    //             if open_module {
-    //                 "DiemTransactionPublishingOption.set_open_module(&account, true);"
-    //             } else {
-    //                 ""
-    //             }
-    //         );
-
-    //         let compiler = Compiler {
-    //             address: diem_types::account_config::CORE_CODE_ADDRESS,
-    //             skip_stdlib_deps: false,
-    //             extra_deps: vec![],
-    //         };
-    //         compiler
-    //             .into_script_blob("file_name", &code)
-    //             .expect("Failed to compile")
-    //     };
-    //     match self.diem_root_account {
-    //         Some(_) => self.association_transaction_with_local_diem_root_account(
-    //             TransactionPayload::Script(Script::new(script_body, vec![], vec![])),
-    //             is_blocking,
-    //         ),
-    //         None => unimplemented!(),
-    //     }
-    // }
 
     /// Modify the stored DiemVersion on chain.
     pub fn change_diem_version(
@@ -775,7 +738,7 @@ impl ClientProxy {
             .map_err(|_| format_err!("Invalid currency code {} specified", coin_currency))?;
         let gas_currency_code = gas_currency_code.or(Some(coin_currency));
 
-        let (sender_account_ref_id, sender) = self.get_account_data(sender_address)?;
+        let (sender_account_ref_id, sender) = self.get_account_data_and_id(sender_address)?;
         let program = transaction_builder::encode_peer_to_peer_with_metadata_script(
             type_tag_for_currency_code(currency_code),
             *receiver_address,
@@ -903,8 +866,7 @@ impl ClientProxy {
             "inconsistent command '{}' for compile_program",
             space_delim_strings[0]
         );
-        let (address, _) = self.get_account_address_from_parameter(space_delim_strings[1])?;
-        let file_path = space_delim_strings[2];
+        let file_path = space_delim_strings[1];
         let mut tmp_output_dir = TempPath::new();
         tmp_output_dir.persist();
         tmp_output_dir
@@ -914,12 +876,11 @@ impl ClientProxy {
         self.temp_files.push(tmp_output_path.to_path_buf());
 
         let mut args = format!(
-            "run -p move-lang --bin move-build -- {} -s {} -o {}",
+            "run -p move-lang --bin move-build -- {} -o {}",
             file_path,
-            address,
             tmp_output_path.display(),
         );
-        for dep in &space_delim_strings[3..] {
+        for dep in &space_delim_strings[2..] {
             args.push_str(&format!(" -d {}", dep));
         }
 
@@ -971,7 +932,7 @@ impl ClientProxy {
     ) -> Result<()> {
         let (sender_address, _) =
             self.get_account_address_from_parameter(space_delim_strings[1])?;
-        let (_, sender) = self.get_account_data(&sender_address)?;
+        let sender = self.get_account_data(&sender_address)?;
         let txn = self.create_txn_to_submit(program, &sender, None, None, None)?;
 
         self.submit_and_wait(&txn, true)?;
@@ -1011,6 +972,17 @@ impl ClientProxy {
         )
     }
 
+    /// Submit a writeset transaction signed by local diem root account.
+    pub fn submit_writeset(&mut self, space_delim_strings: &[&str]) -> Result<()> {
+        ensure!(
+            space_delim_strings[0] == "submit_payload" || space_delim_strings[0] == "ws",
+            "inconsistent command '{}' for submit_payload",
+            space_delim_strings[0]
+        );
+        let payload = bcs::from_bytes(fs::read(space_delim_strings[1])?.as_slice())?;
+        self.association_transaction_with_local_diem_root_account(payload, true)
+    }
+
     /// Get the latest account information from validator.
     pub fn get_latest_account(
         &mut self,
@@ -1027,7 +999,7 @@ impl ClientProxy {
     /// Get the latest version
     pub fn get_latest_version(&mut self) -> Version {
         self.client.update_and_verify_state_proof().unwrap();
-        self.client.trusted_state().latest_version()
+        self.client.trusted_state().version()
     }
 
     /// Get the latest annotated account resources from validator.
@@ -1162,15 +1134,19 @@ impl ClientProxy {
             space_delim_strings.len()
         );
         let (account, _) = self.get_account_address_from_parameter(space_delim_strings[1])?;
+        let account_view = match self.client.get_account(&account)? {
+            None => bail!("No account found for address {:?}", account),
+            Some(account) => account,
+        };
+
         let path = match space_delim_strings[2] {
-            "sent" => ACCOUNT_SENT_EVENT_PATH.to_vec(),
-            "received" => ACCOUNT_RECEIVED_EVENT_PATH.to_vec(),
+            "sent" => account_view.sent_events_key,
+            "received" => account_view.received_events_key,
             _ => bail!(
                 "Unknown event type: {:?}, only sent and received are supported",
                 space_delim_strings[2]
             ),
         };
-        let access_path = AccessPath::new(account, path);
         let start_seq_number = space_delim_strings[3].parse::<u64>().map_err(|error| {
             format_parse_data_error(
                 "start_seq_number",
@@ -1187,8 +1163,10 @@ impl ClientProxy {
                 error,
             )
         })?;
-        self.client
-            .get_events_by_access_path(access_path, start_seq_number, limit)
+        Ok((
+            self.client.get_events(path, start_seq_number, limit)?,
+            account_view,
+        ))
     }
 
     /// Write mnemonic recover to the file specified.
@@ -1312,7 +1290,7 @@ impl ClientProxy {
                 testnet_dd_account.sequence_number = seq;
             }
         }
-        if let Ok((ref_id, _)) = self.get_account_data(address) {
+        if let Ok((ref_id, _)) = self.get_account_data_and_id(address) {
             // assumption follows from invariant
             let mut account_data: &mut AccountData = self.accounts.get_mut(ref_id).unwrap();
             account_data.status = AccountStatus::Persisted;
@@ -1556,7 +1534,7 @@ impl ClientProxy {
             max_value
         );
         let value = original * Decimal::new(scaling_factor, 0);
-        // ensure!(value.fract().is_zero(), "invalid value");
+        //ensure!(value.fract().is_zero(), "invalid value");
         value.to_u64().ok_or_else(|| format_err!("invalid value"))
     }
 

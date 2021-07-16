@@ -263,11 +263,15 @@ impl Oracle {
 
         for event in events.iter() {
             let update_event: UpdateEvent = match &event.data {
-                EventDataView::Unknown { raw } => {
-                    let data = raw.clone().inner().to_vec();
-                    bcs::from_bytes(&data)?
+                EventDataView::Unknown { bytes } => {
+                    if let Some(raw) = bytes {
+                        let data = raw.clone().inner().to_vec();
+                        bcs::from_bytes(&data)?
+                    }else {
+                        bail!("EventDataView doesn't contained ayn data.")
+                    }
                 }
-                _ => bail!("EventDataView type was error"),
+                _ => bail!("EventDataView type was error."),
             };
 
             let dt = NaiveDateTime::from_timestamp((update_event.timestamp / 1_000_000) as i64, 0);

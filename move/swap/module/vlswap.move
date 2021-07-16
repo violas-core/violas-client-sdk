@@ -451,7 +451,7 @@ use 0x1::Fee10000::Fee10000;
     /// Internal functions
     ///
     fun admin_address() : address {
-        0xEE
+        @0xEE
     }
 
     /// Newton iteration method
@@ -483,7 +483,7 @@ use 0x1::Fee10000::Fee10000;
     }
 
     /// Newton iteration method
-    fun sqrt(x : u64, y : u64) : u64
+    fun sqrt1(x : u64, y : u64) : u64
     {
         let z = (x as u128) * (y as u128);
         let z1 = z -1;   
@@ -654,18 +654,18 @@ use 0x1::Fee10000::Fee10000;
     //
     //  get amount delta for currency A 
     //  
-    fun get_amount_0_delta(price_a: u64, price_b: u64, liqudity: u64) : u64
-    {
-
-    }
+    // fun get_amount_0_delta(price_a: u64, price_b: u64, liqudity: u64) : u64
+    // {
+    //     0
+    // }
 
     //
     //  get amount delta for currency B 
     //
-    fun get_amount_1_delta(price_a: u64, price_b: u64, liqudity: u64) : (u64, u64)
-    {
-
-    }
+    // fun get_amount_1_delta(price_a: u64, price_b: u64, liqudity: u64) : (u64, u64)
+    // {
+    //     (0, 0)
+    // }
 }
 
 }

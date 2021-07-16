@@ -9,7 +9,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Launch Deployment",
+            "name": "Launch nft",
             "program": "${workspaceFolder}/build/debug/nft/nft",
             "args": [
                 "-u",
@@ -47,17 +47,17 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Launch violas_cli",
-            "program": "${workspaceFolder}/build/debug/bin/violas_cli",
+            "name": "Launch client",
+            "program": "${workspaceFolder}/build/debug/bin/client",
             "args": [
                 "-u",
-                "http://localhost:39929",
+                "http://localhost:41349",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
-                "0:c047fe739c948c3d3ce0636bf457d631c88060e561bf34dd4acfd2f6b47b0037",
+                "0:c1876eb705bfc9f6162a697b84223b7df47606c5f047ee730d9631ba0bdab0fc",
                 "-c",
-                "4",
+                "2",
                 "-n",
                 "client.mne",
             ],
@@ -66,16 +66,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Launch violas_client",
-            "program": "${workspaceFolder}/build/debug/bin/violas_client",
+            "name": "Launch testnet",
+            "program": "${workspaceFolder}/build/debug/bin/testnet",
             "args": [
-                "http://localhost:40925",
+                "http://localhost:46687",
                 "/tmp/diem/mint.key",
-                "build/debug/client.mne",
-                "0:4b95edf8787b84bf1c06c4c262673484f13eb35acd16bbd8690520b75f882eb5",
-                "4",
+                "mnemonic/client.mne",
+                "0:c1876eb705bfc9f6162a697b84223b7df47606c5f047ee730d9631ba0bdab0fc",
+                "2",
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/build/debug"
         },
         {
             "type": "lldb",

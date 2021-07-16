@@ -305,7 +305,7 @@ use 0x1::Event::{ Self, EventHandle };
     /// Internal functions
     ///
     fun admin_address() : address {
-        0xEE
+        @0xEE
     }
 
     /// Newton iteration method

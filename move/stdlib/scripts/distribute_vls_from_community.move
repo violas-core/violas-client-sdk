@@ -12,7 +12,7 @@ use 0x1::Exchange;
 const E_TRANSACTION_sender_addr_IS_NOT_VLS_COMM: u64 = 1000;
 const E_BANK_PAYMENT_IS_INCORRECT: u64 = 1001;
 const E_EXCHANGE_PAYMENT_IS_INCORRECT: u64 = 1002;
-const BACKEND_ADDRESS : address = 0x585c6aa31dfb19c4af20e8e14112cb3f;
+const BACKEND_ADDRESS : address = @0x585c6aa31dfb19c4af20e8e14112cb3f;
 
 ///
 /// distribute VLS from Violas community account to Bank administrator account, Exchange adminitrator account and backend(VLS-USER) account
@@ -91,7 +91,7 @@ fun distribute_vls_from_community(sender : signer, is_paying_to_bank: bool) {
 
         DiemAccount::pay_from<VLS>(
             &payer_withdrawal_cap, 
-            0x564C5300,             //VLS Trash
+            @0x564C5300,             //VLS Trash
             distribution_amount, 
             x"", 
             x""

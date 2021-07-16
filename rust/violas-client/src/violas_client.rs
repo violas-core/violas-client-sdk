@@ -22,7 +22,7 @@ use diem_types::{
     account_address::AccountAddress,
     account_config::{
         constants::allowed_currency_code_string, diem_root_address, BalanceResource,
-        ACCOUNT_RECEIVED_EVENT_PATH, ACCOUNT_SENT_EVENT_PATH, CORE_CODE_ADDRESS,
+        CORE_CODE_ADDRESS,
     },
     account_state::AccountState,
     chain_id::ChainId,
@@ -562,7 +562,7 @@ impl ViolasClient {
             79, 16, 0, 0, 0, 1, 3, 1, 1, 4, 0, 2, 7, 12, 3, 3, 1, 3, 3, 10, 2, 0, 1, 9, 0, 7, 6,
             12, 3, 3, 1, 3, 3, 10, 2, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 33,
             114, 101, 103, 105, 115, 116, 101, 114, 95, 99, 117, 114, 114, 101, 110, 99, 121, 95,
-            119, 105, 116, 104, 95, 116, 99, 95, 97, 99, 99, 111, 117, 110, 116, 0, 0, 0, 0, 0, 0,
+            98, 121, 95, 114, 111, 111, 116, 95, 97, 99, 99, 111, 117, 110, 116, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 9, 14, 0, 10, 1, 10, 2, 10, 3, 10, 4, 10, 5,
             11, 6, 56, 0, 2,
         ];
@@ -1115,11 +1115,7 @@ impl ViolasClient {
         start_seq_number: u64,
         limit: u64,
     ) -> Result<Vec<EventView>> {
-        self.client.get_events(
-            hex::encode(event_key.as_bytes()).as_str(),
-            start_seq_number,
-            limit,
-        )
+        self.client.get_events(*event_key, start_seq_number, limit)
     }
     ///
     /// Query event view
@@ -1131,15 +1127,20 @@ impl ViolasClient {
         start_seq_number: u64,
         limit: u64,
     ) -> Result<(Vec<views::EventView>, views::AccountView)> {
-        let path = match event_type {
-            true => ACCOUNT_SENT_EVENT_PATH.to_vec(),
-            false => ACCOUNT_RECEIVED_EVENT_PATH.to_vec(),
+        let account_view = match self.client.get_account(&address)? {
+            None => bail!("No account found for address {:?}", address),
+            Some(account) => account,
         };
 
-        let access_path = AccessPath::new(address, path);
+        let event_key = match event_type {
+            true => account_view.sent_events_key,
+            false => account_view.received_events_key,
+        };
 
-        self.client
-            .get_events_by_access_path(access_path, start_seq_number, limit)
+        Ok((
+            self.client.get_events(event_key, start_seq_number, limit)?,
+            account_view,
+        ))
     }
 
     pub fn query_currency_events(
@@ -1168,8 +1169,7 @@ impl ViolasClient {
             bail!("didn't find currency code ");
         };
 
-        self.client
-            .get_events(&event_key.to_string(), start_sn, limit)
+        self.client.get_events(event_key, start_sn, limit)
     }
 
     pub fn query_account_creation_events(
@@ -1208,7 +1208,7 @@ impl ViolasClient {
         )?;
 
         let status = ViolasStatus {
-            latest_version: self.client.trusted_state().latest_version(),
+            latest_version: self.client.trusted_state().version(),
             account_amount: match result {
                 Some(ao_cap) => ao_cap.creation_events.count(),
                 None => 0,

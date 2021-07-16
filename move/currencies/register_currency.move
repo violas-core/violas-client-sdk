@@ -11,7 +11,7 @@ fun main<NewCurrency: store>(
     currency_code: vector<u8>,
 )  {
 
-    DiemAccount::register_currency_with_tc_account<NewCurrency>(
+    DiemAccount::register_currency_by_root_account<NewCurrency>(
         &dr_root, 
         exchange_rate_denom, 
         exchange_rate_num,

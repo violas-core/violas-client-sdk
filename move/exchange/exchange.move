@@ -10,7 +10,7 @@ module Exchange {
     use 0x1::VLS::VLS;
     
     fun admin_addr(): address {
-        0x45584348
+        @0x45584348
     }
 
     struct RewardAdmin has key, store {

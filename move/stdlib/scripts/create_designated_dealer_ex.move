@@ -21,7 +21,7 @@ fun create_designated_dealer_ex<CoinType: store>(
         add_all_currencies);
 }
 
-spec fun create_designated_dealer_ex {
+spec create_designated_dealer_ex {
     use 0x1::Errors;
     use 0x1::Roles;
 

@@ -227,7 +227,7 @@ address 0x1 {
     	    let sender = Signer::address_of(account);
     	    require_published(sender);
     	    // require_supervisor(sender);
-	    assert(sender == 0x000000000000000000000000564c5301, 501);
+	    assert(sender == @0x000000000000000000000000564c5301, 501);
 
 	    check_for_incentive_speeds_refresh();
 	    
@@ -440,7 +440,7 @@ address 0x1 {
 	
 	fun contract_address() : address {
 	    // 0x8257c2417e4d1038e1817c8f283ace2e
-	    0x00000000000000000000000042414e4b
+	    @0x00000000000000000000000042414e4b
 	}
 
 	public fun version() :u64 { 1 }
@@ -724,7 +724,7 @@ address 0x1 {
     	    let tokeninfos = borrow_global_mut<TokenInfoStore>(contract_address());
     	    let len = Vector::length(&tokeninfos.tokens);
     	    move_to(account, DiemToken<CoinType> { coin: Diem::zero<CoinType>(), index: len });
-    	    create_token(account, Diem::currency_code<CoinType>(), 0x0, price_oracle, collateral_factor, base_rate, rate_multiplier, rate_jump_multiplier, rate_kink, tokendata)
+    	    create_token(account, Diem::currency_code<CoinType>(), @0x0, price_oracle, collateral_factor, base_rate, rate_multiplier, rate_jump_multiplier, rate_kink, tokendata)
 	}
 	
 	public fun create_token(account: &signer, currency_code: vector<u8>, owner: address, price_oracle: address, collateral_factor: u64, base_rate: u64, rate_multiplier: u64, rate_jump_multiplier: u64, rate_kink: u64, tokendata: vector<u8>) : u64 acquires Tokens, TokenInfoStore, UserInfo {
@@ -765,7 +765,7 @@ address 0x1 {
     	    });
     	    Vector::push_back(&mut tokeninfos.tokens, TokenInfo {
     		currency_code: Vector::empty(),
-    		owner: 0x0,
+    		owner: @0x0,
     		total_supply: 0,
     		total_reserves: 0,
     		total_borrows: 0,

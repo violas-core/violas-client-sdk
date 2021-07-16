@@ -40,7 +40,7 @@ use 0x1::Event::{ Self, EventHandle };
     }
 
     fun administrator_address() : address {
-        0x4f524143
+        @0x4f524143
     }
 
     /// update exchange rate, if the exchange rate for CoinType doesn't exist then create it 

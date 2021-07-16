@@ -14,7 +14,7 @@ module NonFungibleToken {
     use 0x1::Vector;
     use 0x2::Map::{Self, Map};
 
-    const NFT_PUBLISHER: address = 0xA550C18;   // Diem root account
+    const NFT_PUBLISHER: address = @0xA550C18;   // Diem root account
     const EPAYEE_CANT_ACCEPT_NFT_TYPE: u64 = 1001;
     const ESENDER_HAS_ACCEPTED_NFT_TYPE: u64 = 1002;
     const ENFT_TOKEN_HAS_ALREADY_EXISTED: u64 = 1003;

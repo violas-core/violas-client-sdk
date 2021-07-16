@@ -21,9 +21,13 @@ TokenId compute_token_id(const Tea &t);
 void check_istream_eof(istream &is, string_view err);
 
 void deploy_stdlib(client_ptr client);
+
 void register_mountwuyi_tea_nft(client_ptr client);
+
 void mint_tea_nft(client_ptr client);
-void transfer(client_ptr client, size_t account_index, Address receiver);
+
+void transfer(client_ptr client, size_t account_index, Address receiver, uint64_t index);
+
 optional<NftTea> get_nft(string url, Address addr);
 
 optional<vector<Address>> get_owners(string url, const TokenId &token_id);
@@ -114,8 +118,9 @@ map<string, handle> create_commands(client_ptr client, string url)
          { mint_tea_nft(client); }},
         {"transfer", [=](istringstream &params)
          {
-             size_t account_index = 0;
+             size_t account_index = 0, nft_index = 0;
              Address receiver;
+
 
              check_istream_eof(params, "account_index");
 
@@ -124,7 +129,10 @@ map<string, handle> create_commands(client_ptr client, string url)
              check_istream_eof(params, "receiver address");
              params >> receiver;
 
-             transfer(client, account_index, receiver);
+             check_istream_eof(params, "nft_index");
+             params >> nft_index;
+
+             transfer(client, account_index, receiver, nft_index);
          }},
         {"balance", [=](istringstream &params)
          {

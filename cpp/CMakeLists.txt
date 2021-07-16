@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(deployment VERSION 1.0)
+project(violas-client-sdk VERSION 1.0)
 
-# set(CMAKE_CXX_COMPILER clang++-12)
+set(CMAKE_CXX_COMPILER clang++-12)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
+set(CMAKE_EXE_LINKER_FLAGS -Wl,-rpath=./lib)
 
 include_directories(./include ../rust/violas-client/src/ffi)
 link_directories(../../rust/violas-client/target/debug)
@@ -12,11 +13,20 @@ link_directories(../../rust/violas-client/target/debug)
 # library violas_client 
 add_subdirectory(src)
 
-# executable deployment
+# executable nft
 add_subdirectory(nft)
 
-# executable cli
-add_subdirectory(violas_cli)
+# executable cmd
+add_subdirectory(command)
+
+add_subdirectory(testnet)
+
+# executable vls
+add_subdirectory(vls)
+
+install(DIRECTORY ../move DESTINATION .)
+install(DIRECTORY testnet/mnemonic DESTINATION .)
+install(PROGRAMS ../rust/violas-oracle/target/release/violas-oracle TYPE BIN)
 
 # pack all files
 include(InstallRequiredSystemLibraries)
@@ -24,3 +34,6 @@ include(InstallRequiredSystemLibraries)
 set(CPACK_PACKAGE_VERSION_MAJOR "${deployment_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${deployment_VERSION_MINOR}")
 include(CPack)
+
+# run cmake with debug as below
+# cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=. -DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath=./lib

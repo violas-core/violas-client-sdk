@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
         for (;;)
         {
-            char *line = readline("Violas $ ");
+            char *line = readline("Violas$ ");
             if (*line == '\0')
                 continue;
 

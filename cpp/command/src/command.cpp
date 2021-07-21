@@ -86,7 +86,7 @@ public:
         if (handler != end(_handlers))
             handler->second(args);
         else
-            int ret = system(line.data()); // call system commands
+            system(line.data()); // call system commands
 
         return true;
     }
@@ -335,7 +335,7 @@ protected:
         if (args.size() < 3)
             __throw_invalid_argument("prebrun aount_index currency_code amount");
 
-        violas::Address address;
+        //violas::Address address;
         size_t account_index;
         uint64_t amount;
 
@@ -439,8 +439,6 @@ protected:
         if (args.size() < 3)
             __throw_invalid_argument("encrypt password input-file-name encrypted-file-name ");
 
-        size_t account_index;
-
         string_view password = args[0];
         ifstream ifs(args[1]);
         ofstream ofs(args[2]);
@@ -455,8 +453,6 @@ protected:
     {
         if (args.size() < 3)
             __throw_invalid_argument("decrypt encrypted-file decrypted-file password");
-
-        size_t account_index;
 
         string_view password = args[0];
         ifstream ifs(args[1]);

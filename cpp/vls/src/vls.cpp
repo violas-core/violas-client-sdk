@@ -118,7 +118,7 @@ void initialize_timestamp(client_ptr client)
 
     cout << "allow custom script and  publishing module." << endl;
 
-    for (const auto address : VLS_ADDRESSES)
+    for (const auto & address : VLS_ADDRESSES)
     {
         client->create_next_account(get<0>(address));
     }

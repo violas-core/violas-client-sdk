@@ -2,6 +2,7 @@
 #include <map>
 #include <functional>
 #include <random>
+
 #include <violas_sdk2.hpp>
 #include <utils.h>
 #include <argument.hpp>
@@ -258,7 +259,7 @@ void mint_tea_nft(client_ptr client)
     auto accounts = client->get_all_accounts();
     auto &admin = accounts[0];
     auto &dealer1 = accounts[1];
-    auto &dealer2 = accounts[2];
+    //auto &dealer2 = accounts[2];
 
     default_random_engine e(clock());
     uniform_int_distribution<unsigned> u(0, 26);
@@ -282,7 +283,7 @@ void burn_tea_nft(client_ptr client)
     auto accounts = client->get_all_accounts();
     auto &admin = accounts[0];
     auto &dealer1 = accounts[1];
-    auto &dealer2 = accounts[2];
+    //auto &dealer2 = accounts[2];
 
     vector<uint8_t> identity = {1, 1, 2, 2, 3, 3, 4, 4};
     string wuyi = "MountWuyi";
@@ -296,19 +297,19 @@ void burn_tea_nft(client_ptr client)
     cout << "Mint a Tea NFT to dealer 1" << endl;
 }
 
-void transfer(client_ptr client, size_t account_index, Address receiver, uint64_t index)
+void transfer(client_ptr client, size_t account_index, Address receiver, uint64_t nft_index)
 {
     cout << "transfer Tea NFT ... " << endl;
 
     auto accounts = client->get_all_accounts();
-    auto &admin = accounts[0];
-    auto &dealer1 = accounts[1];
-    auto &dealer2 = accounts[2];
+    //auto &admin = accounts[0];
+    //auto &dealer1 = accounts[1];
+    //auto &dealer2 = accounts[2];
 
     client->execute_script_file(account_index,
                                 "move/stdlib/scripts/nft_transfer_via_index.mv",
                                 {tea_tag},
-                                {dealer2.address, index, vector<uint8_t>{0x1, 0x2, 0x3}});
+                                {receiver, nft_index, vector<uint8_t>{0x1, 0x2, 0x3}});
 }
 
 TokenId compute_token_id(const Tea &tea)

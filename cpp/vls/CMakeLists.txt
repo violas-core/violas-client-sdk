@@ -8,6 +8,6 @@ ENDIF()
 
 add_executable(vls src/vls.cpp)
 
-target_link_libraries(vls violas_client violas_sdk ${OBJ_FROM_RUST})
+target_link_libraries(vls violas_client violas_sdk cpprest readline ${OBJ_FROM_RUST})
 
 install(TARGETS vls DESTINATION bin)

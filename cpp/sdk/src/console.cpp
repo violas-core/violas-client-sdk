@@ -1,7 +1,7 @@
 #include <vector>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include "console.hpp"
+#include "../include/console.hpp"
 
 using namespace std;
 static vector<string> _completions;

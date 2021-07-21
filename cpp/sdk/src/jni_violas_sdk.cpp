@@ -2,11 +2,12 @@
 // Created by hunter on 20-1-14.
 //
 #include <jni.h>
+#include <iostream>
 #include <string>
 #include <fstream>
 #include <filesystem>
-#include "violas_sdk.hpp"
-#include "jni_violas_sdk.h"
+#include "../include/violas_sdk2.hpp"
+#include "../include/jni_violas_sdk.h"
 
 using namespace std;
 namespace fs = filesystem;
@@ -62,18 +63,19 @@ static void ThrowJNIException(JNIEnv *env, const std::string &errorMsg)
 	env->ThrowNew(e_cls, errorMsg.c_str());
 }
 
-static Violas::Address to_address(JNIEnv *env, jbyteArray _address)
+static violas::Address to_address(JNIEnv *env, jbyteArray _address)
 {
 
 	jbyte *buffer = env->GetByteArrayElements(_address, 0);
 	size_t length = env->GetArrayLength(_address);
 
-	if (length != Violas::Address::length)
+	if (length != violas::ADDRESS_LENGTH)
 		ThrowJNIException(env, "the size of address is not 16.");
 
-	//copy(buffer, buffer + length, begin(address));
+	violas::Address address;
+	copy(buffer, buffer + violas::ADDRESS_LENGTH, begin(address));
 
-	return Violas::Address((uint8_t *)buffer, length);
+	return address;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,15 +95,13 @@ jlong createNativeClient(JNIEnv *env, jobject,
 
 	try
 	{
-		auto client = Violas::Client::create((uint8_t)chain_id,
+		auto client = violas::Client::create((uint8_t)chain_id,
 											 to_string(env, url),
-											 to_string(env, faucetKey),
-											 syncWithWallet,
-											 to_string(env, faucetServer),
+											 to_string(env, faucetKey),											 									 
 											 to_string(env, mnemonic),
 											 to_string(env, waypoint));
 
-		nativeObj = (jlong) new Violas::client_ptr(client);
+		nativeObj = (jlong) new violas::client_ptr(client);
 	}
 	catch (exception &e)
 	{
@@ -116,7 +116,7 @@ jlong createNativeClient(JNIEnv *env, jobject,
 //
 void JNICALL destroy_native_client(JNIEnv *env, jobject, jlong nativeObj)
 {
-	auto native_client = (Violas::client_ptr *)nativeObj;
+	auto native_client = (violas::client_ptr *)nativeObj;
 	delete native_client;
 }
 
@@ -124,9 +124,9 @@ void test_validator_connection(JNIEnv *env, jobject, jlong nativeObj)
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
-		client->test_validator_connection();
+		client->test_connection();
 	}
 	catch (exception &e)
 	{
@@ -138,9 +138,9 @@ jobject create_next_account(JNIEnv *env, jobject, jlong nativeObj)
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
-		auto account_info = client->create_next_account(true);
+		auto account_info = client->create_next_account();
 
 		jclass pairClass = env->FindClass(PAIR_CLASS_NAME);
 		jmethodID pairConstructor = env->GetMethodID(pairClass, "<init>",
@@ -172,7 +172,7 @@ jobjectArray client_get_all_accounts(JNIEnv *env, jobject obj, jlong nativeObj)
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		auto accounts = client->get_all_accounts();
 
@@ -217,7 +217,7 @@ jdouble client_get_balance(JNIEnv *env, jobject obj, jlong nativeObj, jlong inde
 
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		balance = client->get_balance((uint64_t)index);
 	}
@@ -235,13 +235,13 @@ jdouble client_get_balance(JNIEnv *env, jobject obj, jlong nativeObj, jbyteArray
 
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
-		//Violas::Address address;
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
+		//violas::Address address;
 
 		//jbyte *buffer = env->GetByteArrayElements(_address, 0);
 		size_t length = env->GetArrayLength(_address);
 
-		if (length != Violas::Address::length)
+		if (length != violas::Address::length)
 			ThrowJNIException(env, "the size of address is not 32.");
 
 		//copy(buffer, buffer + length, begin(address));
@@ -260,7 +260,7 @@ jlong client_get_sequence_number(JNIEnv *env, jobject, jlong nativeObj, jlong ac
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		return client->get_sequence_number(account_index);
 	}
@@ -276,7 +276,7 @@ void client_mint(JNIEnv *env, jobject obj, jlong nativeObj, jlong index, jlong a
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		client->mint_coins(index, amount, block);
 	}
@@ -292,7 +292,7 @@ void client_transfer(JNIEnv *env, jobject obj,
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		client->transfer_coins_int(accountIndex, to_address(env, receiver),
 								   amount, gas_unit_price, max_gas_amount,
@@ -310,7 +310,7 @@ void jni_compile(JNIEnv *env, jobject, jlong nativeObj,
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		client->compile(account_index,
 						to_string(env, script_file_name),
@@ -329,7 +329,7 @@ void jni_compile(JNIEnv *env, jobject obj, jlong nativeObj,
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		client->compile(to_address(env, address),
 						to_string(env, scriptFile),
@@ -346,7 +346,7 @@ void jni_publish_module(JNIEnv *env, jobject obj, jlong nativeObj,
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		client->publish_module(account_index,
 							   to_string(env, module_file));
@@ -362,7 +362,7 @@ void jni_execute_script(JNIEnv *env, jobject, jlong nativeObj,
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		client->execute_script(account_index,
 							   to_string(env, script_file_name),
@@ -379,7 +379,7 @@ jobject jni_get_committed_txn_by_acc_seq(JNIEnv *env, jobject, jlong nativeObj,
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		auto txn = client->get_committed_txn_by_acc_seq(account_index, sequence_number);
 
@@ -407,7 +407,7 @@ jobjectArray jni_get_txn_by_range(JNIEnv *env, jobject, jlong nativeObj, jlong s
 {
 	try
 	{
-		Violas::client_ptr client = *((Violas::client_ptr *)nativeObj);
+		violas::client_ptr client = *((violas::client_ptr *)nativeObj);
 
 		auto txn_events = client->get_txn_by_range(start_version, limit,
 												   fetch_event);
@@ -457,14 +457,14 @@ namespace JniTokenManager
 
 		try
 		{
-			Violas::client_ptr client = *((Violas::client_ptr *)native_client);
+			violas::client_ptr client = *((violas::client_ptr *)native_client);
 
-			auto token = Violas::TokenManager::create(client,
+			auto token = violas::TokenManager::create(client,
 													  to_address(env, publisher_address),
 													  to_string(env, token_name),
 													  to_string(env, script_files_path));
 
-			native_token = (jlong) new Violas::token_manager_ptr(token);
+			native_token = (jlong) new violas::token_manager_ptr(token);
 		}
 		catch (exception &e)
 		{
@@ -485,15 +485,15 @@ namespace JniTokenManager
 
 		try
 		{
-			Violas::client_ptr client = *((Violas::client_ptr *)native_client);
+			violas::client_ptr client = *((violas::client_ptr *)native_client);
 
-			auto token = Violas::TokenManager::create(client,
+			auto token = violas::TokenManager::create(client,
 													  to_address(env, publisher_address),
 													  to_string(env, token_name),
 													  init_all_script_fun,
 													  to_string(env, temp_path));
 
-			native_token = (jlong) new Violas::token_manager_ptr(token);
+			native_token = (jlong) new violas::token_manager_ptr(token);
 		}
 		catch (exception &e)
 		{
@@ -508,7 +508,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			Violas::token_manager_ptr token = *((Violas::token_manager_ptr *)((intptr_t)native_token_manager));
+			violas::token_manager_ptr token = *((violas::token_manager_ptr *)((intptr_t)native_token_manager));
 
 			return env->NewStringUTF(token->name().c_str());
 		}
@@ -525,7 +525,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token = *((Violas::token_manager_ptr *)(intptr_t)native_token);
+			auto token = *((violas::token_manager_ptr *)(intptr_t)native_token);
 
 			auto address = token->address().data();
 
@@ -547,7 +547,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token_manager = *((Violas::token_manager_ptr *)native_token);
+			auto token_manager = *((violas::token_manager_ptr *)native_token);
 
 			token_manager->deploy(account_index);
 		}
@@ -565,7 +565,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
+			auto token_manager = *((violas::token_manager_ptr *)native_token_manager);
 
 			token_manager->create_token(supervisor_account_index, to_address(env, ownor_address), to_string(env, token_name));
 		}
@@ -579,7 +579,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
+			auto token_manager = *((violas::token_manager_ptr *)native_token_manager);
 
 			token_manager->publish(account_index);
 		}
@@ -598,7 +598,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
+			auto token_manager = *((violas::token_manager_ptr *)native_token_manager);
 
 			token_manager->mint(token_index,
 								account_index,
@@ -620,7 +620,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
+			auto token_manager = *((violas::token_manager_ptr *)native_token_manager);
 
 			token_manager->transfer(token_index,
 									account_index,
@@ -640,7 +640,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
+			auto token_manager = *((violas::token_manager_ptr *)native_token_manager);
 
 			return (jlong)token_manager->get_account_balance(token_index, account_index);
 		}
@@ -659,7 +659,7 @@ namespace JniTokenManager
 	{
 		try
 		{
-			auto token_manager = *((Violas::token_manager_ptr *)native_token_manager);
+			auto token_manager = *((violas::token_manager_ptr *)native_token_manager);
 
 			return (jlong)token_manager->get_account_balance(token_index, to_address(env, address));
 		}

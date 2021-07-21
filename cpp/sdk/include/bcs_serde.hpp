@@ -4,6 +4,7 @@
 #include <sstream>
 #include <optional>
 #include <variant>
+#include <map>
 
 class BcsSerde;
 
@@ -376,7 +377,8 @@ public:
         }
         else //deserialize
         {
-            size_t index = decode_integer();
+            //size_t index = decode_integer();
+            decode_integer();
         }
 
         std::visit([this](auto &arg)

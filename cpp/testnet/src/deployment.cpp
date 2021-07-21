@@ -361,23 +361,23 @@ void deploy_exchange(client_ptr client)
                   cout << "created all accounts for Exchange" << endl;
               });
 
-    auto print_all_balance = [&](const Address &addr)
-    {
-        auto fmt_balance = [=](string_view currency) -> string
-        {
-            TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
+    // auto print_all_balance = [&](const Address &addr)
+    // {
+    //     auto fmt_balance = [=](string_view currency) -> string
+    //     {
+    //         TypeTag tag(CORE_CODE_ADDRESS, currency, currency);
 
-            auto balance = 0; //client->get_currency_balance(tag, addr);
-            //return is_valid_balance(balance) ? to_string((double)balance / MICRO_COIN) : "N/A";
-            return to_string((double)balance / MICRO_COIN);
-        };
+    //         auto balance = 0; //client->get_currency_balance(tag, addr);
+    //         //return is_valid_balance(balance) ? to_string((double)balance / MICRO_COIN) : "N/A";
+    //         return to_string((double)balance / MICRO_COIN);
+    //     };
 
-        cout << "VLS : " // << double(client->get_balance(addr)) / MICRO_COIN << ", "
-             << "USD : " << fmt_balance("VLSUSD") << ", "
-             << "EUR : " << fmt_balance("VLSEUR") << "."
-             << "GBP : " << fmt_balance("VLSGBP") << "."
-             << endl;
-    };
+    //     cout << "VLS : " // << double(client->get_balance(addr)) / MICRO_COIN << ", "
+    //          << "USD : " << fmt_balance("VLSUSD") << ", "
+    //          << "EUR : " << fmt_balance("VLSEUR") << "."
+    //          << "GBP : " << fmt_balance("VLSGBP") << "."
+    //          << endl;
+    // };
 
     //print_all_balance(accounts[0].address);
     //print_all_balance(accounts[1].address);

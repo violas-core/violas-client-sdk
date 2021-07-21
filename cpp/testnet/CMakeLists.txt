@@ -8,6 +8,6 @@ ENDIF()
 
 add_executable(testnet src/deployment.cpp)
 
-target_link_libraries(testnet violas_client violas_sdk ${OBJ_FROM_RUST})
+target_link_libraries(testnet violas_client violas_sdk cpprest readline ${OBJ_FROM_RUST})
 
 install(TARGETS testnet DESTINATION bin)

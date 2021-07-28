@@ -1,8 +1,8 @@
 address 0x2 {
 // 
-// key is the token_id(:vector<u8>), stored in a sorted linked list
-// value is a struct 'NonFungibleToken', contains the non fungible token
-// the account address of each list node is actually the owner of the token
+// NFT implementation with Move lanaguage
+// reference ERC721 on http://erc721.org/
+// 
 module NonFungibleToken {
     use 0x1::BCS;
     use 0x1::Compare;
@@ -14,7 +14,7 @@ module NonFungibleToken {
     use 0x1::Vector;
     use 0x2::Map::{Self, Map};
 
-    const NFT_PUBLISHER: address = @0xA550C18;   // Diem root account
+    const NFT_PUBLISHER: address = @0xA550C18;   // Violas root account
     const EPAYEE_CANT_ACCEPT_NFT_TYPE: u64 = 1001;
     const ESENDER_HAS_ACCEPTED_NFT_TYPE: u64 = 1002;
     const ENFT_TOKEN_HAS_ALREADY_EXISTED: u64 = 1003;

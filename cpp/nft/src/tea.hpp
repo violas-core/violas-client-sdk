@@ -9,27 +9,26 @@ TokenId compute_token_id(const Tea &t);
 
 struct Tea
 {
-    std::vector<uint8_t> identity;
     uint8_t kind;
     std::vector<uint8_t> manufacture;
-    uint64_t date;
+    std::vector<uint8_t> PA; // Production Area
+    uint64_t PD;             // Production Date
+    std::vector<uint8_t> SN; // Sequence Number
 
     BcsSerde &serde(BcsSerde &bs)
     {
-        return bs && identity && kind && manufacture && date;
+        return bs && kind && manufacture && PA && PD && SN;
     }
 };
 
 std::ostream &operator<<(std::ostream &os, const Tea &tea)
 {
-    std::string identity(tea.identity.begin(), tea.identity.end());
-    std::string manufacture(begin(tea.manufacture), end(tea.manufacture));
-
     std::cout << "Tea { "
-              << "Identity : " << identity << ", "
               << "Kind : " << short(tea.kind) << ", "
-              << "manufacture : " << manufacture << ", "
-              << "Date : " << tea.date
+              << "manufacture : " << std::string(begin(tea.manufacture), end(tea.manufacture)) << ", "
+              << "Production Arem : " << std::string(begin(tea.PA), end(tea.PA)) << ", "
+              << "Production Date : " << tea.PD << ", "
+              << "SN : " << std::string(tea.SN.begin(), tea.SN.end()) 
               << " }, "
               << "token id : " << compute_token_id(tea);
 
@@ -101,6 +100,5 @@ struct ReceivedEvent
         return bs && token_id && payer && metadata;
     }
 };
-
 
 #endif

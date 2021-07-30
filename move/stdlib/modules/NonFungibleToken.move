@@ -208,10 +208,10 @@ module NonFungibleToken {
         // Emit sent event
         Event::emit_event(&mut info.mint_events, MintEvent{ token_id, receiver });
         
-        // Increment NFT amount
+        //  Increment NFT amount
         increment_nft_amount<Token>();
         //
-        //  Deposite NFT to receiver        
+        //  Deposite NFT to receiver
         //
         let receiver_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(receiver);    
                 

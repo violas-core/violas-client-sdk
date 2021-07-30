@@ -110,6 +110,8 @@ int main(int argc, char *argv[])
 
 map<string, handle> create_commands(client_ptr client, string url)
 {
+    auto accounts = client->get_all_accounts();
+
     return map<string, handle>{
         {"deploy", [=](istringstream &params)
          { deploy_stdlib(client); }},
@@ -121,7 +123,6 @@ map<string, handle> create_commands(client_ptr client, string url)
          {
              size_t account_index = 0, nft_index = 0;
              Address receiver;
-
 
              check_istream_eof(params, "account_index");
 
@@ -138,16 +139,26 @@ map<string, handle> create_commands(client_ptr client, string url)
         {"balance", [=](istringstream &params)
          {
              Address addr;
+             int account_index = -1;
 
-             check_istream_eof(params, "account address");
-             params >> addr;
+             check_istream_eof(params, "account index or address");
+
+             params >> account_index;
+
+             if (params.fail())
+                 params >> addr;
+             else if (account_index >= accounts.size())
+                 __throw_invalid_argument("account index is out of account size.");
+             else
+                 addr = accounts[account_index].address;
 
              auto opt_nft_tea = get_nft(url, addr);
              if (opt_nft_tea != nullopt)
              {
+                 int i = 0;
                  for (const auto &tea : opt_nft_tea->teas)
                  {
-                     cout << tea << endl;
+                     cout << i++ << " - " << tea << endl;
                  }
              }
          }},
@@ -264,14 +275,22 @@ void mint_tea_nft(client_ptr client)
     default_random_engine e(clock());
     uniform_int_distribution<unsigned> u(0, 26);
 
-    vector<uint8_t> identity = {'1', '2', '3', '4', '5', '6', uint8_t('a' + u(e)), uint8_t('a' + u(e))};
+    vector<uint8_t> sn = {'1', '2', '3', '4', '5', '6', uint8_t('a' + u(e)), uint8_t('a' + u(e))};
     string wuyi = "MountWuyi";
+    string pa = "MountWuyi City";
     vector<uint8_t> manufacturer(wuyi.begin(), wuyi.end());
 
     client->execute_script_file(admin.index,
                                 "move/tea/scripts/mint_mountwuyi_tea_nft.mv",
                                 {},
-                                {identity, uint8_t(0), manufacturer, dealer1.address});
+                                {
+                                    uint8_t(0),
+                                    manufacturer,
+                                    vector<uint8_t>(begin(pa), end(pa)),
+                                    uint64_t(0),
+                                    sn,
+                                    dealer1.address,
+                                });
 
     cout << "Mint a Tea NFT to dealer 1" << endl;
 }

@@ -13,11 +13,11 @@
             "program": "${workspaceFolder}/build/debug/nft/nft",
             "args": [
                 "-u",
-                "http://localhost:45273",
+                "http://localhost:43425",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
-                "0:b6e7e677b72d2f2fb7d18fa3dde53ad64eb4943b013da3f73024faf9671d85e0",
+                "0:44899712548618d8ec1e476dff4366955232defc403dc027dc172ec91d056068",
                 "-c",
                 "2",
                 "-n",

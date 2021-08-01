@@ -63,6 +63,10 @@ echo "build scripts/nft_accept.move"
 ../build.sh scripts/nft_accept.move modules/NonFungibleToken.move modules/Map.move
 mv build/scripts/nft_accept.mv scripts/
 
+echo "build scripts/nft_burn.move"
+../build.sh scripts/nft_burn.move modules/NonFungibleToken.move modules/Map.move
+mv build/scripts/nft_burn.mv scripts/
+
 echo "build scripts/nft_transfer.move"
 ../build.sh scripts/nft_transfer.move modules/NonFungibleToken.move modules/Map.move
 mv build/scripts/nft_transfer.mv scripts/

@@ -7,5 +7,11 @@ add_library(violas_sdk SHARED src/violas_sdk2.cpp src/json_rpc.cpp src/console.c
 # target_link_libraries(violas_client)
 
 install(TARGETS violas_sdk DESTINATION lib)
-install(FILES ../../rust/violas-client/target/release/libviolas_client.so DESTINATION lib)
 install(FILES include/violas_sdk2.hpp DESTINATION include)
+#install(FILES ../../rust/violas-client/target/release/libviolas_client.so DESTINATION lib)
+
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+    install(FILES ../../rust/violas-client/target/debug/libviolas_client.so DESTINATION lib)
+ELSE()
+    install(FILES ../../rust/violas-client/target/release/libviolas_client.so DESTINATION lib)
+ENDIF()

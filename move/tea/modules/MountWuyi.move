@@ -6,7 +6,7 @@ module MountWuyi {
     
     const SECONDS_IN_ONE_DAY : u64 = 86400; // 24 * 60 * 60
     
-    struct Tea has store, copy, drop {                
+    struct Tea has store, copy, drop, key {                
         kind : u8,  // 0 ,1, 2, 3, 4, 5
         manufacturer: vector<u8>,
         PA : vector<u8>,		// Production Area

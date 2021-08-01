@@ -28,7 +28,7 @@ std::ostream &operator<<(std::ostream &os, const Tea &tea)
               << "manufacture : " << std::string(begin(tea.manufacture), end(tea.manufacture)) << ", "
               << "Production Arem : " << std::string(begin(tea.PA), end(tea.PA)) << ", "
               << "Production Date : " << tea.PD << ", "
-              << "SN : " << std::string(tea.SN.begin(), tea.SN.end()) 
+              << "SN : " << std::string(tea.SN.begin(), tea.SN.end())
               << " }, "
               << "token id : " << compute_token_id(tea);
 
@@ -51,18 +51,18 @@ struct NftInfo
     }
 };
 
-std::ostream &operator<<(std::ostream &os, const NftInfo &tea)
+std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
 {
     // std::string identity(tea.identity.begin(), tea.identity.end());
     // std::string manufacture(begin(tea.manufacture), end(tea.manufacture));
 
-    // std::cout << "Tea { "
-    //           << "Identity : " << identity << ", "
-    //           << "Kind : " << short(tea.kind) << ", "
-    //           << "manufacture : " << manufacture << ", "
-    //           << "Date : " << tea.date
-    //           << " }, "
-    //           << "token id : " << compute_token_id(tea);
+    std::cout << "Global Info { \n"
+              << "\t" << "total : " << nft_info.total << "\n"
+              << "\t" << "amount : " << nft_info.amount << "\n"
+              << "\t" << "admin : " << nft_info.admin << "\n"
+              << "\t" << "minted amount : " << nft_info.mint_event.counter << "\n"
+              << "\t" << "burned amount : " << nft_info.burn_event.counter << "\n"
+              << "}";
 
     return os;
 }

@@ -228,10 +228,11 @@ module NonFungibleToken {
                 
         check_admin_permission<Token>(sender);
 
-        // Erase all owners by token id
         let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
-        let ret = Map::erase<vector<u8>, vector<address>>(&mut info.owners, token_id);
-        assert(ret, Errors::invalid_argument(ENFT_TOKEN_HAS_NOT_EXISTED));
+
+        // Erase all owners by token id        
+        // let ret = Map::erase<vector<u8>, vector<address>>(&mut info.owners, token_id);
+        // assert(ret, Errors::invalid_argument(ENFT_TOKEN_HAS_NOT_EXISTED));
         
         // drop token by token id
         let _token = get_nft_token<Token>(sig, token_id);

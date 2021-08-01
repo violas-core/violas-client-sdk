@@ -25,7 +25,11 @@ void deploy_stdlib(client_ptr client);
 
 void register_mountwuyi_tea_nft(client_ptr client);
 
-void mint_tea_nft(client_ptr client);
+void accept(client_ptr client, size_t account_index);
+
+void mint_tea_nft(client_ptr client, Address addr);
+
+void burn_tea_nft(client_ptr client, const TokenId &token_id);
 
 void transfer(client_ptr client, size_t account_index, Address receiver, uint64_t index);
 
@@ -34,6 +38,8 @@ optional<NftTea> get_nft(string url, Address addr);
 optional<vector<Address>> get_owners(string url, const TokenId &token_id);
 
 optional<Address> get_last_owner(string url, const TokenId &token_id);
+
+optional<NftInfo> get_nft_info(string url);
 
 using handle = function<void(istringstream &params)>;
 map<string, handle> create_commands(client_ptr client, string url);
@@ -90,7 +96,13 @@ int main(int argc, char *argv[])
                 }
                 catch (const std::invalid_argument &e)
                 {
-                    std::cerr << "Invalid argument : " << e.what() << '\n';
+                    std::cerr << "Invalid argument : " << e.what() << endl;
+                }
+                catch (runtime_error &e)
+                {
+                    std::cerr << color::RED
+                              << "Runtime error : " << e.what()
+                              << color::RESET << endl;
                 }
             }
 
@@ -108,17 +120,64 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+template <typename T>
+T get_from_stream(istringstream &params, client_ptr client, string_view err_info = "The index or address")
+{
+    Address addr;
+    int account_index = -1;
+
+    check_istream_eof(params, err_info);
+
+    string temp;
+
+    params >> temp;
+    istringstream iss(temp);
+
+    if (temp.length() == sizeof(T) * 2)
+    {
+        iss >> addr;
+    }
+    else
+    {
+        auto accounts = client->get_all_accounts();
+
+        iss >> account_index;
+        if (account_index >= accounts.size())
+            __throw_invalid_argument("account index is out of account size.");
+        else
+            addr = accounts[account_index].address;
+    }
+
+    return addr;
+}
+
 map<string, handle> create_commands(client_ptr client, string url)
 {
-    auto accounts = client->get_all_accounts();
-
     return map<string, handle>{
         {"deploy", [=](istringstream &params)
          { deploy_stdlib(client); }},
         {"register", [=](istringstream &params)
          { register_mountwuyi_tea_nft(client); }},
+        {"accept", [=](istringstream &params)
+         {
+             size_t account_index = 0;
+             params >> account_index;
+
+             accept(client, account_index);
+         }},
         {"mint", [=](istringstream &params)
-         { mint_tea_nft(client); }},
+         {
+             auto addr = get_from_stream<Address>(params, client);
+             mint_tea_nft(client, addr);
+         }},
+        {"burn", [=](istringstream &params)
+         {
+             TokenId token_id;
+
+             params >> token_id;
+
+             burn_tea_nft(client, token_id);
+         }},
         {"transfer", [=](istringstream &params)
          {
              size_t account_index = 0, nft_index = 0;
@@ -129,7 +188,7 @@ map<string, handle> create_commands(client_ptr client, string url)
              params >> account_index;
 
              check_istream_eof(params, "receiver address");
-             params >> receiver;
+             receiver = get_from_stream<Address>(params, client);
 
              check_istream_eof(params, "nft_index");
              params >> nft_index;
@@ -138,19 +197,7 @@ map<string, handle> create_commands(client_ptr client, string url)
          }},
         {"balance", [=](istringstream &params)
          {
-             Address addr;
-             int account_index = -1;
-
-             check_istream_eof(params, "account index or address");
-
-             params >> account_index;
-
-             if (params.fail())
-                 params >> addr;
-             else if (account_index >= accounts.size())
-                 __throw_invalid_argument("account index is out of account size.");
-             else
-                 addr = accounts[account_index].address;
+             auto addr = get_from_stream<Address>(params, client);
 
              auto opt_nft_tea = get_nft(url, addr);
              if (opt_nft_tea != nullopt)
@@ -187,8 +234,17 @@ map<string, handle> create_commands(client_ptr client, string url)
                      cout << receiver << endl;
                  }
              }
-         }}};
+         }},
+        {"info", [=](istringstream &oarans)
+         {
+             auto opt_info = get_nft_info(url);
+
+             if (opt_info != nullopt)
+                 cout << *opt_info << endl;
+         }},
+    };
 }
+
 void check_istream_eof(istream &is, string_view err)
 {
     if (is.eof())
@@ -247,23 +303,24 @@ void register_mountwuyi_tea_nft(client_ptr client)
                                 {uint64_t(1000), admin.address});
     cout << "Register NFT for admin successfully." << endl;
 
-    //
-    //  Accept NFT for dealer account
-    //
-    client->execute_script_file(dealer1.index,
-                                "move/stdlib/scripts/nft_accept.mv",
-                                {tea_tag},
-                                {});
-
-    client->execute_script_file(dealer2.index,
-                                "move/stdlib/scripts/nft_accept.mv",
-                                {tea_tag},
-                                {});
+    //accept(client, admin.index);
+    accept(client, dealer1.index);
+    accept(client, dealer2.index);
 
     cout << "Accept NFT for dealer successfully. " << endl;
 }
+//
+//  Accept NFT for dealer account
+//
+void accept(client_ptr client, size_t account_index)
+{
+    client->execute_script_file(account_index,
+                                "move/stdlib/scripts/nft_accept.mv",
+                                {tea_tag},
+                                {});
+}
 
-void mint_tea_nft(client_ptr client)
+void mint_tea_nft(client_ptr client, Address addr)
 {
     cout << "minting Tea NFT ... " << endl;
 
@@ -295,25 +352,15 @@ void mint_tea_nft(client_ptr client)
     cout << "Mint a Tea NFT to dealer 1" << endl;
 }
 
-void burn_tea_nft(client_ptr client)
+void burn_tea_nft(client_ptr client, const TokenId &token_id)
 {
-    cout << "minting Tea NFT ... " << endl;
-
     auto accounts = client->get_all_accounts();
     auto &admin = accounts[0];
-    auto &dealer1 = accounts[1];
-    //auto &dealer2 = accounts[2];
-
-    vector<uint8_t> identity = {1, 1, 2, 2, 3, 3, 4, 4};
-    string wuyi = "MountWuyi";
-    vector<uint8_t> manufacturer(wuyi.begin(), wuyi.end());
 
     client->execute_script_file(admin.index,
-                                "move/tea/scripts/mint_mountwuyi_tea_nft.mv",
-                                {},
-                                {identity, uint8_t(0), manufacturer, dealer1.address});
-
-    cout << "Mint a Tea NFT to dealer 1" << endl;
+                                "move/stdlib/scripts/nft_burn.mv",
+                                {tea_tag},
+                                {vector<uint8_t>(begin(token_id), end(token_id))});
 }
 
 void transfer(client_ptr client, size_t account_index, Address receiver, uint64_t nft_index)

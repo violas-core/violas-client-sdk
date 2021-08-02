@@ -69,15 +69,26 @@ module NonFungibleToken {
         let TokenLock<Token> {} = move_from<TokenLock<Token>>(sender);
     }
     //
+    //  Increase 1 to NFT amount
     //
-    //
-    fun increment_nft_amount<Token: store>() 
+    fun increase_nft_amount<Token: store>() 
     acquires Info {
         let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
         
         * (&mut info.amount) = info.amount + 1;
         
         assert(info.amount <= info.total, 1000);
+    }
+    //
+    //  Decrease 1 NFT amount 
+    //
+    fun decrease_nft_amount<Token: store>() 
+    acquires Info {
+        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        
+        if (info.amount != 0) {
+            * (&mut info.amount) = info.amount - 1;
+        }
     }
     //
     //  check if the address of admin 
@@ -128,17 +139,18 @@ module NonFungibleToken {
     //
     //  Get NFT token index by token id
     //  if returned index is equal to the length of vector that means faild to get index
-    fun get_token_index<Token: key+store>(tokens: &vector<Token>, token_id: &vector<u8>) : u64 {
+    fun get_token_index<Token: store>(tokens: &vector<Token>, token_id: &vector<u8>) : u64 {
 
         let length = Vector::length<Token>(tokens);
         let i: u64 = 0;
         
         while(i < length) {
             let token = Vector::borrow<Token>(tokens, i);
-            if( Compare::cmp_bcs_bytes(&make_token_id(token), token_id) == 0 )
-            {
+            if( Compare::cmp_bcs_bytes(&make_token_id(token), token_id) == 0 ) {
                 break
-            };
+            } else {
+                i = i + 1;
+            }
         };
 
         i
@@ -146,12 +158,12 @@ module NonFungibleToken {
     //
     //  Get NFT token from an account
     //
-    fun get_nft_token<Token: key+store>(account: &signer, token_id: &vector<u8>): Token 
+    fun get_nft_token<Token: store>(account: &signer, token_id: &vector<u8>): Token 
     acquires NonFungibleToken {
         let sender = Signer::address_of(account);
         assert(exists<NonFungibleToken<Token>>(sender), 8006);
         assert(!exists<TokenLock<Token>>(sender), 8007);
-        Self::lock<Token>(account);
+        //Self::lock<Token>(account);
 
         let nft = borrow_global_mut<NonFungibleToken<Token>>(sender);    
         let length = Vector::length<Token>(&nft.tokens);
@@ -209,7 +221,7 @@ module NonFungibleToken {
         Event::emit_event(&mut info.mint_events, MintEvent{ token_id, receiver });
         
         //  Increment NFT amount
-        increment_nft_amount<Token>();
+        increase_nft_amount<Token>();
         //
         //  Deposite NFT to receiver
         //
@@ -222,22 +234,26 @@ module NonFungibleToken {
     //
     //  Burn a NFT token
     //
-    public fun burn<Token: copy+drop+key+store>(sig: &signer, token_id: &vector<u8>)
+    public fun burn<Token: drop+store>(sig: &signer, token_id: &vector<u8>)
     acquires NonFungibleToken, Info  {
+    
         let sender = Signer::address_of(sig);
                 
-        check_admin_permission<Token>(sender);
+        check_admin_permission<Token>(sender);        
 
-        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
-
-        // Erase all owners by token id        
-        // let ret = Map::erase<vector<u8>, vector<address>>(&mut info.owners, token_id);
-        // assert(ret, Errors::invalid_argument(ENFT_TOKEN_HAS_NOT_EXISTED));
+        // // Erase all owners by token id        
+        // // let ret = Map::erase<vector<u8>, vector<address>>(&mut info.owners, token_id);
+        // // assert(ret, Errors::invalid_argument(ENFT_TOKEN_HAS_NOT_EXISTED));
         
         // drop token by token id
         let _token = get_nft_token<Token>(sig, token_id);
 
-        // Emit sent event        
+        decrease_nft_amount<Token>();
+        //
+        // Emit sent event
+        //                
+        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        
         Event::emit_event(&mut info.burn_events, BurnEvent{ token_id: *token_id });
     }
     //

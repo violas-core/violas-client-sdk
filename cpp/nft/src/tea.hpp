@@ -53,9 +53,6 @@ struct NftInfo
 
 std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
 {
-    // std::string identity(tea.identity.begin(), tea.identity.end());
-    // std::string manufacture(begin(tea.manufacture), end(tea.manufacture));
-
     std::cout << "Global Info { \n"
               << "\t" << "total : " << nft_info.total << "\n"
               << "\t" << "amount : " << nft_info.amount << "\n"

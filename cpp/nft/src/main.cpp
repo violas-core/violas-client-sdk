@@ -23,7 +23,7 @@ void check_istream_eof(istream &is, string_view err);
 
 void deploy_stdlib(client_ptr client);
 
-void register_mountwuyi_tea_nft(client_ptr client);
+void register_mountwuyi_tea_nft(client_ptr client, uint64_t total);
 
 void accept(client_ptr client, size_t account_index);
 
@@ -157,7 +157,14 @@ map<string, handle> create_commands(client_ptr client, string url)
         {"deploy", [=](istringstream &params)
          { deploy_stdlib(client); }},
         {"register", [=](istringstream &params)
-         { register_mountwuyi_tea_nft(client); }},
+         {
+             check_istream_eof(params, "NFT total number");
+
+             uint64_t total = 1000;
+             params >> total;
+
+             register_mountwuyi_tea_nft(client, total);
+         }},
         {"accept", [=](istringstream &params)
          {
              size_t account_index = 0;
@@ -282,7 +289,7 @@ void deploy_stdlib(client_ptr client)
     }
 }
 
-void register_mountwuyi_tea_nft(client_ptr client)
+void register_mountwuyi_tea_nft(client_ptr client, uint64_t total)
 {
     auto accounts = client->get_all_accounts();
     auto &admin = accounts[0];
@@ -300,7 +307,7 @@ void register_mountwuyi_tea_nft(client_ptr client)
     client->execute_script_file(VIOLAS_ROOT_ACCOUNT_ID,
                                 "move/stdlib/scripts/nft_register.mv",
                                 {tea_tag},
-                                {uint64_t(1000), admin.address});
+                                {uint64_t(total), admin.address});
     cout << "Register NFT for admin successfully." << endl;
 
     //accept(client, admin.index);
@@ -327,10 +334,9 @@ void mint_tea_nft(client_ptr client, Address addr)
     auto accounts = client->get_all_accounts();
     auto &admin = accounts[0];
     auto &dealer1 = accounts[1];
-    //auto &dealer2 = accounts[2];
 
     default_random_engine e(clock());
-    uniform_int_distribution<unsigned> u(0, 26);
+    uniform_int_distribution<unsigned> u(0, 25);
 
     vector<uint8_t> sn = {'1', '2', '3', '4', '5', '6', uint8_t('a' + u(e)), uint8_t('a' + u(e))};
     string wuyi = "MountWuyi";
@@ -346,7 +352,7 @@ void mint_tea_nft(client_ptr client, Address addr)
                                     vector<uint8_t>(begin(pa), end(pa)),
                                     uint64_t(0),
                                     sn,
-                                    dealer1.address,
+                                    addr,
                                 });
 
     cout << "Mint a Tea NFT to dealer 1" << endl;
@@ -361,6 +367,8 @@ void burn_tea_nft(client_ptr client, const TokenId &token_id)
                                 "move/stdlib/scripts/nft_burn.mv",
                                 {tea_tag},
                                 {vector<uint8_t>(begin(token_id), end(token_id))});
+
+    cout << "burned NFT with token id " << token_id << endl;
 }
 
 void transfer(client_ptr client, size_t account_index, Address receiver, uint64_t nft_index)

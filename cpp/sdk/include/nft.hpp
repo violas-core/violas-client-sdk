@@ -5,7 +5,7 @@
 
 namespace violas
 {
-    //template<typename T>
+    template<typename T>
     class NonFungibleToken
     {
         client_ptr _client;
@@ -15,7 +15,7 @@ namespace violas
 
         virtual ~NonFungibleToken() {}
 
-        void register_instance();
+        void register_();
 
         void mint();
 

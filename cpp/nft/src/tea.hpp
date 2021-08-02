@@ -19,6 +19,13 @@ struct Tea
     {
         return bs && kind && manufacture && PA && PD && SN;
     }
+
+    static const violas::TypeTag &type_tag()
+    {
+        static const violas::TypeTag tea_tag(violas::VIOLAS_STDLIB_ADDRESS, "MountWuyi", "Tea");
+
+        return tea_tag;
+    }
 };
 
 std::ostream &operator<<(std::ostream &os, const Tea &tea)
@@ -54,11 +61,16 @@ struct NftInfo
 std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
 {
     std::cout << "Global Info { \n"
-              << "\t" << "total : " << nft_info.total << "\n"
-              << "\t" << "amount : " << nft_info.amount << "\n"
-              << "\t" << "admin : " << nft_info.admin << "\n"
-              << "\t" << "minted amount : " << nft_info.mint_event.counter << "\n"
-              << "\t" << "burned amount : " << nft_info.burn_event.counter << "\n"
+              << "\t"
+              << "total : " << nft_info.total << "\n"
+              << "\t"
+              << "amount : " << nft_info.amount << "\n"
+              << "\t"
+              << "admin : " << nft_info.admin << "\n"
+              << "\t"
+              << "minted amount : " << nft_info.mint_event.counter << "\n"
+              << "\t"
+              << "burned amount : " << nft_info.burn_event.counter << "\n"
               << "}";
 
     return os;

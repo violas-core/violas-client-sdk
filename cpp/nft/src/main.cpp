@@ -11,6 +11,7 @@
 #include <utils.h>
 #include <console.hpp>
 #include <ssl_aes.hpp>
+#include <nft.hpp>
 #include "tea.hpp"
 
 using namespace std;
@@ -53,7 +54,8 @@ int main(int argc, char *argv[])
         args.parse_command_line(argc, argv);
 
         auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemonic, args.waypoint);
-
+        auto nft = NonFungibleToken<Tea>(client);
+        
         cout << "NFT Management 1.0" << endl;
 
         auto admin = client->create_next_account();
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
 
         auto console = Console::create("NFT$ ");
 
-        console->add_completion("exit");
+        console->add_completion("quit");
 
         auto commands = create_commands(client, args.url);
         for (auto cmd : commands)
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
         //  Loop to read a line
         //
         for (auto line = trim(console->read_line());
-             line != "exit";
+             line != "quit";
              line = trim(console->read_line()))
         {
             istringstream iss(line);

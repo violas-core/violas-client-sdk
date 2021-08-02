@@ -1,21 +1,25 @@
 #ifndef NFT_HPP
 #define NFT_HPP
 #include <string>
-#include "violas_sdk2.hpp"
+//#include "violas_sdk2.hpp"
 
 namespace violas
 {
     template<typename T>
     class NonFungibleToken
     {
-        client_ptr _client;
+        violas::client_ptr _client;
 
     public:
-        NonFungibleToken(client_ptr clipent);
+        NonFungibleToken(client_ptr client);
 
         virtual ~NonFungibleToken() {}
+        
+        void  deploy();
+        
+        void register_instance(uint64_t total_number);
 
-        void register_();
+        void accept(size_t account);
 
         void mint();
 

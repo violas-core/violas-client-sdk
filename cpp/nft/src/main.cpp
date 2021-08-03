@@ -3,15 +3,14 @@
 #include <functional>
 #include <random>
 
-#include <violas_sdk2.hpp>
 #include <utils.h>
+#include <violas_sdk2.hpp>
 #include <argument.hpp>
 #include <bcs_serde.hpp>
 #include <json_rpc.hpp>
-#include <utils.h>
 #include <console.hpp>
 #include <ssl_aes.hpp>
-#include <nft.hpp>
+//#include <nft.hpp>
 #include "tea.hpp"
 
 using namespace std;
@@ -43,7 +42,7 @@ optional<Address> get_last_owner(string url, const TokenId &token_id);
 optional<NftInfo> get_nft_info(string url);
 
 using handle = function<void(istringstream &params)>;
-map<string, handle> create_commands(client_ptr client, string url);
+map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> nft);
 
 int main(int argc, char *argv[])
 {
@@ -54,7 +53,7 @@ int main(int argc, char *argv[])
         args.parse_command_line(argc, argv);
 
         auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemonic, args.waypoint);
-        auto nft = NonFungibleToken<Tea>(client);
+        auto nft = make_shared<NonFungibleToken<Tea>>(client);
         
         cout << "NFT Management 1.0" << endl;
 
@@ -70,7 +69,7 @@ int main(int argc, char *argv[])
 
         console->add_completion("quit");
 
-        auto commands = create_commands(client, args.url);
+        auto commands = create_commands(client, args.url, nft);
         for (auto cmd : commands)
         {
             console->add_completion(cmd.first);
@@ -153,11 +152,14 @@ T get_from_stream(istringstream &params, client_ptr client, string_view err_info
     return addr;
 }
 
-map<string, handle> create_commands(client_ptr client, string url)
+map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> nft)
 {
     return map<string, handle>{
         {"deploy", [=](istringstream &params)
-         { deploy_stdlib(client); }},
+         { 
+             //deploy_stdlib(client); 
+             nft->deploy();
+         }},
         {"register", [=](istringstream &params)
          {
              check_istream_eof(params, "NFT total number");
@@ -165,14 +167,16 @@ map<string, handle> create_commands(client_ptr client, string url)
              uint64_t total = 1000;
              params >> total;
 
-             register_mountwuyi_tea_nft(client, total);
+             //register_mountwuyi_tea_nft(client, total);
+             nft->register_instance(total);
          }},
         {"accept", [=](istringstream &params)
          {
              size_t account_index = 0;
              params >> account_index;
 
-             accept(client, account_index);
+             //accept(client, account_index);
+             nft->accept(account_index);
          }},
         {"mint", [=](istringstream &params)
          {
@@ -185,7 +189,8 @@ map<string, handle> create_commands(client_ptr client, string url)
 
              params >> token_id;
 
-             burn_tea_nft(client, token_id);
+             //burn_tea_nft(client, token_id);
+             nft->burn(token_id);
          }},
         {"transfer", [=](istringstream &params)
          {
@@ -202,13 +207,15 @@ map<string, handle> create_commands(client_ptr client, string url)
              check_istream_eof(params, "nft_index");
              params >> nft_index;
 
-             transfer(client, account_index, receiver, nft_index);
+             //transfer(client, account_index, receiver, nft_index);
+             nft->transfer(account_index, receiver, nft_index);
          }},
         {"balance", [=](istringstream &params)
          {
              auto addr = get_from_stream<Address>(params, client);
 
-             auto opt_nft_tea = get_nft(url, addr);
+             //auto opt_nft_tea = get_nft(url, addr);
+             auto opt_nft_tea = nft->get_nfts<NftTea>(url, addr);
              if (opt_nft_tea != nullopt)
              {
                  int i = 0;

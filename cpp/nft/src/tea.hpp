@@ -1,11 +1,10 @@
 #ifndef TEA_HPP
 #define TEA_HPP
-//#include ""
+#include <nft.hpp>
 
-using TokenId = std::array<uint8_t, 32>;
 struct Tea;
 
-TokenId compute_token_id(const Tea &t);
+violas::TokenId compute_token_id(const Tea &t);
 
 struct Tea
 {
@@ -42,39 +41,6 @@ std::ostream &operator<<(std::ostream &os, const Tea &tea)
     return os;
 }
 
-struct NftInfo
-{
-    bool limited;
-    uint64_t total;
-    uint64_t amount;
-    violas::Address admin;
-    std::map<std::vector<uint8_t>, std::vector<violas::Address>> owners;
-    violas::EventHandle mint_event;
-    violas::EventHandle burn_event;
-
-    BcsSerde &serde(BcsSerde &bs)
-    {
-        return bs && limited && total && amount && admin && owners && mint_event && burn_event;
-    }
-};
-
-std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
-{
-    std::cout << "Global Info { \n"
-              << "\t"
-              << "total : " << nft_info.total << "\n"
-              << "\t"
-              << "amount : " << nft_info.amount << "\n"
-              << "\t"
-              << "admin : " << nft_info.admin << "\n"
-              << "\t"
-              << "minted amount : " << nft_info.mint_event.counter << "\n"
-              << "\t"
-              << "burned amount : " << nft_info.burn_event.counter << "\n"
-              << "}";
-
-    return os;
-}
 
 struct NftTea
 {

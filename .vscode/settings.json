@@ -74,7 +74,9 @@
         "numbers": "cpp",
         "hash_set": "cpp",
         "unordered_set": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "csignal": "cpp",
+        "semaphore": "cpp"
     },
     "git.ignoreLimitWarning": true,
     "cmake.configureOnOpen": false,

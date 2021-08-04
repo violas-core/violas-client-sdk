@@ -5,7 +5,7 @@
 #include <tuple>
 #include <functional>
 #include <client.hpp>
-#include "utils.h"
+#include "utils.hpp"
 #include "argument.hpp"
 #include "json.hpp"
 

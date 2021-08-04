@@ -2,7 +2,7 @@
 #define NFT_HPP
 #include <string>
 #include <array>
-#include "utils.h"
+#include "utils.hpp"
 //#include "violas_sdk2.hpp"
 
 namespace violas
@@ -25,24 +25,37 @@ namespace violas
         }
     };
 
-    std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info);
+    // std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
     // {
-    //     std::cout << "Global Info { \n"
-    //               << "\t"
-    //               << "total : " << nft_info.total << "\n"
-    //               << "\t"
-    //               << "amount : " << nft_info.amount << "\n"
-    //               << "\t"
-    //               //<< "admin : " << nft_info.admin << "\n"
-    //               << "\t"
-    //               << "minted amount : " << nft_info.mint_event.counter << "\n"
-    //               << "\t"
-    //               << "burned amount : " << nft_info.burn_event.counter << "\n"
-    //               << "}";
+    //     os << "Global Info { \n"
+    //        << "\t"
+    //        << "total : " << nft_info.total << "\n"
+    //        << "\t"
+    //        << "amount : " << nft_info.amount << "\n"
+    //        << "\t"
+    //        //<< "admin : " << nft_info.admin << "\n"
+    //        << "\t"
+    //        << "minted amount : " << nft_info.mint_event.counter << "\n"
+    //        << "\t"
+    //        << "burned amount : " << nft_info.burn_event.counter << "\n"
+    //        << "}";
 
     //     return os;
     // }
+    template <typename T>
+    TokenId compute_token_id(const T &t)
+    {
+        BcsSerde serde;
+        auto temp = t;
 
+        serde &&temp;
+
+        auto bytes = serde.bytes();
+
+        auto token_id = sha3_256(bytes.data(), bytes.size());
+
+        return token_id;
+    }
     //
     //      NonFungibleToken
     //

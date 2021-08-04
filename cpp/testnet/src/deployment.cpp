@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <functional>
 #include <violas_sdk2.hpp>
-#include "utils.h"
+#include "utils.hpp"
 
 using namespace std;
 using namespace violas;

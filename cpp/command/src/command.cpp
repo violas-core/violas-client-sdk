@@ -7,7 +7,7 @@
 #include <sstream>
 // cpp/include
 #include <json.hpp>
-#include <utils.h>
+#include <utils.hpp>
 #include <ssl_aes.hpp>
 #include "command.hpp"
 

@@ -36,7 +36,7 @@ std::ostream &operator<<(std::ostream &os, const Tea &tea)
               << "Production Date : " << tea.PD << ", "
               << "SN : " << std::string(tea.SN.begin(), tea.SN.end())
               << " }, "
-              << "token id : " << compute_token_id(tea);
+              << "token id : " << violas::compute_token_id(tea);
 
     return os;
 }

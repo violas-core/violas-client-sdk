@@ -11,7 +11,7 @@
 #include <client.hpp>   //rust/client-proxy/ffi/client.hpp
 #include <argument.hpp> //cpp/include
 #include "command.hpp"
-#include "utils.h"
+#include "utils.hpp"
 
 using namespace std;
 using namespace violas;

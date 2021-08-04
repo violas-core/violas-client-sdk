@@ -2,7 +2,7 @@
 #include <stack>
 #include <queue>
 #include "../include/json.hpp"
-#include "../include/utils.h"
+#include "../include/utils.hpp"
 #include "../include/bcs_serde.hpp"
 #include "../include/violas_sdk2.hpp"
 

@@ -5,30 +5,13 @@
 #include <string>
 #include <optional>
 #include <client.hpp>
-#include "utils.h"
+#include "utils.hpp"
 #include "nft.hpp"
 
 using namespace std;
 
 namespace violas
 {
-    std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
-    {
-        os << "Global Info { \n"
-           << "\t"
-           << "total : " << nft_info.total << "\n"
-           << "\t"
-           << "amount : " << nft_info.amount << "\n"
-           << "\t"
-           << "admin : " << nft_info.admin << "\n"
-           << "\t"
-           << "minted amount : " << nft_info.mint_event.counter << "\n"
-           << "\t"
-           << "burned amount : " << nft_info.burn_event.counter << "\n"
-           << "}";
-
-        return os;
-    }
 
     template <typename T>
     NonFungibleToken<T>::NonFungibleToken(client_ptr client) : _client(client)
@@ -162,11 +145,13 @@ namespace violas
 
         violas::AccountState state(rpc_cli);
 
-        StructTag tag{
+        auto type_tag = T::type_tag();
+
+        violas::StructTag tag{
             Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
             "NonFungibleToken",
             "Info",
-            {T::type_tag()}};
+            {violas::StructTag{type_tag.address, type_tag.module_name, type_tag.resource_name}}};
 
         return state.get_resource<NftInfo>(VIOLAS_ROOT_ADDRESS, tag);
     }

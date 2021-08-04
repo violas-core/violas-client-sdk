@@ -1,7 +1,7 @@
 #include <cpprest/filestream.h>
 #include <cpprest/http_client.h>
 #include <cpprest/json.h>
-#include "../include/utils.h"
+#include "../include/utils.hpp"
 #include "../include/json_rpc.hpp"
 
 using namespace std;

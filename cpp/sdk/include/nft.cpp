@@ -54,12 +54,12 @@ namespace violas
     {
         auto accounts = _client->get_all_accounts();
         auto &admin = accounts[0];
-        auto &dealer1 = accounts[1];
-        auto &dealer2 = accounts[2];
+        //auto &dealer1 = accounts[1];
+        //auto &dealer2 = accounts[2];
 
         _client->create_parent_vasp_account("VLS", 0, admin.address, admin.auth_key, "Tea VASP", "", admin.pub_key, true);
-        _client->create_child_vasp_account("VLS", 0, dealer1.address, dealer1.auth_key, true, 0, true);
-        _client->create_child_vasp_account("VLS", 0, dealer2.address, dealer2.auth_key, true, 0, true);
+        //_client->create_child_vasp_account("VLS", 0, dealer1.address, dealer1.auth_key, true, 0, true);
+        //_client->create_child_vasp_account("VLS", 0, dealer2.address, dealer2.auth_key, true, 0, true);
 
         //
         //  Rgiester NFT Tea and set address for admin
@@ -70,13 +70,11 @@ namespace violas
                                      {T::type_tag()},
                                      {uint64_t(total_number), admin.address});
 
-        cout << "Register NFT for admin successfully." << endl;
+        accept(admin.index);
+        //accept(dealer1.index);
+        //accept(dealer2.index);
 
-        //accept(client, admin.index);
-        accept(dealer1.index);
-        accept(dealer2.index);
-
-        cout << "Accept NFT for dealer successfully. " << endl;
+        cout << "Register NFT successfully." << endl;
     }
 
     template <typename T>

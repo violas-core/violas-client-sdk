@@ -26,8 +26,14 @@ add_subdirectory(testnet)
 add_subdirectory(vls)
 
 install(DIRECTORY ../move DESTINATION . FILES_MATCHING PATTERN "*.mv")
-install(DIRECTORY testnet/mnemonic DESTINATION .)
 install(PROGRAMS ../rust/violas-oracle/target/release/violas-oracle TYPE BIN)
+
+# install mnemonic files 
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+    install(DIRECTORY testnet/mnemonic DESTINATION .)
+ELSE()
+    install(FILES testnet/mnemonic/nft.mne DESTINATION mnemonic)
+ENDIF()
 
 # pack all files
 include(InstallRequiredSystemLibraries)

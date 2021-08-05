@@ -12,6 +12,7 @@ module MountWuyi {
         PA : vector<u8>,		// Production Area
         PD : u64,			    // Production Date
 	    SN : vector<u8>,		// Sequence Number
+        url: vector<u8>,		// refer to an address of a web page
     }
     
     fun verify_kind(kind: u8) {
@@ -28,6 +29,7 @@ module MountWuyi {
                             pa: vector<u8>,         // Production Area
                             pd: u64,                // Production Date
                             sn: vector<u8>,		    // Sequence Number
+                            url: vector<u8>,	    // url
                             receiver: address) {
         
         verify_kind(kind);
@@ -38,7 +40,8 @@ module MountWuyi {
             manufacturer,
             PA : pa,
             PD : pd, // : DiemTimestamp::now_seconds() / SECONDS_IN_ONE_DAY * SECONDS_IN_ONE_DAY    // Keep date and remove time
-            SN : sn
+            SN : sn,
+            url
         } ;
 
         NonFungibleToken::mint<Tea>(sig, receiver, tea);

@@ -13,10 +13,11 @@ struct Tea
     std::vector<uint8_t> PA; // Production Area
     uint64_t PD;             // Production Date
     std::vector<uint8_t> SN; // Sequence Number
+    std::vector<uint8_t> url;
 
     BcsSerde &serde(BcsSerde &bs)
     {
-        return bs && kind && manufacture && PA && PD && SN;
+        return bs && kind && manufacture && PA && PD && SN && url;
     }
 
     static const violas::TypeTag &type_tag()
@@ -29,18 +30,18 @@ struct Tea
 
 std::ostream &operator<<(std::ostream &os, const Tea &tea)
 {
-    std::cout << "Tea { "
+    std::cout << "\t" "Tea { "
               << "Kind : " << short(tea.kind) << ", "
-              << "manufacture : " << std::string(begin(tea.manufacture), end(tea.manufacture)) << ", "
-              << "Production Arem : " << std::string(begin(tea.PA), end(tea.PA)) << ", "
-              << "Production Date : " << tea.PD << ", "
-              << "SN : " << std::string(tea.SN.begin(), tea.SN.end())
-              << " }, "
-              << "token id : " << violas::compute_token_id(tea);
+              << "Manufacture : " << std::string(begin(tea.manufacture), end(tea.manufacture)) << ", "
+              << "Production area : " << std::string(begin(tea.PA), end(tea.PA)) << ", "
+              << "Production date : " << std::put_time(std::localtime((time_t*)&tea.PD), "%F") << ", "
+              << "SN : " << std::string(tea.SN.begin(), tea.SN.end()) << ", "
+              << "URL : " << std::string(std::begin(tea.url), std::end(tea.url))
+              << " } \n"
+              << "\t" "token id : " << violas::compute_token_id(tea);
 
     return os;
 }
-
 
 struct NftTea
 {

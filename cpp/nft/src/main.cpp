@@ -35,13 +35,14 @@ int main(int argc, char *argv[])
 
         cout << "NFT Management 1.0" << endl;
 
-        auto admin = client->create_next_account();
-        auto dealer1 = client->create_next_account();
-        auto dealer2 = client->create_next_account();
+        client->create_next_account();
+        //auto admin = client->create_next_account();
+        //auto dealer1 = client->create_next_account();
+        //auto dealer2 = client->create_next_account();
 
-        cout << "Admin      : " << admin.address << "\n"
-             << "Dealer 1   : " << dealer1.address << "\n"
-             << "Dealer 2   : " << dealer2.address << endl;
+        // cout << "Admin      : " << admin.address << "\n"
+        //      << "Dealer 1   : " << dealer1.address << "\n"
+        //      << "Dealer 2   : " << dealer2.address << endl;
 
         auto console = Console::create("NFT$ ");
 
@@ -52,6 +53,10 @@ int main(int argc, char *argv[])
         {
             console->add_completion(cmd.first);
         }
+
+        // show all account
+        istringstream iss;
+        commands["list-accounts"](iss);
 
         //
         //  Loop to read a line
@@ -245,14 +250,64 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
                  }
              }
          }},
-        {"info", [=](istringstream &oarans)
+        {"info", [=](istringstream &params)
          {
              auto opt_info = nft->get_nft_info(url);
 
              if (opt_info != nullopt)
                  cout << *opt_info << endl;
          }},
-    };
+        {"create_child_account", [=](istringstream &params)
+         {
+             Address addr;
+             AuthenticationKey auth_key;
+
+             check_istream_eof(params, "authentication key");
+             params >> auth_key;
+
+             copy(begin(auth_key) + 16, begin(auth_key) + 32, begin(addr));
+
+             client->create_child_vasp_account("VLS", 0, addr, auth_key, true, 0, true);
+         }},
+        {"add-account", [=](istringstream &params)
+         {
+             client->create_next_account();
+         }},
+        {"list-accounts", [=](istringstream &params)
+         {
+             auto accounts = client->get_all_accounts();
+
+             cout << color::CYAN
+                  << left << setw(10) << "index"
+                  << left << setw(40) << "Address"
+                  << left << setw(40) << "Authentication key"
+                  << color::RESET << endl;
+
+             int i = 0;
+             for (auto &account : accounts)
+             {
+                 cout << left << setw(10) << i++
+                      << left << setw(40) << account.address
+                      << left << setw(40) << account.auth_key
+                      << endl;
+             }
+         }}};
+}
+
+template <typename T>
+void input(T &t)
+{
+    if (cin.get() != '\n')
+    {
+        cin.unget();
+        cin >> t;
+        cin.get(); //skip the lastest char Enter
+    }
+}
+
+vector<uint8_t> string_to_bytes(const string &str)
+{
+    return vector<uint8_t>(begin(str), end(str));
 }
 
 void mint_tea_nft(client_ptr client, Address addr)
@@ -266,31 +321,66 @@ void mint_tea_nft(client_ptr client, Address addr)
     uniform_int_distribution<unsigned> u(0, 25);
     size_t kind = 0;
 
-    cout << "input kind(0, 1, 2, 3, 4, 5, default is 0)  = ";
+    cout << "input kind(0, 1, 2, 3, 4, default is 0) :";
+    input(kind);
+
+    string PA = "MountWuyi City";
+    cout << "input production area (default is '" << PA << "') : ";
+    input(PA);
+
+    string manufacturer = "21VNET Tea";
+    cout << "input manufacturer (default is '" << manufacturer << "') : ";
+    input(manufacturer);
+
+    string SN = {'1', '2', '3', '4', '5', '6', char('a' + u(e)), char('a' + u(e))};
+    cout << "input sequence number (default is '" << SN << "') : ";
+    input(SN);
+
+    string url = "https://www.mountwuyitea.com";
+    cout << "input a url (default is '" << url << "' : ";
+    input(url);
+
+    time_t now = time(nullptr);
+    cout << "input production date (default is '" << put_time(localtime(&now), "%F") << "') : ";
     if (cin.get() != '\n')
     {
         cin.unget();
-        cin >> kind;
-    }    
 
-    vector<uint8_t> sn = {'1', '2', '3', '4', '5', '6', uint8_t('a' + u(e)), uint8_t('a' + u(e))};
-    string wuyi = "MountWuyi";
-    string pa = "MountWuyi City";
-    vector<uint8_t> manufacturer(wuyi.begin(), wuyi.end());
+        //cout << "local = " << std::locale("").name() << endl;
+        std::tm t = {};
+        cin.imbue(locale("zh_CN.UTF-8"));
+        cin >> std::get_time(&t, "%Y-%m-%d");
+
+        if (cin.fail())
+            cout << "The date format is error, use default date " << put_time(localtime(&now), "%F") << "." << endl;
+        else
+        {
+            now = mktime(&t);
+        }
+
+        cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
+    // Keep date and remove time
+    std::tm *t = localtime(&now);
+    t->tm_hour = t->tm_min = t->tm_sec = 0;
+    now = mktime(t);
 
     client->execute_script_file(admin.index,
                                 "move/tea/scripts/mint_mountwuyi_tea_nft.mv",
                                 {},
                                 {
                                     uint8_t(kind),
-                                    manufacturer,
-                                    vector<uint8_t>(begin(pa), end(pa)),
-                                    uint64_t(0),
-                                    sn,
+                                    string_to_bytes(manufacturer),
+                                    string_to_bytes(PA),
+                                    uint64_t(now),
+                                    string_to_bytes(SN),
+                                    string_to_bytes(url),
                                     addr,
                                 });
 
-    cout << "Mint a Tea NFT to dealer 1" << endl;
+    cout << "Minted a Tea NFT to address " << addr << endl;
 }
 
 std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)

@@ -32,7 +32,8 @@ install(PROGRAMS ../rust/violas-oracle/target/release/violas-oracle TYPE BIN)
 IF(CMAKE_BUILD_TYPE MATCHES "Debug")
     install(DIRECTORY testnet/mnemonic DESTINATION .)
 ELSE()
-    install(FILES testnet/mnemonic/nft.mne DESTINATION mnemonic)
+    #install(FILES testnet/mnemonic/nft.mne DESTINATION mnemonic)
+    install(FILES /lib/x86_64-linux-gnu/libcpprest.so.2.10 DESTINATION lib)
 ENDIF()
 
 # pack all files

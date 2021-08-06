@@ -24,6 +24,12 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
 
 int main(int argc, char *argv[])
 {
+    if (argc < 11)
+    {
+        cout << "usage : bin/nft -u url -m mint.key -n mnemonic -w waypoint -c chain_id" << endl;
+        return 0;
+    }
+
     try
     {
         Arguments args;
@@ -244,9 +250,10 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
              auto receivers = nft->get_owners(url, token_id);
              if (receivers != nullopt)
              {
+                 size_t i = 0;
                  for (const auto receiver : *receivers)
                  {
-                     cout << receiver << endl;
+                     cout << i++ << "  -  "<< receiver << endl;
                  }
              }
          }},
@@ -391,7 +398,7 @@ std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
        << "\t"
        << "amount : " << nft_info.amount << "\n"
        << "\t"
-       << "admin : " << nft_info.admin << "\n"
+       << "admin address: " << nft_info.admin << "\n"
        << "\t"
        << "minted amount : " << nft_info.mint_event.counter << "\n"
        << "\t"

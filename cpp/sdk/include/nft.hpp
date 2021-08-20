@@ -25,6 +25,43 @@ namespace violas
         }
     };
 
+    struct MintedEvent
+    {
+        std::vector<uint8_t> token_id;
+        violas::Address receiver;
+
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && token_id && receiver;
+        }
+    };
+
+    struct BurnedEvent
+    {
+        std::vector<uint8_t> token_id;
+    };
+
+    struct SentEvent
+    {
+        std::vector<uint8_t> token_id;
+        violas::Address payee;
+        std::vector<uint8_t> metadata;
+    };
+
+    struct ReceivedEvent
+    {
+        std::vector<uint8_t> token_id;
+        violas::Address payer;
+        std::vector<uint8_t> metadata;
+    };
+
+    enum EventType
+    {
+        minted,
+        burned,
+        sent,
+        received
+    };
     // std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
     // {
     //     os << "Global Info { \n"
@@ -64,9 +101,10 @@ namespace violas
     {
     protected:
         violas::client_ptr _client;
+        std::string _url; //json rpc url
 
     public:
-        NonFungibleToken(client_ptr client);
+        NonFungibleToken(client_ptr client, std::string url);
 
         virtual ~NonFungibleToken() {}
 
@@ -88,6 +126,13 @@ namespace violas
         std::optional<std::vector<Address>> get_owners(std::string url, const TokenId &token_id);
 
         std::optional<NftInfo> get_nft_info(std::string url);
+
+        template <typename EVENT>
+        std::vector<EVENT> query_events(EventType event_type, const violas::Address &address, uint64_t start, uint64_t limit);
+
+    protected:
+        std::string get_event_handle(EventType event_type,
+                                     const violas::Address &address);
     };
 
     template <typename T>

@@ -103,6 +103,41 @@ namespace json_rpc
 
             return asp;
         }
+
+        virtual std::vector<Event>
+        get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id) override
+        {
+            vector<Event> events;
+            string method = format(R"({"jsonrpc":"2.0","method":"get_events","params":["%s", %d, %d],"id":1})",
+                                   event_key.c_str(),
+                                   start,
+                                   limit,
+                                   rpc_id);
+            string content_type = "application/json";
+
+            auto rpc_response = cli.request(methods::POST, "/", method, content_type)
+                                    .then([=](http_response response) -> pplx::task<json::value>
+                                          {
+                                              if (response.status_code() != 200)
+                                                  __throw_runtime_error(response.extract_string().get().c_str());
+
+                                              return response.extract_json();
+                                          })
+                                    .get();
+
+            auto error = rpc_response["error"];
+            if (!error.is_null())
+                __throw_runtime_error(("fun : get_account_state_blob, error : " + error.serialize()).c_str());
+
+            auto result = rpc_response["result"];
+            for (auto &e : result.as_array())
+            {
+                auto data = e["data"]["bytes"];
+                
+            }
+
+            return events;
+        }
     };
 
     std::shared_ptr<Client>

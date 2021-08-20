@@ -61,6 +61,16 @@ std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
     return os << oss.str();
 }
 
+inline std::ostringstream &operator<<(std::ostringstream &oss, const std::vector<uint8_t> &bytes)
+{
+    for (auto v : bytes)
+    {
+        oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+    }
+
+    return oss;
+}
+
 template <size_t N>
 void operator>>(const std::string &str, std::array<uint8_t, N> &bytes)
 {

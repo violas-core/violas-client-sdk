@@ -3,6 +3,7 @@
 //
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <optional>
 #include <client.hpp>
 #include "utils.hpp"
@@ -14,7 +15,7 @@ namespace violas
 {
 
     template <typename T>
-    NonFungibleToken<T>::NonFungibleToken(client_ptr client) : _client(client)
+    NonFungibleToken<T>::NonFungibleToken(client_ptr client, string url) : _client(client), _url(url)
     {
     }
 
@@ -171,5 +172,55 @@ namespace violas
         }
 
         return {};
+    }
+
+    template <typename T>
+    string NonFungibleToken<T>::get_event_handle(EventType event_type,
+                                                 const violas::Address &address)
+    {
+        switch (event_type)
+        {
+        case minted:
+        case burned:
+        {
+            auto nft_info_opt = get_nft_info(_url);
+            if (nft_info_opt != nullopt)
+            {
+                ostringstream oss;
+
+                if (event_type == minted)
+                    oss << nft_info_opt->mint_event.guid;
+                else
+                    oss << nft_info_opt->burn_event.guid;
+
+                return oss.str();
+            }
+        }
+        break;
+
+        default:
+            break;
+        }
+
+        return string();
+    }
+
+    template <typename T>
+    template <typename EVENT>
+    std::vector<EVENT> NonFungibleToken<T>::query_events(EventType event_type,
+                                                         const violas::Address &address,
+                                                         uint64_t start,
+                                                         uint64_t limit)
+    {
+        std::vector<EVENT> events;
+
+        using namespace json_rpc;
+        auto rpc_cli = json_rpc::Client::create(_url);
+
+        string key = get_event_handle(event_type, address);
+
+        auto result = rpc_cli->get_events(key, start, limit);
+
+        return events;
     }
 }

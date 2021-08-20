@@ -29,6 +29,10 @@ namespace json_rpc
         AccountStateProof proof;
     };
 
+    struct Event
+    {
+    };
+
     struct Client
     {
         static std::shared_ptr<Client>
@@ -41,6 +45,9 @@ namespace json_rpc
 
         virtual AccountStateWithProof
         get_account_state_blob(std::string account_address) = 0;
+
+        virtual std::vector<Event>
+        get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id = 1) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

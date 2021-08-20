@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
         args.parse_command_line(argc, argv);
 
         auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemonic, args.waypoint);
-        auto nft = make_shared<NonFungibleToken<Tea>>(client);
+        auto nft = make_shared<NonFungibleToken<Tea>>(client, args.url);
 
         cout << "NFT Management 1.0" << endl;
 
@@ -51,8 +51,9 @@ int main(int argc, char *argv[])
         //      << "Dealer 2   : " << dealer2.address << endl;
 
         auto console = Console::create("NFT$ ");
+        const string exit = "exit";
 
-        console->add_completion("quit");
+        console->add_completion(exit);
 
         auto commands = create_commands(client, args.url, nft);
         for (auto cmd : commands)
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
         //  Loop to read a line
         //
         for (auto line = trim(console->read_line());
-             line != "quit";
+             line != exit;
              line = trim(console->read_line()))
         {
             istringstream iss(line);
@@ -253,7 +254,7 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
                  size_t i = 0;
                  for (const auto receiver : *receivers)
                  {
-                     cout << i++ << "  -  "<< receiver << endl;
+                     cout << i++ << "  -  " << receiver << endl;
                  }
              }
          }},
@@ -298,7 +299,14 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
                       << left << setw(40) << account.auth_key
                       << endl;
              }
-         }}};
+         }},
+        {"query-events", [=](istringstream &params)
+         {
+             auto addr = get_from_stream<Address>(params, client);
+
+             auto events = nft->query_events<MintedEvent>(minted, addr, 0, 10);
+         }},
+    };
 }
 
 template <typename T>
@@ -308,7 +316,7 @@ void input(T &t)
     {
         cin.unget();
         cin >> t;
-        cin.get(); //skip the lastest char Enter
+        cin.get(); //skip the lastest char 'Enter'
     }
 }
 

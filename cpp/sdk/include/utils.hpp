@@ -37,10 +37,16 @@ void try_catch(F f, bool showing_exp = true)
 template <size_t N>
 std::ostringstream &operator<<(std::ostringstream &oss, const std::array<uint8_t, N> &bytes)
 {
+    auto flags = oss.flags();
+    auto fill = oss.fill();
+
     for (auto v : bytes)
     {
         oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
     }
+
+    oss.setf(flags);
+    std::setfill(fill);
 
     return oss;
 }
@@ -61,14 +67,43 @@ std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
     return os << oss.str();
 }
 
+// inline std::istringstream &operator>>(std::istringstream &iss, const std::vector<uint8_t> &bytes)
+// {
+//     string str;
+//     iss >> str;
+
+//     for (auto v : bytes)
+//     {
+//         iss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+//     }
+
+//     return iss;
+// }
+
+
 inline std::ostringstream &operator<<(std::ostringstream &oss, const std::vector<uint8_t> &bytes)
 {
+    auto flags = oss.flags();
+    auto fill = oss.fill();
+
     for (auto v : bytes)
     {
         oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
     }
 
+    oss.setf(flags);
+    std::setfill('\0');
+
     return oss;
+}
+
+inline std::ostream &operator<<(std::ostream &os, const std::vector<uint8_t> &bytes)
+{
+    std::ostringstream oss;
+
+    oss << bytes;
+
+    return os << oss.str();
 }
 
 template <size_t N>
@@ -171,6 +206,18 @@ inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
     }
 
     return bytes;
+}
+
+inline std::string bytes_to_string(const std::vector<uint8_t> & bytes)
+{
+    std::ostringstream oss;
+
+    for (auto v : bytes)
+    {
+        oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+    }
+
+    return oss.str();
 }
 
 inline void set_stdin_echo(bool enable)

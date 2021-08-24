@@ -104,10 +104,10 @@ namespace json_rpc
             return asp;
         }
 
-        virtual std::vector<Event>
+        virtual std::vector<EventView>
         get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id) override
         {
-            vector<Event> events;
+            vector<EventView> events;
             string method = format(R"({"jsonrpc":"2.0","method":"get_events","params":["%s", %d, %d],"id":1})",
                                    event_key.c_str(),
                                    start,
@@ -127,13 +127,29 @@ namespace json_rpc
 
             auto error = rpc_response["error"];
             if (!error.is_null())
-                __throw_runtime_error(("fun : get_account_state_blob, error : " + error.serialize()).c_str());
+                __throw_runtime_error(("fun : get_events, error : " + error.serialize()).c_str());
 
             auto result = rpc_response["result"];
             for (auto &e : result.as_array())
             {
-                auto data = e["data"]["bytes"];
-                
+                //cout << e.serialize() << endl;
+
+                EventView ev;
+
+                ev.key = e["key"].as_string();
+                ev.sequence_number = e["sequence_number"].as_integer();
+                ev.transaction_version = e["transaction_version"].as_integer();
+
+                if (e["data"]["type"].as_string() == "unknown")
+                {
+                    UnknownEvent ue;
+
+                    ue.bytes = hex_to_bytes(e["data"]["bytes"].as_string());
+
+                    ev.event = ue;
+                }
+
+                events.emplace_back(ev);
             }
 
             return events;

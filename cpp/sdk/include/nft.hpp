@@ -25,7 +25,13 @@ namespace violas
         }
     };
 
-    struct MintedEvent
+    struct Event
+    {
+        uint64_t sequence_number;
+        uint64_t transaction_version;
+    };
+
+    struct MintedEvent : public Event
     {
         std::vector<uint8_t> token_id;
         violas::Address receiver;
@@ -36,7 +42,9 @@ namespace violas
         }
     };
 
-    struct BurnedEvent
+    //std::ostream &operator<<(std::ostream &os, const MintedEvent &minted_event);
+
+    struct BurnedEvent : public Event
     {
         std::vector<uint8_t> token_id;
     };

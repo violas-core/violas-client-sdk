@@ -2,6 +2,7 @@
 #define JSON_RPC
 #include <string>
 #include <vector>
+#include <variant>
 
 namespace json_rpc
 {
@@ -29,8 +30,17 @@ namespace json_rpc
         AccountStateProof proof;
     };
 
-    struct Event
+    struct UnknownEvent
     {
+        std::vector<uint8_t> bytes;
+    };
+
+    struct EventView
+    {
+        std::string key;
+        uint64_t sequence_number;
+        uint64_t transaction_version;
+        std::variant<UnknownEvent> event;
     };
 
     struct Client
@@ -46,7 +56,7 @@ namespace json_rpc
         virtual AccountStateWithProof
         get_account_state_blob(std::string account_address) = 0;
 
-        virtual std::vector<Event>
+        virtual std::vector<EventView>
         get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id = 1) = 0;
     };
 

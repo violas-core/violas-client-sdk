@@ -16,6 +16,7 @@ using namespace std;
 using namespace violas;
 
 std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info);
+std::ostream &operator<<(ostream &os, const vector<MintedEvent> &minted_events);
 
 void mint_tea_nft(client_ptr client, Address addr);
 
@@ -117,7 +118,7 @@ void check_istream_eof(istream &is, string_view err)
     {
         ostringstream oss;
 
-        oss << "missed argument " << err;
+        oss << err;
         __throw_invalid_argument(oss.str().c_str());
     }
 }
@@ -302,9 +303,30 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
          }},
         {"query-events", [=](istringstream &params)
          {
+             string event_type;
+
+             check_istream_eof(params, "(usage) : query_event [minted, burned, sent, received] address start limit");
+             params >> event_type;
+
              auto addr = get_from_stream<Address>(params, client);
 
-             auto events = nft->query_events<MintedEvent>(minted, addr, 0, 10);
+             if (event_type == "minted")
+             {
+                 auto events = nft->query_events<MintedEvent>(minted, addr, 0, 10);
+                 cout << events << endl;
+             }
+             else if (event_type == "burned")
+             {
+             }
+             else
+             {
+                 __throw_invalid_argument("event type is invalid, please input [minted, burned, sent, received]");
+             }
+
+             //  for (auto &event : events)
+             //  {
+             //      //cout << event << endl;
+             //  }
          }},
     };
 }
@@ -400,7 +422,7 @@ void mint_tea_nft(client_ptr client, Address addr)
 
 std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
 {
-    os << "NonFugibleToken Info { \n"
+    os << "NonFungibleToken Info { \n"
        << "\t"
        << "total : " << nft_info.total << "\n"
        << "\t"
@@ -412,6 +434,28 @@ std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
        << "\t"
        << "burned amount : " << nft_info.burn_event.counter << "\n"
        << "}";
+
+    return os;
+}
+
+std::ostream &operator<<(ostream &os, const vector<MintedEvent> &minted_events)
+{
+
+    cout << color::CYAN
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(40) << "Receiver Address"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : minted_events)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(40) << e.receiver
+             << left << setw(10) << e.transaction_version
+             << endl;
+    }
 
     return os;
 }

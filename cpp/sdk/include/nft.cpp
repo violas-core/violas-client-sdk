@@ -212,15 +212,28 @@ namespace violas
                                                          uint64_t start,
                                                          uint64_t limit)
     {
-        std::vector<EVENT> events;
+        std::vector<EVENT> nft_events;
 
         using namespace json_rpc;
         auto rpc_cli = json_rpc::Client::create(_url);
 
         string key = get_event_handle(event_type, address);
 
-        auto result = rpc_cli->get_events(key, start, limit);
+        auto events = rpc_cli->get_events(key, start, limit);
 
-        return events;
+        for (auto &e : events)
+        {
+            EVENT nft_event;
+            BcsSerde serde(std::get<UnknownEvent>(e.event).bytes);
+
+            serde && nft_event;
+
+            nft_event.sequence_number = e.sequence_number;
+            nft_event.transaction_version = e.transaction_version;
+
+            nft_events.emplace_back(nft_event);
+        }
+
+        return nft_events;
     }
 }

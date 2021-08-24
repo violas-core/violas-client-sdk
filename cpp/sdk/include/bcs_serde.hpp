@@ -108,6 +108,8 @@ public:
             oss << std::setfill('0') << std::setw(2) << std::hex << (short)v << " ";
         }
 
+        std::setfill('\0');
+
         return oss.str();
     }
 

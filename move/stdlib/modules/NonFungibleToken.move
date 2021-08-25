@@ -15,7 +15,7 @@ module NonFungibleToken {
     use 0x2::Map::{Self, Map};
 
     const NFT_PUBLISHER: address = @0xA550C18;   // Violas root account
-    const EPAYEE_CANT_ACCEPT_NFT_TYPE: u64 = 1001;
+    const EPAYEE_CANT_ACCEPT_NFT: u64 = 1001;
     const ESENDER_HAS_ACCEPTED_NFT_TYPE: u64 = 1002;
     const ENFT_TOKEN_HAS_ALREADY_EXISTED: u64 = 1003;
     const ENFT_TOKEN_HAS_NOT_EXISTED: u64 = 1004;    
@@ -51,23 +51,27 @@ module NonFungibleToken {
         burn_events: EventHandle<BurnEvent>,
     }
 
-    struct NonFungibleToken<Token> has key, store {
-        tokens: vector<Token>,                          // store all tokens that has different token id
+    struct Account<Token> has key {
         sent_events: EventHandle<SentEvent>,            // sent token events
         received_events: EventHandle<ReceivedEvent>,    // received token events
     }
 
-    struct TokenLock<Token> has key {
-    }    
-
-    fun lock<Token: store>(account: &signer) {
-        move_to<TokenLock<Token>>(account, TokenLock<Token>{});
+    struct Balance<Token> has key, store {        
+        tokens: vector<Token>,                          // store all tokens in vector
     }
 
-    fun unlock<Token: store>(account: &signer) acquires TokenLock {
-        let sender = Signer::address_of(account);
-        let TokenLock<Token> {} = move_from<TokenLock<Token>>(sender);
-    }
+    // struct TokenLock<Token> has key {
+    // }    
+
+    // fun lock<Token: store>(account: &signer) {
+    //     move_to<TokenLock<Token>>(account, TokenLock<Token>{});
+    // }
+
+    // fun unlock<Token: store>(account: &signer) acquires TokenLock {
+    //     let sender = Signer::address_of(account);
+    //     let TokenLock<Token> {} = move_from<TokenLock<Token>>(sender);
+    // }
+    
     //
     //  Increase 1 to NFT amount
     //
@@ -120,10 +124,10 @@ module NonFungibleToken {
     //  Get the number of balance for Token
     //
     public fun balance<Token : key + store>(sig: &signer) : u64 
-    acquires NonFungibleToken {
+    acquires Balance {
         let sender = Signer::address_of(sig);
 
-        let nft = borrow_global<NonFungibleToken<Token>>(sender);
+        let nft = borrow_global<Balance<Token>>(sender);
         
         Vector::length<Token>(&nft.tokens)
     }
@@ -159,13 +163,13 @@ module NonFungibleToken {
     //  Get NFT token from an account
     //
     fun get_nft_token<Token: store>(account: &signer, token_id: &vector<u8>): Token 
-    acquires NonFungibleToken {
+    acquires Balance {
         let sender = Signer::address_of(account);
-        assert(exists<NonFungibleToken<Token>>(sender), 8006);
-        assert(!exists<TokenLock<Token>>(sender), 8007);
+        assert(exists<Balance<Token>>(sender), 8006);
+        //assert(!exists<TokenLock<Token>>(sender), 8007);
         //Self::lock<Token>(account);
 
-        let nft = borrow_global_mut<NonFungibleToken<Token>>(sender);    
+        let nft = borrow_global_mut<Balance<Token>>(sender);    
         let length = Vector::length<Token>(&nft.tokens);
 
         let index = get_token_index<Token>(&nft.tokens, token_id);
@@ -198,14 +202,14 @@ module NonFungibleToken {
     /// Mint a NFT to a receiver
     /// 
     public fun mint<Token: copy + drop + store>(sig: &signer, receiver: address, token: Token) : bool
-    acquires NonFungibleToken, Info  {
+    acquires Balance, Info  {
 
         let sender = Signer::address_of(sig);
 
         check_admin_permission<Token>(sender);
 
         // The receiver must has called method 'accept_token' previously
-        assert(exists<NonFungibleToken<Token>>(receiver), Errors::not_published(EPAYEE_CANT_ACCEPT_NFT_TYPE));
+        assert(exists<Balance<Token>>(receiver), Errors::not_published(EPAYEE_CANT_ACCEPT_NFT));
         
         let token_id = make_token_id<Token>(&token);                
 
@@ -225,7 +229,7 @@ module NonFungibleToken {
         //
         //  Deposite NFT to receiver
         //
-        let receiver_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(receiver);    
+        let receiver_token_ref_mut = borrow_global_mut<Balance<Token>>(receiver);    
                 
         Vector::push_back<Token>(&mut receiver_token_ref_mut.tokens, token);        
         
@@ -235,7 +239,7 @@ module NonFungibleToken {
     //  Burn a NFT token
     //
     public fun burn<Token: drop+store>(sig: &signer, token_id: &vector<u8>)
-    acquires NonFungibleToken, Info  {
+    acquires Balance, Info  {
     
         let sender = Signer::address_of(sig);
                 
@@ -262,24 +266,28 @@ module NonFungibleToken {
     public fun accept<Token: store>(sig: &signer) {
         let sender = Signer::address_of(sig);
                 
-        assert(!exists<NonFungibleToken<Token>>(sender), Errors::already_published(ESENDER_HAS_ACCEPTED_NFT_TYPE));
+        assert(!exists<Balance<Token>>(sender), Errors::already_published(ESENDER_HAS_ACCEPTED_NFT_TYPE));
         
-        move_to<NonFungibleToken<Token>>(sig, 
-            NonFungibleToken<Token> {
-                tokens: Vector::empty<Token>(),
+        move_to<Balance<Token>>(sig, 
+            Balance<Token> {
+                tokens: Vector::empty<Token>(),                
+                });
+        
+        move_to<Account<Token>>(sig, 
+            Account {
                 sent_events: Event::new_event_handle<SentEvent>(sig),
                 received_events: Event::new_event_handle<ReceivedEvent>(sig),
-                });
+            })
     }
     //
     //  Transfer a NFT token with token id
     //
     public fun transfer<Token: drop + key + store>(sig: &signer, receiver: address, token_id: &vector<u8>, metadata: vector<u8>) 
-    acquires NonFungibleToken, Info {
+    acquires Account, Balance, Info {
         let sender = Signer::address_of(sig);
         assert(sender != receiver, 10010);
 
-        let sender_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(sender);
+        let sender_token_ref_mut = borrow_global_mut<Balance<Token>>(sender);
         let index = get_token_index(&sender_token_ref_mut.tokens, token_id);
         
         transfer_via_index<Token>(sig, receiver, index, metadata);
@@ -288,13 +296,13 @@ module NonFungibleToken {
     //  Transfer a NFT token with index
     //
     public fun transfer_via_index<Token: drop + store>(account: &signer, receiver: address, index: u64, metadata: vector<u8>) 
-    acquires NonFungibleToken, Info {
+    acquires Account, Balance, Info {
         let sender = Signer::address_of(account);
 
-        assert(exists<NonFungibleToken<Token>>(receiver), 8002);                                
-        assert(!exists<TokenLock<Token>>(sender), 8004);
+        assert(exists<Balance<Token>>(receiver), 8002);                                
+        //assert(!exists<TokenLock<Token>>(sender), 8004);
 
-        let sender_nft = borrow_global_mut<NonFungibleToken<Token>>(sender);
+        let sender_nft = borrow_global_mut<Balance<Token>>(sender);
         let length = Vector::length<Token>(&sender_nft.tokens);
         
         // Ensure the index is valid 
@@ -318,15 +326,17 @@ module NonFungibleToken {
             abort(8004)
         };       
         
-        // Emit sent event
-        Event::emit_event(&mut sender_nft.sent_events, SentEvent{ token_id: copy token_id, payee: receiver, metadata: copy metadata });
-
         // Put token to receiver
-        let nft_receiver =  borrow_global_mut<NonFungibleToken<Token>>(receiver);
+        let nft_receiver =  borrow_global_mut<Balance<Token>>(receiver);
         Vector::push_back<Token>(&mut nft_receiver.tokens, token);
 
+        // Emit sent event
+        let sender_account =  borrow_global_mut<Account<Token>>(sender);
+        Event::emit_event(&mut sender_account.sent_events, SentEvent{ token_id: copy token_id, payee: receiver, metadata: copy metadata });
+
         // Emit transfer event
-        Event::emit_event(&mut nft_receiver.received_events, ReceivedEvent{ token_id, payer: sender, metadata });
+        let receiver_account =  borrow_global_mut<Account<Token>>(receiver);        
+        Event::emit_event(&mut receiver_account.received_events, ReceivedEvent{ token_id, payer: sender, metadata });
     }
 }
 }

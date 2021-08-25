@@ -4,7 +4,7 @@
 
 struct Tea;
 
-violas::TokenId compute_token_id(const Tea &t);
+violas::nft::TokenId compute_token_id(const Tea &t);
 
 struct Tea
 {
@@ -30,15 +30,18 @@ struct Tea
 
 std::ostream &operator<<(std::ostream &os, const Tea &tea)
 {
-    std::cout << "\t" "Tea { "
+    std::cout << "\t"
+                 "Tea { "
               << "Kind : " << short(tea.kind) << ", "
               << "Manufacture : " << std::string(begin(tea.manufacture), end(tea.manufacture)) << ", "
               << "Production area : " << std::string(begin(tea.PA), end(tea.PA)) << ", "
-              << "Production date : " << std::put_time(std::localtime((time_t*)&tea.PD), "%F") << ", "
+              << "Production date : " << std::put_time(std::localtime((time_t *)&tea.PD), "%F") << ", "
               << "SN : " << std::string(tea.SN.begin(), tea.SN.end()) << ", "
               << "URL : " << std::string(std::begin(tea.url), std::end(tea.url))
               << " } \n"
-              << "\t" "token id : " << violas::compute_token_id(tea);
+              << "\t"
+                 "token id : "
+              << violas::nft::compute_token_id(tea);
 
     return os;
 }
@@ -46,12 +49,10 @@ std::ostream &operator<<(std::ostream &os, const Tea &tea)
 struct NftTea
 {
     std::vector<Tea> teas;
-    violas::EventHandle sent_event;
-    violas::EventHandle received_event;
 
     BcsSerde &serde(BcsSerde &bs)
     {
-        return bs && teas && sent_event && received_event;
+        return bs && teas;
     }
 };
 
@@ -64,17 +65,5 @@ inline std::ostream &operator<<(std::ostream &os, const NftTea &tea_nft)
 
     return os;
 }
-
-struct ReceivedEvent
-{
-    std::vector<uint8_t> token_id;
-    violas::Address payer;
-    std::vector<uint8_t> metadata;
-
-    BcsSerde &serde(BcsSerde &bs)
-    {
-        return bs && token_id && payer && metadata;
-    }
-};
 
 #endif

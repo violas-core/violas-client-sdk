@@ -14,9 +14,13 @@
 
 using namespace std;
 using namespace violas;
+using namespace violas::nft;
 
 std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info);
 std::ostream &operator<<(ostream &os, const vector<MintedEvent> &minted_events);
+std::ostream &operator<<(ostream &os, const vector<BurnedEvent> &minted_events);
+std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &minted_events);
+std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &minted_events);
 
 void mint_tea_nft(client_ptr client, Address addr);
 
@@ -124,7 +128,7 @@ void check_istream_eof(istream &is, string_view err)
 }
 
 template <typename T>
-T get_from_stream(istringstream &params, client_ptr client, string_view err_info = "The index or address")
+T get_from_stream(istringstream &params, client_ptr client, string_view err_info = "index or address")
 {
     Address addr;
     int account_index = -1;
@@ -216,12 +220,11 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
          {
              auto addr = get_from_stream<Address>(params, client);
 
-             //auto opt_nft_tea = get_nft(url, addr);
-             auto opt_nft_tea = nft->get_nfts<NftTea>(url, addr);
-             if (opt_nft_tea != nullopt)
+             auto opt_balance = nft->balance(addr);
+             if (opt_balance != nullopt)
              {
                  int i = 0;
-                 for (const auto &tea : opt_nft_tea->teas)
+                 for (const auto &tea : *opt_balance)
                  {
                      cout << i++ << " - " << tea << endl;
                  }
@@ -309,14 +312,33 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
              params >> event_type;
 
              auto addr = get_from_stream<Address>(params, client);
+             uint64_t start = 0, limit = 10;
+
+             if (!params.eof())
+                 params >> start;
+
+             if (!params.eof())
+                 params >> limit;
 
              if (event_type == "minted")
              {
-                 auto events = nft->query_events<MintedEvent>(minted, addr, 0, 10);
+                 auto events = nft->query_events<MintedEvent>(EventType::minted, addr, start, limit);
                  cout << events << endl;
              }
              else if (event_type == "burned")
              {
+                 auto events = nft->query_events<BurnedEvent>(EventType::burned, addr, start, limit);
+                 cout << events << endl;
+             }
+             else if (event_type == "sent")
+             {
+                 auto events = nft->query_events<SentEvent>(EventType::sent, addr, start, limit);
+                 cout << events << endl;
+             }
+             else if (event_type == "received")
+             {
+                 auto events = nft->query_events<ReceivedEvent>(EventType::received, addr, start, limit);
+                 cout << events << endl;
              }
              else
              {
@@ -420,7 +442,7 @@ void mint_tea_nft(client_ptr client, Address addr)
     cout << "Minted a Tea NFT to address " << addr << endl;
 }
 
-std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
+std::ostream &operator<<(std::ostream &os, const nft::NftInfo &nft_info)
 {
     os << "NonFungibleToken Info { \n"
        << "\t"
@@ -438,7 +460,7 @@ std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
     return os;
 }
 
-std::ostream &operator<<(ostream &os, const vector<MintedEvent> &minted_events)
+std::ostream &operator<<(ostream &os, const vector<nft::MintedEvent> &minted_events)
 {
 
     cout << color::CYAN
@@ -453,6 +475,80 @@ std::ostream &operator<<(ostream &os, const vector<MintedEvent> &minted_events)
         cout << left << setw(10) << e.sequence_number
              << left << setw(70) << e.token_id
              << left << setw(40) << e.receiver
+             << left << setw(10) << e.transaction_version
+             << endl;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(ostream &os, const vector<nft::BurnedEvent> &minted_events)
+{
+
+    cout << color::YELLOW
+         << "Burned events list" << endl
+         << color::CYAN
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : minted_events)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(10) << e.transaction_version
+             << endl;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &minted_events)
+{
+
+    cout << color::YELLOW
+         << "Sent events list" << endl
+         << color::CYAN
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(40) << "Payee"
+         << left << setw(20) << "Metadata"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : minted_events)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(40) << e.payee
+             << left << setw(20) << e.metadata
+             << left << setw(10) << e.metadata
+             << endl;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &minted_events)
+{
+
+    cout << color::YELLOW
+         << "Received events list" << endl
+         << color::CYAN
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(40) << "Payer"
+         << left << setw(20) << "Metadata"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : minted_events)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(40) << e.payer
+             << left << setw(20) << e.metadata
              << left << setw(10) << e.transaction_version
              << endl;
     }

@@ -11,7 +11,7 @@
 
 using namespace std;
 
-namespace violas
+namespace violas::nft
 {
 
     template <typename T>
@@ -109,24 +109,23 @@ namespace violas
     }
 
     template <typename T>
-    template <typename RESOURCE>
-    optional<RESOURCE> NonFungibleToken<T>::get_nfts(string url, Address addr)
+    std::optional<std::vector<T>> NonFungibleToken<T>::balance(const Address &addr)
     {
         using namespace json_rpc;
 
-        auto rpc_cli = json_rpc::Client::create(url);
+        auto rpc_cli = json_rpc::Client::create(_url);
 
         StructTag tag{
             Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
             "NonFungibleToken",
-            "NonFungibleToken",
+            "Balance",
             {StructTag{Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}, "MountWuyi", "Tea"}}};
 
         violas::AccountState state(rpc_cli);
 
         try
         {
-            return state.get_resource<RESOURCE>(addr, tag);
+            return state.get_resource<std::vector<T>>(addr, tag);
         }
         catch (const std::exception &e)
         {
@@ -175,6 +174,25 @@ namespace violas
     }
 
     template <typename T>
+    optional<Account> NonFungibleToken<T>::get_account(const violas::Address &address)
+    {
+        using namespace json_rpc;
+        auto rpc_cli = json_rpc::Client::create(_url);
+
+        violas::AccountState state(rpc_cli);
+
+        auto type_tag = T::type_tag();
+
+        violas::StructTag tag{
+            Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+            "NonFungibleToken",
+            "Account",
+            {violas::StructTag{type_tag.address, type_tag.module_name, type_tag.resource_name}}};
+
+        return state.get_resource<Account>(address, tag);
+    }
+
+    template <typename T>
     string NonFungibleToken<T>::get_event_handle(EventType event_type,
                                                  const violas::Address &address)
     {
@@ -192,6 +210,23 @@ namespace violas
                     oss << nft_info_opt->mint_event.guid;
                 else
                     oss << nft_info_opt->burn_event.guid;
+
+                return oss.str();
+            }
+        }
+        break;
+        case sent:
+        case received:
+        {
+            auto opt_account = get_account(address);
+            if (opt_account != nullopt)
+            {
+                ostringstream oss;
+
+                if (event_type == sent)
+                    oss << opt_account->sent_event.guid;
+                else
+                    oss << opt_account->received_event.guid;
 
                 return oss.str();
             }
@@ -226,7 +261,7 @@ namespace violas
             EVENT nft_event;
             BcsSerde serde(std::get<UnknownEvent>(e.event).bytes);
 
-            serde && nft_event;
+            serde &&nft_event;
 
             nft_event.sequence_number = e.sequence_number;
             nft_event.transaction_version = e.transaction_version;

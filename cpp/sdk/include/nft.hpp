@@ -5,7 +5,7 @@
 #include "utils.hpp"
 //#include "violas_sdk2.hpp"
 
-namespace violas
+namespace violas::nft
 {
     using TokenId = std::array<uint8_t, 32>;
 
@@ -22,6 +22,18 @@ namespace violas
         BcsSerde &serde(BcsSerde &bs)
         {
             return bs && limited && total && amount && admin && owners && mint_event && burn_event;
+        }
+    };
+
+    struct Account
+    {
+        violas::EventHandle sent_event;
+        violas::EventHandle received_event;
+        // vector<Token> tokens;    skip to un/serialize tokens
+
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && sent_event && received_event;
         }
     };
 
@@ -47,20 +59,35 @@ namespace violas
     struct BurnedEvent : public Event
     {
         std::vector<uint8_t> token_id;
+
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && token_id;
+        }
     };
 
-    struct SentEvent
+    struct SentEvent : public Event
     {
         std::vector<uint8_t> token_id;
         violas::Address payee;
         std::vector<uint8_t> metadata;
+
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && token_id && payee && metadata;
+        }
     };
 
-    struct ReceivedEvent
+    struct ReceivedEvent : public Event
     {
         std::vector<uint8_t> token_id;
         violas::Address payer;
         std::vector<uint8_t> metadata;
+
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && token_id && payer && metadata;
+        }
     };
 
     enum EventType
@@ -128,8 +155,7 @@ namespace violas
 
         void transfer(uint64_t account_index, Address recevier, uint64_t token_index);
 
-        template <typename RESOURCE>
-        std::optional<RESOURCE> get_nfts(std::string url, Address addr);
+        std::optional<std::vector<T>> balance(const Address &addr);
 
         std::optional<std::vector<Address>> get_owners(std::string url, const TokenId &token_id);
 
@@ -141,6 +167,8 @@ namespace violas
     protected:
         std::string get_event_handle(EventType event_type,
                                      const violas::Address &address);
+
+        std::optional<Account> get_account(const violas::Address &address);
     };
 
     template <typename T>

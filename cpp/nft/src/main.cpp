@@ -18,9 +18,10 @@ using namespace violas::nft;
 
 std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info);
 std::ostream &operator<<(ostream &os, const vector<MintedEvent> &minted_events);
-std::ostream &operator<<(ostream &os, const vector<BurnedEvent> &minted_events);
-std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &minted_events);
-std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &minted_events);
+std::ostream &operator<<(ostream &os, const vector<BurnedEvent> &burned_events);
+std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &sent_events);
+std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &received_events);
+std::ostream &operator<<(ostream &os, const vector<Tea> &teas);
 
 void mint_tea_nft(client_ptr client, Address addr);
 
@@ -202,19 +203,41 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
          {
              size_t account_index = 0, nft_index = 0;
              Address receiver;
+             string metadata;
 
-             check_istream_eof(params, "account_index");
+             check_istream_eof(params, "usage : transfer account_index account_address token_id_or_index metadata");
 
              params >> account_index;
 
              check_istream_eof(params, "receiver address");
              receiver = get_from_stream<Address>(params, client);
 
-             check_istream_eof(params, "nft_index");
-             params >> nft_index;
+             check_istream_eof(params, "index or token id");
+             string token_id_or_index;
 
-             //transfer(client, account_index, receiver, nft_index);
-             nft->transfer(account_index, receiver, nft_index);
+             params >> token_id_or_index;
+
+             if (!params.eof())
+                 params >> metadata;
+
+             if (token_id_or_index.length() == 64)
+             {
+                 TokenId token_id;
+                 istringstream iss(token_id_or_index);
+
+                 iss >> token_id;
+
+                 nft->transfer_by_token_id(account_index, receiver, token_id, string_to_bytes(metadata));
+             }
+             else
+             {
+                 uint64_t token_index;
+                 istringstream iss(token_id_or_index);
+
+                 iss >> token_index;
+
+                 nft->transfer_by_token_index(account_index, receiver, token_index, string_to_bytes(metadata));
+             }
          }},
         {"balance", [=](istringstream &params)
          {
@@ -224,10 +247,11 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
              if (opt_balance != nullopt)
              {
                  int i = 0;
-                 for (const auto &tea : *opt_balance)
-                 {
-                     cout << i++ << " - " << tea << endl;
-                 }
+                 //  for (const auto &tea : *opt_balance)
+                 //  {
+                 //      cout << i++ << " - " << tea << endl;
+                 //  }
+                 cout << *opt_balance;
              }
          }},
         {"owner", [=](istringstream &params)
@@ -353,22 +377,6 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
     };
 }
 
-template <typename T>
-void input(T &t)
-{
-    if (cin.get() != '\n')
-    {
-        cin.unget();
-        cin >> t;
-        cin.get(); //skip the lastest char 'Enter'
-    }
-}
-
-vector<uint8_t> string_to_bytes(const string &str)
-{
-    return vector<uint8_t>(begin(str), end(str));
-}
-
 void mint_tea_nft(client_ptr client, Address addr)
 {
     cout << "minting Tea NFT ... " << endl;
@@ -482,7 +490,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::MintedEvent> &minted_eve
     return os;
 }
 
-std::ostream &operator<<(ostream &os, const vector<nft::BurnedEvent> &minted_events)
+std::ostream &operator<<(ostream &os, const vector<nft::BurnedEvent> &burnedevents)
 {
 
     cout << color::YELLOW
@@ -493,7 +501,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::BurnedEvent> &minted_eve
          << left << setw(10) << "Version"
          << color::RESET << endl;
 
-    for (auto &e : minted_events)
+    for (auto &e : burnedevents)
     {
         cout << left << setw(10) << e.sequence_number
              << left << setw(70) << e.token_id
@@ -504,7 +512,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::BurnedEvent> &minted_eve
     return os;
 }
 
-std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &minted_events)
+std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &sent_events)
 {
 
     cout << color::YELLOW
@@ -517,20 +525,20 @@ std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &minted_event
          << left << setw(10) << "Version"
          << color::RESET << endl;
 
-    for (auto &e : minted_events)
+    for (auto &e : sent_events)
     {
         cout << left << setw(10) << e.sequence_number
              << left << setw(70) << e.token_id
              << left << setw(40) << e.payee
-             << left << setw(20) << e.metadata
-             << left << setw(10) << e.metadata
+             << left << setw(20) << bytes_to_string(e.metadata)
+             << left << setw(10) << e.transaction_version
              << endl;
     }
 
     return os;
 }
 
-std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &minted_events)
+std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &received_events)
 {
 
     cout << color::YELLOW
@@ -543,13 +551,48 @@ std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &minted_e
          << left << setw(10) << "Version"
          << color::RESET << endl;
 
-    for (auto &e : minted_events)
+    for (auto &e : received_events)
     {
         cout << left << setw(10) << e.sequence_number
              << left << setw(70) << e.token_id
              << left << setw(40) << e.payer
-             << left << setw(20) << e.metadata
+             << left << setw(20) << bytes_to_string(e.metadata)
              << left << setw(10) << e.transaction_version
+             << endl;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(ostream &os, const vector<Tea> &teas)
+{
+    cout << color::CYAN
+         << "NFT Tea balance list" << endl
+         << color::YELLOW
+         << left << setw(8) << "index"
+         << left << setw(8) << "kind"
+         //<< left << setw(20) << "Manufacture"
+         << left << setw(20) << "Production Area"
+         << left << setw(20) << "Production Date"
+         << left << setw(10) << "SN"
+         << left << setw(30) << "URL"
+         << left << setw(70) << "Token ID"
+         << color::RESET << endl;
+
+    size_t index = 0;
+    for (auto &tea : teas)
+    {
+        ostringstream oss;
+        oss << std::put_time(std::localtime((time_t *)&tea.PD), "%F");
+
+        cout << left << setw(8) << index++
+             << left << setw(8) << short(tea.kind)
+             //<< left << setw(20) << bytes_to_string(tea.manufacture)
+             << left << setw(20) << bytes_to_string(tea.PA)
+             << left << setw(20) << oss.str()
+             << left << setw(10) << bytes_to_string(tea.SN)
+             << left << setw(30) << bytes_to_string(tea.url)
+             << left << setw(70) << violas::nft::compute_token_id(tea)
              << endl;
     }
 

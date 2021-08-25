@@ -1,5 +1,6 @@
 #ifndef NFT_HPP
 #define NFT_HPP
+#pragma once
 #include <string>
 #include <array>
 #include "utils.hpp"
@@ -28,8 +29,7 @@ namespace violas::nft
     struct Account
     {
         violas::EventHandle sent_event;
-        violas::EventHandle received_event;
-        // vector<Token> tokens;    skip to un/serialize tokens
+        violas::EventHandle received_event;        
 
         BcsSerde &serde(BcsSerde &bs)
         {
@@ -153,7 +153,15 @@ namespace violas::nft
 
         void burn(TokenId token_id);
 
-        void transfer(uint64_t account_index, Address recevier, uint64_t token_index);
+        void transfer_by_token_index(uint64_t account_index,
+                                     Address receiver,
+                                     uint64_t token_index,
+                                     std::vector<uint8_t> metadata = {});
+
+        void transfer_by_token_id(uint64_t account_index,
+                                  Address receiver,
+                                  TokenId token_id,
+                                  std::vector<uint8_t> metadata = {});
 
         std::optional<std::vector<T>> balance(const Address &addr);
 

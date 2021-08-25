@@ -69,7 +69,7 @@ mv build/scripts/nft_burn.mv scripts/
 
 echo "build scripts/nft_transfer.move"
 ../build.sh scripts/nft_transfer.move modules/NonFungibleToken.move modules/Map.move
-mv build/scripts/nft_transfer.mv scripts/
-mv build/scripts/nft_transfer_via_index.mv scripts/
+mv build/scripts/nft_transfer_by_token_id.mv scripts/
+mv build/scripts/nft_transfer_by_token_index.mv scripts/
 
 rm -rf build

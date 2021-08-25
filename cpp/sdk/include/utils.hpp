@@ -1,5 +1,6 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
+#pragma once
 #include <iostream>
 #include <sstream>
 #include <iterator>
@@ -31,6 +32,17 @@ void try_catch(F f, bool showing_exp = true)
     {
         if (showing_exp)
             std::cerr << e.what() << '\n';
+    }
+}
+
+template <typename T>
+void input(T &t)
+{
+    if (std::cin.get() != '\n')
+    {
+        std::cin.unget();
+        std::cin >> t;
+        std::cin.get(); //skip the lastest char 'Enter'
     }
 }
 
@@ -208,7 +220,7 @@ inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
     return bytes;
 }
 
-inline std::string bytes_to_string(const std::vector<uint8_t> & bytes)
+inline std::string bytes_to_hex(const std::vector<uint8_t> & bytes)
 {
     std::ostringstream oss;
 
@@ -219,6 +231,17 @@ inline std::string bytes_to_string(const std::vector<uint8_t> & bytes)
 
     return oss.str();
 }
+
+inline std::vector<uint8_t> string_to_bytes(const std::string &str)
+{
+    return std::vector<uint8_t>(begin(str), end(str));
+}
+
+inline std::string bytes_to_string(const std::vector<uint8_t> &bytes)
+{
+    return std::string(begin(bytes), end(bytes));
+}
+
 
 inline void set_stdin_echo(bool enable)
 {

@@ -1,10 +1,7 @@
 #ifndef TEA_HPP
 #define TEA_HPP
+#pragma once
 #include <nft.hpp>
-
-struct Tea;
-
-violas::nft::TokenId compute_token_id(const Tea &t);
 
 struct Tea
 {
@@ -22,10 +19,14 @@ struct Tea
 
     static const violas::TypeTag &type_tag()
     {
-        static const violas::TypeTag tea_tag(violas::VIOLAS_STDLIB_ADDRESS, "MountWuyi", "Tea");
+        static const violas::TypeTag tea_tag(module_address(), module_name(), resource_name());
 
         return tea_tag;
     }
+
+    static violas::Address module_address() { return violas::VIOLAS_STDLIB_ADDRESS; }
+    static std::string module_name() { return "MountWuyi"; }
+    static std::string resource_name() { return "Tea"; }
 };
 
 std::ostream &operator<<(std::ostream &os, const Tea &tea)
@@ -42,26 +43,6 @@ std::ostream &operator<<(std::ostream &os, const Tea &tea)
               << "\t"
                  "token id : "
               << violas::nft::compute_token_id(tea);
-
-    return os;
-}
-
-struct NftTea
-{
-    std::vector<Tea> teas;
-
-    BcsSerde &serde(BcsSerde &bs)
-    {
-        return bs && teas;
-    }
-};
-
-inline std::ostream &operator<<(std::ostream &os, const NftTea &tea_nft)
-{
-    for (const auto &t : tea_nft.teas)
-    {
-        std::cout << t << std::endl;
-    }
 
     return os;
 }

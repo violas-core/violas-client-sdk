@@ -1,10 +1,9 @@
-#ifndef NFT_HPP
-#define NFT_HPP
 #pragma once
+
 #include <string>
 #include <array>
-#include "utils.hpp"
-//#include "violas_sdk2.hpp"
+#include <map>
+#include "violas_sdk2.hpp"
 
 namespace violas::nft
 {
@@ -29,7 +28,7 @@ namespace violas::nft
     struct Account
     {
         violas::EventHandle sent_event;
-        violas::EventHandle received_event;        
+        violas::EventHandle received_event;
 
         BcsSerde &serde(BcsSerde &bs)
         {
@@ -53,8 +52,6 @@ namespace violas::nft
             return bs && token_id && receiver;
         }
     };
-
-    //std::ostream &operator<<(std::ostream &os, const MintedEvent &minted_event);
 
     struct BurnedEvent : public Event
     {
@@ -97,23 +94,7 @@ namespace violas::nft
         sent,
         received
     };
-    // std::ostream &operator<<(std::ostream &os, const NftInfo &nft_info)
-    // {
-    //     os << "Global Info { \n"
-    //        << "\t"
-    //        << "total : " << nft_info.total << "\n"
-    //        << "\t"
-    //        << "amount : " << nft_info.amount << "\n"
-    //        << "\t"
-    //        //<< "admin : " << nft_info.admin << "\n"
-    //        << "\t"
-    //        << "minted amount : " << nft_info.mint_event.counter << "\n"
-    //        << "\t"
-    //        << "burned amount : " << nft_info.burn_event.counter << "\n"
-    //        << "}";
 
-    //     return os;
-    // }
     template <typename T>
     TokenId compute_token_id(const T &t)
     {
@@ -169,14 +150,16 @@ namespace violas::nft
 
         std::optional<NftInfo> get_nft_info(std::string url);
 
-        template <typename EVENT>
-        std::vector<EVENT> query_events(EventType event_type, const violas::Address &address, uint64_t start, uint64_t limit);
-
-    protected:
-        std::string get_event_handle(EventType event_type,
-                                     const violas::Address &address);
-
         std::optional<Account> get_account(const violas::Address &address);
+
+        std::optional<EventHandle> get_event_handle(EventType event_type,
+                                                    const violas::Address &address);
+
+        template <typename EVENT>
+        std::vector<EVENT> query_events(const EventHandle &event_handle,
+                                        const violas::Address &address,
+                                        uint64_t start,
+                                        uint64_t limit);
     };
 
     template <typename T>
@@ -186,4 +169,4 @@ namespace violas::nft
 
 #include "nft.cpp"
 
-#endif
+// std::ostream &operator<<(std::ostream &os, const violas::nft::MintedEvent &minted_event);

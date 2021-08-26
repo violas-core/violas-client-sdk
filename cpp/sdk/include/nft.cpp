@@ -6,6 +6,7 @@
 #include <sstream>
 #include <optional>
 #include <client.hpp>
+#include <cassert>
 #include "utils.hpp"
 #include "nft.hpp"
 
@@ -204,56 +205,90 @@ namespace violas::nft
     }
 
     template <typename T>
-    string NonFungibleToken<T>::get_event_handle(EventType event_type,
-                                                 const violas::Address &address)
+    std::optional<EventHandle> NonFungibleToken<T>::get_event_handle(EventType event_type,
+                                                                     const violas::Address &address)
     {
-        switch (event_type)
-        {
-        case minted:
-        case burned:
+        // switch (event_type)
+        // {
+        // case minted:
+        // case burned:
+        // {
+        //     auto nft_info_opt = get_nft_info(_url);
+        //     if (nft_info_opt != nullopt)
+        //     {
+        //         ostringstream oss;
+
+        //         if (event_type == minted)
+        //             oss << nft_info_opt->mint_event.guid;
+        //         else
+        //             oss << nft_info_opt->burn_event.guid;
+
+        //         return oss.str();
+        //     }
+        // }
+        // break;
+        // case sent:
+        // case received:
+        // {
+        //     auto opt_account = get_account(address);
+        //     if (opt_account != nullopt)
+        //     {
+        //         ostringstream oss;
+
+        //         if (event_type == sent)
+        //             oss << opt_account->sent_event.guid;
+        //         else
+        //             oss << opt_account->received_event.guid;
+
+        //         return oss.str();
+        //     }
+        // }
+        // break;
+
+        // default:
+        //     break;
+        // }
+
+        if (event_type == minted)
         {
             auto nft_info_opt = get_nft_info(_url);
             if (nft_info_opt != nullopt)
             {
-                ostringstream oss;
-
-                if (event_type == minted)
-                    oss << nft_info_opt->mint_event.guid;
-                else
-                    oss << nft_info_opt->burn_event.guid;
-
-                return oss.str();
+                return nft_info_opt->mint_event;
             }
         }
-        break;
-        case sent:
-        case received:
+        else if (event_type == burned)
+        {
+            auto nft_info_opt = get_nft_info(_url);            
+            if (nft_info_opt != nullopt)
+            {
+                return nft_info_opt->burn_event;
+            }
+        }
+        else if (event_type == sent)
         {
             auto opt_account = get_account(address);
             if (opt_account != nullopt)
             {
-                ostringstream oss;
-
-                if (event_type == sent)
-                    oss << opt_account->sent_event.guid;
-                else
-                    oss << opt_account->received_event.guid;
-
-                return oss.str();
+                return opt_account->sent_event;
             }
         }
-        break;
-
-        default:
-            break;
+        else
+        {
+            assert(event_type == received);
+            auto opt_account = get_account(address);
+            if (opt_account != nullopt)
+            {
+                return opt_account->received_event;
+            }
         }
 
-        return string();
+        return {};
     }
 
     template <typename T>
     template <typename EVENT>
-    std::vector<EVENT> NonFungibleToken<T>::query_events(EventType event_type,
+    std::vector<EVENT> NonFungibleToken<T>::query_events(const EventHandle &event_handle,
                                                          const violas::Address &address,
                                                          uint64_t start,
                                                          uint64_t limit)
@@ -261,11 +296,9 @@ namespace violas::nft
         std::vector<EVENT> nft_events;
 
         using namespace json_rpc;
-        auto rpc_cli = json_rpc::Client::create(_url);
+        auto rpc_cli = json_rpc::Client::create(_url);       
 
-        string key = get_event_handle(event_type, address);
-
-        auto events = rpc_cli->get_events(key, start, limit);
+        auto events = rpc_cli->get_events(bytes_to_hex(event_handle.guid), start, limit);
 
         for (auto &e : events)
         {

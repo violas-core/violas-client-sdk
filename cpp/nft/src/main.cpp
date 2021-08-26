@@ -201,7 +201,7 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
          }},
         {"transfer", [=](istringstream &params)
          {
-             size_t account_index = 0, nft_index = 0;
+             size_t account_index = 0;
              Address receiver;
              string metadata;
 
@@ -246,7 +246,7 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
              auto opt_balance = nft->balance(addr);
              if (opt_balance != nullopt)
              {
-                 int i = 0;
+                 // int i = 0;
                  //  for (const auto &tea : *opt_balance)
                  //  {
                  //      cout << i++ << " - " << tea << endl;
@@ -346,22 +346,46 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
 
              if (event_type == "minted")
              {
-                 auto events = nft->query_events<MintedEvent>(EventType::minted, addr, start, limit);
+                 auto opt_event_handle = nft->get_event_handle(EventType::minted, addr);
+                 if (opt_event_handle == nullopt)
+                     __throw_runtime_error("event handle doesn't exist.");
+
+                 auto events = nft->query_events<MintedEvent>(*opt_event_handle, addr, start, limit);
+
+                 cout << color::CYAN << "Minted events list (" << opt_event_handle->counter << ")" << color::RESET << endl;
                  cout << events << endl;
              }
              else if (event_type == "burned")
              {
-                 auto events = nft->query_events<BurnedEvent>(EventType::burned, addr, start, limit);
+                 auto opt_event_handle = nft->get_event_handle(EventType::burned, addr);
+                 if (opt_event_handle == nullopt)
+                     __throw_runtime_error("event handle doesn't exist.");
+
+                 auto events = nft->query_events<BurnedEvent>(*opt_event_handle, addr, start, limit);
+
+                 cout << color::CYAN << "Burned events list (" << opt_event_handle->counter << ")" << color::RESET << endl;
                  cout << events << endl;
              }
              else if (event_type == "sent")
              {
-                 auto events = nft->query_events<SentEvent>(EventType::sent, addr, start, limit);
+                 auto opt_event_handle = nft->get_event_handle(EventType::sent, addr);
+                 if (opt_event_handle == nullopt)
+                     __throw_runtime_error("event handle doesn't exist.");
+
+                 auto events = nft->query_events<SentEvent>(*opt_event_handle, addr, start, limit);
+
+                 cout << color::CYAN << "Sent events list (" << opt_event_handle->counter << ")" << color::RESET << endl;
                  cout << events << endl;
              }
              else if (event_type == "received")
              {
-                 auto events = nft->query_events<ReceivedEvent>(EventType::received, addr, start, limit);
+                 auto opt_event_handle = nft->get_event_handle(EventType::received, addr);
+                 if (opt_event_handle == nullopt)
+                     __throw_runtime_error("event handle doesn't exist.");
+
+                 auto events = nft->query_events<ReceivedEvent>(*opt_event_handle, addr, start, limit);
+
+                 cout << color::CYAN << "Received events list (" << opt_event_handle->counter << ")" << color::RESET << endl;
                  cout << events << endl;
              }
              else
@@ -470,8 +494,7 @@ std::ostream &operator<<(std::ostream &os, const nft::NftInfo &nft_info)
 
 std::ostream &operator<<(ostream &os, const vector<nft::MintedEvent> &minted_events)
 {
-
-    cout << color::CYAN
+    cout << color::YELLOW
          << left << setw(10) << "SN"
          << left << setw(70) << "Token ID"
          << left << setw(40) << "Receiver Address"
@@ -492,9 +515,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::MintedEvent> &minted_eve
 
 std::ostream &operator<<(ostream &os, const vector<nft::BurnedEvent> &burnedevents)
 {
-
     cout << color::YELLOW
-         << "Burned events list" << endl
          << color::CYAN
          << left << setw(10) << "SN"
          << left << setw(70) << "Token ID"
@@ -514,10 +535,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::BurnedEvent> &burnedeven
 
 std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &sent_events)
 {
-
     cout << color::YELLOW
-         << "Sent events list" << endl
-         << color::CYAN
          << left << setw(10) << "SN"
          << left << setw(70) << "Token ID"
          << left << setw(40) << "Payee"
@@ -540,10 +558,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &sent_events)
 
 std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &received_events)
 {
-
     cout << color::YELLOW
-         << "Received events list" << endl
-         << color::CYAN
          << left << setw(10) << "SN"
          << left << setw(70) << "Token ID"
          << left << setw(40) << "Payer"
@@ -566,9 +581,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &received
 
 std::ostream &operator<<(ostream &os, const vector<Tea> &teas)
 {
-    cout << color::CYAN
-         << "NFT Tea balance list" << endl
-         << color::YELLOW
+    cout << color::YELLOW
          << left << setw(8) << "index"
          << left << setw(8) << "kind"
          //<< left << setw(20) << "Manufacture"

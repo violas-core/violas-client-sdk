@@ -1,6 +1,5 @@
-#ifndef TERMINAL_H
-#define TERMINAL_H
 #pragma once
+
 #include <iostream>
 #include <sstream>
 #include <iterator>
@@ -92,11 +91,9 @@ std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
 //     return iss;
 // }
 
-
 inline std::ostringstream &operator<<(std::ostringstream &oss, const std::vector<uint8_t> &bytes)
 {
     auto flags = oss.flags();
-    auto fill = oss.fill();
 
     for (auto v : bytes)
     {
@@ -104,7 +101,6 @@ inline std::ostringstream &operator<<(std::ostringstream &oss, const std::vector
     }
 
     oss.setf(flags);
-    std::setfill('\0');
 
     return oss;
 }
@@ -220,7 +216,7 @@ inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
     return bytes;
 }
 
-inline std::string bytes_to_hex(const std::vector<uint8_t> & bytes)
+inline std::string bytes_to_hex(const std::vector<uint8_t> &bytes)
 {
     std::ostringstream oss;
 
@@ -241,7 +237,6 @@ inline std::string bytes_to_string(const std::vector<uint8_t> &bytes)
 {
     return std::string(begin(bytes), end(bytes));
 }
-
 
 inline void set_stdin_echo(bool enable)
 {
@@ -300,5 +295,3 @@ inline std::string trim(std::string s)
 {
     return trim_left(trim_right(std::move(s)));
 }
-
-#endif

@@ -1,21 +1,21 @@
 address 0x1 {
     
     module ViolasBank {
-	use 0x1::Diem;
-	use 0x1::DiemAccount;
-	use 0x1::Event;
-	use 0x1::Vector;
-	use 0x1::BCS;
-	use 0x1::DiemTimestamp;
-	//use 0x1::Debug;
-	//use 0x1::DiemBlock;
-	use 0x1::Signer;
-	use 0x1::Option::{Self, Option};
-	use 0x1::FixedPoint32;
+	use DiemFramework::Diem;
+	use DiemFramework::DiemAccount;
+	use Std::Event;
+	use Std::Vector;
+	use Std::BCS;
+	use DiemFramework::DiemTimestamp;
+	//use Std::Debug;
+	//use Std::DiemBlock;
+	use Std::Signer;
+	use Std::Option::{Self, Option};
+	use Std::FixedPoint32;
 	use 0x1::Oracle;
-	use 0x1::VLS::VLS;
+	use DiemFramework::VLS::VLS;
 	
-	//use 0x1::ViolasBank as PBank;
+	//use Std::ViolasBank as PBank;
 	
 	struct DiemToken<Token: store> has key, store {
 	    coin: Diem::Diem<Token>,

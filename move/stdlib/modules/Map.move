@@ -3,10 +3,10 @@
 //
 address 0x2 {
 module Map {
-    use 0x1::Compare;
-    use 0x1::BCS;
+    use Std::Compare;
+    use Std::BCS;
     //use 0x1::Option::{Self, Option};
-    use 0x1::Vector;
+    use Std::Vector;
 
     // Element with key and value
     struct Node<Key, Value> has copy, drop, store { 

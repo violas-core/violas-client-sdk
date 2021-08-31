@@ -3,13 +3,16 @@
 
 use crate::{diem_client::DiemClient, AccountData, AccountStatus};
 use anyhow::{bail, ensure, format_err, Error, Result};
-//use compiler::Compiler;
-use diem_client::{views, WaitForTransactionError};
+use diem_client::{
+    stream::{StreamingClient, StreamingClientConfig},
+    views, StreamResult, WaitForTransactionError,
+};
 use diem_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature},
     test_utils::KeyPair,
 };
 use diem_logger::prelude::{error, info};
+use diem_resource_viewer::{AnnotatedAccountStateBlob, DiemValueAnnotator};
 use diem_temppath::TempPath;
 use diem_transaction_builder::stdlib as transaction_builder;
 use diem_types::{
@@ -32,9 +35,12 @@ use diem_types::{
     write_set::{WriteOp, WriteSetMut},
 };
 use diem_wallet::{io_utils, WalletLibrary};
-use num_traits::cast::{FromPrimitive, ToPrimitive};
+use move_vm_test_utils::InMemoryStorage;
+use num_traits::{
+    cast::{FromPrimitive, ToPrimitive},
+    identities::Zero,
+};
 use reqwest::Url;
-use resource_viewer::{AnnotatedAccountStateBlob, MoveValueAnnotator, NullStateView};
 use rust_decimal::Decimal;
 use std::{
     collections::HashMap,
@@ -53,14 +59,6 @@ const MAX_GAS_AMOUNT: u64 = 1_000_000;
 const TX_EXPIRATION: i64 = 100;
 const DEFAULT_WAIT_TIMEOUT: time::Duration = time::Duration::from_secs(60);
 
-/// Enum used for error formatting.
-#[derive(Debug)]
-enum InputType {
-    Bool,
-    UnsignedInt,
-    Usize,
-}
-
 /// Check whether the input string is a valid diem address.
 pub fn is_address(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AccountAddress::LENGTH)
@@ -69,6 +67,14 @@ pub fn is_address(data: &str) -> bool {
 /// Check whether the input string is a valid diem authentication key.
 pub fn is_authentication_key(data: &str) -> bool {
     hex::decode(data).map_or(false, |vec| vec.len() == AuthenticationKey::LENGTH)
+}
+
+/// Enum used for error formatting.
+#[derive(Debug)]
+enum InputType {
+    Bool,
+    UnsignedInt,
+    Usize,
 }
 
 /// Account data is stored in a map and referenced by an index.
@@ -122,7 +128,8 @@ pub struct ClientProxy {
     sync_on_wallet_recovery: bool,
     /// temp files (alive for duration of program)
     temp_files: Vec<PathBuf>,
-    // invariant self.address_to_ref_id.values().iter().all(|i| i < self.accounts.len())
+    /// Host of the node that client connects to
+    pub url: Url,
 }
 
 impl ClientProxy {
@@ -213,7 +220,21 @@ impl ClientProxy {
             sync_on_wallet_recovery,
             temp_files: vec![],
             quiet_wait,
+            url,
         })
+    }
+
+    /// Gets a websocket client for the same node `DiemClient` connects to
+    pub async fn streaming_client(
+        &self,
+        config: Option<StreamingClientConfig>,
+    ) -> StreamResult<StreamingClient> {
+        let mut url = self.url.clone();
+        url.set_scheme("ws").expect("Could not set scheme");
+        // Path from /json-rpc/src/stream_rpc/transport/websocket.rs#L43
+        url.set_path("/v1/stream/ws");
+        println!("ws_url: {}", &url);
+        StreamingClient::new(url, config.unwrap_or_default(), None).await
     }
 
     /// Gets account data for the indexed address
@@ -587,6 +608,58 @@ impl ClientProxy {
             ),
         }
     }
+
+    /// Allow executing arbitrary script in the network.
+    // pub fn enable_custom_script(
+    //     &mut self,
+    //     space_delim_strings: &[&str],
+    //     open_module: bool,
+    //     is_blocking: bool,
+    // ) -> Result<()> {
+    //     ensure!(
+    //         space_delim_strings[0] == "enable_custom_script" || space_delim_strings[0] == "s",
+    //         "inconsistent command '{}' for enable_custom_script",
+    //         space_delim_strings[0]
+    //     );
+    //     ensure!(
+    //         space_delim_strings.len() == 1,
+    //         "Invalid number of arguments for setting publishing option"
+    //     );
+    //     let script_body = {
+    //         let code = format!(
+    //             "
+    //             import 0x1.DiemTransactionPublishingOption;
+
+    //             main(account: signer) {{
+    //                 DiemTransactionPublishingOption.set_open_script(&account);
+    //                 {}
+
+    //                 return;
+    //             }}
+    //         ",
+    //             if open_module {
+    //                 "DiemTransactionPublishingOption.set_open_module(&account, true);"
+    //             } else {
+    //                 ""
+    //             }
+    //         );
+
+    //         let compiler = Compiler {
+    //             address: diem_types::account_config::CORE_CODE_ADDRESS,
+    //             deps: diem_framework_releases::current_modules().iter().collect(),
+    //         };
+    //         compiler
+    //             .into_script_blob("file_name", &code)
+    //             .expect("Failed to compile")
+    //     };
+    //     match self.diem_root_account {
+    //         Some(_) => self.association_transaction_with_local_diem_root_account(
+    //             TransactionPayload::Script(Script::new(script_body, vec![], vec![])),
+    //             is_blocking,
+    //         ),
+    //         None => unimplemented!(),
+    //     }
+    // }
 
     /// Modify the stored DiemVersion on chain.
     pub fn change_diem_version(
@@ -1245,8 +1318,11 @@ impl ClientProxy {
     ) -> Result<(Option<AnnotatedAccountStateBlob>, Version)> {
         let (blob, ver) = self.client.get_account_state_blob(&address)?;
         if let Some(account_blob) = blob {
-            let state_view = NullStateView::default();
-            let annotator = MoveValueAnnotator::new(&state_view);
+            let mut storage = InMemoryStorage::new();
+            for (blob, module) in diem_framework_releases::current_modules_with_blobs() {
+                storage.publish_or_overwrite_module(module.self_id(), blob.clone())
+            }
+            let annotator = DiemValueAnnotator::new(&storage);
             let annotate_blob =
                 annotator.view_account_state(&AccountState::try_from(&account_blob)?)?;
             Ok((Some(annotate_blob), ver))
@@ -1534,7 +1610,7 @@ impl ClientProxy {
             max_value
         );
         let value = original * Decimal::new(scaling_factor, 0);
-        //ensure!(value.fract().is_zero(), "invalid value");
+        ensure!(value.fract().is_zero(), "invalid value");
         value.to_u64().ok_or_else(|| format_err!("invalid value"))
     }
 

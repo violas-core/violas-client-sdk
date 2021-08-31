@@ -30,7 +30,7 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
 
 int main(int argc, char *argv[])
 {
-    if (argc < 11)
+    if (argc < 9)
     {
         cout << "usage : bin/nft -u url -m mint.key -n mnemonic -w waypoint -c chain_id" << endl;
         return 0;

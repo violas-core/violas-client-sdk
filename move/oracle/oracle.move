@@ -2,12 +2,12 @@ address 0x1 {
 
 module Oracle {
 
-use 0x1::Diem::{Self};
-use 0x1::DiemTimestamp;
-use 0x1::Signer;
-//use 0x1::CoreAddresses;
-use 0x1::FixedPoint32::{Self, FixedPoint32};
-use 0x1::Event::{ Self, EventHandle };
+use DiemFramework::Diem::{Self};
+use DiemFramework::DiemTimestamp;
+use Std::Signer;
+//use DiemFramework::CoreAddresses;
+use Std::FixedPoint32::{Self, FixedPoint32};
+use Std::Event::{ Self, EventHandle };
 
     /// Evnet for updating
     struct UpdateEvent has store, drop {

@@ -3,13 +3,13 @@ address 0x1 {
 
 module Exchange {
 
-use 0x1::Signer;
-use 0x1::Errors;
-use 0x1::FixedPoint32::{FixedPoint32};    //Self
-//use 0x1::Diem; //::{Self};
-use 0x1::Vector;
-use 0x1::DiemAccount::{Self};
-use 0x1::Event::{ Self, EventHandle };
+use Std::Signer;
+use Std::Errors;
+use Std::FixedPoint32::{FixedPoint32};    //Self
+//use Std::Diem; //::{Self};
+use Std::Vector;
+use DiemFramework::DiemAccount::{Self};
+use Std::Event::{ Self, EventHandle };
 // Fees for initialization
 use 0x1::Fee500::Fee500;
 use 0x1::Fee3000::Fee3000;

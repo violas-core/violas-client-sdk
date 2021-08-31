@@ -2,13 +2,13 @@ address 0x1 {
 
 module Exchange {
 
-use 0x1::Signer;
-use 0x1::Errors;
-//use 0x1::FixedPoint32;
-use 0x1::Diem; //::{Self};
-use 0x1::Vector;
-use 0x1::DiemAccount::{Self};
-use 0x1::Event::{ Self, EventHandle };
+use DiemFramework::Diem; //::{Self};
+use DiemFramework::DiemAccount::{Self};
+use Std::Signer;
+use Std::Errors;
+use Std::Vector;
+//use Std::FixedPoint32;
+use Std::Event::{ Self, EventHandle };
     
     struct AddLiquidityEvent has drop, store {      
         currency1_code: vector<u8>,

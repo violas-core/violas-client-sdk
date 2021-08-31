@@ -1,8 +1,8 @@
 address 0x1 {
 
 /// Utilities for comparing Move values based on their representation in BCS.
-module Compare {
-    use 0x1::Vector;
+module Compare1 {
+    use Std::Vector;
 
     // Move does not have signed integers, so we cannot use the usual 0, -1, 1 convention to
     // represent EQUAL, LESS_THAN, and GREATER_THAN. Instead, we define a new convention using u8

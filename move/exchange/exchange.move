@@ -1,13 +1,13 @@
 address 0x1 {
 module Exchange {
-    use 0x1::Signer;
-    use 0x1::DiemAccount;
-    use 0x1::BCS;
-    use 0x1::Diem;
-    use 0x1::Vector;
-    use 0x1::Event::{Self, EventHandle};
-    use 0x1::DiemTimestamp;
-    use 0x1::VLS::VLS;
+    use Std::Signer;
+    use DiemFramework::DiemAccount;
+    use Std::BCS;
+    use DiemFramework::Diem;
+    use Std::Vector;
+    use Std::Event::{Self, EventHandle};
+    use DiemFramework::DiemTimestamp;
+    use DiemFramework::VLS::VLS;
     
     fun admin_addr(): address {
         @0x45584348

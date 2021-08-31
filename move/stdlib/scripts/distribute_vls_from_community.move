@@ -1,11 +1,11 @@
 script {
-use 0x1::Signer;
-use 0x1::Vector;
-use 0x1::Errors;
-use 0x1::DiemAccount;
-use 0x1::FixedPoint32;
-use 0x1::VLS::{Self, VLS};
-use 0x1::DiemTimestamp;
+use Std::Signer;
+use Std::Vector;
+use Std::Errors;
+use Std::FixedPoint32;
+use DiemFramework::DiemAccount;
+use DiemFramework::VLS::{Self, VLS};
+use DiemFramework::DiemTimestamp;
 use 0x1::ViolasBank;
 use 0x1::Exchange;
 

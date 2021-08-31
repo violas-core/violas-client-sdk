@@ -4,14 +4,14 @@ address 0x2 {
 // reference ERC721 on http://erc721.org/
 // 
 module NonFungibleToken {
-    use 0x1::BCS;
-    use 0x1::Compare;
-    use 0x1::Errors;
-    use 0x1::Event::{Self, EventHandle};
-    use 0x1::Hash;    
-    use 0x1::Option::{Self, Option};
-    use 0x1::Signer;
-    use 0x1::Vector;
+    use Std::BCS;
+    use Std::Compare;
+    use Std::Errors;
+    use Std::Event::{Self, EventHandle};
+    use Std::Hash;    
+    use Std::Option::{Self, Option};
+    use Std::Signer;
+    use Std::Vector;
     use 0x2::Map::{Self, Map};
 
     const NFT_PUBLISHER: address = @0xA550C18;   // Violas root account

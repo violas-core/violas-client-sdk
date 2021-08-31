@@ -43,6 +43,8 @@ resource-viewer = { path = "../../../Violas/language/tools/resource-viewer" }
 diem-framework = { path = "../../../Violas/language/diem-framework" }
 diem-framework-releases = { path = "../../../Violas/language/diem-framework/releases" }
 diem-transaction-builder = { path = "../../../Violas/sdk/transaction-builder" }
+diem-resource-viewer = { path = "../../../Violas/language/tools/diem-resource-viewer" }
+move-vm-test-utils = { path = "../../../Violas/language/move-vm/test-utils" }
 
 diem-types = { path = "../../../Violas/types" }
 

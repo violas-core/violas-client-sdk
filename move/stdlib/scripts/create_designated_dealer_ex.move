@@ -1,6 +1,6 @@
 script {
-use 0x1::DiemAccount;
-use 0x1::SlidingNonce;
+use DiemFramework::DiemAccount;
+use DiemFramework::SlidingNonce;
 
 fun create_designated_dealer_ex<CoinType: store>(
         tc_account: signer,
@@ -22,8 +22,8 @@ fun create_designated_dealer_ex<CoinType: store>(
 }
 
 spec create_designated_dealer_ex {
-    use 0x1::Errors;
-    use 0x1::Roles;
+    use Std::Errors;
+    use DiemFramework::Roles;
 
     include DiemAccount::TransactionChecks{sender: tc_account}; // properties checked by the prologue.
     include SlidingNonce::RecordNonceAbortsIf{account: tc_account, seq_nonce: sliding_nonce};

@@ -1,5 +1,5 @@
 script {
-    use 0x1::VLS;
+    use DiemFramework::VLS;
 
     fun main() {
         VLS::initialize_timestamp();

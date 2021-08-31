@@ -1,5 +1,5 @@
 script {
-use 0x1::DiemAccount;
+use DiemFramework::DiemAccount;
 //
 //  add a currency for designated dealer account 
 //  note : This function is called by Treasury Compliance account 

@@ -1,5 +1,5 @@
 script {
-use 0x1::DiemAccount;
+use DiemFramework::DiemAccount;
 
 fun main<NewCurrency: store>(
     dr_root: signer,

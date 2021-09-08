@@ -1,7 +1,7 @@
 // Generic set that leverages Compare::cmp.
 // This is a reasonable smoke test for the Compare module, but don't actually use this without
 // singificantly more testing/thought about the API!
-address 0x2 {
+address Std {
 module Set {
     use Std::Compare;
     use Std::BCS;

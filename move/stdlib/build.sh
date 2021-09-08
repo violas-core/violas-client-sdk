@@ -42,33 +42,33 @@ echo "build modules/Compare.move"
 mv build/modules/0_Compare.mv modules/Compare.mv
 
 echo "build modules/Set.move"
-../build.sh modules/Set.move
+../build.sh modules/Set.move modules/Compare.move
 mv build/modules/0_Set.mv modules/Set.mv
 
 echo "build modules/Map.move"
-../build.sh modules/Map.move
-mv build/modules/0_Map.mv modules/Map.mv
+../build.sh modules/Map.move modules/Compare.move
+mv build/modules/0_Map.mv modules/Map.mv 
 #
 #   Building NFT module and scripts
 #
 echo "build modules/NonFungibleToken.move"
-../build.sh modules/NonFungibleToken.move modules/SimpleSortedLinkedList.move modules/SortedLinkedList.move modules/Map.move
+../build.sh modules/NonFungibleToken.move modules/Compare.move modules/SimpleSortedLinkedList.move modules/SortedLinkedList.move modules/Map.move
 mv build/modules/0_NonFungibleToken.mv modules/NonFungibleToken.mv
 
 echo "build scripts/nft_register.move"
-../build.sh scripts/nft_register.move modules/NonFungibleToken.move modules/Map.move
+../build.sh scripts/nft_register.move modules/NonFungibleToken.move modules/Map.move modules/Compare.move
 mv build/scripts/nft_register.mv scripts/
 
 echo "build scripts/nft_accept.move"
-../build.sh scripts/nft_accept.move modules/NonFungibleToken.move modules/Map.move
+../build.sh scripts/nft_accept.move modules/NonFungibleToken.move modules/Map.move modules/Compare.move
 mv build/scripts/nft_accept.mv scripts/
 
 echo "build scripts/nft_burn.move"
-../build.sh scripts/nft_burn.move modules/NonFungibleToken.move modules/Map.move
+../build.sh scripts/nft_burn.move modules/NonFungibleToken.move modules/Map.move modules/Compare.move
 mv build/scripts/nft_burn.mv scripts/
 
 echo "build scripts/nft_transfer.move"
-../build.sh scripts/nft_transfer.move modules/NonFungibleToken.move modules/Map.move
+../build.sh scripts/nft_transfer.move modules/NonFungibleToken.move modules/Map.move modules/Compare.move
 mv build/scripts/nft_transfer_by_token_id.mv scripts/
 mv build/scripts/nft_transfer_by_token_index.mv scripts/
 

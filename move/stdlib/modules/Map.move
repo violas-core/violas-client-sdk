@@ -1,7 +1,8 @@
 //
 //
 //
-address 0x2 {
+address Std {
+    
 module Map {
     use Std::Compare;
     use Std::BCS;

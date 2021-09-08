@@ -1,7 +1,7 @@
-address 0x1 {
+address Std {
 
 /// Utilities for comparing Move values based on their representation in BCS.
-module Compare1 {
+module Compare {
     use Std::Vector;
 
     // Move does not have signed integers, so we cannot use the usual 0, -1, 1 convention to

@@ -12,7 +12,7 @@ module NonFungibleToken {
     use Std::Option::{Self, Option};
     use Std::Signer;
     use Std::Vector;
-    use 0x2::Map::{Self, Map};
+    use Std::Map::{Self, Map};
 
     const NFT_PUBLISHER: address = @0xA550C18;   // Violas root account
     const EPAYEE_CANT_ACCEPT_NFT: u64 = 1001;

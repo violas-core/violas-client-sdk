@@ -613,7 +613,7 @@ impl ViolasClient {
         self.execute_raw_script(
             VIOLAS_TREASURY_COMPLIANCE_ACCOUNT_ID,
             Script::new(
-                script_bytecode,                
+                script_bytecode,
                 vec![currency],
                 vec![TransactionArgument::Address(dd_address)],
             ),
@@ -915,7 +915,7 @@ impl ViolasClient {
         is_blocking: bool,
     ) -> Result<()> {
         let scripte_bytecode = vec![
-            161, 28, 235, 11, 2, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 26, 7, 43, 75, 8,
+            161, 28, 235, 11, 3, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 26, 7, 43, 75, 8,
             118, 16, 0, 0, 0, 1, 1, 2, 2, 1, 0, 0, 3, 4, 1, 1, 4, 1, 3, 6, 12, 3, 5, 10, 2, 10, 2,
             1, 0, 2, 6, 12, 3, 1, 9, 0, 5, 6, 12, 5, 10, 2, 10, 2, 1, 11, 68, 105, 101, 109, 65,
             99, 99, 111, 117, 110, 116, 12, 83, 108, 105, 100, 105, 110, 103, 78, 111, 110, 99,

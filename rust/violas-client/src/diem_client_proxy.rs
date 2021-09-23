@@ -225,17 +225,17 @@ impl ClientProxy {
     }
 
     /// Gets a websocket client for the same node `DiemClient` connects to
-    pub async fn streaming_client(
-        &self,
-        config: Option<StreamingClientConfig>,
-    ) -> StreamResult<StreamingClient> {
-        let mut url = self.url.clone();
-        url.set_scheme("ws").expect("Could not set scheme");
-        // Path from /json-rpc/src/stream_rpc/transport/websocket.rs#L43
-        url.set_path("/v1/stream/ws");
-        println!("ws_url: {}", &url);
-        StreamingClient::new(url, config.unwrap_or_default(), None).await
-    }
+    // pub async fn streaming_client(
+    //     &self,
+    //     config: Option<StreamingClientConfig>,
+    // ) -> StreamResult<StreamingClient> {
+    //     let mut url = self.url.clone();
+    //     url.set_scheme("ws").expect("Could not set scheme");
+    //     // Path from /json-rpc/src/stream_rpc/transport/websocket.rs#L43
+    //     url.set_path("/v1/stream/ws");
+    //     println!("ws_url: {}", &url);
+    //     StreamingClient::new(url, config.unwrap_or_default(), None).await
+    // }
 
     /// Gets account data for the indexed address
     pub fn get_account(&self, address_num: usize) -> Option<&AccountData> {

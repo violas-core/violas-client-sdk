@@ -16,6 +16,9 @@ use chrono::prelude::*;
 use hyper_timeout::TimeoutConnector;
 use oracle::Oracle;
 
+mod jsonrpc_server;
+use jsonrpc_server::run_json_rpc_server;
+
 const ALL_CURRENCIES_CODE: [&str; 15] = [
     "BTC", "WBTC", "REN", "USDC", "BUSD", "DAI", "WETH", "UNI", "SUSHI", "LINK", "COMP", "AAVE",
     "BNB", "WFIL", "USDT",
@@ -76,6 +79,7 @@ enum Command {
 //async fn main() -> Result<()>
 fn main() -> Result<()> {
     let command = Command::from_args();
+
     process_command(command)?;
 
     Ok(())
@@ -160,7 +164,16 @@ fn process_command(command: Command) -> Result<()> {
             })?;
         }
         Command::Service(args) => {
-            daemon()?;
+            //daemon()?;
+
+            //
+            //  Start a json rpc server
+            //            
+            let args1 = args.clone();
+
+            std::thread::spawn(move || {
+                run_json_rpc_server(args1.url.clone(), args1.chain_id, args1.mint_key.clone(), args1.mnemonic.clone(), args1.waypoint.clone());
+            });
 
             let mut rt = Runtime::new()?;
 
@@ -248,7 +261,6 @@ fn process_command(command: Command) -> Result<()> {
                 );
 
                 rt.block_on(async { time::delay_for(Duration::from_secs(60)).await });
-
                 println!("{} : end to loop.", Local::now());
             }
 

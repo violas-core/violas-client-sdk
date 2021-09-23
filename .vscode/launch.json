@@ -175,20 +175,20 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "violas-oracle Launch",
+            "name": "Launch violas-oracle",
             "program": "${workspaceFolder}/rust/violas-oracle/target/debug/violas-oracle",
             "args": [
-                "update",
+                "publish",
                 "-u",
-                "http://localhost:41597",
-                "-m",
-                "/tmp/diem/mint.key",
+                "http://124.251.110.220:50001",                
                 "-w",
-                "0:21405ddddd1080c2bde89bfd3e912966568bac840732212177cff3e36b08a002",
+                "0:cbf5fca97c86ca655ae57a1993ab8e008ac4c40a0413544aceefd28f3b7e4c44",
                 "-c",
-                "5",
+                "4",
                 "-n",
-                "$PWD/oracle.mne"
+                "cpp/testnet/mnemonic/oracle.mne",
+                "-m",
+                "/home/hunter/Documents/nodes/mint_bj1.key"
             ],
             "cwd": "${workspaceFolder}"
         },

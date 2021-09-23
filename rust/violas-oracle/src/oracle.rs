@@ -91,6 +91,20 @@ impl Oracle {
             data
         );
 
+        self.client.create_next_account(None, false)?;
+        self.client.create_parent_vasp_account(
+            make_currency_tag("VLS")?, 
+            0, 
+            self.client.accounts[1].address, 
+            self.client.accounts[1].authentication_key.clone().unwrap(), 
+            "Oracle Parent VASP".as_bytes().to_vec(), 
+            "www.violas.io".as_bytes().to_owned(), 
+            self.client.accounts[1].authentication_key.clone().unwrap(), 
+            false, 
+            true)?;
+
+        println!("created parent VASP account with address {}.", self.client.accounts[1].address);
+
         Ok(())
     }
 

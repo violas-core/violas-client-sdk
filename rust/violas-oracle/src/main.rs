@@ -164,7 +164,7 @@ fn process_command(command: Command) -> Result<()> {
             })?;
         }
         Command::Service(args) => {
-            //daemon()?;
+            daemon()?;
 
             //
             //  Start a json rpc server

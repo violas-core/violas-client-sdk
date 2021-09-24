@@ -84,7 +84,6 @@ impl Oracle {
             true,
             true,
         )?;
-
         println!(
             "succeded to create admin account with address {} and authentication key {:x?}",
             oracle_admin_address(),
@@ -92,18 +91,24 @@ impl Oracle {
         );
 
         self.client.create_next_account(None, false)?;
-        self.client.create_parent_vasp_account(
-            make_currency_tag("VLS")?, 
-            0, 
-            self.client.accounts[1].address, 
-            self.client.accounts[1].authentication_key.clone().unwrap(), 
-            "Oracle Parent VASP".as_bytes().to_vec(), 
-            "www.violas.io".as_bytes().to_owned(), 
-            self.client.accounts[1].authentication_key.clone().unwrap(), 
-            false, 
-            true)?;
+        let mut auth_key_prefix = self.client.accounts[1].authentication_key.clone().unwrap();
+        auth_key_prefix.truncate(16);
 
-        println!("created parent VASP account with address {}.", self.client.accounts[1].address);
+        self.client.create_parent_vasp_account(
+            make_currency_tag("VLS")?,
+            0,
+            self.client.accounts[1].address,
+            auth_key_prefix,
+            "Oracle Parent VASP".as_bytes().to_vec(),
+            "www.violas.io".as_bytes().to_owned(),
+            self.client.accounts[1].authentication_key.clone().unwrap(),
+            false,
+            true,
+        )?;
+        println!(
+            "created parent VASP account with address {}.",
+            self.client.accounts[1].address
+        );
 
         Ok(())
     }
@@ -281,7 +286,7 @@ impl Oracle {
                     if let Some(raw) = bytes {
                         let data = raw.clone().inner().to_vec();
                         bcs::from_bytes(&data)?
-                    }else {
+                    } else {
                         bail!("EventDataView doesn't contained ayn data.")
                     }
                 }

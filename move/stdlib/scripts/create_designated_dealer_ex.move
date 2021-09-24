@@ -2,7 +2,7 @@ script {
 use DiemFramework::DiemAccount;
 use DiemFramework::SlidingNonce;
 
-fun create_designated_dealer_ex<CoinType: store>(
+fun create_designated_dealer_ex<CoinType>(
         tc_account: signer,
         sliding_nonce: u64,
         new_account_address: address,

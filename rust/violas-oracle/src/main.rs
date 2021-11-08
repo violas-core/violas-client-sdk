@@ -129,7 +129,7 @@ fn process_command(command: Command) -> Result<()> {
                 rt.block_on(async { gather_exchange_rate_from_coinbase().await })?;
 
             let mut oracle = create_oracle(args.clone())?;
-            oracle.create_admin_account()?;
+            oracle.create_admin_account()?;            
 
             for currency_rate in currency_rates {
                 let (currency, ex_rate) = currency_rate;
@@ -156,9 +156,9 @@ fn process_command(command: Command) -> Result<()> {
                 let mut oracle = create_oracle(args)?;
 
                 //curl https://api.coinbase.com/v2/exchange-rates?currency=EUR | grep GBP
-                oracle.run_test_case("EUR", 100_000_000, "GBP")?;
+                //oracle.run_test_case("EUR", 100_000_000, "GBP")?;
 
-                oracle.view_exchange_rate("BTC")?;
+                oracle.view_exchange_rate("VBTC")?;
 
                 Ok(())
             })?;
@@ -168,11 +168,17 @@ fn process_command(command: Command) -> Result<()> {
 
             //
             //  Start a json rpc server
-            //            
+            //
             let args1 = args.clone();
 
             std::thread::spawn(move || {
-                run_json_rpc_server(args1.url.clone(), args1.chain_id, args1.mint_key.clone(), args1.mnemonic.clone(), args1.waypoint.clone());
+                run_json_rpc_server(
+                    args1.url.clone(),
+                    args1.chain_id,
+                    args1.mint_key.clone(),
+                    args1.mnemonic.clone(),
+                    args1.waypoint.clone(),
+                );
             });
 
             let mut rt = Runtime::new()?;
@@ -320,6 +326,17 @@ async fn gather_exchange_rate_from_coinbase() -> Result<Vec<(String, f64)>> {
         .collect();
 
     Ok(rates)
+}
+
+pub fn get_currency_list(client :&mut ViolasClient) -> Result<(Vec<String>)> {
+    let currency_infos = client.get_all_currency_info()?;
+
+    let names: Vec<String> = currency_infos
+        .iter()
+        .map(|info| info.code.clone())
+        .collect();
+
+    Ok(names)
 }
 
 use std::fs::File;

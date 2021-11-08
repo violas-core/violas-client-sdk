@@ -76,12 +76,12 @@ module OrderStore {
     //
     //
     //
-    public fun take_order<Token>(
-                            sig : &signer,
-                            order_id : &vector<u8>) 
+    public fun take_order<Token>(sender_sig : &signer,
+                                sale_agent_sig : &signer,
+                                order_id : &vector<u8>) 
     acquires OrderList {
-        let sender = Signer::address_of(sig);
-        let sale_agent = VASP::parent_address(sender);
+        let sender = Signer::address_of(sender_sig);
+        let sale_agent = Signer::address_of(sale_agent_sig);
         let (ret, index) = find_order(order_id);
         
         assert(ret == true, 10002);
@@ -94,7 +94,7 @@ module OrderStore {
 
         let incentive_amount = FixedPoint32::multiply_u64(order.price, *&order.sale_incentive);
         
-        let sender_withdraw_cap = DiemAccount::extract_withdraw_capability(sig);
+        let sender_withdraw_cap = DiemAccount::extract_withdraw_capability(sender_sig);
         
         // Pay to sale agent
         DiemAccount::pay_from<Token>(&sender_withdraw_cap, 
@@ -119,7 +119,7 @@ module OrderStore {
             let sender_order_list = borrow_global_mut<OrderList>(sender);
             Vector::push_back<Order>(&mut sender_order_list.orders, order);
         } else
-            move_to<OrderList>(sig, OrderList { orders : Vector::singleton<Order>(order)});
+            move_to<OrderList>(sender_sig, OrderList { orders : Vector::singleton<Order>(order)});
 
         //emit events
         

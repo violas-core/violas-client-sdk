@@ -178,7 +178,7 @@
             "name": "Launch violas-oracle",
             "program": "${workspaceFolder}/rust/violas-oracle/target/debug/violas-oracle",
             "args": [
-                "service",
+                "test",
                 "-u",
                 "http://124.251.110.220:50001",                
                 "-w",

@@ -19,12 +19,13 @@ use oracle::Oracle;
 mod jsonrpc_server;
 use jsonrpc_server::run_json_rpc_server;
 
-const ALL_CURRENCIES_CODE: [&str; 15] = [
-    "BTC", "WBTC", "REN", "USDC", "BUSD", "DAI", "WETH", "UNI", "SUSHI", "LINK", "COMP", "AAVE",
-    "BNB", "WFIL", "USDT",
-    //, "USD", "EUR", "GBP", "SGD", "JPY", "CNY"]
+const ALL_CURRENCIES_CODE: [&str;20 ] = [
+    "BTC", "ETH", "REN", "USDC", "BUSD", 
+    "DAI", "WETH", "UNI", "SUSHI", "LINK", 
+    "COMP", "AAVE", "BNB", "WFIL", "USDT",
+    "EUR", "GBP", "SGD", "JPY", "CNY"
 ];
-const PREFIX_CURRENCY: &str = "V";
+const PREFIX_CURRENCY: &str = "";
 
 #[derive(Clone, Debug, StructOpt)]
 struct Args {

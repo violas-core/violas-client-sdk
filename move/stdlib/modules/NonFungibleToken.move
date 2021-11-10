@@ -134,7 +134,7 @@ module NonFungibleToken {
     //
     //
     //
-    public fun make_token_id<Token>(token: &Token) : vector<u8> {
+    public fun compute_token_id<Token>(token: &Token) : vector<u8> {
         let token_bcs = BCS::to_bytes<Token>(token);
         let token_id = Hash::sha3_256(token_bcs);
 
@@ -150,7 +150,7 @@ module NonFungibleToken {
         
         while(i < length) {
             let token = Vector::borrow<Token>(tokens, i);
-            if( Compare::cmp_bcs_bytes(&make_token_id(token), token_id) == 0 ) {
+            if( Compare::cmp_bcs_bytes(&compute_token_id(token), token_id) == 0 ) {
                 break
             } else {
                 i = i + 1;
@@ -211,7 +211,7 @@ module NonFungibleToken {
         // The receiver must has called method 'accept_token' previously
         assert(exists<Balance<Token>>(receiver), Errors::not_published(EPAYEE_CANT_ACCEPT_NFT));
         
-        let token_id = make_token_id<Token>(&token);                
+        let token_id = compute_token_id<Token>(&token);                
 
         let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
         
@@ -287,10 +287,19 @@ module NonFungibleToken {
         let sender = Signer::address_of(sig);
         assert(sender != receiver, 10010);
 
-        let sender_token_ref_mut = borrow_global_mut<Balance<Token>>(sender);
-        let index = get_token_index(&sender_token_ref_mut.tokens, token_id);
+        let token = withdraw<Token>(sig, receiver, *token_id, &metadata);
+        deposite<Token>(sender, receiver, token, &metadata);
+
+        // Update owner of token id
+        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
         
-        transfer_via_index<Token>(sig, receiver, index, metadata);
+        let (index, found) = Map::find(&info.owners, token_id);
+        if(found) {
+            let (_, value) = Map::borrow_mut(&mut info.owners, index);
+            Vector::push_back(value, receiver);
+        } else {
+            abort(8004)
+        };  
     }
     //
     //  Transfer a NFT token with index
@@ -313,7 +322,7 @@ module NonFungibleToken {
             Vector::swap<Token>(&mut sender_nft.tokens, index, length-1); 
 
         let token = Vector::pop_back(&mut sender_nft.tokens);
-        let token_id = make_token_id(&token);
+        let token_id = compute_token_id(&token);
         
         // Update owner of token id
         let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
@@ -338,134 +347,46 @@ module NonFungibleToken {
         let receiver_account =  borrow_global_mut<Account<Token>>(receiver);        
         Event::emit_event(&mut receiver_account.received_events, ReceivedEvent{ token_id, payer: sender, metadata });
     }
-}
-}
 
-/*
-//! new-transaction
-//! sender: nftservice
-module TestNft {
-    struct TestNft {}
-    public fun new_test_nft(): TestNft {
-        TestNft{}
+    public fun withdraw<Token: key+store>(sig: &signer, receiver: address, token_id : vector<u8>, metadata: &vector<u8>) : Token
+    acquires Account, Balance {
+        let sender = Signer::address_of(sig);
+        
+        let sender_token_ref_mut = borrow_global_mut<Balance<Token>>(sender);
+        let index = get_token_index(&sender_token_ref_mut.tokens, &token_id);
+
+        let sender_nft = borrow_global_mut<Balance<Token>>(sender);
+        let length = Vector::length<Token>(&sender_nft.tokens);
+        
+        // Ensure the index is valid 
+        assert(index < length, 8003);
+        
+        // Get token from sender
+        if (index < length - 1) //swap element to back
+            Vector::swap<Token>(&mut sender_nft.tokens, index, length-1); 
+
+        let token = Vector::pop_back(&mut sender_nft.tokens);
+
+        // Emit sent event
+        let sender_account =  borrow_global_mut<Account<Token>>(sender);
+        Event::emit_event(&mut sender_account.sent_events, SentEvent{ token_id: copy token_id, payee: receiver, metadata: *metadata });
+
+        token
+    } 
+    //
+    // Deposite a token to receiver
+    //
+    public fun deposite<Token: key+store>(sender: address, receiver: address, token : Token, metadata: &vector<u8>) 
+    acquires Account, Balance {
+        let token_id = compute_token_id(&token);
+        // Deposite token to receiver         
+        let nft_receiver =  borrow_global_mut<Balance<Token>>(receiver);
+        Vector::push_back<Token>(&mut nft_receiver.tokens, token);
+        
+        // Emit received event
+        let receiver_account =  borrow_global_mut<Account<Token>>(receiver);        
+        Event::emit_event(&mut receiver_account.received_events, ReceivedEvent{ token_id, payer: sender, metadata: *metadata });
     }
-}
-// check: "Keep(EXECUTED)"
 
-//! new-transaction
-//! sender: alice
-// sample for moving Nft into another resource
-module MoveNft {
-    use {{nftservice}}::NonFungibleToken::{Self, NonFungibleToken};
-    use {{nftservice}}::TestNft::TestNft;
-    use 0x1::Signer;
-
-    resource struct MoveNft {
-        nft: NonFungibleToken<TestNft>
-    }
-
-    public fun move_nft(account: &signer) {
-        let nft = NonFungibleToken::get_nft<TestNft>(account);
-        move_to<MoveNft>(account, MoveNft{ nft });
-    }
-
-    public fun move_back_nft(account: &signer) acquires MoveNft {
-        let sender = Signer::address_of(account);
-        let MoveNft { nft } = move_from<MoveNft>(sender);
-        NonFungibleToken::put_nft<TestNft>(account, nft);
-    }
-}
-// check: "Keep(EXECUTED)"
-
-//! new-transaction
-//! sender: nftservice
-script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
-fun main(account: signer) {
-    NonFungibleToken::initialize<TestNft>(account, false, 0);
 }
 }
-
-// check: "Keep(EXECUTED)"
-
-//! new-transaction
-//! sender: alice
-script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::{Self, TestNft};
-use 0x1::Hash;
-fun main(account: signer) {
-    let input = b"input";
-    let token_id = Hash::sha2_256(input);
-    let token = TestNft::new_test_nft();
-    NonFungibleToken::preemptive<TestNft>(account, {{nftservice}}, token_id, token);
-}
-}
-
-// check: "Keep(EXECUTED)"
-
-//! new-transaction
-//! sender: alice
-script {
-use {{alice}}::MoveNft;
-fun main(account: signer) {
-    MoveNft::move_nft(account);
-}
-}
-
-// check: "Keep(EXECUTED)"
-
-//! new-transaction
-//! sender: bob
-script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
-fun main(account: signer) {
-    NonFungibleToken::accept_token<TestNft>(account);
-}
-}
-
-// check: "Keep(EXECUTED)"
-
-//! new-transaction
-//! sender: alice
-script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
-use 0x1::Hash;
-fun main(account: signer) {
-    let input = b"input";
-    let token_id = Hash::sha2_256(input);
-    NonFungibleToken::safe_transfer<TestNft>(account, {{nftservice}}, token_id, {{bob}});
-}
-}
-
-// check: ABORTED
-
-//! new-transaction
-//! sender: alice
-script {
-use {{alice}}::MoveNft;
-fun main(account: signer) {
-    MoveNft::move_back_nft(account);
-}
-}
-
-// check: "Keep(EXECUTED)"
-
-//! new-transaction
-//! sender: alice
-script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
-use 0x1::Hash;
-fun main(account: signer) {
-    let input = b"input";
-    let token_id = Hash::sha2_256(input);
-    NonFungibleToken::safe_transfer<TestNft>(account, {{nftservice}}, token_id, {{bob}});
-}
-}
-
-// check: "Keep(EXECUTED)"
-*/

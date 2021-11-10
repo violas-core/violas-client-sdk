@@ -57,7 +57,14 @@ namespace violas::nft
         auto accounts = _client->get_all_accounts();
         auto &admin = accounts[0];
 
-        _client->create_parent_vasp_account("VLS", 0, admin.address, admin.auth_key, "NFT VASP", "", admin.pub_key, true);
+        try
+        {
+            _client->create_parent_vasp_account("VLS", 0, admin.address, admin.auth_key, "NFT VASP", "", admin.pub_key, true);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }        
 
         //
         //  Rgiester NFT and set admin address

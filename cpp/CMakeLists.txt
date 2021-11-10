@@ -28,7 +28,7 @@ add_subdirectory(vls)
 install(DIRECTORY ../move DESTINATION . FILES_MATCHING PATTERN "*.mv")
 
 # install mnemonic files 
-IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
     install(DIRECTORY testnet/mnemonic DESTINATION .)
     install(PROGRAMS ../rust/violas-oracle/target/debug/violas-oracle TYPE BIN)
 ELSE()

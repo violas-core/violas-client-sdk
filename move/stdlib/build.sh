@@ -72,12 +72,12 @@ echo "build scripts/nft_transfer.move"
 mv build/scripts/nft_transfer_by_token_id.mv scripts/
 mv build/scripts/nft_transfer_by_token_index.mv scripts/
 
-echo "build modules/OrderStore.move"
-../build.sh modules/OrderStore.move ../stdlib/modules/Compare.move
-mv build/modules/0_OrderStore.mv modules/OrderStore.mv
+echo "build modules/NftStore.move"
+../build.sh modules/NftStore.move modules/NonFungibleToken.move modules/Map.move modules/Compare.move
+mv build/modules/0_NftStore.mv modules/NftStore.mv
 
 echo "build scripts/nft_store_make_order.move"
-../build.sh scripts/nft_store_scripts.move modules/NonFungibleToken.move modules/OrderStore.move modules/Map.move modules/Compare.move
+../build.sh scripts/nft_store_scripts.move modules/NonFungibleToken.move modules/NftStore.move modules/Map.move modules/Compare.move
 mv build/scripts/nft_store_make_order.mv scripts/
 mv build/scripts/nft_store_revoke_order.mv scripts/
 

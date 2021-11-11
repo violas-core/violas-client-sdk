@@ -12,20 +12,21 @@ module NonFungibleToken {
     use Std::Option::{Self, Option};
     use Std::Signer;
     use Std::Vector;
-    use Std::Map::{Self, Map};
+    use Std::Map::{Self, Map};    
 
     const NFT_PUBLISHER: address = @0xA550C18;   // Violas root account
     const EPAYEE_CANT_ACCEPT_NFT: u64 = 1001;
     const ESENDER_HAS_ACCEPTED_NFT_TYPE: u64 = 1002;
     const ENFT_TOKEN_HAS_ALREADY_EXISTED: u64 = 1003;
     const ENFT_TOKEN_HAS_NOT_EXISTED: u64 = 1004;    
+    const EACCOUNT: u64 = 10001;
     
-    struct MintEvent has drop, store {
+    struct MintedEvent has drop, store {
         token_id: vector<u8>,
         receiver: address,
     }
 
-    struct BurnEvent has drop, store {
+    struct BurnedEvent has drop, store {
         token_id: vector<u8>,
     }
 
@@ -41,43 +42,51 @@ module NonFungibleToken {
         metadata: vector<u8>,
     }
 
-    struct Info<Token> has key, store {
+    struct TransferredEvent has drop, store {
+        token_id: vector<u8>,
+        payee: address,
+        payer: address,
+        metadata: vector<u8>,
+    }
+    //
+    //  NFT global infomation held by the administrator account
+    //
+    struct Configuration<Token> has key, store {
         limited: bool,
         total: u64,
         amount: u64,
-        admin: address, // has minting and burning permission
-        owners: Map<vector<u8>, vector<address>>,  // token id maps to owner's address
-        mint_events: EventHandle<MintEvent>,
-        burn_events: EventHandle<BurnEvent>,
+        admin_address: address, // administrator's address
+        owners: Map<vector<u8>, address>,  // token id maps to owner's address        
+        // Global events
+        minted_events: EventHandle<MintedEvent>,
+        burned_events: EventHandle<BurnedEvent>,
+        transferred_events: EventHandle<TransferredEvent>
+    }   
+
+    struct WithdrawCapbility has store {
+        account_address : address,
     }
-
-    struct Account<Token> has key {
-        sent_events: EventHandle<SentEvent>,            // sent token events
-        received_events: EventHandle<ReceivedEvent>,    // received token events
+    //
+    //  Account struct held by the account
+    //
+    struct Account has key {
+        opt_withdraw_cap : Option<WithdrawCapbility>,
     }
-
-    struct Balance<Token> has key, store {        
-        tokens: vector<Token>,                          // store all tokens in vector
+    //
+    //  Non Fungiable Token resource held by the account
+    //
+    struct NFT<Token> has key {        
+        tokens: vector<Token>,                          // store all tokens
+        sent_events: EventHandle<SentEvent>,            // the sent events
+        received_events: EventHandle<ReceivedEvent>,    // the received events
     }
-
-    // struct TokenLock<Token> has key {
-    // }    
-
-    // fun lock<Token: store>(account: &signer) {
-    //     move_to<TokenLock<Token>>(account, TokenLock<Token>{});
-    // }
-
-    // fun unlock<Token: store>(account: &signer) acquires TokenLock {
-    //     let sender = Signer::address_of(account);
-    //     let TokenLock<Token> {} = move_from<TokenLock<Token>>(sender);
-    // }
-    
+  
     //
     //  Increase 1 to NFT amount
     //
     fun increase_nft_amount<Token: store>() 
-    acquires Info {
-        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+    acquires Configuration {
+        let info = borrow_global_mut<Configuration<Token>>(NFT_PUBLISHER);
         
         * (&mut info.amount) = info.amount + 1;
         
@@ -87,50 +96,76 @@ module NonFungibleToken {
     //  Decrease 1 NFT amount 
     //
     fun decrease_nft_amount<Token: store>() 
-    acquires Info {
-        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+    acquires Configuration {
+        let info = borrow_global_mut<Configuration<Token>>(NFT_PUBLISHER);
         
         if (info.amount != 0) {
             * (&mut info.amount) = info.amount - 1;
         }
-    }
+    }    
     //
     //  check if the address of admin 
     //
-    fun check_admin_permission<Token: store>(admin: address)
-    acquires Info {
-        let info = borrow_global<Info<Token>>(NFT_PUBLISHER);
+    fun check_admin_permission<Token: store>(account_address: address)
+    acquires Configuration {
+        let info = borrow_global<Configuration<Token>>(NFT_PUBLISHER);
 
-        assert(info.admin == admin, 10001);
+        assert(info.admin_address == account_address, 10001);
     }
-
-    public fun register<Token: store>(sig: &signer, limited: bool, total: u64, admin: address) {
+    
+    public fun register<Token: store>(sig: &signer, limited: bool, total: u64, admin_address: address) {
         let sender = Signer::address_of(sig);
         assert(sender == NFT_PUBLISHER, 8000);
 
-        let info = Info<Token> {
+        let info = Configuration<Token> {
             limited: limited,
             total: total,
             amount: 0,
-            admin,
-            owners:  Map::empty<vector<u8>, vector<address>>(),
-            mint_events: Event::new_event_handle<MintEvent>(sig),
-            burn_events: Event::new_event_handle<BurnEvent>(sig)
+            admin_address,
+            owners:  Map::empty<vector<u8>, address>(),
+            minted_events: Event::new_event_handle<MintedEvent>(sig),
+            burned_events: Event::new_event_handle<BurnedEvent>(sig),
+            transferred_events : Event::new_event_handle<TransferredEvent>(sig),
         };
 
-        move_to<Info<Token>>(sig, info);        
-    }    
+        move_to<Configuration<Token>>(sig, info);        
+    }
+    
+    //
+    //  Accept NFT tokens
+    //
+    public fun accept<Token: store>(sig: &signer) {
+        let sender = Signer::address_of(sig);
+                
+        //assert(!exists<NFT<Token>>(sender), Errors::already_published(ESENDER_HAS_ACCEPTED_NFT_TYPE));               
+        if(!exists<NFT<Token>>(sender)) {
+            move_to<NFT<Token>>(sig, 
+            NFT<Token> {
+                tokens: Vector::empty<Token>(),
+                sent_events: Event::new_event_handle<SentEvent>(sig),
+                received_events: Event::new_event_handle<ReceivedEvent>(sig),
+            });
+        };
+        
+        if(!exists<Account>(sender)){
+            move_to<Account>(sig, 
+                Account { opt_withdraw_cap: Option::some(WithdrawCapbility { account_address: sender }) });
+        };
+        
+    }
+    
     //
     //  Get the number of balance for Token
     //
-    public fun balance<Token : key + store>(sig: &signer) : u64 
-    acquires Balance {
+    public fun balance<Token : store>(sig: &signer) : u64 
+    acquires NFT {
         let sender = Signer::address_of(sig);
 
-        let nft = borrow_global<Balance<Token>>(sender);
+        let account = borrow_global<NFT<Token>>(sender);
         
-        Vector::length<Token>(&nft.tokens)
+        Vector::length<Token>(&account.tokens)
     }
+    
     //
     //
     //
@@ -140,9 +175,11 @@ module NonFungibleToken {
 
         token_id
     }
+    
     //
     //  Get NFT token index by token id
     //  if returned index is equal to the length of vector that means faild to get index
+    //
     fun get_token_index<Token: store>(tokens: &vector<Token>, token_id: &vector<u8>) : u64 {
 
         let length = Vector::length<Token>(tokens);
@@ -159,17 +196,18 @@ module NonFungibleToken {
 
         i
     }
+    
     //
     //  Get NFT token from an account
     //
     fun get_nft_token<Token: store>(account: &signer, token_id: &vector<u8>): Token 
-    acquires Balance {
+    acquires NFT {
         let sender = Signer::address_of(account);
-        assert(exists<Balance<Token>>(sender), 8006);
+        assert(exists<NFT<Token>>(sender), 8006);
         //assert(!exists<TokenLock<Token>>(sender), 8007);
         //Self::lock<Token>(account);
 
-        let nft = borrow_global_mut<Balance<Token>>(sender);    
+        let nft = borrow_global_mut<NFT<Token>>(sender);    
         let length = Vector::length<Token>(&nft.tokens);
 
         let index = get_token_index<Token>(&nft.tokens, token_id);
@@ -179,67 +217,69 @@ module NonFungibleToken {
             Vector::swap_remove<Token>(&mut nft.tokens, index)
         else
             Vector::pop_back<Token>(&mut nft.tokens)        
-    }   
+    }
+       
     //
     //  get token owner by token id
     //
     public fun owner<Token:key+store>(token_id: &vector<u8>): Option<address>
-    acquires Info {
-        let info = borrow_global<Info<Token>>(NFT_PUBLISHER);
+    acquires Configuration {
+        let info = borrow_global<Configuration<Token>>(NFT_PUBLISHER);
 
-        let (index, found) = Map::find<vector<u8>, vector<address>>(&info.owners, token_id);
+        let (index, found) = Map::find<vector<u8>, address>(&info.owners, token_id);
         if( found ) {
-            let(_, owners) = Map::borrow(&info.owners, index);            
-            let length = Vector::length(owners);
-        
-            Option::some(*Vector::borrow(owners, length-1))
+            let(_, owner) = Map::borrow(&info.owners, index);            
+                    
+            Option::some(*owner)
         } else {
             Option::none()
         }
         
     }
+    
     ///
     /// Mint a NFT to a receiver
     /// 
     public fun mint<Token: copy + drop + store>(sig: &signer, receiver: address, token: Token) : bool
-    acquires Balance, Info  {
+    acquires NFT, Configuration  {
 
         let sender = Signer::address_of(sig);
 
         check_admin_permission<Token>(sender);
 
         // The receiver must has called method 'accept_token' previously
-        assert(exists<Balance<Token>>(receiver), Errors::not_published(EPAYEE_CANT_ACCEPT_NFT));
+        assert(exists<NFT<Token>>(receiver), Errors::not_published(EPAYEE_CANT_ACCEPT_NFT));
         
         let token_id = compute_token_id<Token>(&token);                
 
-        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        let info = borrow_global_mut<Configuration<Token>>(NFT_PUBLISHER);
         
         // Insert to global map
-        let ret = Map::insert(&mut info.owners, copy token_id, Vector::singleton(receiver));
+        let ret = Map::insert(&mut info.owners, copy token_id, receiver);
         
         // Abort if token id has already existed            
         assert( ret, Errors::invalid_argument(ENFT_TOKEN_HAS_ALREADY_EXISTED) );  
         
         // Emit sent event
-        Event::emit_event(&mut info.mint_events, MintEvent{ token_id, receiver });
+        Event::emit_event(&mut info.minted_events, MintedEvent{ token_id, receiver });
         
         //  Increment NFT amount
         increase_nft_amount<Token>();
         //
         //  Deposite NFT to receiver
         //
-        let receiver_token_ref_mut = borrow_global_mut<Balance<Token>>(receiver);    
+        let receiver_token_ref_mut = borrow_global_mut<NFT<Token>>(receiver);    
                 
         Vector::push_back<Token>(&mut receiver_token_ref_mut.tokens, token);        
         
         true
-    }     
+    }
+    
     //
     //  Burn a NFT token
     //
     public fun burn<Token: drop+store>(sig: &signer, token_id: &vector<u8>)
-    acquires Balance, Info  {
+    acquires NFT, Configuration  {
     
         let sender = Signer::address_of(sig);
                 
@@ -256,106 +296,83 @@ module NonFungibleToken {
         //
         // Emit sent event
         //                
-        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        let info = borrow_global_mut<Configuration<Token>>(NFT_PUBLISHER);
         
-        Event::emit_event(&mut info.burn_events, BurnEvent{ token_id: *token_id });
+        Event::emit_event(&mut info.burned_events, BurnedEvent{ token_id: *token_id });
     }
     //
-    //  Accept NFT tokens
+    //  pay NFT with withdraw capabilidy
     //
-    public fun accept<Token: store>(sig: &signer) {
-        let sender = Signer::address_of(sig);
-                
-        assert(!exists<Balance<Token>>(sender), Errors::already_published(ESENDER_HAS_ACCEPTED_NFT_TYPE));
-        
-        move_to<Balance<Token>>(sig, 
-            Balance<Token> {
-                tokens: Vector::empty<Token>(),                
-                });
-        
-        move_to<Account<Token>>(sig, 
-            Account {
-                sent_events: Event::new_event_handle<SentEvent>(sig),
-                received_events: Event::new_event_handle<ReceivedEvent>(sig),
-            })
-    }
-    //
-    //  Transfer a NFT token with token id
-    //
-    public fun transfer<Token: drop + key + store>(sig: &signer, receiver: address, token_id: &vector<u8>, metadata: vector<u8>) 
-    acquires Account, Balance, Info {
-        let sender = Signer::address_of(sig);
-        assert(sender != receiver, 10010);
+    public fun pay_from<Token: store>(
+        cap: &WithdrawCapbility, 
+        receiver: address, 
+        token_id: &vector<u8>, 
+        metadata: &vector<u8>)
+    acquires NFT, Configuration {
+        let sender = cap.account_address;
 
-        let token = withdraw<Token>(sig, receiver, *token_id, &metadata);
-        deposite<Token>(sender, receiver, token, &metadata);
+        let token = withdraw<Token>(cap, receiver, *token_id, metadata);
+        deposite<Token>(sender, receiver, token, metadata);
 
         // Update owner of token id
-        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
+        let info = borrow_global_mut<Configuration<Token>>(NFT_PUBLISHER);
         
         let (index, found) = Map::find(&info.owners, token_id);
         if(found) {
             let (_, value) = Map::borrow_mut(&mut info.owners, index);
-            Vector::push_back(value, receiver);
+            *value = receiver;
         } else {
             abort(8004)
-        };  
+        };
+
+        Event::emit_event(&mut info.transferred_events, TransferredEvent {token_id: *token_id, payer: sender, payee: receiver, metadata: *metadata});
     }
+    //
+    //  Transfer a NFT token with token id
+    //
+    public fun transfer<Token: store>(sig: &signer, receiver: address, token_id: &vector<u8>, metadata: &vector<u8>) 
+    acquires Account, NFT, Configuration {
+        let sender = Signer::address_of(sig);
+        assert(sender != receiver, 10010);
+        
+        let withdraw_cap = extract_opt_withdraw_capability(sig);        
+        
+        pay_from<Token>(&withdraw_cap, receiver, token_id, metadata);
+                
+        restore_opt_withdraw_capability(withdraw_cap);
+    }
+    
     //
     //  Transfer a NFT token with index
     //
-    public fun transfer_via_index<Token: drop + store>(account: &signer, receiver: address, index: u64, metadata: vector<u8>) 
-    acquires Account, Balance, Info {
-        let sender = Signer::address_of(account);
+    public fun transfer_by_index<Token: store>(sig: &signer, receiver: address, index: u64, metadata: &vector<u8>) 
+    acquires Account, NFT, Configuration {
+        let sender = Signer::address_of(sig);
 
-        assert(exists<Balance<Token>>(receiver), 8002);                                
+        assert(exists<NFT<Token>>(receiver), 8002);                                
         //assert(!exists<TokenLock<Token>>(sender), 8004);
 
-        let sender_nft = borrow_global_mut<Balance<Token>>(sender);
+        let sender_nft = borrow_global_mut<NFT<Token>>(sender);
         let length = Vector::length<Token>(&sender_nft.tokens);
         
         // Ensure the index is valid 
         assert(index < length, 8003);
-        
-        // Get token from sender
-        if (index < length - 1) //swap element to back
-            Vector::swap<Token>(&mut sender_nft.tokens, index, length-1); 
 
-        let token = Vector::pop_back(&mut sender_nft.tokens);
-        let token_id = compute_token_id(&token);
-        
-        // Update owner of token id
-        let info = borrow_global_mut<Info<Token>>(NFT_PUBLISHER);
-        
-        let (index, found) = Map::find(&info.owners, &token_id);
-        if(found) {
-            let (_, value) = Map::borrow_mut(&mut info.owners, index);
-            Vector::push_back(value, receiver);
-        } else {
-            abort(8004)
-        };       
-        
-        // Put token to receiver
-        let nft_receiver =  borrow_global_mut<Balance<Token>>(receiver);
-        Vector::push_back<Token>(&mut nft_receiver.tokens, token);
-
-        // Emit sent event
-        let sender_account =  borrow_global_mut<Account<Token>>(sender);
-        Event::emit_event(&mut sender_account.sent_events, SentEvent{ token_id: copy token_id, payee: receiver, metadata: copy metadata });
-
-        // Emit transfer event
-        let receiver_account =  borrow_global_mut<Account<Token>>(receiver);        
-        Event::emit_event(&mut receiver_account.received_events, ReceivedEvent{ token_id, payer: sender, metadata });
+        let token = Vector::borrow(&sender_nft.tokens, index);
+                
+        let token_id = compute_token_id(token);
+                
+        transfer<Token>(sig, receiver, &token_id, metadata);
     }
 
-    public fun withdraw<Token: key+store>(sig: &signer, receiver: address, token_id : vector<u8>, metadata: &vector<u8>) : Token
-    acquires Account, Balance {
-        let sender = Signer::address_of(sig);
+    fun withdraw<Token: store>(cap: &WithdrawCapbility, receiver: address, token_id : vector<u8>, metadata: &vector<u8>) : Token
+    acquires NFT {
+        let sender = cap.account_address;
         
-        let sender_token_ref_mut = borrow_global_mut<Balance<Token>>(sender);
+        let sender_token_ref_mut = borrow_global_mut<NFT<Token>>(sender);
         let index = get_token_index(&sender_token_ref_mut.tokens, &token_id);
 
-        let sender_nft = borrow_global_mut<Balance<Token>>(sender);
+        let sender_nft = borrow_global_mut<NFT<Token>>(sender);
         let length = Vector::length<Token>(&sender_nft.tokens);
         
         // Ensure the index is valid 
@@ -368,7 +385,7 @@ module NonFungibleToken {
         let token = Vector::pop_back(&mut sender_nft.tokens);
 
         // Emit sent event
-        let sender_account =  borrow_global_mut<Account<Token>>(sender);
+        let sender_account =  borrow_global_mut<NFT<Token>>(sender);
         Event::emit_event(&mut sender_account.sent_events, SentEvent{ token_id: copy token_id, payee: receiver, metadata: *metadata });
 
         token
@@ -376,17 +393,37 @@ module NonFungibleToken {
     //
     // Deposite a token to receiver
     //
-    public fun deposite<Token: key+store>(sender: address, receiver: address, token : Token, metadata: &vector<u8>) 
-    acquires Account, Balance {
+    fun deposite<Token: store>(sender: address, receiver: address, token : Token, metadata: &vector<u8>) 
+    acquires NFT {
         let token_id = compute_token_id(&token);
         // Deposite token to receiver         
-        let nft_receiver =  borrow_global_mut<Balance<Token>>(receiver);
+        let nft_receiver =  borrow_global_mut<NFT<Token>>(receiver);
         Vector::push_back<Token>(&mut nft_receiver.tokens, token);
         
         // Emit received event
-        let receiver_account =  borrow_global_mut<Account<Token>>(receiver);        
+        let receiver_account =  borrow_global_mut<NFT<Token>>(receiver);        
         Event::emit_event(&mut receiver_account.received_events, ReceivedEvent{ token_id, payer: sender, metadata: *metadata });
     }
 
+    public fun extract_opt_withdraw_capability(sig: &signer) : WithdrawCapbility
+    acquires Account {
+        let sender = Signer::address_of(sig);
+        assert(exists<Account>(sender), Errors::not_published(EACCOUNT));
+
+        let account = borrow_global_mut<Account>(sender);
+        assert(Option::is_some(&account.opt_withdraw_cap), Errors::not_published(EACCOUNT+1));
+
+        Option::extract(&mut account.opt_withdraw_cap)
+    }
+
+    public fun restore_opt_withdraw_capability(cap : WithdrawCapbility) 
+    acquires Account {
+        assert(exists<Account>(cap.account_address), Errors::not_published(EACCOUNT));
+        
+        let account = borrow_global_mut<Account>(cap.account_address);
+        assert(Option::is_none(&account.opt_withdraw_cap), Errors::not_published(EACCOUNT+1));
+
+        Option::fill(&mut account.opt_withdraw_cap, cap)
+    }
 }
 }

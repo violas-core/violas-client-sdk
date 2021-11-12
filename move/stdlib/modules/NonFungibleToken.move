@@ -137,15 +137,14 @@ module NonFungibleToken {
     public fun accept<Token: store>(sig: &signer) {
         let sender = Signer::address_of(sig);
                 
-        //assert(!exists<NFT<Token>>(sender), Errors::already_published(ESENDER_HAS_ACCEPTED_NFT_TYPE));               
-        if(!exists<NFT<Token>>(sender)) {
-            move_to<NFT<Token>>(sig, 
+        assert(!exists<NFT<Token>>(sender), Errors::already_published(ESENDER_HAS_ACCEPTED_NFT_TYPE));               
+        
+        move_to<NFT<Token>>(sig, 
             NFT<Token> {
                 tokens: Vector::empty<Token>(),
                 sent_events: Event::new_event_handle<SentEvent>(sig),
                 received_events: Event::new_event_handle<ReceivedEvent>(sig),
             });
-        };
         
         if(!exists<Account>(sender)){
             move_to<Account>(sig, 
@@ -153,7 +152,12 @@ module NonFungibleToken {
         };
         
     }
-    
+    //
+    // Has accepted
+    //
+    public fun has_accepted<Token: store>(sender: address) : bool {
+        exists<NFT<Token>>(sender)
+    }
     //
     //  Get the number of balance for Token
     //

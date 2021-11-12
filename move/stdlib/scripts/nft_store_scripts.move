@@ -1,4 +1,20 @@
 script {    
+    use 0x2::NftStore;    
+    
+    fun nft_store_initialize(sig: signer) { 
+        NftStore::initialize(&sig);
+    }
+}
+
+script {    
+    use 0x2::NftStore;    
+    
+    fun nft_store_accept<NFT: store>(sig: signer) { 
+        NftStore::accept<NFT>(&sig);
+    }
+}
+
+script {    
     use 0x2::NftStore;
     use Std::FixedPoint32;
 

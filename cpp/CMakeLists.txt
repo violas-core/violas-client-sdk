@@ -17,6 +17,8 @@ add_subdirectory(sdk)
 # executable nft
 add_subdirectory(nft)
 
+add_subdirectory(nft-store)
+
 # executable cmd
 add_subdirectory(command)
 

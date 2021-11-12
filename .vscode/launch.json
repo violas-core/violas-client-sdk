@@ -5,7 +5,26 @@
     "version": "0.2.0",
     "configurations": [
 
-    
+
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch nft-store",
+            "program": "${workspaceFolder}/build/debug/bin/nft-store",
+            "args": [
+                "-u",
+                "http://localhost:37189",
+                "-m",
+                "/tmp/diem/mint.key",
+                "-w",
+                "0:60970ec323fe2e65fa39a7c94aefdb28977bb1fd2d5d5427903b9611bacdb5be",
+                "-c",
+                "2",
+                "-n",
+                "mnemonic/nft-store.mne"
+            ],
+            "cwd": "${workspaceFolder}/build/debug"
+        },
         {
             "type": "lldb",
             "request": "launch",

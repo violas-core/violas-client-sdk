@@ -79,6 +79,7 @@ mv build/modules/0_NftStore.mv modules/NftStore.mv
 echo "build scripts/nft_store_make_order.move"
 ../build.sh scripts/nft_store_scripts.move modules/NonFungibleToken.move modules/NftStore.move modules/Map.move modules/Compare.move
 mv build/scripts/nft_store_initialize.mv scripts/
+mv build/scripts/nft_store_register_nft.mv scripts/
 mv build/scripts/nft_store_accept.mv scripts/
 mv build/scripts/nft_store_make_order.mv scripts/
 mv build/scripts/nft_store_revoke_order.mv scripts/

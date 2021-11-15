@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <diem_types.hpp>
 
 namespace json_rpc
 {
@@ -49,6 +50,8 @@ namespace json_rpc
         create(std::string url);
 
         virtual ~Client() {}
+
+        virtual void submit(const diem_types::SignedTransaction & signed_txn) = 0;
 
         virtual std::vector<Currency>
         get_currencies() = 0;

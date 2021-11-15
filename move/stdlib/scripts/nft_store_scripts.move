@@ -9,6 +9,15 @@ script {
 script {    
     use 0x2::NftStore;    
     
+    fun nft_store_register_nft<NFT: store>(sig: signer) { 
+        NftStore::register<NFT>(&sig);
+    }
+}
+
+
+script {    
+    use 0x2::NftStore;    
+    
     fun nft_store_accept<NFT: store>(sig: signer) { 
         NftStore::accept<NFT>(&sig);
     }

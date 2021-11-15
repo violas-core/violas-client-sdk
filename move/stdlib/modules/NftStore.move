@@ -89,7 +89,7 @@ module NftStore {
         check_admin_permission(sig);
 
         let sender = Signer::address_of(sig);
-        assert(exists<Configuration>(sender), Errors::already_published(ENFT_STORE_HAS_BEEN_INITIALIZED));
+        assert(!exists<Configuration>(sender), Errors::already_published(ENFT_STORE_HAS_BEEN_INITIALIZED));
 
         move_to(sig, Configuration {
             withdraw_cap: NonFungibleToken::extract_opt_withdraw_capability(sig)
@@ -102,7 +102,7 @@ module NftStore {
         check_admin_permission(sig);
         
         let sender = Signer::address_of(sig);
-        assert(exists<OrderList<NFT>>(sender), Errors::already_published(ENFT_TYPE_HAS_BEEN_REGISTERED));
+        assert(!exists<OrderList<NFT>>(sender), Errors::already_published(ENFT_TYPE_HAS_BEEN_REGISTERED));
 
         move_to(sig, 
             OrderList<NFT> {

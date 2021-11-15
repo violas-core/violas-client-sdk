@@ -54,6 +54,11 @@ namespace json_rpc
             return client_config;
         }
 
+        virtual void submit(const diem_types::SignedTransaction & signed_txn)  override
+        {
+
+        }
+
         virtual std::vector<Currency>
         get_currencies() override
         {

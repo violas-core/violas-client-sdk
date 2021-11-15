@@ -15,13 +15,14 @@ namespace violas::nft
         uint64_t total;
         uint64_t amount;
         violas::Address admin;
-        std::map<std::vector<uint8_t>, std::vector<violas::Address>> owners;
+        std::map<std::vector<uint8_t>, violas::Address> owners;
         violas::EventHandle mint_event;
         violas::EventHandle burn_event;
+        violas::EventHandle transferred_event;
 
         BcsSerde &serde(BcsSerde &bs)
         {
-            return bs && limited && total && amount && admin && owners && mint_event && burn_event;
+            return bs && limited && total && amount && admin && owners && mint_event && burn_event && transferred_event;
         }
     };
 
@@ -79,6 +80,19 @@ namespace violas::nft
     {
         std::vector<uint8_t> token_id;
         violas::Address payer;
+        std::vector<uint8_t> metadata;
+
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && token_id && payer && metadata;
+        }
+    };
+
+    struct TransferredEvent : public Event
+    {
+        std::vector<uint8_t> token_id;
+        violas::Address payer;
+        violas::Address peeer;
         std::vector<uint8_t> metadata;
 
         BcsSerde &serde(BcsSerde &bs)
@@ -146,7 +160,7 @@ namespace violas::nft
 
         std::optional<std::vector<T>> balance(const Address &addr);
 
-        std::optional<std::vector<Address>> get_owners(std::string url, const TokenId &token_id);
+        std::optional<Address> get_owner(std::string url, const TokenId &token_id);
 
         std::optional<NftInfo> get_nft_info(std::string url);
 

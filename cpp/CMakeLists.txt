@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 #set(CMAKE_CXX_FLAGS -Werror)
 set(CMAKE_EXE_LINKER_FLAGS -Wl,-rpath=./lib)
 
-include_directories(sdk/include ../rust/violas-client/src/ffi)
+include_directories(sdk/include framework/src ../rust/violas-client/src/ffi)
 link_directories(../../rust/violas-client/target/debug)
 
 # library violas_client 

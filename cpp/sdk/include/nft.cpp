@@ -167,14 +167,14 @@ namespace violas::nft
         violas::StructTag tag{
             Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
             "NonFungibleToken",
-            "Info",
+            "Configuration",
             {violas::StructTag{type_tag.address, type_tag.module_name, type_tag.resource_name}}};
 
         return state.get_resource<NftInfo>(VIOLAS_ROOT_ADDRESS, tag);
     }
 
     template <typename T>
-    optional<vector<Address>> NonFungibleToken<T>::get_owners(string url, const TokenId &token_id)
+    optional<Address> NonFungibleToken<T>::get_owner(string url, const TokenId &token_id)
     {
         auto opt_nft_info = get_nft_info(url);
         if (opt_nft_info != nullopt)

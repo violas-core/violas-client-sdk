@@ -260,11 +260,11 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
 
              params >> id;
 
-             auto owners = nft->get_owners(url, id);
-             if (owners != nullopt)
+             auto owner = nft->get_owner(url, id);
+             if (owner != nullopt)
              {
                  // print the address of owner
-                 cout << *(owners->rbegin()) << endl;
+                 cout << *owner << endl;
              }
              else
                  cout << "cannot find owner." << endl;
@@ -276,14 +276,14 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
              check_istream_eof(params, "token id");
              params >> token_id;
 
-             auto receivers = nft->get_owners(url, token_id);
-             if (receivers != nullopt)
+             auto receiver = nft->get_owner(url, token_id);
+             if (receiver != nullopt)
              {
                  size_t i = 0;
-                 for (const auto receiver : *receivers)
-                 {
-                     cout << i++ << "  -  " << receiver << endl;
-                 }
+                //  for (const auto receiver : *receivers)
+                //  {
+                //      cout << i++ << "  -  " << receiver << endl;
+                //  }
              }
          }},
         {"info", [=](istringstream &params)

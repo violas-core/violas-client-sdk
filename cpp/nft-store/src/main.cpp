@@ -145,7 +145,7 @@ void test()
 {
     ED25519 ed25519;
 
-    ed25519.init();
+    ED25519::test();
 
     string msg = "hello";
 

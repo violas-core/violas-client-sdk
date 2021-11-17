@@ -54,13 +54,31 @@ namespace json_rpc
             return client_config;
         }
 
-        virtual void submit(const diem_types::SignedTransaction & signed_txn)  override
+        virtual void submit(const diem_types::SignedTransaction &signed_txn) override
         {
+            auto data = bytes_to_hex(signed_txn.bcsSerialize());
 
+            string method = format(R"({"jsonrpc":"2.0","method":"submit","params":["%s"],"id":1})", data.c_str());
+            string content_type = "application/json";
+
+            auto rpc_response = cli.request(methods::POST, "/", method, content_type)
+                                    .then([=](http_response response) -> pplx::task<json::value>
+                                          {                                              
+
+                                              if (response.status_code() != 200)
+                                                  __throw_runtime_error(response.extract_string().get().c_str());
+
+                                              return response.extract_json(); })
+                                    .get();
+            
+            auto error = rpc_response["error"];
+            if (!error.is_null())
+                __throw_runtime_error(("fun : get_account_state_blob, error : " + error.serialize()).c_str());
+
+            auto version = rpc_response["diem_ledger_version"].as_integer();
         }
 
-        virtual std::vector<Currency>
-        get_currencies() override
+        virtual std::vector<Currency> get_currencies() override
         {
             vector<Currency> crc;
 
@@ -82,8 +100,7 @@ namespace json_rpc
                                               if (response.status_code() != 200)
                                                   __throw_runtime_error(response.extract_string().get().c_str());
 
-                                              return response.extract_json();
-                                          })
+                                              return response.extract_json(); })
                                     .get();
 
             auto error = rpc_response["error"];
@@ -126,8 +143,7 @@ namespace json_rpc
                                               if (response.status_code() != 200)
                                                   __throw_runtime_error(response.extract_string().get().c_str());
 
-                                              return response.extract_json();
-                                          })
+                                              return response.extract_json(); })
                                     .get();
 
             auto error = rpc_response["error"];
@@ -137,7 +153,7 @@ namespace json_rpc
             auto result = rpc_response["result"];
             for (auto &e : result.as_array())
             {
-                //cout << e.serialize() << endl;
+                // cout << e.serialize() << endl;
 
                 EventView ev;
 

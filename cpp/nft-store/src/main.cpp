@@ -143,12 +143,5 @@ map<string, handle> create_commands(client_ptr client, string url)
 
 void test()
 {
-    ED25519 ed25519;
-
-    ED25519::test();
-
-    string msg = "hello";
-
-    ed25519.sign((uint8_t*)msg.data(), msg.length());
-
+    ed25519::run_test_case();
 }

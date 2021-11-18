@@ -47,7 +47,7 @@ namespace json_rpc
     struct Client
     {
         static std::shared_ptr<Client>
-        create(std::string url);
+        create(std::string_view url);
 
         virtual ~Client() {}
 

@@ -11,6 +11,8 @@ set(CMAKE_EXE_LINKER_FLAGS -Wl,-rpath=./lib)
 include_directories(sdk/include framework/src ../rust/violas-client/src/ffi)
 link_directories(../../rust/violas-client/target/debug)
 
+add_subdirectory(framework)
+
 # library violas_client 
 add_subdirectory(sdk)
 

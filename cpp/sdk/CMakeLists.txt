@@ -2,9 +2,12 @@
 #aux_source_directory(src SRC)
 #add_library(violas_sdk SHARED ${SRC} )
 
-add_library(violas_sdk SHARED src/violas_sdk2.cpp src/json_rpc.cpp src/console.cpp src/ed25519 src/violas_client2.cpp)
+add_library(violas_sdk SHARED src/violas_sdk2.cpp src/json_rpc.cpp src/console.cpp 
+            src/ed25519 src/violas_client2.cpp src/wallet.cpp)
 
-# target_link_libraries(violas_client)
+link_directories(../framework)
+
+target_link_libraries(violas_sdk violas-framework)
 
 install(TARGETS violas_sdk DESTINATION lib)
 install(FILES include/violas_sdk2.hpp DESTINATION include)

@@ -12,6 +12,7 @@
  */
 #include <openssl/evp.h>
 #include <array>
+#include <string>
 
 namespace ed25519
 {

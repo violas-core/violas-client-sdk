@@ -18,7 +18,7 @@ namespace json_rpc
         http_client cli;
 
     public:
-        ClientImp(string url) : cli(U(url), client_config_for_proxy())
+        ClientImp(string_view url) : cli(U(string(url)), client_config_for_proxy())
         {
         }
 
@@ -178,7 +178,7 @@ namespace json_rpc
     };
 
     std::shared_ptr<Client>
-    Client::create(std::string url)
+    Client::create(std::string_view url)
     {
         return make_shared<ClientImp>(url);
     }

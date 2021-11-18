@@ -9,12 +9,13 @@
 #include <json_rpc.hpp>
 #include <ed25519.hpp>
 #include "nft_store.hpp"
+#include <violas_client2.hpp>
 
 using namespace std;
 using namespace violas;
 
 void depoloy(client_ptr client);
-void test();
+void test(const Arguments &args);
 
 using handle = function<void(istringstream &params)>;
 map<string, handle> create_commands(client_ptr client, string url);
@@ -23,11 +24,12 @@ int main(int argc, char *argv[])
 {
     cout << "NFT Store is getting started ..." << endl;
 
-    test();
-
+    
     try
     {
         Arguments args;        
+
+        test(args);
         
         auto rpc_cli = json_rpc::Client::create(args.url);
 
@@ -141,7 +143,14 @@ map<string, handle> create_commands(client_ptr client, string url)
     };
 }
 
-void test()
+void test(const Arguments &args)
 {
     ed25519::run_test_case();
+
+    client2_ptr client = Client2::create(args.url, args.chain_id, args.mint_key, args.mnemonic);
+
+    client->create_next_account();
+    auto accounts = client->get_all_accounts();
+
+    client->add_currency(0, "XUS");
 }

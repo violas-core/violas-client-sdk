@@ -12,7 +12,7 @@ namespace violas
     private:
         /* data */
         Key root_key;
-        
+
         std::vector<Key> derived_keys;
 
     public:
@@ -26,5 +26,7 @@ namespace violas
 
         std::array<uint8_t, 16>
         get_account_address(size_t index);
+
+        static void run_test_case();
     };
 }

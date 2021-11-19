@@ -14,3 +14,5 @@ add_library(violas-framework SHARED ${SRCS})
 # target_link_libraries(violas-client ssl crypto)
 
 # target_link_libraries(violas-framework ssl crypto)
+
+install(TARGETS violas-framework DESTINATION lib)

@@ -10,6 +10,7 @@
 #include <ed25519.hpp>
 #include "nft_store.hpp"
 #include <violas_client2.hpp>
+#include <wallet.hpp>
 
 using namespace std;
 using namespace violas;
@@ -145,6 +146,8 @@ map<string, handle> create_commands(client_ptr client, string url)
 
 void test(const Arguments &args)
 {
+    violas::Wallet::run_test_case();
+
     ed25519::run_test_case();
 
     client2_ptr client = Client2::create(args.url, args.chain_id, args.mint_key, args.mnemonic);

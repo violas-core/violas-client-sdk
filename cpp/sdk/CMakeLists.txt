@@ -3,7 +3,7 @@
 #add_library(violas_sdk SHARED ${SRC} )
 
 add_library(violas_sdk SHARED src/violas_sdk2.cpp src/json_rpc.cpp src/console.cpp 
-            src/ed25519 src/violas_client2.cpp src/wallet.cpp src/mnemonic.cpp)
+            src/ed25519 src/violas_client2.cpp src/wallet.cpp)
 
 link_directories(../framework)
 

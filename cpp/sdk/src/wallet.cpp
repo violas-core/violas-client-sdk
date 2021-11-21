@@ -8,12 +8,10 @@
 #include <openssl/hmac.h>
 #include <openssl/kdf.h>
 #include <openssl/evp.h>
-
+#include "mnemonic.hpp"
 #include "wallet.hpp"
 
 using namespace std;
-
-extern const char *WORDS[2048]; // in mnemonic.cpp
 
 namespace violas
 {
@@ -51,11 +49,13 @@ namespace violas
             __throw_runtime_error("Mnemonic must have a word count of the following lengths: 24, 21, 18, 15, 12");
 
         // search(begin(count_define), end(count_define), )
-        bitset<256> bits;
-        int bit_index = 0;
+        bitset<264> bits;
+        int bit_index = 263;
 
-        istringstream oss1(mnemonic.data());
-        for_each(istream_iterator<string>(oss1),
+        oss.clear();
+        oss.str(mnemonic.data());
+
+        for_each(istream_iterator<string>(oss),
                  {},
                  [&bits, &bit_index](auto word)
                  {
@@ -64,12 +64,13 @@ namespace violas
                          __throw_runtime_error((string("Mnemonic contains a unkonwn word : ") + word).c_str());
 
                      size_t index = distance(begin(WORDS), found);
+                     //convert index to 11 bits to bitset
                      for (int i = 0; i < 11; i++)
                      {
                          if (index & 0x1)
                              bits.set(bit_index);
 
-                         ++bit_index;
+                         --bit_index;
                          index >>= 1;
                      }
                  });
@@ -135,9 +136,14 @@ namespace violas
 
     void Wallet::run_test_case()
     {
-        Key key = load_mnemonic("legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal will");
-        
-        for(auto byte : key)
+        //  "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+        //  "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title",
+        //  "bc09fca1804f7e69da93c2f2028eb238c227f2e9dda30cd63699232578480a4021b146ad717fbb7e451ce9eb835f43620bf5c514db0f8add49f5d121449d3e87",
+        //  "xprv9s21ZrQH143K3Y1sd2XVu9wtqxJRvybCfAetjUrMMco6r3v9qZTBeXiBZkS8JxWbcGJZyio8TrZtm6pkbzG8SYt1sxwNLh3Wx7to5pgiVFU"
+
+        Key key = load_mnemonic("legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title");
+
+        for (auto byte : key)
         {
             cout << hex << (int)byte;
         }

@@ -25,16 +25,15 @@ int main(int argc, char *argv[])
 {
     cout << "NFT Store is getting started ..." << endl;
 
-    
     try
     {
-        Arguments args;        
+        Arguments args;
 
         test(args);
-        
-        auto rpc_cli = json_rpc::Client::create(args.url);
 
         args.parse_command_line(argc, argv);
+
+        auto rpc_cli = json_rpc::Client::create(args.url);
 
         auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemonic, args.waypoint);
 
@@ -107,7 +106,7 @@ void intialize(client_ptr client)
 
 map<string, handle> create_commands(client_ptr client, string url)
 {
-    client->allow_custom_script();    
+    client->allow_custom_script();
 
     TypeTag tag(VIOLAS_STDLIB_ADDRESS, "MountWuyi", "Tea");
 
@@ -135,7 +134,7 @@ map<string, handle> create_commands(client_ptr client, string url)
 
              store.register_nft(tag);
          }},
-         {"test", [=](istringstream &params)
+        {"test", [=](istringstream &params)
          {
              nft::Store store(client);
 
@@ -150,10 +149,10 @@ void test(const Arguments &args)
 
     ed25519::run_test_case();
 
-    client2_ptr client = Client2::create(args.url, args.chain_id, args.mint_key, args.mnemonic);
+    // client2_ptr client = Client2::create(args.url, args.chain_id, args.mint_key, args.mnemonic);
 
-    client->create_next_account();
-    auto accounts = client->get_all_accounts();
+    // client->create_next_account();
+    // auto accounts = client->get_all_accounts();
 
-    client->add_currency(0, "XUS");
+    // client->add_currency(0, "XUS");
 }

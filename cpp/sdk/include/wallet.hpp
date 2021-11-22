@@ -5,19 +5,25 @@
 
 namespace violas
 {
-    using Key = std::array<uint8_t, 32>;
+    using Key = std::array<uint8_t, 33>;
 
     class Wallet
     {
     private:
         /* data */
-        Key root_key;
+        Key key;
+        std::array<uint8_t, 64> seed;
 
         std::vector<Key> derived_keys;
+        
+        void generate_seed();
 
     public:
         Wallet(/* args */);
         ~Wallet();
+
+        static Wallet load_mnemonic(std::string_view mnemonic);
+        std::string export_mnemonic();
 
         void create_next_account();
 

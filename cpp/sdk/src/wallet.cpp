@@ -19,11 +19,13 @@
 #include <sstream>
 #include <iterator>
 #include <bitset>
+#include <memory>
 // Open SSL
 #include <openssl/hmac.h>
 #include <openssl/kdf.h>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
+#include <openssl/err.h>
 
 #include "mnemonic.hpp"
 #include "wallet.hpp"
@@ -32,9 +34,21 @@ using namespace std;
 
 namespace violas
 {
-    const string MNEMONIC_SALT_PREFIX = "DIEM WALLET: mnemonic salt prefix$"
-                                        "Diem";
+    const string MNEMONIC_SALT_PREFIX = "DIEM WALLET: mnemonic salt prefix$";
+    const string MAIN_KEY_SALT = "DIEM WALLET: main key salt$";
+    const string INFO_PREFIX = "DIEM WALLET: derived key$";
+
     const size_t iter_count = 10'000;
+
+    static void check_ret(int ret, const char *error)
+    {
+        std::ostringstream oss;
+
+        oss << error << "failed, error detail : " << ERR_error_string(ERR_get_error(), NULL) << std::endl;
+
+        if (ret != 1)
+            std::__throw_runtime_error(oss.str().c_str());
+    }
 
     Wallet::Wallet(/* args */)
     {
@@ -44,30 +58,70 @@ namespace violas
     {
     }
 
-    void Wallet::generate_seed()
+    void Wallet::generate_seed(string_view salt)
     {
         auto mnemoic = export_mnemonic();
+        string salt_ex = MNEMONIC_SALT_PREFIX + salt.data();
 
-        int ret = PKCS5_PBKDF2_HMAC((const char *)mnemoic.data(), mnemoic.length() - 1,
-                          (const uint8_t *)MNEMONIC_SALT_PREFIX.data(), MNEMONIC_SALT_PREFIX.length(),
-                          //(const uint8_t *)"mnemonic", 8,
-                          2048,
-                          EVP_sha3_256(),
-                          seed.size(), seed.data());
+        int ret = PKCS5_PBKDF2_HMAC((const char *)mnemoic.data(), mnemoic.length(),
+                                    (const uint8_t *)salt_ex.data(), salt_ex.length(),
+                                    2048,
+                                    EVP_sha3_256(),
+                                    seed.size(), seed.data());
+    }
+    // An implementation of HKDF, the [HMAC-based Extract-and-Expand Key Derivation Function][1].
+    void Wallet::extract_main_key()
+    {
+        int ret = 0;
+        using hmac_ctx_ptr = unique_ptr<HMAC_CTX, decltype(&HMAC_CTX_free)>;
+        hmac_ctx_ptr ctx(HMAC_CTX_new(), &HMAC_CTX_free);
+
+        ret = HMAC_Init_ex(ctx.get(), MAIN_KEY_SALT.data(), MAIN_KEY_SALT.length(), EVP_sha3_256(), nullptr);
+        check_ret(ret, "HMAC_Init_ex");
+
+        ret = HMAC_Update(ctx.get(), seed.data(), seed.size());
+        check_ret(ret, "HMAC_Update");
+
+        uint32_t len = main_key.size();
+        ret = HMAC_Final(ctx.get(), main_key.data(), &len);
+        check_ret(ret, "HMAC_Final");
     }
 
-    bool verify(const Key &key)
+    Wallet::Key Wallet::extend_child_private_key(size_t index)
     {
-        uint8_t hash[32];
+        int ret = 0;
+        std::array<uint8_t, 32> out;
+        size_t outlen = out.size();
+        using evp_pkey_ctx_ptr = unique_ptr<EVP_PKEY_CTX, decltype(&EVP_PKEY_CTX_free)>;
+        evp_pkey_ctx_ptr ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL), &EVP_PKEY_CTX_free);
 
-        uint8_t *r = SHA256(key.data(), 32, hash);
+        ret = EVP_PKEY_derive_init(ctx.get());
+        check_ret(ret, "EVP_PKEY_derive_init");
 
-        return hash[0] == key[32];
-    }
+        ret = EVP_PKEY_CTX_set_hkdf_md(ctx.get(), EVP_sha3_256());
+        check_ret(ret, "EVP_PKEY_CTX_set_hkdf_md");
 
-    Wallet Wallet::load_mnemonic(string_view mnemonic)
+        ret = EVP_PKEY_CTX_set1_hkdf_salt(ctx.get(), MAIN_KEY_SALT.data(), MAIN_KEY_SALT.length());
+        check_ret(ret, "EVP_PKEY_CTX_set1_hkdf_salt");
+
+        ret = EVP_PKEY_CTX_set1_hkdf_key(ctx.get(), seed.data(), seed.size());
+        check_ret(ret, "EVP_PKEY_CTX_set1_hkdf_key");
+
+        vector<uint8_t> info(INFO_PREFIX.size() + 8, 0);
+        copy(begin(INFO_PREFIX), end(INFO_PREFIX), begin(info));
+
+        ret = EVP_PKEY_CTX_add1_hkdf_info(ctx.get(), info.data(), info.size());
+        check_ret(ret, "EVP_PKEY_CTX_add1_hkdf_info");
+
+        ret = EVP_PKEY_derive(ctx.get(), out.data(), &outlen);
+        check_ret(ret, "EVP_PKEY_derive");
+
+        return out;
+    }    
+
+    Wallet Wallet::generate_from_mnemonic(string_view mnemonic)
     {
-        Key key = {0};
+        std::array<uint8_t, 33> key = {0};
 
         istringstream oss(mnemonic.data());
         size_t count = distance(istream_iterator<string>(oss), {});
@@ -112,13 +166,19 @@ namespace violas
             key[index] |= byte;
         }
 
-        if (!verify(key))
+        // verify hash sum
+        uint8_t hash[32];
+
+        SHA256(key.data(), 32, hash);
+        if (key[32] != hash[0])
             __throw_runtime_error("Failed to verify mnemonic.");
 
         Wallet wallet;
 
         wallet.key = key;
         wallet.generate_seed();
+
+        wallet.extract_main_key();
 
         return wallet;
     }
@@ -135,7 +195,6 @@ namespace violas
 
         for (int i = 0; i < key.size() * 8; i++)
         {
-
             size_t byte_index = i / 8;
             size_t bit_index = 7 - i % 8;
 
@@ -145,12 +204,17 @@ namespace violas
 
             if (i % 11 == 10)
             {
-                oss << WORDS[word_index] << " ";
+                if (i != 10)
+                    oss << " ";
+
+                oss << WORDS[word_index];
+
                 word_index = 0;
             }
         }
 
-        // oss.seekp(-1, ios::cur);
+        oss.seekp(-1, ios::end);
+        oss.flush();
 
         return oss.str();
     }
@@ -213,13 +277,12 @@ namespace violas
         //     "xprv9s21ZrQH143K2XTAhys3pMNcGn261Fi5Ta2Pw8PwaVPhg3D8DWkzWQwjTJfskj8ofb81i9NP2cUNKxwjueJHHMQAnxtivTA75uUFqPFeWzk"
         // ],
         //"7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f";
-        Key key;
-        key.fill(0x7f);
-
         // string mnemonic = export_mnemonic(key);
+        Wallet wallet = Wallet::generate_from_mnemonic("legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title");
 
-        load_mnemonic("legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title");
-        load_mnemonic("hamster diagram private dutch cause delay private meat slide toddler razor book happy fancy gospel tennis maple dilemma loan word shrug inflict delay length");
+        Key key = wallet.extend_child_private_key(0);
+
+        generate_from_mnemonic("hamster diagram private dutch cause delay private meat slide toddler razor book happy fancy gospel tennis maple dilemma loan word shrug inflict delay length");
 
         for (auto byte : key)
         {

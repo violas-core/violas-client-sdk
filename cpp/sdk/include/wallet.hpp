@@ -4,25 +4,35 @@
 #include <vector>
 
 namespace violas
-{
-    using Key = std::array<uint8_t, 33>;
-
+{    
     class Wallet
     {
+    public:
+        using Key = std::array<uint8_t, 32>;
+
     private:
         /* data */
-        Key key;
-        std::array<uint8_t, 64> seed;
+        std::array<uint8_t, 33> key;
+        Key seed;
 
-        std::vector<Key> derived_keys;
+        Key main_key;
+
+        //std::vector<Key> derived_keys;
         
-        void generate_seed();
+        void generate_seed(std::string_view salt = "DIEM");
+
+        void extract_main_key();
+
+        Key extend_child_private_key(size_t index);
+
+        std::vector<ed25519::PrivateKey> m_private_keys;
 
     public:
         Wallet(/* args */);
         ~Wallet();
 
-        static Wallet load_mnemonic(std::string_view mnemonic);
+        static Wallet generate_from_mnemonic(std::string_view mnemonic);
+        
         std::string export_mnemonic();
 
         void create_next_account();

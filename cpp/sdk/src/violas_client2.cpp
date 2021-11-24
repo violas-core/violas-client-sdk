@@ -13,15 +13,17 @@ namespace violas
     private:
         json_rpc::client_ptr m_jr_client;
         
-        Wallet m_wallet;
+        shared_ptr<Wallet> m_wallet;
 
     public:
         Client2Imp(std::string_view url,
                    uint8_t chain_id,
                    std::string_view mint_key,
-                   std::string_view mnemonic)
+                   std::string_view mnemonic)         
         {
             m_jr_client = json_rpc::Client::create(url);
+
+            m_wallet = make_shared<Wallet>(Wallet::generate_from_mnemonic(mnemonic));
         }
 
         ~Client2Imp()
@@ -31,7 +33,7 @@ namespace violas
         virtual tuple<size_t,diem_types::AccountAddress>
         create_next_account() override
         {
-            m_wallet.create_next_account();
+            m_wallet->create_next_account();
 
             return make_tuple<>(0, diem_types::AccountAddress());
         }
@@ -39,7 +41,7 @@ namespace violas
         virtual std::vector<diem_types::AccountAddress>
         get_all_accounts() override
         {
-            m_wallet.get_all_accounts();
+            m_wallet->get_all_accounts();
             return std::vector<diem_types::AccountAddress>();
         }
 
@@ -55,7 +57,7 @@ namespace violas
             RawTransaction &raw_txn = signed_txn.raw_txn;
 
             raw_txn.payload.value = TransactionPayload::Script({std::move(script)});
-            raw_txn.sender = AccountAddress({m_wallet.get_account_address(account_index)});
+            raw_txn.sender = AccountAddress({m_wallet->get_account_address(account_index)});
             raw_txn.sequence_number = 0;
             raw_txn.max_gas_amount = max_gas_amount;
             raw_txn.gas_unit_price = gas_unit_price;

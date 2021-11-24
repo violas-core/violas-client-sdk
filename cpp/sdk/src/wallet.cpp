@@ -16,6 +16,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <iterator>
 #include <bitset>
@@ -50,12 +51,44 @@ namespace violas
             std::__throw_runtime_error(oss.str().c_str());
     }
 
-    Wallet::Wallet(/* args */)
+    array<uint8_t, 32> sha3_256(uint8_t *data, size_t len)
     {
+        array<uint8_t, 32> output;
+        uint32_t out_len = output.size();
+        EVP_MD_CTX *context = EVP_MD_CTX_new();
+
+        EVP_DigestInit_ex(context, EVP_sha3_256(), nullptr);
+        EVP_DigestUpdate(context, data, len);
+        EVP_DigestFinal_ex(context, output.data(), &out_len);
+
+        EVP_MD_CTX_destroy(context);
+
+        return output;
+    }
+
+    Wallet::Wallet()
+    {
+    }
+
+    Wallet::Wallet(Key &&entropy)
+    {
+        copy(begin(entropy), end(entropy), begin(m_entropy_hash));
+
+        uint8_t hash[32];
+
+        SHA256(entropy.data(), entropy.size(), hash);
+        entropy[32] = hash[0];
     }
 
     Wallet::~Wallet()
     {
+    }
+
+    Wallet Wallet::generate_from_random()
+    {
+        Key entropy;
+
+        return Wallet(move(entropy));
     }
 
     void Wallet::generate_seed(string_view salt)
@@ -67,7 +100,7 @@ namespace violas
                                     (const uint8_t *)salt_ex.data(), salt_ex.length(),
                                     2048,
                                     EVP_sha3_256(),
-                                    seed.size(), seed.data());
+                                    m_seed.size(), m_seed.data());
     }
     // An implementation of HKDF, the [HMAC-based Extract-and-Expand Key Derivation Function][1].
     void Wallet::extract_main_key()
@@ -79,7 +112,7 @@ namespace violas
         ret = HMAC_Init_ex(ctx.get(), MAIN_KEY_SALT.data(), MAIN_KEY_SALT.length(), EVP_sha3_256(), nullptr);
         check_ret(ret, "HMAC_Init_ex");
 
-        ret = HMAC_Update(ctx.get(), seed.data(), seed.size());
+        ret = HMAC_Update(ctx.get(), m_seed.data(), m_seed.size());
         check_ret(ret, "HMAC_Update");
 
         uint32_t len = main_key.size();
@@ -87,7 +120,7 @@ namespace violas
         check_ret(ret, "HMAC_Final");
     }
 
-    Wallet::Key Wallet::extend_child_private_key(size_t index)
+    Wallet::Key Wallet::extend_child_private_key(uint64_t index)
     {
         int ret = 0;
         std::array<uint8_t, 32> out;
@@ -104,11 +137,12 @@ namespace violas
         ret = EVP_PKEY_CTX_set1_hkdf_salt(ctx.get(), MAIN_KEY_SALT.data(), MAIN_KEY_SALT.length());
         check_ret(ret, "EVP_PKEY_CTX_set1_hkdf_salt");
 
-        ret = EVP_PKEY_CTX_set1_hkdf_key(ctx.get(), seed.data(), seed.size());
+        ret = EVP_PKEY_CTX_set1_hkdf_key(ctx.get(), m_seed.data(), m_seed.size());
         check_ret(ret, "EVP_PKEY_CTX_set1_hkdf_key");
 
         vector<uint8_t> info(INFO_PREFIX.size() + 8, 0);
         copy(begin(INFO_PREFIX), end(INFO_PREFIX), begin(info));
+        copy((uint8_t *)&index, (uint8_t *)&index + sizeof(index), begin(info) + INFO_PREFIX.size());
 
         ret = EVP_PKEY_CTX_add1_hkdf_info(ctx.get(), info.data(), info.size());
         check_ret(ret, "EVP_PKEY_CTX_add1_hkdf_info");
@@ -117,11 +151,11 @@ namespace violas
         check_ret(ret, "EVP_PKEY_derive");
 
         return out;
-    }    
+    }
 
     Wallet Wallet::generate_from_mnemonic(string_view mnemonic)
     {
-        std::array<uint8_t, 33> key = {0};
+        array<uint8_t, 33> entropy = {0};
 
         istringstream oss(mnemonic.data());
         size_t count = distance(istream_iterator<string>(oss), {});
@@ -157,25 +191,26 @@ namespace violas
                      }
                  });
 
-        for (size_t i = 0; i < key.size() * 8; i++)
+        for (size_t i = 0; i < entropy.size() * 8; i++)
         {
             size_t index = i / 8;
             size_t bit = 7 - i % 8;
             uint8_t byte = ((bits.test(i) ? 1 : 0) << bit);
 
-            key[index] |= byte;
+            entropy[index] |= byte;
         }
 
         // verify hash sum
         uint8_t hash[32];
 
-        SHA256(key.data(), 32, hash);
-        if (key[32] != hash[0])
+        SHA256(entropy.data(), 32, hash);
+        if (entropy[32] != hash[0])
             __throw_runtime_error("Failed to verify mnemonic.");
 
         Wallet wallet;
 
-        wallet.key = key;
+        wallet.m_entropy_hash = move(entropy);
+
         wallet.generate_seed();
 
         wallet.extract_main_key();
@@ -187,18 +222,18 @@ namespace violas
     {
         uint8_t hash[32];
 
-        uint8_t *r = SHA256(key.data(), 32, hash);
-        key[32] = hash[0];
+        uint8_t *r = SHA256(m_entropy_hash.data(), 32, hash);
+        m_entropy_hash[32] = hash[0];
 
         ostringstream oss;
         size_t word_index = 0;
 
-        for (int i = 0; i < key.size() * 8; i++)
+        for (int i = 0; i < m_entropy_hash.size() * 8; i++)
         {
             size_t byte_index = i / 8;
             size_t bit_index = 7 - i % 8;
 
-            uint8_t byte = key[byte_index];
+            uint8_t byte = m_entropy_hash[byte_index];
             if (byte & (1 << bit_index))
                 word_index |= (1 << (10 - i % 11));
 
@@ -219,32 +254,33 @@ namespace violas
         return oss.str();
     }
 
-    void Wallet::create_next_account()
+    enum Scheme
     {
-        // EVP_KDF *kdf;
-        // EVP_KDF_CTX *kctx;
-        // unsigned char out[10];
-        // OSSL_PARAM params[5], *p = params;
+        Ed25519 = 0,
+        MultiEd25519 = 1,
+        // ... add more schemes here
+    };
 
-        // kdf = EVP_KDF_fetch(NULL, "HKDF", NULL);
-        // kctx = EVP_KDF_CTX_new(kdf);
-        // EVP_KDF_free(kdf);
+    std::tuple<size_t, diem_types::AccountAddress> Wallet::create_next_account()
+    {
+        size_t keys_size = m_private_keys.size();
 
-        // *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST,
-        //                                         SN_sha256, strlen(SN_sha256));
-        // *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY,
-        //                                          "secret", (size_t)6);
-        // *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO,
-        //                                          "label", (size_t)5);
-        // *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT,
-        //                                          "salt", (size_t)4);
-        // *p = OSSL_PARAM_construct_end();
-        // if (EVP_KDF_derive(kctx, out, sizeof(out), params) <= 0)
-        // {
-        //     error("EVP_KDF_derive");
-        // }
+        Key raw_key = extend_child_private_key(keys_size);
+        auto priv_key = ed25519::PrivateKey::from_raw_key(ed25519::RawKey(raw_key));
 
-        // EVP_KDF_CTX_free(kctx);
+        m_private_keys.push_back(priv_key);
+
+        diem_types::AccountAddress address;
+        auto raw_pub_key = priv_key.get_public_key().get_raw_key();
+
+        vector<uint8_t> auth_key_preimage(begin(raw_pub_key), end(raw_pub_key));
+        auth_key_preimage.push_back(Scheme::Ed25519);
+
+        auto hash = sha3_256(auth_key_preimage.data(), auth_key_preimage.size());
+        // copy sha3 256 hash
+        copy(begin(hash) + 16, end(hash), begin(address.value));
+
+        return make_tuple<>(keys_size, address);
     }
 
     array<uint8_t, 16>
@@ -276,11 +312,32 @@ namespace violas
         //     "64c87cde7e12ecf6704ab95bb1408bef047c22db4cc7491c4271d170a1b213d20b385bc1588d9c7b38f1b39d415665b8a9030c9ec653d75e65f847d8fc1fc440",
         //     "xprv9s21ZrQH143K2XTAhys3pMNcGn261Fi5Ta2Pw8PwaVPhg3D8DWkzWQwjTJfskj8ofb81i9NP2cUNKxwjueJHHMQAnxtivTA75uUFqPFeWzk"
         // ],
+        
+        auto array_to_string = [](auto & bytes ) -> auto
+        {
+            ostringstream oss;
+
+            for(auto v : bytes)
+                oss << hex << setw(2) << setfill('0') << (int)v;
+            
+            return oss.str();
+        };
+
         //"7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f";
         // string mnemonic = export_mnemonic(key);
         Wallet wallet = Wallet::generate_from_mnemonic("legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title");
 
+        auto [index, account_address] = wallet.create_next_account();
+        
+        cout << array_to_string(account_address.value) << endl;
+
+        tie(index, account_address) = wallet.create_next_account();
+        
+        cout << array_to_string(account_address.value) << endl;
+
         Key key = wallet.extend_child_private_key(0);
+
+        Key key1 = wallet.extend_child_private_key(1);
 
         generate_from_mnemonic("hamster diagram private dutch cause delay private meat slide toddler razor book happy fancy gospel tennis maple dilemma loan word shrug inflict delay length");
 

@@ -548,7 +548,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::SentEvent> &sent_events)
         cout << left << setw(10) << e.sequence_number
              << left << setw(70) << e.token_id
              << left << setw(40) << e.payee
-             << left << setw(20) << bytes_to_string(e.metadata)
+             << left << setw(20) << bytes_to_hex(e.metadata)
              << left << setw(10) << e.transaction_version
              << endl;
     }
@@ -571,7 +571,7 @@ std::ostream &operator<<(ostream &os, const vector<nft::ReceivedEvent> &received
         cout << left << setw(10) << e.sequence_number
              << left << setw(70) << e.token_id
              << left << setw(40) << e.payer
-             << left << setw(20) << bytes_to_string(e.metadata)
+             << left << setw(20) << bytes_to_hex(e.metadata)
              << left << setw(10) << e.transaction_version
              << endl;
     }
@@ -600,11 +600,11 @@ std::ostream &operator<<(ostream &os, const vector<Tea> &teas)
 
         cout << left << setw(8) << index++
              << left << setw(8) << short(tea.kind)
-             //<< left << setw(20) << bytes_to_string(tea.manufacture)
-             << left << setw(20) << bytes_to_string(tea.PA)
+             //<< left << setw(20) << bytes_to_hex(tea.manufacture)
+             << left << setw(20) << bytes_to_hex(tea.PA)
              << left << setw(20) << oss.str()
-             << left << setw(10) << bytes_to_string(tea.SN)
-             << left << setw(30) << bytes_to_string(tea.url)
+             << left << setw(10) << bytes_to_hex(tea.SN)
+             << left << setw(30) << bytes_to_hex(tea.url)
              << left << setw(70) << violas::nft::compute_token_id(tea)
              << endl;
     }

@@ -29,9 +29,9 @@ int main(int argc, char *argv[])
     {
         Arguments args;
 
-        test(args);
-
         args.parse_command_line(argc, argv);
+        
+        test(args);
 
         auto rpc_cli = json_rpc::Client::create(args.url);
 
@@ -149,10 +149,12 @@ void test(const Arguments &args)
 
     ed25519::run_test_case();
 
-    // client2_ptr client = Client2::create(args.url, args.chain_id, args.mint_key, args.mnemonic);
+    client2_ptr client = Client2::create(args.url, args.chain_id, args.mint_key, args.mnemonic);
 
-    // client->create_next_account();
-    // auto accounts = client->get_all_accounts();
+    client->create_next_account();
+    auto accounts = client->get_all_accounts();
+    
+    cout << bytes_to_hex(accounts[0].address.value) << endl;
 
-    // client->add_currency(0, "XUS");
+    client->add_currency(0, "XUS");
 }

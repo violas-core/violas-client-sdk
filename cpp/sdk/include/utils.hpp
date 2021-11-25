@@ -41,7 +41,7 @@ void input(T &t)
     {
         std::cin.unget();
         std::cin >> t;
-        std::cin.get(); //skip the lastest char 'Enter'
+        std::cin.get(); // skip the lastest char 'Enter'
     }
 }
 
@@ -65,7 +65,7 @@ std::ostringstream &operator<<(std::ostringstream &oss, const std::array<uint8_t
 template <size_t N>
 std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, N> &bytes)
 {
-    //std::ostream tos(os.rdbuf());   // temp os for setting io manipulator
+    // std::ostream tos(os.rdbuf());   // temp os for setting io manipulator
     std::ostringstream oss;
 
     oss << bytes;
@@ -129,7 +129,7 @@ void operator>>(const std::string &str, std::array<uint8_t, N> &bytes)
         }
 
         // set bit from high to low
-        //bytes[N - 1 - i] = b;
+        // bytes[N - 1 - i] = b;
         bytes[i] = b;
     }
 }
@@ -216,26 +216,22 @@ inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
     return bytes;
 }
 
-inline std::string bytes_to_hex(const std::vector<uint8_t> &bytes)
+auto bytes_to_hex(const auto & bytes)
 {
-    std::ostringstream oss;
+    using namespace std;
+    ostringstream oss;
 
     for (auto v : bytes)
     {
-        oss << std::setfill('0') << std::setw(2) << std::hex << (int)v;
+        oss << hex << setw(2) << setfill('0') << (int)v;
     }
 
     return oss.str();
-}
+};
 
 inline std::vector<uint8_t> string_to_bytes(const std::string &str)
 {
     return std::vector<uint8_t>(begin(str), end(str));
-}
-
-inline std::string bytes_to_string(const std::vector<uint8_t> &bytes)
-{
-    return std::string(begin(bytes), end(bytes));
 }
 
 inline void set_stdin_echo(bool enable)
@@ -254,7 +250,7 @@ template <typename... Args>
 std::string format(std::string_view format, Args... args)
 {
     size_t size = snprintf(nullptr, 0, format.data(), args...) + 1; // Extra space for '\0'
-    //std::unique_ptr<char[]> buf(new char[size]);
+    // std::unique_ptr<char[]> buf(new char[size]);
     auto buf = std::make_unique<char[]>(size);
 
     snprintf(buf.get(), size, format.data(), args...);

@@ -3,6 +3,7 @@
 #include <memory>
 #include <tuple>
 #include <diem_types.hpp>
+#include "wallet.hpp"
 
 namespace violas
 {
@@ -22,7 +23,7 @@ namespace violas
         virtual std::tuple<size_t,diem_types::AccountAddress>
         create_next_account() = 0;
 
-        virtual std::vector<diem_types::AccountAddress>
+        virtual std::vector<Wallet::Account>
         get_all_accounts() = 0;
 
         virtual void

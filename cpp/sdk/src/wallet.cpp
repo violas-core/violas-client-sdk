@@ -253,6 +253,7 @@ namespace violas
 
         return oss.str();
     }
+    
 
     enum Scheme
     {
@@ -261,6 +262,21 @@ namespace violas
         // ... add more schemes here
     };
 
+    diem_types::AccountAddress generate_account_address(const ed25519::PublicKey &pub_key)
+    {
+        diem_types::AccountAddress address;
+        auto raw_pub_key = pub_key.get_raw_key();
+
+        vector<uint8_t> auth_key_preimage(begin(raw_pub_key), end(raw_pub_key));
+        auth_key_preimage.push_back(Scheme::Ed25519);
+
+        auto hash = sha3_256(auth_key_preimage.data(), auth_key_preimage.size());
+        // copy sha3 256 hash
+        copy(begin(hash) + 16, end(hash), begin(address.value));
+
+        return address;
+    }
+
     std::tuple<size_t, diem_types::AccountAddress> Wallet::create_next_account()
     {
         size_t keys_size = m_private_keys.size();
@@ -268,10 +284,10 @@ namespace violas
         Key raw_key = extend_child_private_key(keys_size);
         auto priv_key = ed25519::PrivateKey::from_raw_key(ed25519::RawKey(raw_key));
 
-        m_private_keys.push_back(priv_key);
-
         diem_types::AccountAddress address;
         auto raw_pub_key = priv_key.get_public_key().get_raw_key();
+
+        m_private_keys.push_back(priv_key);
 
         vector<uint8_t> auth_key_preimage(begin(raw_pub_key), end(raw_pub_key));
         auth_key_preimage.push_back(Scheme::Ed25519);
@@ -294,32 +310,34 @@ namespace violas
         return address;
     }
 
-    std::vector<std::array<uint8_t, 16>>
-    Wallet::get_all_accounts()
+    std::vector<Wallet::Account> Wallet::get_all_accounts()
     {
-        return std::vector<std::array<uint8_t, 16>>();
+        std::vector<Account> accounts;
+        size_t index = 0;
+
+        for (const auto &priv_key : m_private_keys)
+        {
+            Account account{index++, generate_account_address(priv_key.get_public_key()), priv_key.get_public_key().get_raw_key()};
+
+            accounts.push_back(move(account));
+        }
+
+        return accounts;
     }
 
     void Wallet::run_test_case()
     {
-        //  "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
-        //  "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title",
-        //  "bc09fca1804f7e69da93c2f2028eb238c227f2e9dda30cd63699232578480a4021b146ad717fbb7e451ce9eb835f43620bf5c514db0f8add49f5d121449d3e87",
-        //  "xprv9s21ZrQH143K3Y1sd2XVu9wtqxJRvybCfAetjUrMMco6r3v9qZTBeXiBZkS8JxWbcGJZyio8TrZtm6pkbzG8SYt1sxwNLh3Wx7to5pgiVFU"
-        // [
-        //     "68a79eaca2324873eacc50cb9c6eca8cc68ea5d936f98787c60c7ebc74e6ce7c",
-        //     "hamster diagram private dutch cause delay private meat slide toddler razor book happy fancy gospel tennis maple dilemma loan word shrug inflict delay length",
-        //     "64c87cde7e12ecf6704ab95bb1408bef047c22db4cc7491c4271d170a1b213d20b385bc1588d9c7b38f1b39d415665b8a9030c9ec653d75e65f847d8fc1fc440",
-        //     "xprv9s21ZrQH143K2XTAhys3pMNcGn261Fi5Ta2Pw8PwaVPhg3D8DWkzWQwjTJfskj8ofb81i9NP2cUNKxwjueJHHMQAnxtivTA75uUFqPFeWzk"
-        // ],
-        
-        auto array_to_string = [](auto & bytes ) -> auto
+        cout << "run test for Wallet::run_test_case " << endl;
+
+        auto array_to_string = [](auto &bytes) -> auto
         {
             ostringstream oss;
 
-            for(auto v : bytes)
+            for (auto v : bytes)
+            {
                 oss << hex << setw(2) << setfill('0') << (int)v;
-            
+            }
+
             return oss.str();
         };
 
@@ -328,23 +346,21 @@ namespace violas
         Wallet wallet = Wallet::generate_from_mnemonic("legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title");
 
         auto [index, account_address] = wallet.create_next_account();
-        
+        assert(array_to_string(account_address.value) == "11699be59c340efc1cb0e740b539b620");
+
         cout << array_to_string(account_address.value) << endl;
 
         tie(index, account_address) = wallet.create_next_account();
-        
+        assert(array_to_string(account_address.value) == "3383b94a7bfeefe571579cff58b20a7e");
+
         cout << array_to_string(account_address.value) << endl;
 
         Key key = wallet.extend_child_private_key(0);
 
+        assert(array_to_string(key) == "d8b5edb968050bc9589b64e1d2445a5455745630449eef2f0005fe362b4379d4");
+
         Key key1 = wallet.extend_child_private_key(1);
 
         generate_from_mnemonic("hamster diagram private dutch cause delay private meat slide toddler razor book happy fancy gospel tennis maple dilemma loan word shrug inflict delay length");
-
-        for (auto byte : key)
-        {
-            cout << hex << (int)byte;
-        }
-        cout << endl;
     }
 }

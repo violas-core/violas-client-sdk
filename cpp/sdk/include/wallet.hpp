@@ -6,21 +6,21 @@
 #include "ed25519.hpp"
 
 namespace violas
-{    
+{
     class Wallet
     {
     public:
-        //using Entropy = std::array<uint8_t, 33>;
-        using Key = std::array<uint8_t, 32>;      
+        // using Entropy = std::array<uint8_t, 33>;
+        using Key = std::array<uint8_t, 32>;
 
     private:
         // 32 bytes entropy + 1 byte hash
         std::array<uint8_t, 33> m_entropy_hash;
-        
+
         Key m_seed;
 
         Key main_key;
-        
+
         void generate_seed(std::string_view salt = "DIEM");
 
         void extract_main_key();
@@ -30,22 +30,28 @@ namespace violas
         std::vector<ed25519::PrivateKey> m_private_keys;
 
         Wallet();
+
     public:
-        
-        Wallet(Key && entropy);
+        Wallet(Key &&entropy);
         ~Wallet();
 
         static Wallet generate_from_random();
 
         static Wallet generate_from_mnemonic(std::string_view mnemonic);
-        
+
         std::string export_mnemonic();
 
         // return account index and raw public key
         std::tuple<size_t, diem_types::AccountAddress> create_next_account();
 
-        std::vector<std::array<uint8_t, 16>>
-        get_all_accounts();
+        struct Account
+        {
+            size_t index;
+            diem_types::AccountAddress address;
+            std::array<uint8_t, 32> auth_key;
+        };
+
+        std::vector<Account> get_all_accounts();
 
         std::array<uint8_t, 16>
         get_account_address(size_t index);

@@ -1,3 +1,6 @@
+#include <fstream>
+#include <filesystem>
+#include <iterator>
 #include <diem_framework.hpp>
 #include "../include/violas_client2.hpp"
 
@@ -12,37 +15,52 @@ namespace violas
     {
     private:
         json_rpc::client_ptr m_jr_client;
-        
+
         shared_ptr<Wallet> m_wallet;
 
     public:
         Client2Imp(std::string_view url,
                    uint8_t chain_id,
-                   std::string_view mint_key,
-                   std::string_view mnemonic)         
+                   std::string_view mint_key_file,
+                   std::string_view mnemonic_file)
         {
             m_jr_client = json_rpc::Client::create(url);
 
-            m_wallet = make_shared<Wallet>(Wallet::generate_from_mnemonic(mnemonic));
+            ifstream ifs(mnemonic_file.data());
+            if (ifs.fail())
+            {
+                m_wallet = make_shared<Wallet>(Wallet::generate_from_random());
+
+                ofstream ofs(mnemonic_file.data());
+                ofs << m_wallet->export_mnemonic() << ";0"; // the ";0" is compatible with diem cli
+            }
+            else
+            {
+                istreambuf_iterator<char> is_iter(ifs);
+                string mnemonic(is_iter, {});
+
+                auto iter = mnemonic.find(';');
+                if (iter != string::npos)
+                    mnemonic.erase(iter);
+
+                m_wallet = make_shared<Wallet>(Wallet::generate_from_mnemonic(mnemonic));
+            }
         }
 
         ~Client2Imp()
         {
         }
 
-        virtual tuple<size_t,diem_types::AccountAddress>
+        virtual tuple<size_t, diem_types::AccountAddress>
         create_next_account() override
         {
-            m_wallet->create_next_account();
-
-            return make_tuple<>(0, diem_types::AccountAddress());
+            return m_wallet->create_next_account();
         }
 
-        virtual std::vector<diem_types::AccountAddress>
+        virtual std::vector<Wallet::Account>
         get_all_accounts() override
         {
-            m_wallet->get_all_accounts();
-            return std::vector<diem_types::AccountAddress>();
+            return m_wallet->get_all_accounts();            
         }
 
         void submit_script(size_t account_index,

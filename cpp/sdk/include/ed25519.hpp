@@ -34,9 +34,9 @@ namespace ed25519
 
         ~PublicKey();
 
-        RawKey get_raw_key();
+        RawKey get_raw_key() const;
 
-        std::string dump_hex();
+        std::string dump_hex() const; 
 
         bool verify(const Signature &sig, uint8_t *data, size_t len);
     };
@@ -52,7 +52,10 @@ namespace ed25519
     public:
         ~PrivateKey();
 
-        //PrivateKey(const PrivateKey &priv_key) = delete;
+        PrivateKey(const PrivateKey &priv_key);
+        
+        PrivateKey(PrivateKey && priv_key);
+
         PrivateKey operator=(const PrivateKey &priv_key) = delete;
 
         static PrivateKey generate();
@@ -61,11 +64,11 @@ namespace ed25519
 
         static PrivateKey from_hex_string(const std::string &hex_str);
 
-        RawKey get_raw_key();
+        RawKey get_raw_key() const;
 
-        std::string dump_hex();
+        std::string dump_hex() const;
 
-        PublicKey get_public_key();
+        PublicKey get_public_key() const;
         //
         // sign for message
         //

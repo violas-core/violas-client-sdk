@@ -79,7 +79,7 @@ namespace ed25519
         return PublicKey(hex_to_raw_key(hex_str));
     }
 
-    RawKey PublicKey::get_raw_key()
+    RawKey PublicKey::get_raw_key() const
     {
         RawKey raw_key;
         size_t len = raw_key.size();
@@ -89,7 +89,7 @@ namespace ed25519
         return raw_key;
     }
 
-    std::string PublicKey::dump_hex()
+    std::string PublicKey::dump_hex() const
     {
         auto raw_key = get_raw_key();
         ostringstream oss;
@@ -130,6 +130,13 @@ namespace ed25519
         EVP_PKEY_free(m_pkey);
     }
 
+    PrivateKey::PrivateKey(const PrivateKey &r)
+    {
+        m_pkey = r.m_pkey;
+        
+        EVP_PKEY_up_ref(m_pkey);
+    }
+    
     PrivateKey PrivateKey::generate()
     {
         EVP_PKEY_CTX *m_pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
@@ -149,7 +156,7 @@ namespace ed25519
 
     PrivateKey PrivateKey::from_raw_key(const RawKey &raw_key)
     {
-        EVP_PKEY *pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL, raw_key.data(), raw_key.size());
+        EVP_PKEY *pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL, raw_key.data(), raw_key.size());        
 
         return PrivateKey(pkey);
     }
@@ -159,7 +166,7 @@ namespace ed25519
         return from_raw_key(hex_to_raw_key(hex_key));
     }
 
-    RawKey PrivateKey::get_raw_key()
+    RawKey PrivateKey::get_raw_key() const
     {
         RawKey raw_key;
         size_t len = raw_key.size();
@@ -169,7 +176,7 @@ namespace ed25519
         return raw_key;
     }
 
-    std::string PrivateKey::dump_hex()
+    std::string PrivateKey::dump_hex() const
     {
         auto raw_key = get_raw_key();
         ostringstream oss;
@@ -180,12 +187,13 @@ namespace ed25519
         return oss.str();
     }
 
-    PublicKey PrivateKey::get_public_key()
+    PublicKey PrivateKey::get_public_key() const
     {
-        RawKey raw_key;
+        RawKey raw_key = { 0 };
         size_t len = raw_key.size();
 
-        EVP_PKEY_get_raw_public_key(m_pkey, raw_key.data(), &len);
+        int ret = EVP_PKEY_get_raw_public_key(m_pkey, raw_key.data(), &len);
+        check_ret(ret, "EVP_PKEY_get_raw_public_key");
 
         return PublicKey(raw_key);
     }

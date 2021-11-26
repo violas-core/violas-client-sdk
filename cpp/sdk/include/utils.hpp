@@ -216,7 +216,7 @@ inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
     return bytes;
 }
 
-auto bytes_to_hex(const auto & bytes)
+auto bytes_to_hex(const auto &bytes)
 {
     using namespace std;
     ostringstream oss;
@@ -228,6 +228,11 @@ auto bytes_to_hex(const auto & bytes)
 
     return oss.str();
 };
+
+auto u8_array_to_vector(const auto &u8_array)
+{
+    return std::vector<uint8_t>(std::begin(u8_array), std::end(u8_array));
+}
 
 inline std::vector<uint8_t> string_to_bytes(const std::string &str)
 {

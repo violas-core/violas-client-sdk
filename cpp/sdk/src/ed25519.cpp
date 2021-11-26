@@ -125,10 +125,16 @@ namespace ed25519
         m_pkey = pkey;
     }
 
+    PrivateKey::PrivateKey(PrivateKey && r)
+    {
+        m_pkey = r.m_pkey;
+        r.m_pkey = nullptr;
+    }
+
     PrivateKey::~PrivateKey()
     {
         EVP_PKEY_free(m_pkey);
-    }
+    }    
 
     PrivateKey::PrivateKey(const PrivateKey &r)
     {
@@ -137,6 +143,15 @@ namespace ed25519
         EVP_PKEY_up_ref(m_pkey);
     }
     
+    PrivateKey PrivateKey::operator=(const PrivateKey &r)
+    {
+        m_pkey = r.m_pkey;
+        
+        EVP_PKEY_up_ref(m_pkey);
+
+        return *this;
+    }
+   
     PrivateKey PrivateKey::generate()
     {
         EVP_PKEY_CTX *m_pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);

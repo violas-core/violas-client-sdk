@@ -12,6 +12,11 @@ namespace json_rpc
         std::string code;
     };
 
+    struct AccountInfo
+    {
+        uint64_t suquence_number;
+    };
+
     struct AccountStateProof
     {
         // hex-encoded bcs bytes
@@ -52,6 +57,9 @@ namespace json_rpc
         virtual ~Client() {}
 
         virtual void submit(const diem_types::SignedTransaction & signed_txn) = 0;
+
+        virtual AccountInfo
+        get_account_info() = 0;
 
         virtual std::vector<Currency>
         get_currencies() = 0;

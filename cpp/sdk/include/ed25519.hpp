@@ -56,7 +56,7 @@ namespace ed25519
         
         PrivateKey(PrivateKey && priv_key);
 
-        PrivateKey operator=(const PrivateKey &priv_key) = delete;
+        PrivateKey operator=(const PrivateKey &priv_key);
 
         static PrivateKey generate();
 

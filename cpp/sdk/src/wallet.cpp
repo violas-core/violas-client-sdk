@@ -84,6 +84,12 @@ namespace violas
     {
     }
 
+    ed25519::PrivateKey
+    Wallet::get_account_priv_key(size_t index)
+    {
+        return m_private_keys.at(index);
+    }
+
     Wallet Wallet::generate_from_random()
     {
         Key entropy;
@@ -253,7 +259,6 @@ namespace violas
 
         return oss.str();
     }
-    
 
     enum Scheme
     {

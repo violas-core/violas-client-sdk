@@ -7,6 +7,8 @@
 
 namespace violas
 {
+    std::array<uint8_t, 32> sha3_256(uint8_t *data, size_t len);
+
     class Wallet
     {
     public:
@@ -55,6 +57,9 @@ namespace violas
 
         std::array<uint8_t, 16>
         get_account_address(size_t index);
+
+        ed25519::PrivateKey
+        get_account_priv_key(size_t index);
 
         static void run_test_case();
     };

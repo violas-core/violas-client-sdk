@@ -78,6 +78,12 @@ namespace json_rpc
             auto version = rpc_response["diem_ledger_version"].as_integer();
         }
 
+        virtual AccountInfo
+        get_account_info() override
+        {
+            return AccountInfo{};
+        }
+
         virtual std::vector<Currency> get_currencies() override
         {
             vector<Currency> crc;

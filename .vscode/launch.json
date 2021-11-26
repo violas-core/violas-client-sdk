@@ -13,15 +13,15 @@
             "program": "${workspaceFolder}/build/debug/bin/nft-store",
             "args": [
                 "-u",
-                "http://localhost:35165",
+                "http://124.251.110.220:50001",
                 "-m",
-                "/tmp/diem/mint.key",
+                "mint.key",
                 "-w",
                 "0:23c2dd22626e14d5916e8c5969face6f8fa02fdf7cc4d0a3e7a1115d15a4ba89",
                 "-c",
                 "4",
                 "-n",
-                "mnemonic/nft-store.mne"
+                "mnemonic/test.mne"
             ],
             "cwd": "${workspaceFolder}/build/debug"
         },

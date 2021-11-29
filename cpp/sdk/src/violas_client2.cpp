@@ -19,15 +19,24 @@ namespace violas
     {
     private:
         json_rpc::client_ptr m_jr_client;
+        uint8_t m_chain_id;
 
         shared_ptr<Wallet> m_wallet;
 
         // Account Root, Treasure Complaince, Test Designated Dealer
         optional<ed25519::PrivateKey> m_opt_root, m_opt_tc, m_opt_dd;
 
+        map<size_t, json_rpc::AccountView> m_account_infos;
+
         uint64_t get_sequence_number(size_t account_index)
         {
-            return m_jr_client->get_account_info().suquence_number;
+            auto accounts = m_wallet->get_all_accounts();
+            return m_jr_client->get_account(accounts[account_index].address).sequence_number;
+        }
+
+        diem_types::TypeTag make_struct_type_tag(diem_types::AccountAddress address, string module, string name)
+        {
+            return diem_types::TypeTag{diem_types::TypeTag::Struct{address, diem_types::Identifier{module}, diem_types::Identifier{name}}};
         }
 
     public:
@@ -37,6 +46,7 @@ namespace violas
                    std::string_view mint_key_file)
         {
             m_jr_client = json_rpc::Client::create(url);
+            m_chain_id = chain_id;
 
             ifstream ifs(mnemonic_file.data());
             if (ifs.fail())
@@ -74,6 +84,13 @@ namespace violas
                     copy(begin(buf) + 1, begin(buf) + 33, begin(raw_key));
 
                     m_opt_root = m_opt_tc = m_opt_dd = ed25519::PrivateKey::from_raw_key(raw_key);
+
+                    auto root_account_view = m_jr_client->get_account(ROOT_ADDRESS);
+                    m_account_infos[ACCOUNT_ROOT_ID] = root_account_view;
+                    auto tc_account_view = m_jr_client->get_account(TC_ADDRESS);
+                    m_account_infos[ACCOUNT_TC_ID] = tc_account_view;
+                    auto dd_account_view = m_jr_client->get_account(TESTNET_DD_ADDRESS);
+                    m_account_infos[ACCOUNT_DD_ID] = dd_account_view;
                 }
             }
         }
@@ -85,7 +102,13 @@ namespace violas
         virtual tuple<size_t, diem_types::AccountAddress>
         create_next_account() override
         {
-            return m_wallet->create_next_account();
+            auto index_address = m_wallet->create_next_account();
+            auto [index, address] = index_address;
+
+            auto account_view = m_jr_client->get_account(address);
+            m_account_infos[index] = account_view;
+
+            return index_address;
         }
 
         virtual std::vector<Wallet::Account>
@@ -94,12 +117,12 @@ namespace violas
             return m_wallet->get_all_accounts();
         }
 
-        void submit_script(size_t account_index,                           
+        void submit_script(size_t account_index,
                            diem_types::Script &&script,
                            uint64_t max_gas_amount = 1'000'000,
                            uint64_t gas_unit_price = 0,
                            std::string_view gas_currency_code = "VLS",
-                           uint64_t expiration_timestamp_secs = 600)
+                           uint64_t expiration_timestamp_secs = 100)
         {
             using namespace diem_types;
             SignedTransaction signed_txn;
@@ -107,15 +130,24 @@ namespace violas
 
             raw_txn.payload.value = TransactionPayload::Script({std::move(script)});
 
-            raw_txn.sequence_number = get_sequence_number(account_index);
+            auto iter = m_account_infos.find(account_index);
+            if (iter != end(m_account_infos))
+            {
+                raw_txn.sequence_number = iter->second.sequence_number;
+            }
+            else
+                __throw_runtime_error("Account index does not exist.");
+
             raw_txn.max_gas_amount = max_gas_amount;
             raw_txn.gas_unit_price = gas_unit_price;
             raw_txn.gas_currency_code = gas_currency_code;
             raw_txn.expiration_timestamp_secs = expiration_timestamp_secs;
+            raw_txn.chain_id = diem_types::ChainId{ m_chain_id };
 
             auto bytes = raw_txn.bcsSerialize();
 
-            auto hash = sha3_256(bytes.data(), bytes.size());
+            string_view flag = "DIEM::RawTransaction";
+            auto hash = sha3_256((uint8_t *)flag.data(), flag.size());
 
             vector<uint8_t> message(begin(hash), end(hash));
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
@@ -133,6 +165,8 @@ namespace violas
             else if (account_index == ACCOUNT_TC_ID)
             {
                 raw_txn.sender = TC_ADDRESS;
+                auto priv_key = Wallet::pub_key_to_auth_key(m_opt_tc->get_public_key());
+
                 signature = m_opt_tc->sign(message.data(), message.size());
                 signed_txn.authenticator.value = TransactionAuthenticator::Ed25519{
                     Ed25519PublicKey{u8_array_to_vector(m_opt_tc->get_public_key().get_raw_key())},
@@ -156,6 +190,8 @@ namespace violas
             }
 
             m_jr_client->submit(signed_txn);
+
+            raw_txn.sequence_number++;
         }
 
         virtual void
@@ -201,7 +237,7 @@ namespace violas
 
             submit_script(ACCOUNT_TC_ID,
                           diem_framework::encode_create_parent_vasp_account_script(
-                              diem_types::TypeTag{diem_types::TypeTag::Struct{}},
+                              make_struct_type_tag(STD_LIB_ADDRESS, "VLS", "VLS"),
                               0,
                               address,
                               vector<uint8_t>(begin(auth_key), begin(auth_key) + 16),

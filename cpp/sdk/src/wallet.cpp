@@ -28,8 +28,10 @@
 #include <openssl/sha.h>
 #include <openssl/err.h>
 
+#include <utils.hpp>
 #include "mnemonic.hpp"
 #include "wallet.hpp"
+
 
 using namespace std;
 
@@ -49,6 +51,32 @@ namespace violas
 
         if (ret != 1)
             std::__throw_runtime_error(oss.str().c_str());
+    }
+
+    template<size_t N>
+    array<uint8_t, N> hash(uint8_t *data, size_t len, const EVP_MD* md)
+    {
+        array<uint8_t, N> output;
+        uint32_t out_len = output.size();
+        EVP_MD_CTX *context = EVP_MD_CTX_new();
+
+        EVP_DigestInit_ex(context, md, nullptr);
+        EVP_DigestUpdate(context, data, len);
+        EVP_DigestFinal_ex(context, output.data(), &out_len);
+
+        EVP_MD_CTX_destroy(context);
+
+        return output;
+    }
+    
+    std::array<uint8_t, 32> sha_256(uint8_t *data, size_t len)
+    {
+        return hash<32>(data, len, EVP_sha256());
+    }
+
+    std::array<uint8_t, 64> sha_512(uint8_t *data, size_t len)
+    {
+        return hash<64>(data, len, EVP_sha512());
     }
 
     array<uint8_t, 32> sha3_256(uint8_t *data, size_t len)
@@ -267,17 +295,26 @@ namespace violas
         // ... add more schemes here
     };
 
-    diem_types::AccountAddress generate_account_address(const ed25519::PublicKey &pub_key)
+    Wallet::Key Wallet::pub_key_to_auth_key(const ed25519::PublicKey &pub_key)
     {
-        diem_types::AccountAddress address;
         auto raw_pub_key = pub_key.get_raw_key();
 
         vector<uint8_t> auth_key_preimage(begin(raw_pub_key), end(raw_pub_key));
         auth_key_preimage.push_back(Scheme::Ed25519);
 
         auto hash = sha3_256(auth_key_preimage.data(), auth_key_preimage.size());
-        // copy sha3 256 hash
-        copy(begin(hash) + 16, end(hash), begin(address.value));
+
+        return hash;
+    }
+
+    diem_types::AccountAddress Wallet::pub_key_account_address(const ed25519::PublicKey &pub_key)
+    {
+        diem_types::AccountAddress address;
+        
+        auto auth_key = pub_key_to_auth_key(pub_key);
+        
+        // copy 16 bytes suffix
+        copy(begin(auth_key) + 16, end(auth_key), begin(address.value));
 
         return address;
     }
@@ -322,7 +359,7 @@ namespace violas
 
         for (const auto &priv_key : m_private_keys)
         {
-            Account account{index++, generate_account_address(priv_key.get_public_key()), priv_key.get_public_key().get_raw_key()};
+            Account account{index++, pub_key_account_address(priv_key.get_public_key()), priv_key.get_public_key().get_raw_key()};
 
             accounts.push_back(move(account));
         }
@@ -367,5 +404,14 @@ namespace violas
         Key key1 = wallet.extend_child_private_key(1);
 
         generate_from_mnemonic("hamster diagram private dutch cause delay private meat slide toddler razor book happy fancy gospel tennis maple dilemma loan word shrug inflict delay length");
+
+        string hex = "000000000000000000000000000b1e55ed0f0000000000000001b901a11ceb0b010000000601000403040b040f0205111b072c4a087610000000010102000100000302010101010402060c030005060c050a020a020106060c03050a020a02010109000b4469656d4163636f756e740c536c6964696e674e6f6e6365157265636f72645f6e6f6e63655f6f725f61626f72741a6372656174655f706172656e745f766173705f6163636f756e7400000000000000000000000000000001010103010a0a000a0111000b000a020b030b040a0538000201070000000000000000000000000000000103564c5303564c53000501000000000000000003dc37cd5bdbac5a3f4083a1549469c456041062778143194d4a113133cc5cafd22bc604084e46542056415350050140420f0000000000000000000000000003564c530fd8896100000000040020123eeb8d9434839c7bfbf327659f34a07eac4a728f6ab6a5f5ff081553db26ee40e1fea9ed6d1485613e0286acff88ce3c85f0ddc799760ca036dd917af238b4f6693580bf3478629cb5f763858b8a5cdaf08cfb1febaa452936e39cda57f44006";
+        auto bytes = hex_to_bytes(hex);
+
+        auto hash_sha3 = sha3_256(bytes.data(), bytes.size());
+
+        auto hash_sha256 = sha_256(bytes.data(), bytes.size());
+
+        auto hash_sha512 = sha_512(bytes.data(), bytes.size());
     }
 }

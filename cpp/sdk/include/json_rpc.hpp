@@ -12,9 +12,22 @@ namespace json_rpc
         std::string code;
     };
 
-    struct AccountInfo
+    struct Balance
     {
-        uint64_t suquence_number;
+        uint64_t amount;
+        std::string currency;
+    };
+
+    struct AccountView
+    {
+        diem_types::AccountAddress address;
+        std::vector<Balance> balances;
+        uint64_t sequence_number;
+        diem_types::EventKey sent_events_key;
+        diem_types::EventKey received_events_key;
+        bool delegated_key_rotation_capability;
+        bool delegated_withdrawal_capability;
+        bool is_frozen;
     };
 
     struct AccountStateProof
@@ -56,10 +69,10 @@ namespace json_rpc
 
         virtual ~Client() {}
 
-        virtual void submit(const diem_types::SignedTransaction & signed_txn) = 0;
+        virtual void submit(const diem_types::SignedTransaction &signed_txn) = 0;
 
-        virtual AccountInfo
-        get_account_info() = 0;
+        virtual AccountView
+        get_account(const diem_types::AccountAddress, std::optional<uint64_t> version = std::nullopt) = 0;
 
         virtual std::vector<Currency>
         get_currencies() = 0;

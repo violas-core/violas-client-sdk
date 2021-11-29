@@ -7,8 +7,10 @@
 
 namespace violas
 {
+    std::array<uint8_t, 32> sha_256(uint8_t *data, size_t len);
+    std::array<uint8_t, 64> sha_512(uint8_t *data, size_t len);
     std::array<uint8_t, 32> sha3_256(uint8_t *data, size_t len);
-
+    
     class Wallet
     {
     public:
@@ -42,6 +44,10 @@ namespace violas
         static Wallet generate_from_mnemonic(std::string_view mnemonic);
 
         std::string export_mnemonic();
+
+        static Key pub_key_to_auth_key(const ed25519::PublicKey &pub_key);
+        static diem_types::AccountAddress pub_key_account_address(const ed25519::PublicKey &pub_key);
+        
 
         // return account index and raw public key
         std::tuple<size_t, diem_types::AccountAddress> create_next_account();

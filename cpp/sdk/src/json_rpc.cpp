@@ -63,14 +63,13 @@ namespace json_rpc
 
             auto rpc_response = cli.request(methods::POST, "/", method, content_type)
                                     .then([=](http_response response) -> pplx::task<json::value>
-                                          {                                              
-
+                                          {
                                               if (response.status_code() != 200)
                                                   __throw_runtime_error(response.extract_string().get().c_str());
 
                                               return response.extract_json(); })
                                     .get();
-            
+
             auto error = rpc_response["error"];
             if (!error.is_null())
                 __throw_runtime_error(("fun : get_account_state_blob, error : " + error.serialize()).c_str());
@@ -78,10 +77,35 @@ namespace json_rpc
             auto version = rpc_response["diem_ledger_version"].as_integer();
         }
 
-        virtual AccountInfo
-        get_account_info() override
+        virtual AccountView
+        get_account(const diem_types::AccountAddress address, std::optional<uint64_t> version) override
         {
-            return AccountInfo{};
+            string method = format(R"({"jsonrpc":"2.0","method":"get_account","params":["%s"],"id":1})", bytes_to_hex(address.value).c_str());
+            string content_type = "application/json";
+
+            auto rpc_response = cli.request(methods::POST, "/", method, content_type)
+                                    .then([=](http_response response) -> pplx::task<json::value>
+                                          {                                              
+
+                                              if (response.status_code() != 200)
+                                                  __throw_runtime_error(response.extract_string().get().c_str());
+
+                                              return response.extract_json(); })
+                                    .get();
+
+            auto error = rpc_response["error"];
+            if (!error.is_null())
+                __throw_runtime_error(("fun : get_account_state_blob, error : " + error.serialize()).c_str());
+
+            auto result = rpc_response["result"];
+
+            AccountView view;
+
+            if (!result["sequence_number"].is_null())
+            {
+                view.sequence_number = result["sequence_number"].as_number().to_int64();
+            }
+            return view;
         }
 
         virtual std::vector<Currency> get_currencies() override

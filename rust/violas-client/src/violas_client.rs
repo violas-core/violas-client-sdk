@@ -1238,10 +1238,10 @@ pub fn is_authentication_key(data: &str) -> bool {
 
 fn address_from_strings(data: &str) -> Result<AccountAddress> {
     let account_vec: Vec<u8> = hex::decode(data.parse::<String>()?)?;
-    ensure!(
-        account_vec.len() == AccountAddress::LENGTH,
-        "The address {:?} is of invalid length. Addresses must be 16-bytes long"
-    );
+    // ensure!(
+    //     account_vec.len() == AccountAddress::LENGTH,
+    //     "The address {:?} is of invalid length. Addresses must be 16-bytes long"
+    // );
     let account = AccountAddress::try_from(&account_vec[..]).map_err(|error| {
         format_err!(
             "The address {:?} is invalid, error: {:?}",

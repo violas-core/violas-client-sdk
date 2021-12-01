@@ -1448,10 +1448,10 @@ impl ClientProxy {
 
     fn address_from_strings(data: &str) -> Result<AccountAddress> {
         let account_vec: Vec<u8> = hex::decode(data.parse::<String>()?)?;
-        ensure!(
-            account_vec.len() == AccountAddress::LENGTH,
-            "The address {:?} is of invalid length. Addresses must be 16-bytes long"
-        );
+        // ensure!(
+        //     account_vec.len() == AccountAddress::LENGTH,
+        //     "The address {:?} is of invalid length. Addresses must be 16-bytes long"
+        // );
         let account = AccountAddress::try_from(&account_vec[..]).map_err(|error| {
             format_err!(
                 "The address {:?} is invalid, error: {:?}",
@@ -1464,10 +1464,10 @@ impl ClientProxy {
 
     fn authentication_key_from_string(data: &str) -> Result<AuthenticationKey> {
         let bytes_vec: Vec<u8> = hex::decode(data.parse::<String>()?)?;
-        ensure!(
-            bytes_vec.len() == AuthenticationKey::LENGTH,
-            "The authentication key string {:?} is of invalid length. Authentication keys must be 32-bytes long"
-        );
+        // ensure!(
+        //     bytes_vec.len() == AuthenticationKey::LENGTH,
+        //     "The authentication key string {:?} is of invalid length. Authentication keys must be 32-bytes long"
+        // );
 
         let auth_key = AuthenticationKey::try_from(&bytes_vec[..]).map_err(|error| {
             format_err!(

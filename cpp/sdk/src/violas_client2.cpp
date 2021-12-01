@@ -141,8 +141,16 @@ namespace violas
             raw_txn.max_gas_amount = max_gas_amount;
             raw_txn.gas_unit_price = gas_unit_price;
             raw_txn.gas_currency_code = gas_currency_code;
-            raw_txn.expiration_timestamp_secs = expiration_timestamp_secs;
-            raw_txn.chain_id = diem_types::ChainId{ m_chain_id };
+            raw_txn.expiration_timestamp_secs = time(nullptr)+expiration_timestamp_secs;
+            raw_txn.chain_id = diem_types::ChainId{m_chain_id};
+            if (account_index == ACCOUNT_ROOT_ID)
+                raw_txn.sender = ROOT_ADDRESS;
+            else if (account_index == ACCOUNT_TC_ID)
+                raw_txn.sender = TC_ADDRESS;
+            else if (account_index == ACCOUNT_DD_ID)
+                raw_txn.sender = TESTNET_DD_ADDRESS;
+            else
+                raw_txn.sender = AccountAddress({m_wallet->get_account_address(account_index)});
 
             auto bytes = raw_txn.bcsSerialize();
 

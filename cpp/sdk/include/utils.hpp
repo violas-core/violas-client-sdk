@@ -216,6 +216,28 @@ inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
     return bytes;
 }
 
+template<size_t N>
+inline std::array<uint8_t, N> hex_to_array_u8(std::string_view hex)
+{
+    std::array<uint8_t, N> array_u8;
+
+    if(hex.size() < array_u8.size())
+        std::__throw_runtime_error("hex_to_array_u8 error, the length of hex is less than the size of array");
+
+    for(size_t i = 0; i < array_u8.size(); i++)
+    {
+        std::stringstream ss;
+        uint16_t byte = 0;
+
+        ss << hex.at(i*2) << hex.at(i*2+1); // read two chars
+        ss >> std::hex >> byte;
+
+        array_u8[i] = byte;
+    }    
+
+    return array_u8;
+}
+
 auto bytes_to_hex(const auto &bytes)
 {
     using namespace std;
@@ -296,3 +318,8 @@ inline std::string trim(std::string s)
 {
     return trim_left(trim_right(std::move(s)));
 }
+//
+//  helper for std::visit
+// refer to https://en.cppreference.com/w/cpp/utility/variant/visit
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;

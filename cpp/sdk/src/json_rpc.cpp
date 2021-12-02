@@ -15,10 +15,10 @@ namespace json_rpc
 
     class ClientImp : public Client
     {
-        http_client cli;
+        http_client m_http_cli;
 
     public:
-        ClientImp(string_view url) : cli(U(string(url)), client_config_for_proxy())
+        ClientImp(string_view url) : m_http_cli(U(string(url)), client_config_for_proxy())
         {
         }
 
@@ -61,7 +61,7 @@ namespace json_rpc
             string method = format(R"({"jsonrpc":"2.0","method":"submit","params":["%s"],"id":1})", data.c_str());
             string content_type = "application/json";
 
-            auto rpc_response = cli.request(methods::POST, "/", method, content_type)
+            auto rpc_response = m_http_cli.request(methods::POST, "/", method, content_type)
                                     .then([=](http_response response) -> pplx::task<json::value>
                                           {
                                               if (response.status_code() != 200)
@@ -77,13 +77,64 @@ namespace json_rpc
             auto version = rpc_response["diem_ledger_version"].as_integer();
         }
 
+        virtual TransactionView
+        get_account_transaction(const diem_types::AccountAddress &address,
+                                uint64_t sequence_number,
+                                bool include_events) override
+        {
+            string method = format(R"({"jsonrpc":"2.0","method":"get_account_transaction","params":["%s", %d, %s],"id":1})",
+                                   bytes_to_hex(address.value).c_str(),
+                                   sequence_number,
+                                   include_events ? "true" : "false");
+            string content_type = "application/json";
+
+            auto rpc_response = m_http_cli.request(methods::POST, "/", method, content_type)
+                                    .then([=](http_response response) -> pplx::task<json::value>
+                                          {
+                                              if (response.status_code() != 200)
+                                                  __throw_runtime_error(response.extract_string().get().c_str());
+
+                                              return response.extract_json(); })
+                                    .get();
+
+            auto error = rpc_response["error"];
+            if (!error.is_null())
+                __throw_runtime_error(("get_account_transaction error, " + error.serialize()).c_str());
+
+            auto result = rpc_response["result"];
+            TransactionView txn;
+
+            if (!result.is_null())
+            {
+                auto vm_status = result["vm_status"];
+                auto type = vm_status["type"].as_string();
+                if (type == "executed")
+                    txn.vm_status.value = VMStatus::Executed{type};
+                else if (type == "move_abort")
+                    txn.vm_status.value = VMStatus::MoveAbort{
+                        type, 
+                        vm_status["location"].as_string(),
+                        (uint64_t)vm_status["abort_code"].as_integer(),
+                        {
+                            vm_status["explanation"]["category"].as_string(),
+                            vm_status["explanation"]["category_description"].as_string(),
+                            vm_status["explanation"]["reason"].as_string(),
+                            vm_status["explanation"]["reason_description"].as_string(),
+                        } };
+            }
+
+            //cout << result.serialize() << endl;
+
+            return txn;
+        }
+
         virtual AccountView
-        get_account(const diem_types::AccountAddress address, std::optional<uint64_t> version) override
+        get_account(const diem_types::AccountAddress &address, std::optional<uint64_t> version) override
         {
             string method = format(R"({"jsonrpc":"2.0","method":"get_account","params":["%s"],"id":1})", bytes_to_hex(address.value).c_str());
             string content_type = "application/json";
 
-            auto rpc_response = cli.request(methods::POST, "/", method, content_type)
+            auto rpc_response = m_http_cli.request(methods::POST, "/", method, content_type)
                                     .then([=](http_response response) -> pplx::task<json::value>
                                           {                                              
 
@@ -104,7 +155,9 @@ namespace json_rpc
             if (!result["sequence_number"].is_null())
             {
                 view.sequence_number = result["sequence_number"].as_number().to_int64();
+                view.address = diem_types::AccountAddress{hex_to_array_u8<16>(result["address"].as_string())};
             }
+
             return view;
         }
 
@@ -122,7 +175,7 @@ namespace json_rpc
             string method = format(R"({"jsonrpc":"2.0","method":"get_account_state_with_proof","params":["%s", null, null],"id":1})", account_address.c_str());
             string content_type = "application/json";
 
-            auto rpc_response = cli.request(methods::POST, "/", method, content_type)
+            auto rpc_response = m_http_cli.request(methods::POST, "/", method, content_type)
                                     .then([=](http_response response) -> pplx::task<json::value>
                                           {
                                               // printf("Response status code %u returned.\n", response.status_code());
@@ -167,7 +220,7 @@ namespace json_rpc
                                    rpc_id);
             string content_type = "application/json";
 
-            auto rpc_response = cli.request(methods::POST, "/", method, content_type)
+            auto rpc_response = m_http_cli.request(methods::POST, "/", method, content_type)
                                     .then([=](http_response response) -> pplx::task<json::value>
                                           {
                                               if (response.status_code() != 200)

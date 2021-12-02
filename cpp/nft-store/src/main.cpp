@@ -152,6 +152,7 @@ void test(const Arguments &args)
     client2_ptr client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
 
     client->create_next_account();
+    client->create_next_account();
     auto accounts = client->get_all_accounts();
     auto &account = accounts[0];
 
@@ -160,4 +161,8 @@ void test(const Arguments &args)
     client->create_parent_vasp_account(account.address, account.auth_key, "test", false);
 
     client->add_currency(0, "XUS");
+
+    auto &child = accounts[1];
+
+    client->create_child_vasp_account(0, child.address, child.auth_key, "VSL", 0, false);
 }

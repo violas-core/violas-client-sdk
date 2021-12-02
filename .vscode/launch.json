@@ -13,15 +13,15 @@
             "program": "${workspaceFolder}/build/debug/bin/nft-store",
             "args": [
                 "-u",
-                "http://localhost:39251",
+                "http://localhost:42605",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
-                "0:fc7d18c771f8cb1db5ad7fcc6c1181087eb85ce03a873c034038f62c059e1183",
+                "0:602e4983ec1f221b91a91c9d4c3344aff91d8ed7cfcbb3cfa3e4299b495823e1",
                 "-c",
-                "4",
+                "2",
                 "-n",
-                "mnemonic/test.mne"
+                "mnemonic/nft-store.mne"
             ],
             "cwd": "${workspaceFolder}/build/debug"
         },
@@ -70,15 +70,15 @@
             "program": "${workspaceFolder}/build/debug/bin/cmd",
             "args": [
                 "-u",
-                "http://localhost:45993",
+                "http://124.251.110.220:50001",
                 "-m",
-                "/tmp/diem/mint.key",
+                "mint.key",
                 "-w",
-                "0:aabff2855be41cf89286d69e3205e322ae73db98e8f04d2fe9443a844335c660",
+                "0:9b4757a29cacf99ad8f3e892241da54a707b9f7798aef22678b6706137311d01",
                 "-c",
                 "2",
                 "-n",
-                "mnemonic/nft-store.mne",
+                "mnemonic/test.mne",
             ],
             "cwd": "${workspaceFolder}/build/debug"
         },

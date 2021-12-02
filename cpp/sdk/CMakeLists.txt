@@ -13,7 +13,6 @@ install(TARGETS violas_sdk DESTINATION lib)
 install(FILES include/violas_sdk2.hpp DESTINATION include)
 install(FILES include/nft.hpp DESTINATION include)
 install(FILES include/nft.cpp DESTINATION include)
-#install(FILES ../../rust/violas-client/target/release/libviolas_client.so DESTINATION lib)
 
 IF(CMAKE_BUILD_TYPE MATCHES "Debug")
     install(FILES ../../rust/violas-client/target/debug/libviolas_client.so DESTINATION lib)

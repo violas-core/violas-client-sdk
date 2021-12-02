@@ -36,7 +36,7 @@ namespace violas
         get_all_accounts() = 0;
 
         virtual void
-        submit_script_byte_code(size_t account_index,                                
+        submit_script_byte_code(size_t account_index,
                                 std::vector<uint8_t> script,
                                 std::vector<diem_types::TypeTag> type_tags,
                                 std::vector<diem_types::TransactionArgument> args,
@@ -49,6 +49,9 @@ namespace violas
         publish_module(size_t account_index,
                        std::vector<uint8_t> module) = 0;
 
+        ////////////////////////////////////////////////////////////////
+        // Methods for Violas framework
+        ////////////////////////////////////////////////////////////////
         virtual void
         add_currency(size_t account_index, std::string_view currency_code) = 0;
 
@@ -57,6 +60,14 @@ namespace violas
                                    const std::array<uint8_t, 32> &auth_key,
                                    std::string_view human_name,
                                    bool add_all_currencies) = 0;
+
+        virtual void
+        create_child_vasp_account(size_t account_index,
+                                  const diem_types::AccountAddress &address,
+                                  const std::array<uint8_t, 32> &auth_key,
+                                  std::string_view currency,
+                                  uint64_t child_initial_balance,
+                                  bool add_all_currencies = false) = 0;
     };
 
     using client2_ptr = std::shared_ptr<Client2>;

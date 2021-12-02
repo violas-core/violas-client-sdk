@@ -32,7 +32,6 @@
 #include "mnemonic.hpp"
 #include "wallet.hpp"
 
-
 using namespace std;
 
 namespace violas
@@ -53,8 +52,8 @@ namespace violas
             std::__throw_runtime_error(oss.str().c_str());
     }
 
-    template<size_t N>
-    array<uint8_t, N> hash(uint8_t *data, size_t len, const EVP_MD* md)
+    template <size_t N>
+    array<uint8_t, N> hash(uint8_t *data, size_t len, const EVP_MD *md)
     {
         array<uint8_t, N> output;
         uint32_t out_len = output.size();
@@ -68,7 +67,7 @@ namespace violas
 
         return output;
     }
-    
+
     std::array<uint8_t, 32> sha_256(uint8_t *data, size_t len)
     {
         return hash<32>(data, len, EVP_sha256());
@@ -310,9 +309,9 @@ namespace violas
     diem_types::AccountAddress Wallet::pub_key_account_address(const ed25519::PublicKey &pub_key)
     {
         diem_types::AccountAddress address;
-        
+
         auto auth_key = pub_key_to_auth_key(pub_key);
-        
+
         // copy 16 bytes suffix
         copy(begin(auth_key) + 16, end(auth_key), begin(address.value));
 
@@ -359,7 +358,10 @@ namespace violas
 
         for (const auto &priv_key : m_private_keys)
         {
-            Account account{index++, pub_key_account_address(priv_key.get_public_key()), priv_key.get_public_key().get_raw_key()};
+            Account account{
+                index++,
+                pub_key_account_address(priv_key.get_public_key()),
+                pub_key_to_auth_key(priv_key.get_public_key())};
 
             accounts.push_back(move(account));
         }
@@ -369,7 +371,7 @@ namespace violas
 
     void Wallet::run_test_case()
     {
-        cout << "run test for Wallet::run_test_case " << endl;        
+        cout << "run test for Wallet::run_test_case " << endl;
 
         //"7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f";
         // string mnemonic = export_mnemonic(key);

@@ -45,7 +45,7 @@ namespace ed25519
         if (hex_key.length() != 64)
             __throw_invalid_argument("the length of hex key string must be equal to 64");
 
-        auto iter = rbegin(raw_key);
+        auto iter = begin(raw_key);
         for (size_t i = 0; i < hex_key.length(); i += 2)
         {
             stringstream ss;
@@ -94,7 +94,7 @@ namespace ed25519
         auto raw_key = get_raw_key();
         ostringstream oss;
 
-        for_each(rbegin(raw_key), rend(raw_key), [&](uint8_t v)
+        for_each(begin(raw_key), end(raw_key), [&](uint8_t v)
                  { oss << hex << setw(2) << setfill('0') << (uint16_t)v; });
 
         return oss.str();
@@ -125,7 +125,7 @@ namespace ed25519
         m_pkey = pkey;
     }
 
-    PrivateKey::PrivateKey(PrivateKey && r)
+    PrivateKey::PrivateKey(PrivateKey &&r)
     {
         m_pkey = r.m_pkey;
         r.m_pkey = nullptr;
@@ -134,24 +134,24 @@ namespace ed25519
     PrivateKey::~PrivateKey()
     {
         EVP_PKEY_free(m_pkey);
-    }    
+    }
 
     PrivateKey::PrivateKey(const PrivateKey &r)
     {
         m_pkey = r.m_pkey;
-        
+
         EVP_PKEY_up_ref(m_pkey);
     }
-    
+
     PrivateKey PrivateKey::operator=(const PrivateKey &r)
     {
         m_pkey = r.m_pkey;
-        
+
         EVP_PKEY_up_ref(m_pkey);
 
         return *this;
     }
-   
+
     PrivateKey PrivateKey::generate()
     {
         EVP_PKEY_CTX *m_pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
@@ -171,7 +171,12 @@ namespace ed25519
 
     PrivateKey PrivateKey::from_raw_key(const RawKey &raw_key)
     {
-        EVP_PKEY *pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL, raw_key.data(), raw_key.size());        
+        EVP_PKEY *pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL, raw_key.data(), raw_key.size());
+
+        uint8_t priv[32];
+        size_t private_size = sizeof(priv);
+        int ret = EVP_PKEY_get_raw_private_key(pkey, priv, &private_size);
+        check_ret(ret, "EVP_PKEY_get_raw_private_key");
 
         return PrivateKey(pkey);
     }
@@ -186,7 +191,7 @@ namespace ed25519
         RawKey raw_key;
         size_t len = raw_key.size();
 
-        EVP_PKEY_get_raw_private_key(m_pkey, raw_key.data(), &len);
+        int ret = EVP_PKEY_get_raw_private_key(m_pkey, raw_key.data(), &len);
 
         return raw_key;
     }
@@ -204,7 +209,7 @@ namespace ed25519
 
     PublicKey PrivateKey::get_public_key() const
     {
-        RawKey raw_key = { 0 };
+        RawKey raw_key = {0};
         size_t len = raw_key.size();
 
         int ret = EVP_PKEY_get_raw_public_key(m_pkey, raw_key.data(), &len);
@@ -236,14 +241,18 @@ namespace ed25519
         try
         {
             bool ret = false;
-            string msg = "Hello ED25519";
+            string msg = "This is a test of the tsunami alert system.";
             string hex_key = "4cc9cd70d755484327b5164fa8f3f080b12aea9cbcc7bf0d4e7d92f58d4ae990";
+            string hex_key1 = "d8b5edb968050bc9589b64e1d2445a5455745630449eef2f0005fe362b4379d4";            
 
-            auto priv_key1 = PrivateKey::from_hex_string(hex_key);
-            string hex_pub_key = priv_key1.get_public_key().dump_hex();
-            assert(hex_pub_key == "7d8ce6951efa7d471f6109e3b16d1a02382fc2e01843df3ed44226c27e3a1733");
+            auto priv_key = PrivateKey::from_hex_string(hex_key);
+            string hex_pub_key = priv_key.get_public_key().dump_hex();
+            assert(hex_pub_key == "5efff47b51644c4a247fc73b3e20e3ee5d44ff31de2ad7192aa6e00c724b6bc1");
+            
+            auto priv_key1 = PrivateKey::from_hex_string(hex_key1);
+            string hex_pub_key1 = priv_key1.get_public_key().dump_hex();
 
-            Signature sig = priv_key1.sign((uint8_t *)msg.data(), msg.length());
+            Signature sig = priv_key.sign((uint8_t *)msg.data(), msg.length());
 
             PublicKey pub_key = PublicKey::from_hex_string(hex_pub_key);
             ret = pub_key.verify(sig, (uint8_t *)msg.data(), msg.length());

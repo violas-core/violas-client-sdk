@@ -165,12 +165,14 @@ namespace violas
             else if (account_index == ACCOUNT_TC_ID)
             {
                 raw_txn.sender = TC_ADDRESS;
-                auto priv_key = Wallet::pub_key_to_auth_key(m_opt_tc->get_public_key());
+                auto priv_key = m_opt_tc->get_public_key().get_raw_key();
 
                 signature = m_opt_tc->sign(message.data(), message.size());
                 signed_txn.authenticator.value = TransactionAuthenticator::Ed25519{
                     Ed25519PublicKey{u8_array_to_vector(m_opt_tc->get_public_key().get_raw_key())},
                     Ed25519Signature{u8_array_to_vector(signature)}};
+                
+                bool ret = m_opt_tc->get_public_key().verify(signature, message.data(), message.size());
             }
             else if (account_index == ACCOUNT_DD_ID)
             {

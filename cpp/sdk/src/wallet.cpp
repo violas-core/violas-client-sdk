@@ -369,37 +369,25 @@ namespace violas
 
     void Wallet::run_test_case()
     {
-        cout << "run test for Wallet::run_test_case " << endl;
-
-        auto array_to_string = [](auto &bytes) -> auto
-        {
-            ostringstream oss;
-
-            for (auto v : bytes)
-            {
-                oss << hex << setw(2) << setfill('0') << (int)v;
-            }
-
-            return oss.str();
-        };
+        cout << "run test for Wallet::run_test_case " << endl;        
 
         //"7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f";
         // string mnemonic = export_mnemonic(key);
         Wallet wallet = Wallet::generate_from_mnemonic("legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title");
 
         auto [index, account_address] = wallet.create_next_account();
-        assert(array_to_string(account_address.value) == "11699be59c340efc1cb0e740b539b620");
+        assert(bytes_to_hex(account_address.value) == "11699be59c340efc1cb0e740b539b620");
 
-        cout << array_to_string(account_address.value) << endl;
+        cout << bytes_to_hex(account_address.value) << endl;
 
         tie(index, account_address) = wallet.create_next_account();
-        assert(array_to_string(account_address.value) == "3383b94a7bfeefe571579cff58b20a7e");
+        assert(bytes_to_hex(account_address.value) == "3383b94a7bfeefe571579cff58b20a7e");
 
-        cout << array_to_string(account_address.value) << endl;
+        cout << bytes_to_hex(account_address.value) << endl;
 
         Key key = wallet.extend_child_private_key(0);
 
-        assert(array_to_string(key) == "d8b5edb968050bc9589b64e1d2445a5455745630449eef2f0005fe362b4379d4");
+        assert(bytes_to_hex(key) == "d8b5edb968050bc9589b64e1d2445a5455745630449eef2f0005fe362b4379d4");
 
         Key key1 = wallet.extend_child_private_key(1);
 

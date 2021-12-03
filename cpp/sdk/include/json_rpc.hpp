@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <optional>
 #include <variant>
 #include <diem_types.hpp>
 
@@ -144,12 +145,12 @@ namespace json_rpc
 
         virtual void submit(const diem_types::SignedTransaction &signed_txn) = 0;
 
-        virtual TransactionView
+        virtual std::optional<TransactionView>
         get_account_transaction(const diem_types::AccountAddress &address,
                                 uint64_t sequence_number,
                                 bool include_events) = 0;
 
-        virtual AccountView
+        virtual std::optional<AccountView>
         get_account(const diem_types::AccountAddress &, std::optional<uint64_t> version = std::nullopt) = 0;
 
         virtual std::vector<Currency>

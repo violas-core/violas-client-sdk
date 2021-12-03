@@ -77,7 +77,7 @@ namespace json_rpc
             auto version = rpc_response["diem_ledger_version"].as_integer();
         }
 
-        virtual TransactionView
+        virtual std::optional<TransactionView>
         get_account_transaction(const diem_types::AccountAddress &address,
                                 uint64_t sequence_number,
                                 bool include_events) override
@@ -112,7 +112,7 @@ namespace json_rpc
                     txn.vm_status.value = VMStatus::Executed{type};
                 else if (type == "move_abort")
                     txn.vm_status.value = VMStatus::MoveAbort{
-                        type, 
+                        type,
                         vm_status["location"].as_string(),
                         (uint64_t)vm_status["abort_code"].as_integer(),
                         {
@@ -120,15 +120,16 @@ namespace json_rpc
                             vm_status["explanation"]["category_description"].as_string(),
                             vm_status["explanation"]["reason"].as_string(),
                             vm_status["explanation"]["reason_description"].as_string(),
-                        } };
+                        }};
+
+                // cout << result.serialize() << endl;
+                return txn;
             }
-
-            //cout << result.serialize() << endl;
-
-            return txn;
+            else
+                return std::nullopt;
         }
 
-        virtual AccountView
+        virtual std::optional<AccountView>
         get_account(const diem_types::AccountAddress &address, std::optional<uint64_t> version) override
         {
             string method = format(R"({"jsonrpc":"2.0","method":"get_account","params":["%s"],"id":1})", bytes_to_hex(address.value).c_str());
@@ -150,15 +151,19 @@ namespace json_rpc
 
             auto result = rpc_response["result"];
 
-            AccountView view;
-
-            if (!result["sequence_number"].is_null())
+            if (!result.is_null())
             {
-                view.sequence_number = result["sequence_number"].as_number().to_int64();
-                view.address = diem_types::AccountAddress{hex_to_array_u8<16>(result["address"].as_string())};
-            }
+                AccountView view;
 
-            return view;
+                if (!result["sequence_number"].is_null())
+                {
+                    view.sequence_number = result["sequence_number"].as_number().to_int64();
+                    view.address = diem_types::AccountAddress{hex_to_array_u8<16>(result["address"].as_string())};
+                }
+                return view;
+            }
+            else
+                return std::nullopt;
         }
 
         virtual std::vector<Currency> get_currencies() override

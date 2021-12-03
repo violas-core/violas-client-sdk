@@ -158,7 +158,8 @@ void test(const Arguments &args)
 
     cout << bytes_to_hex(accounts[0].address.value) << endl;
 
-    client->create_parent_vasp_account(account.address, account.auth_key, "test", false);
+    try_catch([=]()
+              { uint64_t sn = client->create_parent_vasp_account(account.address, account.auth_key, "test", false); });
 
     client->add_currency(0, "XUS");
 

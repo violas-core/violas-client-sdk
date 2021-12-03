@@ -34,8 +34,20 @@ namespace violas
 
         virtual std::vector<Wallet::Account>
         get_all_accounts() = 0;
-
-        virtual void
+        /**
+         * @brief Submit a transaction  with script bytes and return the sequence number of account index
+         *
+         * @param account_index
+         * @param script
+         * @param type_tags
+         * @param args
+         * @param max_gas_amount
+         * @param gas_unit_price
+         * @param gas_currency_code
+         * @param expiration_timestamp_secs
+         * @return uint64_t
+         */
+        virtual uint64_t
         submit_script_byte_code(size_t account_index,
                                 std::vector<uint8_t> script,
                                 std::vector<diem_types::TypeTag> type_tags,
@@ -44,6 +56,39 @@ namespace violas
                                 uint64_t gas_unit_price = 0,
                                 std::string_view gas_currency_code = "VLS",
                                 uint64_t expiration_timestamp_secs = 100) = 0;
+        /**
+         * @brief Submit a raw transaction with multi agent signatures
+         * 
+         * @param account_index 
+         * @param secondary_signer_addresses 
+         * @param secondary_signers 
+         * @param raw_txn 
+         * @param max_gas_amount 
+         * @param gas_unit_price 
+         * @param gas_currency_code 
+         * @param expiration_timestamp_secs 
+         * @return uint64_t     the sequence number of transactions of sender account
+         */
+        virtual uint64_t
+        submit_multi_agnet_raw_txn(size_t account_index,
+                                      std::vector<diem_types::AccountAddress> secondary_signer_addresses,
+                                      std::vector<diem_types::AccountAuthenticator> secondary_signers,
+                                      const diem_types::RawTransaction &raw_txn,
+                                      uint64_t max_gas_amount = 1'000'000,
+                                      uint64_t gas_unit_price = 0,
+                                      std::string_view gas_currency_code = "VLS",
+                                      uint64_t expiration_timestamp_secs = 100) = 0;
+        /**
+         * @brief Check the VM status of transaction, if the VM status is not "executed" it throw a exception with error info
+         *
+         * @param address           account address
+         * @param sequence_number   the sequence number, both of them indicated a transaction sent by an account
+         * @param error_info        if vm status is not "executed", throw an exception with error_info
+         */
+        virtual void
+        check_txn_vm_status(const diem_types::AccountAddress &address,
+                            uint64_t sequence_number,
+                            std::string_view error_info) = 0;
 
         virtual void
         publish_module(size_t account_index,
@@ -55,7 +100,7 @@ namespace violas
         virtual void
         add_currency(size_t account_index, std::string_view currency_code) = 0;
 
-        virtual void
+        virtual uint64_t
         create_parent_vasp_account(const diem_types::AccountAddress &address,
                                    const std::array<uint8_t, 32> &auth_key,
                                    std::string_view human_name,

@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <diem_framework.hpp>
 #include <optional>
+#include <thread>
+#include <chrono>
 
 #include <utils.hpp>
 #include "../include/violas_client2.hpp"
@@ -26,12 +28,12 @@ namespace violas
         // Account Root, Treasure Complaince, Test Designated Dealer
         optional<ed25519::PrivateKey> m_opt_root, m_opt_tc, m_opt_dd;
 
-        map<size_t, json_rpc::AccountView> m_account_infos;
+        map<size_t, json_rpc::AccountView> m_accounts;
 
         uint64_t get_sequence_number(size_t account_index)
         {
             auto accounts = m_wallet->get_all_accounts();
-            return m_rpc_cli->get_account(accounts[account_index].address).sequence_number;
+            return m_rpc_cli->get_account(accounts[account_index].address)->sequence_number;
         }
 
         diem_types::TypeTag make_struct_type_tag(diem_types::AccountAddress address, string_view module, string_view name)
@@ -86,11 +88,16 @@ namespace violas
                     m_opt_root = m_opt_tc = m_opt_dd = ed25519::PrivateKey::from_raw_key(raw_key);
 
                     auto root_account_view = m_rpc_cli->get_account(ROOT_ADDRESS);
-                    m_account_infos[ACCOUNT_ROOT_ID] = root_account_view;
+                    if (root_account_view.has_value())
+                        m_accounts[ACCOUNT_ROOT_ID] = *root_account_view;
+
                     auto tc_account_view = m_rpc_cli->get_account(TC_ADDRESS);
-                    m_account_infos[ACCOUNT_TC_ID] = tc_account_view;
+                    if (tc_account_view.has_value())
+                        m_accounts[ACCOUNT_TC_ID] = *tc_account_view;
+
                     auto dd_account_view = m_rpc_cli->get_account(TESTNET_DD_ADDRESS);
-                    m_account_infos[ACCOUNT_DD_ID] = dd_account_view;
+                    if (dd_account_view.has_value())
+                        m_accounts[ACCOUNT_DD_ID] = *dd_account_view;
                 }
             }
         }
@@ -105,8 +112,9 @@ namespace violas
             auto index_address = m_wallet->create_next_account();
             auto [index, address] = index_address;
 
-            auto account_view = m_rpc_cli->get_account(address);
-            m_account_infos[index] = account_view;
+            auto opt_account_view = m_rpc_cli->get_account(address);
+            if (opt_account_view.has_value())
+                m_accounts[index] = *opt_account_view;
 
             return index_address;
         }
@@ -133,11 +141,19 @@ namespace violas
 
             raw_txn.payload.value = TransactionPayload::Script({std::move(script)});
 
-            auto iter = m_account_infos.find(account_index);
-            if (iter != end(m_account_infos))
+            auto iter = m_accounts.find(account_index);
+            if (iter != end(m_accounts))
             {
                 raw_txn.sequence_number = iter->second.sequence_number;
                 raw_txn.sender = iter->second.address;
+            }
+            else if (auto opt_account_view = m_rpc_cli->get_account(m_wallet->get_all_accounts().at(account_index).address);
+                     opt_account_view.has_value())
+            {
+                m_accounts[account_index] = *opt_account_view;
+                raw_txn.sequence_number = opt_account_view->sequence_number;
+                raw_txn.sender = opt_account_view->address;
+                iter = m_accounts.find(account_index);
             }
             else
                 __throw_runtime_error("Account index does not exist.");
@@ -203,30 +219,47 @@ namespace violas
             return iter->second.sequence_number++;
         }
 
-        void check_vm_status(const json_rpc::VMStatus &vm_status, string_view info)
+        void check_txn_vm_status(const diem_types::AccountAddress &address, uint64_t sequence_number, string_view error_info) override
         {
-            using VMStatus = json_rpc::VMStatus;
+            using namespace json_rpc;
+            optional<TransactionView> opt_txn_view = nullopt;
 
-            std::visit(overloaded{[](VMStatus::Executed status) {},
-                                  [](VMStatus::OutOfGas status)
-                                  {
-                                      __throw_runtime_error(status.type.c_str());
-                                  },
-                                  [=](VMStatus::MoveAbort status)
-                                  {
-                                      ostringstream oss;
-                                      oss << info << " error, " 
-                                      << "vm_status : {"
-                                          << "type : " << status.type << " "
-                                          << "abort code : " << status.abort_code
-                                          << " }"
-                                          << endl;
-                                      __throw_runtime_error(oss.str().c_str());
-                                  }},
-                       vm_status.value);
+            for (int i = 0; i < 50; i++)
+            {
+                opt_txn_view = m_rpc_cli->get_account_transaction(address, sequence_number, false);
+                if (opt_txn_view.has_value())
+                    break;
+
+                this_thread::sleep_for(chrono::milliseconds(100)); // 0.1 second
+            }
+
+            if (opt_txn_view.has_value())
+            {
+                std::visit(
+                    overloaded{[](VMStatus::Executed status) {},
+                               [](VMStatus::OutOfGas status)
+                               {
+                                   __throw_runtime_error(status.type.c_str());
+                               },
+                               [=](VMStatus::MoveAbort status)
+                               {
+                                   ostringstream oss;
+
+                                   oss << error_info << " error, "
+                                       << "vm_status : { "
+                                       << "type : " << status.type << ", "
+                                       << "abort code : " << status.abort_code
+                                       << " }"
+                                       << endl;
+                                   __throw_runtime_error(oss.str().c_str());
+                               }},
+                    opt_txn_view->vm_status.value);
+            }
+            else
+                __throw_runtime_error("check_txn_vm_status is timeout.");
         }
 
-        virtual void
+        virtual uint64_t
         submit_script_byte_code(size_t account_index,
                                 std::vector<uint8_t> script_byte_code,
                                 std::vector<diem_types::TypeTag> type_tags,
@@ -236,12 +269,63 @@ namespace violas
                                 std::string_view gas_currency_code,
                                 uint64_t expiration_timestamp_secs) override
         {
-            this->submit_script(account_index,
-                                diem_types::Script({script_byte_code, type_tags, args}),
-                                max_gas_amount,
-                                gas_unit_price,
-                                gas_currency_code,
-                                expiration_timestamp_secs);
+            return this->submit_script(account_index,
+                                       diem_types::Script({script_byte_code, type_tags, args}),
+                                       max_gas_amount,
+                                       gas_unit_price,
+                                       gas_currency_code,
+                                       expiration_timestamp_secs);
+        }
+
+        virtual uint64_t
+        submit_multi_agnet_raw_txn(size_t account_index,
+                                   std::vector<diem_types::AccountAddress> secondary_signer_addresses,
+                                   std::vector<diem_types::AccountAuthenticator> secondary_signers,
+                                   const diem_types::RawTransaction &,
+                                   uint64_t max_gas_amount = 1'000'000,
+                                   uint64_t gas_unit_price = 0,
+                                   std::string_view gas_currency_code = "VLS",
+                                   uint64_t expiration_timestamp_secs = 100) override
+        {
+            using namespace diem_types;
+
+            SignedTransaction signed_txn;
+            RawTransaction &raw_txn = signed_txn.raw_txn;
+
+            auto iter = m_accounts.find(account_index);
+            if (iter != end(m_accounts))
+            {
+                raw_txn.sequence_number = iter->second.sequence_number;
+                raw_txn.sender = iter->second.address;
+            }
+            else if (auto opt_account_view = m_rpc_cli->get_account(m_wallet->get_all_accounts().at(account_index).address);
+                     opt_account_view.has_value())
+            {
+                m_accounts[account_index] = *opt_account_view;
+                raw_txn.sequence_number = opt_account_view->sequence_number;
+                raw_txn.sender = opt_account_view->address;
+                iter = m_accounts.find(account_index);
+            }
+            else
+                __throw_runtime_error("Account index does not exist.");
+
+            // Sign for flag + raw transaction + secondary_signer_addresses
+            string_view flag = "DIEM::RawTransaction";
+            auto hash = sha3_256((uint8_t *)flag.data(), flag.size());
+
+            auto bytes = raw_txn.bcsSerialize();
+
+            vector<uint8_t> message(begin(hash), end(hash));
+
+            copy(begin(bytes), end(bytes), back_insert_iterator(message));
+
+            diem_framework::BcsSerializer bcs;
+
+            //bcs
+
+            m_rpc_cli->submit(signed_txn);
+
+            return iter->second.sequence_number++;
         }
 
         virtual void
@@ -253,12 +337,16 @@ namespace violas
         virtual void
         add_currency(size_t account_index, std::string_view currency_code) override
         {
-            submit_script(account_index,
-                          diem_framework::encode_add_currency_to_account_script(
-                              make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)));
+            auto sn = submit_script(account_index,
+                                    diem_framework::encode_add_currency_to_account_script(
+                                        make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)));
+
+            this->check_txn_vm_status(m_accounts[account_index].address,
+                                      sn,
+                                      "add_currency");
         }
 
-        virtual void
+        virtual uint64_t
         create_parent_vasp_account(
             const diem_types::AccountAddress &address,
             const std::array<uint8_t, 32> &auth_key,
@@ -268,18 +356,19 @@ namespace violas
             if (m_opt_tc == std::nullopt)
                 __throw_runtime_error("TC account is null, please specify the mint key file.");
 
-            uint64_t sn = submit_script(ACCOUNT_TC_ID,
-                                        diem_framework::encode_create_parent_vasp_account_script(
-                                            make_struct_type_tag(STD_LIB_ADDRESS, "VLS", "VLS"),
-                                            0,
-                                            address,
-                                            vector<uint8_t>(begin(auth_key), begin(auth_key) + 16),
-                                            vector<uint8_t>(human_name.data(), human_name.data() + human_name.size()),
-                                            add_all_currencies));
+            uint64_t sn = this->submit_script(
+                ACCOUNT_TC_ID,
+                diem_framework::encode_create_parent_vasp_account_script(
+                    make_struct_type_tag(STD_LIB_ADDRESS, "VLS", "VLS"),
+                    0,
+                    address,
+                    vector<uint8_t>(begin(auth_key), begin(auth_key) + 16),
+                    vector<uint8_t>(human_name.data(), human_name.data() + human_name.size()),
+                    add_all_currencies));
 
-            auto txn_view = m_rpc_cli->get_account_transaction(m_account_infos[ACCOUNT_TC_ID].address, sn, false);
+            this->check_txn_vm_status(TC_ADDRESS, sn, "create_parent_vasp_account");
 
-            check_vm_status(txn_view.vm_status, "create_parent_vasp_account");
+            return sn;
         }
 
         virtual void
@@ -290,13 +379,16 @@ namespace violas
                                   uint64_t child_initial_balance,
                                   bool add_all_currencies = false) override
         {
-            submit_script(account_index,
-                          diem_framework::encode_create_child_vasp_account_script(
-                              make_struct_type_tag(STD_LIB_ADDRESS, currency, currency),
-                              address,
-                              vector<uint8_t>(begin(auth_key), begin(auth_key) + 16),
-                              add_all_currencies,
-                              child_initial_balance));
+            uint64_t sn = this->submit_script(
+                account_index,
+                diem_framework::encode_create_child_vasp_account_script(
+                    make_struct_type_tag(STD_LIB_ADDRESS, currency, currency),
+                    address,
+                    vector<uint8_t>(begin(auth_key), begin(auth_key) + 16),
+                    add_all_currencies,
+                    child_initial_balance));
+
+            this->check_txn_vm_status(m_accounts[account_index].address, sn, "create_child_vasp_account");
         }
     };
 

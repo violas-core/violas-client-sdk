@@ -57,27 +57,51 @@ namespace violas
                                 std::string_view gas_currency_code = "VLS",
                                 uint64_t expiration_timestamp_secs = 100) = 0;
         /**
-         * @brief Submit a raw transaction with multi agent signatures
+         * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
          * 
          * @param account_index 
+         * @param script 
+         * @param type_tags 
+         * @param args 
          * @param secondary_signer_addresses 
-         * @param secondary_signers 
-         * @param raw_txn 
          * @param max_gas_amount 
          * @param gas_unit_price 
          * @param gas_currency_code 
          * @param expiration_timestamp_secs 
+         * @return SignedTransaction 
+         */
+        virtual diem_types::SignedTransaction
+        sign_multi_agent_script_bytes_code(size_t account_index,
+                                           std::vector<uint8_t> script,
+                                           std::vector<diem_types::TypeTag> type_tags,
+                                           std::vector<diem_types::TransactionArgument> args,
+                                           std::vector<diem_types::AccountAddress> secondary_signer_addresses,                                           
+                                           uint64_t max_gas_amount = 1'000'000,
+                                           uint64_t gas_unit_price = 0,
+                                           std::string_view gas_currency_code = "VLS",
+                                           uint64_t expiration_timestamp_secs = 100) = 0;
+        /**
+         * @brief Submit a raw transaction with multi agent signatures
+         *
+         * @param account_index
+         * @param secondary_signer_addresses
+         * @param secondary_signers
+         * @param raw_txn
+         * @param max_gas_amount
+         * @param gas_unit_price
+         * @param gas_currency_code
+         * @param expiration_timestamp_secs
          * @return uint64_t     the sequence number of transactions of sender account
          */
         virtual uint64_t
         submit_multi_agnet_raw_txn(size_t account_index,
-                                      std::vector<diem_types::AccountAddress> secondary_signer_addresses,
-                                      std::vector<diem_types::AccountAuthenticator> secondary_signers,
-                                      const diem_types::RawTransaction &raw_txn,
-                                      uint64_t max_gas_amount = 1'000'000,
-                                      uint64_t gas_unit_price = 0,
-                                      std::string_view gas_currency_code = "VLS",
-                                      uint64_t expiration_timestamp_secs = 100) = 0;
+                                   std::vector<diem_types::AccountAddress> secondary_signer_addresses,
+                                   std::vector<diem_types::AccountAuthenticator> secondary_signers,
+                                   const diem_types::RawTransaction &raw_txn,
+                                   uint64_t max_gas_amount = 1'000'000,
+                                   uint64_t gas_unit_price = 0,
+                                   std::string_view gas_currency_code = "VLS",
+                                   uint64_t expiration_timestamp_secs = 100) = 0;
         /**
          * @brief Check the VM status of transaction, if the VM status is not "executed" it throw a exception with error info
          *

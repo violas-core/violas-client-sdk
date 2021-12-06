@@ -276,6 +276,38 @@ namespace violas
                                        gas_currency_code,
                                        expiration_timestamp_secs);
         }
+        /**
+         * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
+         * 
+         * @param account_index 
+         * @param script 
+         * @param type_tags 
+         * @param args 
+         * @param secondary_signer_addresses 
+         * @param max_gas_amount 
+         * @param gas_unit_price 
+         * @param gas_currency_code 
+         * @param expiration_timestamp_secs 
+         * @return SignedTransaction 
+         */
+        virtual diem_types::SignedTransaction
+        sign_multi_agent_script_bytes_code(size_t account_index,
+                                           std::vector<uint8_t> script,
+                                           std::vector<diem_types::TypeTag> type_tags,
+                                           std::vector<diem_types::TransactionArgument> args,
+                                           std::vector<diem_types::AccountAddress> secondary_signer_addresses,                                           
+                                           uint64_t max_gas_amount = 1'000'000,
+                                           uint64_t gas_unit_price = 0,
+                                           std::string_view gas_currency_code = "VLS",
+                                           uint64_t expiration_timestamp_secs = 100) override
+        {
+            using namespace diem_types;
+            
+            SignedTransaction signed_txn;
+            //signed_txn.raw_txn = move(raw_txn);
+
+            return signed_txn;
+        }
 
         virtual uint64_t
         submit_multi_agnet_raw_txn(size_t account_index,
@@ -291,6 +323,12 @@ namespace violas
 
             SignedTransaction signed_txn;
             RawTransaction &raw_txn = signed_txn.raw_txn;
+
+            raw_txn.max_gas_amount = max_gas_amount;
+            raw_txn.gas_unit_price = gas_unit_price;
+            raw_txn.gas_currency_code = gas_currency_code;
+            raw_txn.expiration_timestamp_secs = time(nullptr) + expiration_timestamp_secs;
+            raw_txn.chain_id = diem_types::ChainId{m_chain_id};
 
             auto iter = m_accounts.find(account_index);
             if (iter != end(m_accounts))
@@ -313,15 +351,60 @@ namespace violas
             string_view flag = "DIEM::RawTransaction";
             auto hash = sha3_256((uint8_t *)flag.data(), flag.size());
 
-            auto bytes = raw_txn.bcsSerialize();
-
             vector<uint8_t> message(begin(hash), end(hash));
 
+            auto bytes = raw_txn.bcsSerialize();
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
 
-            diem_framework::BcsSerializer bcs;
+            // Serialize secondary signer addresses
+            auto serializer = serde::BcsSerializer();
+            serde::Serializable<std::vector<diem_types::AccountAddress>>::serialize(secondary_signer_addresses, serializer);
+            bytes = std::move(serializer).bytes();
+            copy(begin(bytes), end(bytes), back_insert_iterator(message));
 
-            //bcs
+            TransactionAuthenticator::MultiAgent multi_agent_auth;
+
+            // Set sender's authenticator
+            if (account_index == ACCOUNT_ROOT_ID)
+            {
+                ed25519::Signature signature = m_opt_root->sign(message.data(), message.size());
+                multi_agent_auth.sender.value = AccountAuthenticator::Ed25519{
+                    Ed25519PublicKey{u8_array_to_vector(m_opt_root->get_public_key().get_raw_key())},
+                    Ed25519Signature{u8_array_to_vector(signature)}};
+            }
+            else if (account_index == ACCOUNT_TC_ID)
+            {
+                auto priv_key = m_opt_tc->get_public_key().get_raw_key();
+
+                ed25519::Signature signature = m_opt_tc->sign(message.data(), message.size());
+                multi_agent_auth.sender.value = AccountAuthenticator::Ed25519{
+                    Ed25519PublicKey{u8_array_to_vector(m_opt_tc->get_public_key().get_raw_key())},
+                    Ed25519Signature{u8_array_to_vector(signature)}};
+            }
+            else if (account_index == ACCOUNT_DD_ID)
+            {
+                ed25519::Signature signature = m_opt_dd->sign(message.data(), message.size());
+                multi_agent_auth.sender.value = AccountAuthenticator::Ed25519{
+                    Ed25519PublicKey{u8_array_to_vector(m_opt_tc->get_public_key().get_raw_key())},
+                    Ed25519Signature{u8_array_to_vector(signature)}};
+            }
+            else
+            {
+                auto priv_key = m_wallet->get_account_priv_key(account_index);
+
+                ed25519::Signature signature = priv_key.sign(message.data(), message.size());
+
+                multi_agent_auth.sender.value = AccountAuthenticator::Ed25519{
+                    Ed25519PublicKey{u8_array_to_vector(priv_key.get_public_key().get_raw_key())},
+                    Ed25519Signature{u8_array_to_vector(signature)}};
+            }
+            
+
+            // Set scondary address and signature
+            multi_agent_auth.secondary_signer_addresses = secondary_signer_addresses;
+            multi_agent_auth.secondary_signers = secondary_signers;
+
+            signed_txn.authenticator.value = multi_agent_auth;
 
             m_rpc_cli->submit(signed_txn);
 
@@ -400,5 +483,4 @@ namespace violas
     {
         return make_shared<Client2Imp>(url, chain_id, mnemonic, mint_key);
     }
-
 }

@@ -12,6 +12,10 @@ echo "build create_designated_dealer_ex.move"
 ../build.sh scripts/create_designated_dealer_ex.move
 mv build/scripts/create_designated_dealer_ex.mv scripts/
 
+echo "build modules/register_stable_currency.move"
+../build.sh scripts/register_stable_currency.move
+mv build/scripts/register_stable_currency.mv scripts/
+
 # echo "build distribute_vls_from_community.move"
 ../build.sh scripts/distribute_vls_from_community.move ../bank/bank.move ../oracle/oracle.move ../exchange/exchange.move
 mv build/scripts/distribute_vls_from_community.mv scripts/
@@ -83,5 +87,6 @@ mv build/scripts/nft_store_register_nft.mv scripts/
 mv build/scripts/nft_store_accept.mv scripts/
 mv build/scripts/nft_store_make_order.mv scripts/
 mv build/scripts/nft_store_revoke_order.mv scripts/
+
 
 rm -rf build

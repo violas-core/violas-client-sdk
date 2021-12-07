@@ -216,6 +216,7 @@ namespace violas
 
             m_rpc_cli->submit(signed_txn);
 
+            // return the current sequence number and then increment it
             return iter->second.sequence_number++;
         }
 
@@ -278,70 +279,57 @@ namespace violas
         }
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
-         * 
-         * @param account_index 
-         * @param script 
-         * @param type_tags 
-         * @param args 
-         * @param secondary_signer_addresses 
-         * @param max_gas_amount 
-         * @param gas_unit_price 
-         * @param gas_currency_code 
-         * @param expiration_timestamp_secs 
-         * @return SignedTransaction 
+         *
+         * @param account_index
+         * @param script
+         * @param type_tags
+         * @param args
+         * @param secondary_signer_addresses
+         * @param max_gas_amount
+         * @param gas_unit_price
+         * @param gas_currency_code
+         * @param expiration_timestamp_secs
+         * @return SignedTransaction
          */
         virtual diem_types::SignedTransaction
         sign_multi_agent_script_bytes_code(size_t account_index,
-                                           std::vector<uint8_t> script,
+                                           std::vector<uint8_t> script_bytes_code,
                                            std::vector<diem_types::TypeTag> type_tags,
                                            std::vector<diem_types::TransactionArgument> args,
-                                           std::vector<diem_types::AccountAddress> secondary_signer_addresses,                                           
+                                           std::vector<diem_types::AccountAddress> secondary_signer_addresses,
                                            uint64_t max_gas_amount = 1'000'000,
                                            uint64_t gas_unit_price = 0,
                                            std::string_view gas_currency_code = "VLS",
                                            uint64_t expiration_timestamp_secs = 100) override
         {
             using namespace diem_types;
-            
-            SignedTransaction signed_txn;
-            //signed_txn.raw_txn = move(raw_txn);
-
-            return signed_txn;
-        }
-
-        virtual uint64_t
-        submit_multi_agnet_raw_txn(size_t account_index,
-                                   std::vector<diem_types::AccountAddress> secondary_signer_addresses,
-                                   std::vector<diem_types::AccountAuthenticator> secondary_signers,
-                                   const diem_types::RawTransaction &,
-                                   uint64_t max_gas_amount = 1'000'000,
-                                   uint64_t gas_unit_price = 0,
-                                   std::string_view gas_currency_code = "VLS",
-                                   uint64_t expiration_timestamp_secs = 100) override
-        {
-            using namespace diem_types;
 
             SignedTransaction signed_txn;
             RawTransaction &raw_txn = signed_txn.raw_txn;
 
+            // Set transaction payload
+            raw_txn.payload.value = TransactionPayload::Script{{script_bytes_code, type_tags, args}};
             raw_txn.max_gas_amount = max_gas_amount;
             raw_txn.gas_unit_price = gas_unit_price;
             raw_txn.gas_currency_code = gas_currency_code;
             raw_txn.expiration_timestamp_secs = time(nullptr) + expiration_timestamp_secs;
             raw_txn.chain_id = diem_types::ChainId{m_chain_id};
 
+            // Set sender and sequence number
             auto iter = m_accounts.find(account_index);
             if (iter != end(m_accounts))
             {
-                raw_txn.sequence_number = iter->second.sequence_number;
                 raw_txn.sender = iter->second.address;
+                raw_txn.sequence_number = iter->second.sequence_number;
             }
             else if (auto opt_account_view = m_rpc_cli->get_account(m_wallet->get_all_accounts().at(account_index).address);
                      opt_account_view.has_value())
             {
-                m_accounts[account_index] = *opt_account_view;
-                raw_txn.sequence_number = opt_account_view->sequence_number;
                 raw_txn.sender = opt_account_view->address;
+                raw_txn.sequence_number = opt_account_view->sequence_number;
+
+                // Update m_accounts and iter
+                m_accounts[account_index] = *opt_account_view;
                 iter = m_accounts.find(account_index);
             }
             else
@@ -362,6 +350,7 @@ namespace violas
             bytes = std::move(serializer).bytes();
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
 
+            // Set
             TransactionAuthenticator::MultiAgent multi_agent_auth;
 
             // Set sender's authenticator
@@ -398,17 +387,95 @@ namespace violas
                     Ed25519PublicKey{u8_array_to_vector(priv_key.get_public_key().get_raw_key())},
                     Ed25519Signature{u8_array_to_vector(signature)}};
             }
-            
 
-            // Set scondary address and signature
-            multi_agent_auth.secondary_signer_addresses = secondary_signer_addresses;
-            multi_agent_auth.secondary_signers = secondary_signers;
-
+            // Set authenticator for signed txn
             signed_txn.authenticator.value = multi_agent_auth;
+
+            return signed_txn;
+        }
+
+        /**
+         * @brief Submit a multi agent signed transaction
+         *
+         * @param account_index
+         * @param txn
+         * @param secondary_signer_addresse
+         * @return uint64_t
+         */
+        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        submit_multi_agnet_signed_txn(size_t account_index,
+                                      diem_types::SignedTransaction &&signed_txn,
+                                      std::vector<diem_types::AccountAddress> secondary_signer_addresses) override
+        {
+            using namespace diem_types;
+            const RawTransaction &raw_txn = signed_txn.raw_txn;
+
+            // Sign for flag + raw transaction + secondary_signer_addresses
+            string_view flag = "DIEM::RawTransaction";
+            auto hash = sha3_256((uint8_t *)flag.data(), flag.size());
+
+            vector<uint8_t> message(begin(hash), end(hash));
+
+            auto bytes = raw_txn.bcsSerialize();
+            copy(begin(bytes), end(bytes), back_insert_iterator(message));
+
+            // Serialize secondary signer addresses
+            auto serializer = serde::BcsSerializer();
+            serde::Serializable<std::vector<diem_types::AccountAddress>>::serialize(secondary_signer_addresses, serializer);
+            bytes = std::move(serializer).bytes();
+            copy(begin(bytes), end(bytes), back_insert_iterator(message));
+
+            // Set
+            auto &multi_agent_auth = get<TransactionAuthenticator::MultiAgent>(signed_txn.authenticator.value);
+
+            // Set sender's authenticator
+            if (account_index == ACCOUNT_ROOT_ID)
+            {
+                ed25519::Signature signature = m_opt_root->sign(message.data(), message.size());
+                multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
+
+                multi_agent_auth.secondary_signers.push_back(
+                    {AccountAuthenticator::Ed25519{
+                        Ed25519PublicKey{u8_array_to_vector(m_opt_root->get_public_key().get_raw_key())},
+                        Ed25519Signature{u8_array_to_vector(signature)}}});
+            }
+            else if (account_index == ACCOUNT_TC_ID)
+            {
+
+                ed25519::Signature signature = m_opt_tc->sign(message.data(), message.size());
+
+                multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
+
+                multi_agent_auth.secondary_signers.push_back(
+                    {AccountAuthenticator::Ed25519{
+                        Ed25519PublicKey{u8_array_to_vector(m_opt_tc->get_public_key().get_raw_key())},
+                        Ed25519Signature{u8_array_to_vector(signature)}}});
+            }
+            else if (account_index == ACCOUNT_DD_ID)
+            {
+                ed25519::Signature signature = m_opt_dd->sign(message.data(), message.size());
+
+                multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
+                multi_agent_auth.secondary_signers.push_back(
+                    {AccountAuthenticator::Ed25519{
+                        Ed25519PublicKey{u8_array_to_vector(m_opt_tc->get_public_key().get_raw_key())},
+                        Ed25519Signature{u8_array_to_vector(signature)}}});
+            }
+            else
+            {
+                auto priv_key = m_wallet->get_account_priv_key(account_index);
+                ed25519::Signature signature = priv_key.sign(message.data(), message.size());
+
+                multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
+                multi_agent_auth.secondary_signers.push_back(
+                    {AccountAuthenticator::Ed25519{
+                        Ed25519PublicKey{u8_array_to_vector(priv_key.get_public_key().get_raw_key())},
+                        Ed25519Signature{u8_array_to_vector(signature)}}});
+            }
 
             m_rpc_cli->submit(signed_txn);
 
-            return iter->second.sequence_number++;
+            return make_tuple<>(raw_txn.sender, raw_txn.sequence_number);
         }
 
         virtual void
@@ -472,6 +539,23 @@ namespace violas
                     child_initial_balance));
 
             this->check_txn_vm_status(m_accounts[account_index].address, sn, "create_child_vasp_account");
+        }
+        /**
+         * @brief Registers a stable currency coin
+         *
+         * @param currency_code
+         * @param exchange_rate_denom
+         * @param exchange_rate_num
+         * @param scaling_factor
+         * @param fractional_part
+         */
+        virtual void
+        regiester_stable_currency(std::string_view currency_code,
+                                  uint64_t exchange_rate_denom,
+                                  uint64_t exchange_rate_num,
+                                  uint64_t scaling_factor,
+                                  uint64_t fractional_part) override
+        {
         }
     };
 

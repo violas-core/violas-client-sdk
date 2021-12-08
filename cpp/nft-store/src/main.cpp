@@ -158,12 +158,14 @@ void test(const Arguments &args)
 
     cout << bytes_to_hex(accounts[0].address.value) << endl;
 
-    try_catch([=]()
-              { uint64_t sn = client->create_parent_vasp_account(account.address, account.auth_key, "test", false); });
+    client->regiester_stable_currency("EUR", 1, 1, 1'000'000, 1'000'000);
 
-    client->add_currency(0, "XUS");
+    // try_catch([=]()
+    //           { uint64_t sn = client->create_parent_vasp_account(account.address, account.auth_key, "test", false); });
 
-    auto &child = accounts[1];
+    // client->add_currency(0, "XUS");
 
-    client->create_child_vasp_account(0, child.address, child.auth_key, "VSL", 0, false);
+    // auto &child = accounts[1];
+
+    // client->create_child_vasp_account(0, child.address, child.auth_key, "VSL", 0, false);
 }

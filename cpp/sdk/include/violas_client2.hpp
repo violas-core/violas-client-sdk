@@ -71,15 +71,13 @@ namespace violas
          * @return SignedTransaction
          */
         virtual diem_types::SignedTransaction
-        sign_multi_agent_script_bytes_code(size_t account_index,
-                                           std::vector<uint8_t> script,
-                                           std::vector<diem_types::TypeTag> type_tags,
-                                           std::vector<diem_types::TransactionArgument> args,
-                                           std::vector<diem_types::AccountAddress> secondary_signer_addresses,
-                                           uint64_t max_gas_amount = 1'000'000,
-                                           uint64_t gas_unit_price = 0,
-                                           std::string_view gas_currency_code = "VLS",
-                                           uint64_t expiration_timestamp_secs = 100) = 0;
+        sign_multi_agent_script(size_t account_index,
+                                diem_types::Script &&script,
+                                std::vector<diem_types::AccountAddress> secondary_signer_addresses,
+                                uint64_t max_gas_amount = 1'000'000,
+                                uint64_t gas_unit_price = 0,
+                                std::string_view gas_currency_code = "VLS",
+                                uint64_t expiration_timestamp_secs = 100) = 0;
         /**
          * @brief Submit a multi agent signed transaction
          *
@@ -90,9 +88,8 @@ namespace violas
          *          return the sender's address and sequence number
          */
         virtual std::tuple<diem_types::AccountAddress, uint64_t>
-        submit_multi_agnet_signed_txn(size_t account_index,
-                                      diem_types::SignedTransaction &&txn,
-                                      std::vector<diem_types::AccountAddress> secondary_signer_addresse) = 0;
+        sign_and_submit_multi_agent_signed_txn(size_t account_index,
+                                               diem_types::SignedTransaction &&txn) = 0;
         /**
          * @brief Check the VM status of transaction, if the VM status is not "executed" it throw a exception with error info
          *
@@ -107,7 +104,7 @@ namespace violas
 
         virtual void
         publish_module(size_t account_index,
-                       std::vector<uint8_t> module) = 0;
+                       std::vector<uint8_t> module_bytes_code) = 0;
 
         ////////////////////////////////////////////////////////////////
         // Methods for Violas framework
@@ -130,12 +127,12 @@ namespace violas
                                   bool add_all_currencies = false) = 0;
         /**
          * @brief Registers a stable currency coin
-         * 
-         * @param currency_code 
-         * @param exchange_rate_denom 
-         * @param exchange_rate_num 
-         * @param scaling_factor 
-         * @param fractional_part 
+         *
+         * @param currency_code
+         * @param exchange_rate_denom
+         * @param exchange_rate_num
+         * @param scaling_factor
+         * @param fractional_part
          */
         virtual void
         regiester_stable_currency(std::string_view currency_code,

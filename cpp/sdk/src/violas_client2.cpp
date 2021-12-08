@@ -128,18 +128,18 @@ namespace violas
         // submit a script and return sequence number of sender's account
         //
         uint64_t
-        submit_script(size_t account_index,
-                      diem_types::Script &&script,
-                      uint64_t max_gas_amount = 1'000'000,
-                      uint64_t gas_unit_price = 0,
-                      std::string_view gas_currency_code = "VLS",
-                      uint64_t expiration_timestamp_secs = 100)
+        submit_txn_paylod(size_t account_index,
+                          diem_types::TransactionPayload &&txn_paylod,
+                          uint64_t max_gas_amount = 1'000'000,
+                          uint64_t gas_unit_price = 0,
+                          std::string_view gas_currency_code = "VLS",
+                          uint64_t expiration_timestamp_secs = 100)
         {
             using namespace diem_types;
             SignedTransaction signed_txn;
             RawTransaction &raw_txn = signed_txn.raw_txn;
 
-            raw_txn.payload.value = TransactionPayload::Script({std::move(script)});
+            raw_txn.payload = txn_paylod;
 
             auto iter = m_accounts.find(account_index);
             if (iter != end(m_accounts))
@@ -220,6 +220,40 @@ namespace violas
             return iter->second.sequence_number++;
         }
 
+        uint64_t
+        submit_script(size_t account_index,
+                      diem_types::Script &&script,
+                      uint64_t max_gas_amount = 1'000'000,
+                      uint64_t gas_unit_price = 0,
+                      std::string_view gas_currency_code = "VLS",
+                      uint64_t expiration_timestamp_secs = 100)
+        {
+            return this->submit_txn_paylod(
+                account_index,
+                {diem_types::TransactionPayload::Script{script}},
+                max_gas_amount,
+                gas_unit_price,
+                gas_currency_code,
+                expiration_timestamp_secs);
+        }
+
+        uint64_t
+        submit_module(size_t account_index,
+                      diem_types::Module &&module,
+                      uint64_t max_gas_amount = 1'000'000,
+                      uint64_t gas_unit_price = 0,
+                      std::string_view gas_currency_code = "VLS",
+                      uint64_t expiration_timestamp_secs = 100)
+        {
+            return this->submit_txn_paylod(
+                account_index,
+                {diem_types::TransactionPayload::Module{module}},
+                max_gas_amount,
+                gas_unit_price,
+                gas_currency_code,
+                expiration_timestamp_secs);
+        }
+
         void check_txn_vm_status(const diem_types::AccountAddress &address, uint64_t sequence_number, string_view error_info) override
         {
             using namespace json_rpc;
@@ -270,12 +304,15 @@ namespace violas
                                 std::string_view gas_currency_code,
                                 uint64_t expiration_timestamp_secs) override
         {
-            return this->submit_script(account_index,
-                                       diem_types::Script({script_byte_code, type_tags, args}),
-                                       max_gas_amount,
-                                       gas_unit_price,
-                                       gas_currency_code,
-                                       expiration_timestamp_secs);
+            using namespace diem_types;
+
+            return this->submit_txn_paylod(
+                account_index,
+                {TransactionPayload::Script({diem_types::Script({script_byte_code, type_tags, args})})},
+                max_gas_amount,
+                gas_unit_price,
+                gas_currency_code,
+                expiration_timestamp_secs);
         }
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
@@ -292,15 +329,13 @@ namespace violas
          * @return SignedTransaction
          */
         virtual diem_types::SignedTransaction
-        sign_multi_agent_script_bytes_code(size_t account_index,
-                                           std::vector<uint8_t> script_bytes_code,
-                                           std::vector<diem_types::TypeTag> type_tags,
-                                           std::vector<diem_types::TransactionArgument> args,
-                                           std::vector<diem_types::AccountAddress> secondary_signer_addresses,
-                                           uint64_t max_gas_amount = 1'000'000,
-                                           uint64_t gas_unit_price = 0,
-                                           std::string_view gas_currency_code = "VLS",
-                                           uint64_t expiration_timestamp_secs = 100) override
+        sign_multi_agent_script(size_t account_index,
+                                diem_types::Script &&script,
+                                std::vector<diem_types::AccountAddress> secondary_signer_addresses,
+                                uint64_t max_gas_amount = 1'000'000,
+                                uint64_t gas_unit_price = 0,
+                                std::string_view gas_currency_code = "VLS",
+                                uint64_t expiration_timestamp_secs = 100) override
         {
             using namespace diem_types;
 
@@ -308,7 +343,7 @@ namespace violas
             RawTransaction &raw_txn = signed_txn.raw_txn;
 
             // Set transaction payload
-            raw_txn.payload.value = TransactionPayload::Script{{script_bytes_code, type_tags, args}};
+            raw_txn.payload.value = TransactionPayload::Script{script};
             raw_txn.max_gas_amount = max_gas_amount;
             raw_txn.gas_unit_price = gas_unit_price;
             raw_txn.gas_currency_code = gas_currency_code;
@@ -346,12 +381,13 @@ namespace violas
 
             // Serialize secondary signer addresses
             auto serializer = serde::BcsSerializer();
-            serde::Serializable<std::vector<diem_types::AccountAddress>>::serialize(secondary_signer_addresses, serializer);
+            serde::Serializable<vector<AccountAddress>>::serialize(secondary_signer_addresses, serializer);
             bytes = std::move(serializer).bytes();
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
 
-            // Set
+            // Set multi agent authenticators
             TransactionAuthenticator::MultiAgent multi_agent_auth;
+            multi_agent_auth.secondary_signer_addresses = secondary_signer_addresses;
 
             // Set sender's authenticator
             if (account_index == ACCOUNT_ROOT_ID)
@@ -403,12 +439,13 @@ namespace violas
          * @return uint64_t
          */
         virtual std::tuple<diem_types::AccountAddress, uint64_t>
-        submit_multi_agnet_signed_txn(size_t account_index,
-                                      diem_types::SignedTransaction &&signed_txn,
-                                      std::vector<diem_types::AccountAddress> secondary_signer_addresses) override
+        sign_and_submit_multi_agent_signed_txn(size_t account_index,
+                                               diem_types::SignedTransaction &&signed_txn) override
         {
             using namespace diem_types;
             const RawTransaction &raw_txn = signed_txn.raw_txn;
+            auto &multi_agent_auth = get<TransactionAuthenticator::MultiAgent>(signed_txn.authenticator.value);
+            auto &secondary_signer_addresses = multi_agent_auth.secondary_signer_addresses;
 
             // Sign for flag + raw transaction + secondary_signer_addresses
             string_view flag = "DIEM::RawTransaction";
@@ -426,7 +463,6 @@ namespace violas
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
 
             // Set
-            auto &multi_agent_auth = get<TransactionAuthenticator::MultiAgent>(signed_txn.authenticator.value);
 
             // Set sender's authenticator
             if (account_index == ACCOUNT_ROOT_ID)
@@ -480,8 +516,9 @@ namespace violas
 
         virtual void
         publish_module(size_t account_index,
-                       std::vector<uint8_t> module) override
+                       std::vector<uint8_t> module_bytes_code) override
         {
+            this->submit_module(account_index, {module_bytes_code});
         }
 
         virtual void
@@ -540,6 +577,32 @@ namespace violas
 
             this->check_txn_vm_status(m_accounts[account_index].address, sn, "create_child_vasp_account");
         }
+
+        void publish_currency_module(std::string_view currency_code)
+        {
+            bytes module_bytes_code;
+
+            if (currency_code.size() == 3)
+            {
+                uint8_t currency_module[] = {
+                    161, 28, 235, 11, 2, 0, 0, 0, 5, 1, 0, 2, 2, 2, 4, 7, 6, 16, 8, 22, 16, 10, 38, 5,
+                    0, 0, 0, 0, 4, 0, 3, 85, 83, 68, 11, 100, 117, 109, 109, 121, 95, 102, 105, 101,
+                    108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 0};
+
+                string_view sym = "USD";
+                auto iter = search(begin(currency_module), end(currency_module), begin(sym), end(sym));
+                if (iter != end(currency_module))
+                {
+                    // replace currency code with new code
+                    copy(begin(currency_code), end(currency_code), iter);
+                }
+
+                module_bytes_code = move(bytes(begin(currency_module), end(currency_module)));
+            }
+
+            this->publish_module(ACCOUNT_ROOT_ID, module_bytes_code);
+        }
+
         /**
          * @brief Registers a stable currency coin
          *
@@ -556,6 +619,27 @@ namespace violas
                                   uint64_t scaling_factor,
                                   uint64_t fractional_part) override
         {
+            using ta = diem_types::TransactionArgument;
+
+            this->publish_currency_module(currency_code);
+
+            bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 7, 1, 0, 6, 2, 6, 4, 3, 10, 17, 4, 27, 4, 5, 31, 33, 7, 64, 103, 8, 167, 1, 16, 0, 0, 0, 1, 0, 2, 2, 2, 7, 0, 2, 3, 3, 1, 0, 1, 4, 5, 2, 1, 0, 0, 5, 6, 2, 1, 0, 1, 4, 2, 4, 7, 12, 12, 3, 3, 3, 3, 10, 2, 1, 8, 0, 0, 2, 3, 3, 1, 9, 0, 6, 6, 12, 6, 12, 8, 0, 3, 3, 10, 2, 1, 6, 12, 13, 65, 99, 99, 111, 117, 110, 116, 76, 105, 109, 105, 116, 115, 4, 68, 105, 101, 109, 12, 70, 105, 120, 101, 100, 80, 111, 105, 110, 116, 51, 50, 20, 99, 114, 101, 97, 116, 101, 95, 102, 114, 111, 109, 95, 114, 97, 116, 105, 111, 110, 97, 108, 21, 114, 101, 103, 105, 115, 116, 101, 114, 95, 83, 67, 83, 95, 99, 117, 114, 114, 101, 110, 99, 121, 27, 112, 117, 98, 108, 105, 115, 104, 95, 117, 110, 114, 101, 115, 116, 114, 105, 99, 116, 101, 100, 95, 108, 105, 109, 105, 116, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 14, 10, 2, 10, 3, 17, 0, 12, 7, 14, 0, 14, 1, 11, 7, 10, 4, 10, 5, 11, 6, 56, 0, 14, 0, 56, 1, 2};
+            auto script = diem_types::Script{
+                script_bytecode,
+                {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},
+                {{ta::U64{exchange_rate_denom}}, {ta::U64{exchange_rate_num}}, {ta::U64{scaling_factor}}, {ta::U64{fractional_part}}},
+            };
+
+            auto signed_txn = this->sign_multi_agent_script(
+                ACCOUNT_ROOT_ID,
+                move(script),
+                {TC_ADDRESS});
+
+            auto [sender, sn] = this->sign_and_submit_multi_agent_signed_txn(
+                ACCOUNT_TC_ID,
+                move(signed_txn));
+
+            check_txn_vm_status(sender, sn, "sign_and_submit_multi_agent_signed_txn");
         }
     };
 

@@ -20,6 +20,8 @@ namespace color
     const std::string RESET("\033[0m");
 } // namespace color
 
+using bytes = std::vector<uint8_t>;
+ 
 template <typename F>
 void try_catch(F f, bool showing_exp = true)
 {

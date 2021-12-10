@@ -158,8 +158,6 @@ void test(const Arguments &args)
 
     cout << bytes_to_hex(accounts[0].address.value) << endl;
 
-    client->regiester_stable_currency("EUR", 1, 1, 1'000'000, 1'000'000);
-
     // try_catch([=]()
     //           { uint64_t sn = client->create_parent_vasp_account(account.address, account.auth_key, "test", false); });
 
@@ -168,4 +166,10 @@ void test(const Arguments &args)
     // auto &child = accounts[1];
 
     // client->create_child_vasp_account(0, child.address, child.auth_key, "VSL", 0, false);
+
+    client->allow_custom_script(true);
+
+    client->regiester_stable_currency("EUR", 1, 1, 1'000'000, 1'000'000);
+
+    client->add_currency(Client2::ACCOUNT_DD_ID, "EUR");
 }

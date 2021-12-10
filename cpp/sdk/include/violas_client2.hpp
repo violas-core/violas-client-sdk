@@ -15,9 +15,9 @@ namespace violas
         inline static const diem_types::AccountAddress TC_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0B, 0x1E, 0x55, 0xED}};   // 0xB1E55ED
         inline static const diem_types::AccountAddress TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
 
-        const size_t ACCOUNT_ROOT_ID = std::numeric_limits<size_t>::max();
-        const size_t ACCOUNT_TC_ID = std::numeric_limits<size_t>::max() - 1;
-        const size_t ACCOUNT_DD_ID = std::numeric_limits<size_t>::max() - 2;
+        inline static const size_t ACCOUNT_ROOT_ID = std::numeric_limits<size_t>::max();
+        inline static const size_t ACCOUNT_TC_ID = std::numeric_limits<size_t>::max() - 1;
+        inline static const size_t ACCOUNT_DD_ID = std::numeric_limits<size_t>::max() - 2;
 
         static std::shared_ptr<Client2>
         create(std::string_view url,
@@ -111,6 +111,9 @@ namespace violas
         ////////////////////////////////////////////////////////////////
         virtual void
         add_currency(size_t account_index, std::string_view currency_code) = 0;
+
+        virtual void
+        allow_custom_script(bool is_allowing) = 0;
 
         virtual uint64_t
         create_parent_vasp_account(const diem_types::AccountAddress &address,

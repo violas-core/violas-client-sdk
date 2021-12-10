@@ -371,10 +371,13 @@ namespace violas
                 __throw_runtime_error("Account index does not exist.");
 
             // Sign for flag + raw transaction + secondary_signer_addresses
-            string_view flag = "DIEM::RawTransaction";
+            string_view flag = "DIEM::RawTransactionWithData";
             auto hash = sha3_256((uint8_t *)flag.data(), flag.size());
 
             vector<uint8_t> message(begin(hash), end(hash));
+
+            // RawTransactionWithData enum 0
+            message.push_back(0);
 
             auto bytes = raw_txn.bcsSerialize();
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
@@ -448,10 +451,12 @@ namespace violas
             auto &secondary_signer_addresses = multi_agent_auth.secondary_signer_addresses;
 
             // Sign for flag + raw transaction + secondary_signer_addresses
-            string_view flag = "DIEM::RawTransaction";
+            string_view flag = "DIEM::RawTransactionWithData";
             auto hash = sha3_256((uint8_t *)flag.data(), flag.size());
 
             vector<uint8_t> message(begin(hash), end(hash));
+
+            message.push_back(0);
 
             auto bytes = raw_txn.bcsSerialize();
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
@@ -477,10 +482,7 @@ namespace violas
             }
             else if (account_index == ACCOUNT_TC_ID)
             {
-
                 ed25519::Signature signature = m_opt_tc->sign(message.data(), message.size());
-
-                multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
 
                 multi_agent_auth.secondary_signers.push_back(
                     {AccountAuthenticator::Ed25519{
@@ -520,7 +522,9 @@ namespace violas
         {
             this->submit_module(account_index, {module_bytes_code});
         }
-
+        //
+        //
+        //
         virtual void
         add_currency(size_t account_index, std::string_view currency_code) override
         {
@@ -529,6 +533,18 @@ namespace violas
                                         make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)));
 
             this->check_txn_vm_status(m_accounts[account_index].address,
+                                      sn,
+                                      "add_currency");
+        }
+
+        virtual void
+        allow_custom_script(bool is_allowing) override
+        {
+            bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 6, 7, 13, 48, 8, 61, 16, 0, 0, 0, 1, 2, 1, 0, 1, 12, 0, 1, 6, 12, 31, 68, 105, 101, 109, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105, 111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 14, 0, 17, 0, 2};
+
+            auto sn = submit_script(ACCOUNT_ROOT_ID,
+                                    diem_types::Script{script_bytecode, {}, {}});
+            this->check_txn_vm_status(m_accounts[ACCOUNT_ROOT_ID].address,
                                       sn,
                                       "add_currency");
         }
@@ -627,8 +643,13 @@ namespace violas
             auto script = diem_types::Script{
                 script_bytecode,
                 {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},
-                {{ta::U64{exchange_rate_denom}}, {ta::U64{exchange_rate_num}}, {ta::U64{scaling_factor}}, {ta::U64{fractional_part}}},
-            };
+                {
+                    {ta::U64{exchange_rate_denom}},
+                    {ta::U64{exchange_rate_num}},
+                    {ta::U64{scaling_factor}},
+                    {ta::U64{fractional_part}},
+                    {ta::U8Vector{bytes(begin(currency_code), end(currency_code))}},
+                }};
 
             auto signed_txn = this->sign_multi_agent_script(
                 ACCOUNT_ROOT_ID,

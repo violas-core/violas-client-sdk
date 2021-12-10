@@ -128,6 +128,13 @@ namespace violas
                                   std::string_view currency,
                                   uint64_t child_initial_balance,
                                   bool add_all_currencies = false) = 0;
+
+        virtual void
+        create_designated_dealer_ex(uint64_t sliding_nonce,
+                                    const diem_types::AccountAddress &address,
+                                    const std::array<uint8_t, 32> &auth_key,
+                                    std::string_view human_name,
+                                    bool add_all_currencies) = 0;
         /**
          * @brief Registers a stable currency coin
          *

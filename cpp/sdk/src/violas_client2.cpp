@@ -13,7 +13,10 @@
 #include "../include/json_rpc.hpp"
 #include "wallet.hpp"
 
+namespace dt = diem_types;
+
 using namespace std;
+using ta = diem_types::TransactionArgument;
 
 namespace violas
 {
@@ -594,6 +597,30 @@ namespace violas
             this->check_txn_vm_status(m_accounts[account_index].address, sn, "create_child_vasp_account");
         }
 
+        virtual void
+        create_designated_dealer_ex(uint64_t sliding_nonce,
+                                    const diem_types::AccountAddress &address,
+                                    const std::array<uint8_t, 32> &auth_key,
+                                    std::string_view human_name,
+                                    bool add_all_currencies) override
+        {
+            bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 26, 7, 43, 75, 8, 118, 16, 0, 0, 0, 1, 1, 2, 2, 1, 0, 0, 3, 4, 1, 1, 0, 1, 3, 6, 12, 3, 5, 10, 2, 10, 2, 1, 0, 2, 6, 12, 3, 1, 9, 0, 5, 6, 12, 5, 10, 2, 10, 2, 1, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 12, 83, 108, 105, 100, 105, 110, 103, 78, 111, 110, 99, 101, 21, 114, 101, 99, 111, 114, 100, 95, 110, 111, 110, 99, 101, 95, 111, 114, 95, 97, 98, 111, 114, 116, 27, 99, 114, 101, 97, 116, 101, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100, 101, 97, 108, 101, 114, 95, 101, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 10, 14, 0, 10, 1, 17, 0, 14, 0, 10, 2, 11, 3, 11, 4, 10, 5, 56, 0, 2};
+
+            auto sn = submit_script(ACCOUNT_ROOT_ID,
+                                    diem_types::Script{script_bytecode,
+                                                       {make_struct_type_tag(STD_LIB_ADDRESS, "VLS", "VLS")},
+                                                       {
+                                                           {ta::U64{sliding_nonce}},
+                                                           {ta::Address{address}},
+                                                           {ta::U8Vector{bytes(begin(auth_key), end(auth_key))}},
+                                                           {ta::U8Vector{bytes(begin(human_name), end(human_name))}},
+                                                           {ta::Bool{add_all_currencies}},
+                                                       }});
+
+            this->check_txn_vm_status(m_accounts[ACCOUNT_ROOT_ID].address,
+                                      sn,
+                                      "create_designated_dealer_ex");
+        }
         void publish_currency_module(std::string_view currency_code)
         {
             bytes module_bytes_code;
@@ -635,8 +662,6 @@ namespace violas
                                   uint64_t scaling_factor,
                                   uint64_t fractional_part) override
         {
-            using ta = diem_types::TransactionArgument;
-
             this->publish_currency_module(currency_code);
 
             bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 7, 1, 0, 6, 2, 6, 4, 3, 10, 17, 4, 27, 4, 5, 31, 33, 7, 64, 103, 8, 167, 1, 16, 0, 0, 0, 1, 0, 2, 2, 2, 7, 0, 2, 3, 3, 1, 0, 1, 4, 5, 2, 1, 0, 0, 5, 6, 2, 1, 0, 1, 4, 2, 4, 7, 12, 12, 3, 3, 3, 3, 10, 2, 1, 8, 0, 0, 2, 3, 3, 1, 9, 0, 6, 6, 12, 6, 12, 8, 0, 3, 3, 10, 2, 1, 6, 12, 13, 65, 99, 99, 111, 117, 110, 116, 76, 105, 109, 105, 116, 115, 4, 68, 105, 101, 109, 12, 70, 105, 120, 101, 100, 80, 111, 105, 110, 116, 51, 50, 20, 99, 114, 101, 97, 116, 101, 95, 102, 114, 111, 109, 95, 114, 97, 116, 105, 111, 110, 97, 108, 21, 114, 101, 103, 105, 115, 116, 101, 114, 95, 83, 67, 83, 95, 99, 117, 114, 114, 101, 110, 99, 121, 27, 112, 117, 98, 108, 105, 115, 104, 95, 117, 110, 114, 101, 115, 116, 114, 105, 99, 116, 101, 100, 95, 108, 105, 109, 105, 116, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 14, 10, 2, 10, 3, 17, 0, 12, 7, 14, 0, 14, 1, 11, 7, 10, 4, 10, 5, 11, 6, 56, 0, 14, 0, 56, 1, 2};

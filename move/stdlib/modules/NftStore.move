@@ -166,7 +166,10 @@ module NftStore {
                 order_id
             });
     }
-
+    //
+    //  Revoke an order
+    //  note : the address of signer must be same as the address of provider of order
+    //
     public fun revoke_order<NFT: store>(sig: &signer, order_id: vector<u8>)
     acquires Account, OrderList, Configuration {        
         let sender = Signer::address_of(sig);

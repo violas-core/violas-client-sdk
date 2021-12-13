@@ -110,6 +110,10 @@ namespace json_rpc
                 auto type = vm_status["type"].as_string();
                 if (type == "executed")
                     txn.vm_status.value = VMStatus::Executed{type};
+                else if (type == "out_of_gas")
+                    txn.vm_status.value = VMStatus::OutOfGas{type};
+                else if (type == "miscellaneous_error")
+                    txn.vm_status.value = VMStatus::MiscellaneousError{type};
                 else if (type == "move_abort")
                     txn.vm_status.value = VMStatus::MoveAbort{
                         type,
@@ -121,6 +125,8 @@ namespace json_rpc
                             vm_status["explanation"]["reason"].as_string(),
                             vm_status["explanation"]["reason_description"].as_string(),
                         }};
+                else
+                    throw runtime_error("unknow vm status");
 
                 // cout << result.serialize() << endl;
                 return txn;

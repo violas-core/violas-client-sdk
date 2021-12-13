@@ -5,6 +5,9 @@
 #include <diem_types.hpp>
 #include "wallet.hpp"
 
+namespace dt = diem_types;
+using ta = diem_types::TransactionArgument;
+
 namespace violas
 {
     class Client2
@@ -30,7 +33,7 @@ namespace violas
         // Create the next account by inner wallet
         // return index and address
         virtual std::tuple<size_t, diem_types::AccountAddress>
-        create_next_account() = 0;
+        create_next_account(std::optional<diem_types::AccountAddress> opt_address = std::nullopt) = 0;
 
         virtual std::vector<Wallet::Account>
         get_all_accounts() = 0;
@@ -47,15 +50,25 @@ namespace violas
          * @param expiration_timestamp_secs
          * @return uint64_t
          */
-        virtual uint64_t
-        submit_script_byte_code(size_t account_index,
-                                std::vector<uint8_t> script,
-                                std::vector<diem_types::TypeTag> type_tags,
-                                std::vector<diem_types::TransactionArgument> args,
-                                uint64_t max_gas_amount = 1'000'000,
-                                uint64_t gas_unit_price = 0,
-                                std::string_view gas_currency_code = "VLS",
-                                uint64_t expiration_timestamp_secs = 100) = 0;
+        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        submit_script_bytecode(size_t account_index,
+                               std::vector<uint8_t> script,
+                               std::vector<diem_types::TypeTag> type_tags,
+                               std::vector<diem_types::TransactionArgument> args,
+                               uint64_t max_gas_amount = 1'000'000,
+                               uint64_t gas_unit_price = 0,
+                               std::string_view gas_currency_code = "VLS",
+                               uint64_t expiration_timestamp_secs = 100) = 0;
+
+        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        submit_script_file(size_t account_index,
+                           std::string_view script,
+                           std::vector<diem_types::TypeTag> type_tags,
+                           std::vector<diem_types::TransactionArgument> args,
+                           uint64_t max_gas_amount = 1'000'000,
+                           uint64_t gas_unit_price = 0,
+                           std::string_view gas_currency_code = "VLS",
+                           uint64_t expiration_timestamp_secs = 100) = 0;
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
          *
@@ -130,7 +143,8 @@ namespace violas
                                   bool add_all_currencies = false) = 0;
 
         virtual void
-        create_designated_dealer_ex(uint64_t sliding_nonce,
+        create_designated_dealer_ex(std::string_view currency_code,
+                                    uint64_t sliding_nonce,
                                     const diem_types::AccountAddress &address,
                                     const std::array<uint8_t, 32> &auth_key,
                                     std::string_view human_name,
@@ -150,9 +164,95 @@ namespace violas
                                   uint64_t exchange_rate_num,
                                   uint64_t scaling_factor,
                                   uint64_t fractional_part) = 0;
+
+        /**
+         * @brief Add a currency for DD account, this mehtod needs TC account Permission
+         *
+         * @param dd_address DD account address
+         */
+        virtual void
+        add_currency_for_designated_dealer(
+            std::string_view currency_code,
+            diem_types::AccountAddress dd_address) = 0;
+
+        /**
+         * @brief mint amount of currency to a DD account
+         *
+         * @param currency_code
+         * @param amount
+         * @param dd_address
+         */
+        virtual void
+        mint(std::string_view currency_code,
+             uint64_t sliding_nonce,
+             uint64_t amount,
+             diem_types::AccountAddress dd_address,
+             uint64_t tier_index) = 0;
     };
 
     using client2_ptr = std::shared_ptr<Client2>;
+
+    diem_types::TypeTag make_struct_type_tag(diem_types::AccountAddress address,
+                                             std::string_view module,
+                                             std::string_view name)
+    {
+        return diem_types::TypeTag{
+            diem_types::TypeTag::Struct{
+                address,
+                diem_types::Identifier{std::string{module}},
+                diem_types::Identifier{std::string{name}}}};
+    }
+
+    template <typename... Args>
+    std::vector<ta> make_txn_args(Args &&...args)
+    {
+        using namespace std;
+        vector<ta> txn_args;
+
+        auto to_ta = [&](auto &&arg)
+        {
+            if constexpr (is_same<decay_t<decltype(arg)>, uint8_t>::value)
+            {
+                txn_args.push_back({ta::U8{arg}});
+            }
+            else if constexpr (is_same<decay_t<decltype(arg)>, uint64_t>::value)
+            {
+                txn_args.push_back({ta::U64{arg}});
+            }
+            else if constexpr (is_same<decay_t<decltype(arg)>, __uint128_t>::value)
+            {
+                txn_args.push_back({ta::U128{serde::uint128_t{uint64_t(arg >> 64), uint64_t(arg)}}});
+            }
+            else if constexpr (is_same<decay_t<decltype(arg)>, dt::AccountAddress>::value)
+            {
+                txn_args.push_back({ta::Address{arg}});
+            }
+            else if constexpr (is_same<decay_t<decltype(arg)>, bytes>::value)
+            {
+                txn_args.push_back({ta::U8Vector{arg}});
+            }
+            else if constexpr (is_same<decay_t<decltype(arg)>, string_view>::value)
+            {
+                txn_args.push_back({ta::U8Vector{bytes(begin(arg), end(arg))}});
+            }
+            else if constexpr (is_same<decay_t<decltype(arg)>, array<uint8_t, 32>>::value)
+            {
+                txn_args.push_back({ta::U8Vector{bytes(begin(arg), end(arg))}});
+            }
+            else if constexpr (is_same<decay_t<decltype(arg)>, bool>::value)
+            {
+                txn_args.push_back({ta::Bool{arg}});
+            }
+            else
+                // can't use 'false' -- expression has to depend on a template parameter
+                static_assert(!sizeof(arg), "The type fo arg for to_ta is unsupported.");
+        };
+
+        // fold expression in C++ 17
+        ((to_ta(args)), ...);
+
+        return txn_args;
+    }
 
     void run_test_case(std::string_view url,
                        uint8_t chain_id,

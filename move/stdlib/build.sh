@@ -23,6 +23,7 @@ mv build/scripts/distribute_vls_from_community.mv scripts/
 echo "build add_currency_for_designated_dealer.move"
 ../build.sh scripts/add_currency_for_designated_dealer.move
 mv build/scripts/add_currency_for_designated_dealer.mv scripts/
+mv build/scripts/dd_add_currency.mv scripts/
 
 echo "build vls_initialize_timestamp.move"
 ../build.sh scripts/vls_initialize_timestamp.move

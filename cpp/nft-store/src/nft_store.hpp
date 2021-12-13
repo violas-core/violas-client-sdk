@@ -1,5 +1,5 @@
 #pragma once
-#include <client.hpp>
+#include <violas_client2.hpp>
 
 namespace nft
 {
@@ -7,10 +7,10 @@ namespace nft
     {
     private:
         /* data */
-        violas::client_ptr _client;
+        violas::client2_ptr _client;
 
     public:
-        Store(violas::client_ptr client);
+        Store(violas::client2_ptr client);
 
         ~Store();
 

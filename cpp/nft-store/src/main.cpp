@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <functional>
 
@@ -19,7 +20,7 @@ void depoloy(client_ptr client);
 void test(const Arguments &args);
 
 using handle = function<void(istringstream &params)>;
-map<string, handle> create_commands(client_ptr client, string url);
+map<string, handle> create_commands(client2_ptr client, string url);
 
 int main(int argc, char *argv[])
 {
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
 
         auto rpc_cli = json_rpc::Client::create(args.url);
 
-        auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemonic, args.waypoint);
+        auto client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
 
         auto console = Console::create("NFT$ ");
         const string exit = "exit";
@@ -91,22 +92,28 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void intialize(client_ptr client)
+void intialize(client2_ptr client)
 {
-    client->allow_publishing_module(true);
+    //client->allow_publishing_module(true);
 
     // 1.  deploy nft store
+    ifstream ifs("move/stdlib/nft-store.mv", ios::binary);
 
-    client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, "move/stdlib/nft-store.mv");
+    if(!ifs.is_open())
+        throw runtime_error("nft::initalize failed, failed to open 'move/stdlib/nft-store.mv'");
+    
+    bytes module_bytecode(istreambuf_iterator<char>(ifs), {});
+
+    client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, module_bytecode);
 
     // 2. deploy nft store
 
     // 3. register NFT type to store
 }
 
-map<string, handle> create_commands(client_ptr client, string url)
+map<string, handle> create_commands(client2_ptr client, string url)
 {
-    client->allow_custom_script();
+    client->allow_custom_script(true);
 
     TypeTag tag(VIOLAS_STDLIB_ADDRESS, "MountWuyi", "Tea");
 
@@ -158,18 +165,29 @@ void test(const Arguments &args)
 
     cout << bytes_to_hex(accounts[0].address.value) << endl;
 
-    // try_catch([=]()
-    //           { uint64_t sn = client->create_parent_vasp_account(account.address, account.auth_key, "test", false); });
-
-    // client->add_currency(0, "XUS");
-
-    // auto &child = accounts[1];
-
-    // client->create_child_vasp_account(0, child.address, child.auth_key, "VSL", 0, false);
-
     client->allow_custom_script(true);
 
-    client->regiester_stable_currency("EUR", 1, 1, 1'000'000, 1'000'000);
+    try_catch([=]()
+              {
+        uint64_t sn = client->create_parent_vasp_account(account.address, account.auth_key, "test", false); 
+        client->add_currency(0, "XUS"); });
 
-    client->add_currency(Client2::ACCOUNT_DD_ID, "EUR");
+    auto &child = accounts[1];
+
+    client->create_child_vasp_account(0, child.address, child.auth_key, "VLS", 0, false);
+
+    string currency_code = "EUR";
+
+    client->regiester_stable_currency(currency_code, 1, 1, 1'000'000, 1'000'000);
+
+    client->add_currency(Client2::ACCOUNT_DD_ID, currency_code);
+
+    client->add_currency_for_designated_dealer(currency_code, Client2::TESTNET_DD_ADDRESS);
+
+    client->mint(currency_code, 0, 1'000 * MICRO_COIN, Client2::TESTNET_DD_ADDRESS, 0);
+}
+
+void test_nft_store()
+{
+    client2_ptr client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
 }

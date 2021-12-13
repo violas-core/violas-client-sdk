@@ -13,10 +13,7 @@
 #include "../include/json_rpc.hpp"
 #include "wallet.hpp"
 
-namespace dt = diem_types;
-
 using namespace std;
-using ta = diem_types::TransactionArgument;
 
 namespace violas
 {
@@ -38,11 +35,7 @@ namespace violas
             auto accounts = m_wallet->get_all_accounts();
             return m_rpc_cli->get_account(accounts[account_index].address)->sequence_number;
         }
-
-        diem_types::TypeTag make_struct_type_tag(diem_types::AccountAddress address, string_view module, string_view name)
-        {
-            return diem_types::TypeTag{diem_types::TypeTag::Struct{address, diem_types::Identifier{string{module}}, diem_types::Identifier{string{name}}}};
-        }
+   
 
     public:
         Client2Imp(std::string_view url,
@@ -110,7 +103,7 @@ namespace violas
         }
 
         virtual tuple<size_t, diem_types::AccountAddress>
-        create_next_account() override
+        create_next_account(std::optional<diem_types::AccountAddress> opt_address = std::nullopt) override
         {
             auto index_address = m_wallet->create_next_account();
             auto [index, address] = index_address;
@@ -130,7 +123,7 @@ namespace violas
         //
         // submit a script and return sequence number of sender's account
         //
-        uint64_t
+        std::tuple<dt::AccountAddress, uint64_t>
         submit_txn_paylod(size_t account_index,
                           diem_types::TransactionPayload &&txn_paylod,
                           uint64_t max_gas_amount = 1'000'000,
@@ -220,10 +213,10 @@ namespace violas
             m_rpc_cli->submit(signed_txn);
 
             // return the current sequence number and then increment it
-            return iter->second.sequence_number++;
+            return make_tuple<>(raw_txn.sender, iter->second.sequence_number++);
         }
 
-        uint64_t
+        std::tuple<dt::AccountAddress, uint64_t>
         submit_script(size_t account_index,
                       diem_types::Script &&script,
                       uint64_t max_gas_amount = 1'000'000,
@@ -240,7 +233,7 @@ namespace violas
                 expiration_timestamp_secs);
         }
 
-        uint64_t
+        std::tuple<dt::AccountAddress, uint64_t>
         submit_module(size_t account_index,
                       diem_types::Module &&module,
                       uint64_t max_gas_amount = 1'000'000,
@@ -279,6 +272,13 @@ namespace violas
                                {
                                    __throw_runtime_error(status.type.c_str());
                                },
+                               [=](VMStatus::MiscellaneousError status)
+                               {
+                                   ostringstream oss;
+                                   oss << error_info << " failed, VM status : " << status.type;
+
+                                   __throw_runtime_error(oss.str().c_str());
+                               },
                                [=](VMStatus::MoveAbort status)
                                {
                                    ostringstream oss;
@@ -297,15 +297,15 @@ namespace violas
                 __throw_runtime_error("check_txn_vm_status is timeout.");
         }
 
-        virtual uint64_t
-        submit_script_byte_code(size_t account_index,
-                                std::vector<uint8_t> script_byte_code,
-                                std::vector<diem_types::TypeTag> type_tags,
-                                std::vector<diem_types::TransactionArgument> args,
-                                uint64_t max_gas_amount,
-                                uint64_t gas_unit_price,
-                                std::string_view gas_currency_code,
-                                uint64_t expiration_timestamp_secs) override
+        virtual std::tuple<dt::AccountAddress, uint64_t>
+        submit_script_bytecode(size_t account_index,
+                               std::vector<uint8_t> script_byte_code,
+                               std::vector<diem_types::TypeTag> type_tags,
+                               std::vector<diem_types::TransactionArgument> args,
+                               uint64_t max_gas_amount,
+                               uint64_t gas_unit_price,
+                               std::string_view gas_currency_code,
+                               uint64_t expiration_timestamp_secs) override
         {
             using namespace diem_types;
 
@@ -316,6 +316,18 @@ namespace violas
                 gas_unit_price,
                 gas_currency_code,
                 expiration_timestamp_secs);
+        }
+
+        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        submit_script_file(size_t account_index,
+                           std::string_view script,
+                           std::vector<diem_types::TypeTag> type_tags,
+                           std::vector<diem_types::TransactionArgument> args,
+                           uint64_t max_gas_amount = 1'000'000,
+                           uint64_t gas_unit_price = 0,
+                           std::string_view gas_currency_code = "VLS",
+                           uint64_t expiration_timestamp_secs = 100) override
+        {
         }
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
@@ -531,11 +543,11 @@ namespace violas
         virtual void
         add_currency(size_t account_index, std::string_view currency_code) override
         {
-            auto sn = submit_script(account_index,
-                                    diem_framework::encode_add_currency_to_account_script(
-                                        make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)));
+            auto [sender, sn] = submit_script(account_index,
+                                              diem_framework::encode_add_currency_to_account_script(
+                                                  make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)));
 
-            this->check_txn_vm_status(m_accounts[account_index].address,
+            this->check_txn_vm_status(sender,
                                       sn,
                                       "add_currency");
         }
@@ -545,9 +557,10 @@ namespace violas
         {
             bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 6, 7, 13, 48, 8, 61, 16, 0, 0, 0, 1, 2, 1, 0, 1, 12, 0, 1, 6, 12, 31, 68, 105, 101, 109, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105, 111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 14, 0, 17, 0, 2};
 
-            auto sn = submit_script(ACCOUNT_ROOT_ID,
-                                    diem_types::Script{script_bytecode, {}, {}});
-            this->check_txn_vm_status(m_accounts[ACCOUNT_ROOT_ID].address,
+            auto [sender, sn] = submit_script(ACCOUNT_ROOT_ID,
+                                              diem_types::Script{script_bytecode, {}, {}});
+
+            this->check_txn_vm_status(sender,
                                       sn,
                                       "add_currency");
         }
@@ -562,7 +575,7 @@ namespace violas
             if (m_opt_tc == std::nullopt)
                 __throw_runtime_error("TC account is null, please specify the mint key file.");
 
-            uint64_t sn = this->submit_script(
+            auto [sender, sn] = this->submit_script(
                 ACCOUNT_TC_ID,
                 diem_framework::encode_create_parent_vasp_account_script(
                     make_struct_type_tag(STD_LIB_ADDRESS, "VLS", "VLS"),
@@ -572,7 +585,7 @@ namespace violas
                     vector<uint8_t>(human_name.data(), human_name.data() + human_name.size()),
                     add_all_currencies));
 
-            this->check_txn_vm_status(TC_ADDRESS, sn, "create_parent_vasp_account");
+            this->check_txn_vm_status(sender, sn, "create_parent_vasp_account");
 
             return sn;
         }
@@ -585,7 +598,7 @@ namespace violas
                                   uint64_t child_initial_balance,
                                   bool add_all_currencies = false) override
         {
-            uint64_t sn = this->submit_script(
+            auto [sender, sn] = this->submit_script(
                 account_index,
                 diem_framework::encode_create_child_vasp_account_script(
                     make_struct_type_tag(STD_LIB_ADDRESS, currency, currency),
@@ -594,11 +607,12 @@ namespace violas
                     add_all_currencies,
                     child_initial_balance));
 
-            this->check_txn_vm_status(m_accounts[account_index].address, sn, "create_child_vasp_account");
+            this->check_txn_vm_status(sender, sn, "create_child_vasp_account");
         }
 
         virtual void
-        create_designated_dealer_ex(uint64_t sliding_nonce,
+        create_designated_dealer_ex(std::string_view currency_code,
+                                    uint64_t sliding_nonce,
                                     const diem_types::AccountAddress &address,
                                     const std::array<uint8_t, 32> &auth_key,
                                     std::string_view human_name,
@@ -606,18 +620,15 @@ namespace violas
         {
             bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 26, 7, 43, 75, 8, 118, 16, 0, 0, 0, 1, 1, 2, 2, 1, 0, 0, 3, 4, 1, 1, 0, 1, 3, 6, 12, 3, 5, 10, 2, 10, 2, 1, 0, 2, 6, 12, 3, 1, 9, 0, 5, 6, 12, 5, 10, 2, 10, 2, 1, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 12, 83, 108, 105, 100, 105, 110, 103, 78, 111, 110, 99, 101, 21, 114, 101, 99, 111, 114, 100, 95, 110, 111, 110, 99, 101, 95, 111, 114, 95, 97, 98, 111, 114, 116, 27, 99, 114, 101, 97, 116, 101, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100, 101, 97, 108, 101, 114, 95, 101, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 10, 14, 0, 10, 1, 17, 0, 14, 0, 10, 2, 11, 3, 11, 4, 10, 5, 56, 0, 2};
 
-            auto sn = submit_script(ACCOUNT_ROOT_ID,
-                                    diem_types::Script{script_bytecode,
-                                                       {make_struct_type_tag(STD_LIB_ADDRESS, "VLS", "VLS")},
-                                                       {
-                                                           {ta::U64{sliding_nonce}},
-                                                           {ta::Address{address}},
-                                                           {ta::U8Vector{bytes(begin(auth_key), end(auth_key))}},
-                                                           {ta::U8Vector{bytes(begin(human_name), end(human_name))}},
-                                                           {ta::Bool{add_all_currencies}},
-                                                       }});
+            auto [sender, sn] = this->submit_script(
+                ACCOUNT_ROOT_ID,
+                diem_types::Script{
+                    script_bytecode,
+                    {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},
+                    make_txn_args(sliding_nonce, address, auth_key, human_name, add_all_currencies),
+                });
 
-            this->check_txn_vm_status(m_accounts[ACCOUNT_ROOT_ID].address,
+            this->check_txn_vm_status(sender,
                                       sn,
                                       "create_designated_dealer_ex");
         }
@@ -668,13 +679,12 @@ namespace violas
             auto script = diem_types::Script{
                 script_bytecode,
                 {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},
-                {
-                    {ta::U64{exchange_rate_denom}},
-                    {ta::U64{exchange_rate_num}},
-                    {ta::U64{scaling_factor}},
-                    {ta::U64{fractional_part}},
-                    {ta::U8Vector{bytes(begin(currency_code), end(currency_code))}},
-                }};
+                make_txn_args(exchange_rate_denom,
+                              exchange_rate_num,
+                              scaling_factor,
+                              fractional_part,
+                              currency_code),
+            };
 
             auto signed_txn = this->sign_multi_agent_script(
                 ACCOUNT_ROOT_ID,
@@ -686,6 +696,54 @@ namespace violas
                 move(signed_txn));
 
             check_txn_vm_status(sender, sn, "sign_and_submit_multi_agent_signed_txn");
+        }
+
+        /**
+         * @brief Add a currency for DD account, this mehtod needs TC account Permission
+         *
+         * @param dd_address DD account address
+         */
+        virtual void
+        add_currency_for_designated_dealer(
+            std::string_view currency_code,
+            diem_types::AccountAddress dd_address) override
+        {
+            bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 11, 7, 21, 47, 8, 68, 16, 0, 0, 0, 1, 3, 1, 1, 4, 0, 2, 2, 12, 5, 0, 1, 9, 0, 2, 6, 12, 5, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 34, 97, 100, 100, 95, 99, 117, 114, 114, 101, 110, 99, 121, 95, 102, 111, 114, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100, 101, 97, 108, 101, 114, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 4, 14, 0, 10, 1, 56, 0, 2};
+            dt::Script script{
+                script_bytecode,
+                {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},
+                make_txn_args(dd_address),
+            };
+
+            make_txn_args(__uint128_t(0));
+
+            auto [sender, sn] = this->submit_script(ACCOUNT_TC_ID, move(script));
+            check_txn_vm_status(sender, sn, "tc_add_currency_for_designated_dealer");
+        }
+
+        /**
+         * @brief mint amount of currency to a DD account
+         *
+         * @param currency_code
+         * @param amount
+         * @param dd_address
+         */
+        virtual void
+        mint(std::string_view currency_code,
+             uint64_t sliding_nonce,
+             uint64_t amount,
+             diem_types::AccountAddress dd_address,
+             uint64_t tier_index) override
+        {
+            auto script = diem_framework::encode_tiered_mint_script(
+                make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code),
+                sliding_nonce,
+                dd_address,
+                amount,
+                tier_index);
+
+            auto [sender, sn] = this->submit_script(ACCOUNT_TC_ID, move(script));
+            check_txn_vm_status(sender, sn, "mint");
         }
     };
 

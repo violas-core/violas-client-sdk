@@ -107,6 +107,11 @@ namespace json_rpc
             std::string type;
         };
 
+        struct MiscellaneousError
+        {
+            std::string type;
+        };
+
         struct MoveAbort
         {
             std::string type;
@@ -121,7 +126,7 @@ namespace json_rpc
             } explanation;
         };
 
-        std::variant<Executed, OutOfGas, MoveAbort> value;
+        std::variant<Executed, OutOfGas, MiscellaneousError, MoveAbort> value;
     };
 
     struct TransactionView

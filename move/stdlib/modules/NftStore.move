@@ -9,7 +9,7 @@ module NftStore {
     use Std::Compare;
     use Std::FixedPoint32::{Self, FixedPoint32};
     use Std::Hash;
-    //use DiemFramework::VASP;
+    use DiemFramework::VASP;
     use DiemFramework::Diem;
     use DiemFramework::DiemAccount;
     use 0x2::NonFungibleToken;
@@ -29,7 +29,7 @@ module NftStore {
         order_id : vector<u8>,
     }
 
-    struct TradedEvent  has drop, store {        
+    struct TradedOrderEvent  has copy, drop, store {        
         order_id : vector<u8>,
         nft_token_id : vector<u8>,
         payer : address,
@@ -39,7 +39,17 @@ module NftStore {
         incentive : u64,        
     }
 
-    struct Order has store {
+    struct SentSignedTxnEvent has drop , store {
+        receiver_address: address,
+        signed_txn : vector<u8>
+    }
+
+    struct ReceivedSignedTxnEvent has drop , store {
+        sender_address: address,
+        signed_txn : vector<u8>
+    }
+
+    struct Order has drop, store {
         price : u64,
         currency_code : vector<u8>,
         sale_incentive : FixedPoint32,
@@ -57,7 +67,8 @@ module NftStore {
     //
     struct Configuration has key, store {
         withdraw_cap: NonFungibleToken::WithdrawCapbility,
-        //amount : u64,
+        provider_parent_address : address,
+        sale_agent_parent_address: address,
     }
     //
     //  account info held by each customer account
@@ -65,9 +76,10 @@ module NftStore {
     struct Account<NFT> has key {
         made_order_events: EventHandle<MadeOrderEvent>,
         revoked_order_events: EventHandle<RevokedOrderEvent>,
-    }
-
-    
+        traded_order_events : EventHandle<TradedOrderEvent>,
+        sent_trading_order_sig_events: EventHandle<SentSignedTxnEvent>,
+        received_trading_order_sig_events: EventHandle<ReceivedSignedTxnEvent>,
+    }    
 
     //
     //  Ensure that the signer is administor account
@@ -85,18 +97,24 @@ module NftStore {
     //
     //  Initialize Order Store by admin account
     //
-    public fun initialize(sig: &signer) {        
+    public fun initialize(
+        sig: &signer, 
+        provider_parent_address: address,
+        sale_agent_parent_address: address) 
+    {        
         check_admin_permission(sig);
 
         let sender = Signer::address_of(sig);
         assert(!exists<Configuration>(sender), Errors::already_published(ENFT_STORE_HAS_BEEN_INITIALIZED));
 
         move_to(sig, Configuration {
-            withdraw_cap: NonFungibleToken::extract_opt_withdraw_capability(sig)
+            withdraw_cap: NonFungibleToken::extract_opt_withdraw_capability(sig),
+            provider_parent_address,
+            sale_agent_parent_address
         });        
     }
     //
-    // Register a new NFT store with NFT type
+    // Register a new NFT type into Store
     //
     public fun register<NFT: store>(sig: &signer) {        
         check_admin_permission(sig);
@@ -125,6 +143,9 @@ module NftStore {
             Account<NFT> {
                 made_order_events: Event::new_event_handle<MadeOrderEvent>(sig),
                 revoked_order_events: Event::new_event_handle<RevokedOrderEvent>(sig),
+                traded_order_events: Event::new_event_handle<TradedOrderEvent>(sig),
+                sent_trading_order_sig_events: Event::new_event_handle<SentSignedTxnEvent>(sig),
+                received_trading_order_sig_events: Event::new_event_handle<ReceivedSignedTxnEvent>(sig),
             });
     }
 
@@ -208,7 +229,7 @@ module NftStore {
         sender_sig : &signer,
         sale_agent_sig : &signer,
         order_id : &vector<u8>) 
-    acquires OrderList {
+    acquires Account, OrderList, Configuration {
         let sender = Signer::address_of(sender_sig);
         let sale_agent = Signer::address_of(sale_agent_sig);
         let (ret, index) = find_order<NFT>(order_id);
@@ -241,18 +262,79 @@ module NftStore {
                                     b"");
 
         DiemAccount::restore_withdraw_capability(sender_withdraw_cap);
-
-        // Move the order to sender account
+        
+        // Extract order from the order list
         let order = Vector::swap_remove<Order>(&mut order_list.orders, index);
 
-        if(exists<OrderList<NFT>>(sender)) {
-            let sender_order_list = borrow_global_mut<OrderList<NFT>>(sender);
-            Vector::push_back<Order>(&mut sender_order_list.orders, order);
-        } else
-            move_to<OrderList<NFT>>(sender_sig, OrderList { orders : Vector::singleton<Order>(order)});
+        // Transfer the NFT from admin account to sender account
+        {
+            if(!NonFungibleToken::has_accepted<NFT>(sender)) {
+                NonFungibleToken::accept<NFT>(sender_sig);
+            };
 
-        //emit events
+            let configuration = borrow_global<Configuration>(ADMIN_ACCOUNT_ADDRESS);
+
+            NonFungibleToken::pay_from<NFT>(&configuration.withdraw_cap, sender, &order.nft_token_id, &b"transfer a NFT from NFT store to sender" );            
+        };
+
+        // Emit traded order event
+        {
+            // Make a traded order event      
+            let traded_order_event = TradedOrderEvent {
+                    order_id: *order_id,
+                    nft_token_id : *&order.nft_token_id,
+                    payer : order.provider,
+                    payee : sender,
+                    agent : sale_agent,
+                    price : order.price,
+                    incentive : FixedPoint32::get_raw_value(*&order.sale_incentive),
+                };
+            
+            // Emit trade order events to sender account
+            let sender_account = borrow_global_mut<Account<NFT>>(sender);
+            Event::emit_event(&mut sender_account.traded_order_events, 
+                copy traded_order_event);
+            
+            // Emit trade order events to provider account
+            let provider_account = borrow_global_mut<Account<NFT>>(order.provider);
+            Event::emit_event(&mut provider_account.traded_order_events, 
+                copy traded_order_event);
+            
+            // Check if the account info exists under sale agent account
+            if(!exists<Account<NFT>>(sale_agent))
+                accept<NFT>(sale_agent_sig);
+
+            // Emit trade order events to sale agent account
+            let sale_agent_account = borrow_global_mut<Account<NFT>>(sale_agent);
+            Event::emit_event(&mut sale_agent_account.traded_order_events, 
+                traded_order_event);
+        };
         
+        // Destory order
+        let Order { price:_, currency_code:_, sale_incentive:_, provider:_, nft_token_id:_ } = Vector::swap_remove(&mut order_list.orders, index);
+    }
+
+
+    //
+    fun send_signed_trading_order_txn<NFT: store>(
+        sender_sig : &signer, 
+        sale_agent_address: address, 
+        signed_trading_order_txn: vector<u8>) 
+    acquires Account, Configuration {        
+        //
+        let sender_address = Signer::address_of(sender_sig);
+        
+        let configuration = borrow_global<Configuration>(ADMIN_ACCOUNT_ADDRESS);
+        
+        assert(VASP::parent_address(sale_agent_address) == configuration.sale_agent_parent_address, 11000);
+
+        //Emit a signed tarding order event
+        let sale_agent_account = borrow_global_mut<Account<NFT>>(sale_agent_address);
+            Event::emit_event(&mut sale_agent_account.received_trading_order_sig_events, 
+                ReceivedSignedTxnEvent {
+                    sender_address,
+                    signed_txn:  signed_trading_order_txn
+                });
     }
 
     //

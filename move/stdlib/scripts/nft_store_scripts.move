@@ -1,8 +1,12 @@
 script {    
     use 0x2::NftStore;    
     
-    fun nft_store_initialize(sig: signer) { 
-        NftStore::initialize(&sig);
+    fun nft_store_initialize(
+        sig: signer,
+        provider_parent_address: address,
+        sale_agent_parent_address: address) { 
+            
+        NftStore::initialize(&sig, provider_parent_address, sale_agent_parent_address);
     }
 }
 

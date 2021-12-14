@@ -4,7 +4,6 @@
 #include <functional>
 
 #include <utils.hpp>
-#include <violas_sdk2.hpp>
 #include <argument.hpp>
 #include <console.hpp>
 #include <json_rpc.hpp>
@@ -16,7 +15,7 @@
 using namespace std;
 using namespace violas;
 
-void depoloy(client_ptr client);
+void depoloy(client2_ptr client);
 void test(const Arguments &args);
 
 using handle = function<void(istringstream &params)>;
@@ -92,30 +91,11 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void intialize(client2_ptr client)
-{
-    //client->allow_publishing_module(true);
-
-    // 1.  deploy nft store
-    ifstream ifs("move/stdlib/nft-store.mv", ios::binary);
-
-    if(!ifs.is_open())
-        throw runtime_error("nft::initalize failed, failed to open 'move/stdlib/nft-store.mv'");
-    
-    bytes module_bytecode(istreambuf_iterator<char>(ifs), {});
-
-    client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, module_bytecode);
-
-    // 2. deploy nft store
-
-    // 3. register NFT type to store
-}
-
 map<string, handle> create_commands(client2_ptr client, string url)
 {
     client->allow_custom_script(true);
 
-    TypeTag tag(VIOLAS_STDLIB_ADDRESS, "MountWuyi", "Tea");
+    dt::TypeTag tag = make_struct_type_tag(STD_LIB_ADDRESS, "MountWuyi", "Tea");
 
     return map<string, handle>{
         {"deploy", [=](istringstream &params)
@@ -123,17 +103,17 @@ map<string, handle> create_commands(client2_ptr client, string url)
              client->allow_publishing_module(true);
 
              // 1.  deploy nft store
-             client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, "move/stdlib/modules/Compare.mv");
-             client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, "move/stdlib/modules/Map.mv");
-             client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, "move/stdlib/modules/NonFungibleToken.mv");
-             client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, "move/stdlib/modules/NftStore.mv");
-             client->publish_module(VIOLAS_ROOT_ACCOUNT_ID, "move/tea/modules/MountWuyi.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/Compare.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/Map.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/NonFungibleToken.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/NftStore.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/tea/modules/MountWuyi.mv");
          }},
         {"initalize", [=](istringstream &params)
          {
              nft::Store store(client);
 
-             store.initalize(tag);
+             store.initialize(tag);
          }},
         {"register", [=](istringstream &params)
          {
@@ -180,14 +160,18 @@ void test(const Arguments &args)
 
     client->regiester_stable_currency(currency_code, 1, 1, 1'000'000, 1'000'000);
 
-    client->add_currency(Client2::ACCOUNT_DD_ID, currency_code);
+    client->add_currency(ACCOUNT_DD_ID, currency_code);
 
-    client->add_currency_for_designated_dealer(currency_code, Client2::TESTNET_DD_ADDRESS);
+    client->add_currency_for_designated_dealer(currency_code, TESTNET_DD_ADDRESS);
 
-    client->mint(currency_code, 0, 1'000 * MICRO_COIN, Client2::TESTNET_DD_ADDRESS, 0);
+    client->mint(currency_code, 0, 1'000 * MICRO_COIN, TESTNET_DD_ADDRESS, 0);
 }
 
-void test_nft_store()
+void test_nft_store(const Arguments &args)
 {
     client2_ptr client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
+    nft::Store store(client);
+
+    store.initialize(make_struct_type_tag(STD_LIB_ADDRESS, "Tea", "Tea"));
+
 }

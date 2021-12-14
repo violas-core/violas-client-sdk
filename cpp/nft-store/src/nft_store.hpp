@@ -14,9 +14,9 @@ namespace nft
 
         ~Store();
 
-        void initalize(const violas::TypeTag &tag);
+        void initialize(const diem_types::TypeTag &tag);
 
-        void register_nft(const violas::TypeTag &tag);
+        void register_nft(const diem_types::TypeTag &tag);
 
         void offer();
 

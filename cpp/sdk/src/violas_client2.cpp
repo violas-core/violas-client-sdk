@@ -35,7 +35,6 @@ namespace violas
             auto accounts = m_wallet->get_all_accounts();
             return m_rpc_cli->get_account(accounts[account_index].address)->sequence_number;
         }
-   
 
     public:
         Client2Imp(std::string_view url,
@@ -298,14 +297,14 @@ namespace violas
         }
 
         virtual std::tuple<dt::AccountAddress, uint64_t>
-        submit_script_bytecode(size_t account_index,
-                               std::vector<uint8_t> script_byte_code,
-                               std::vector<diem_types::TypeTag> type_tags,
-                               std::vector<diem_types::TransactionArgument> args,
-                               uint64_t max_gas_amount,
-                               uint64_t gas_unit_price,
-                               std::string_view gas_currency_code,
-                               uint64_t expiration_timestamp_secs) override
+        execute_script_bytecode(size_t account_index,
+                                std::vector<uint8_t> script_byte_code,
+                                std::vector<diem_types::TypeTag> type_tags,
+                                std::vector<diem_types::TransactionArgument> args,
+                                uint64_t max_gas_amount,
+                                uint64_t gas_unit_price,
+                                std::string_view gas_currency_code,
+                                uint64_t expiration_timestamp_secs) override
         {
             using namespace diem_types;
 
@@ -319,15 +318,28 @@ namespace violas
         }
 
         virtual std::tuple<diem_types::AccountAddress, uint64_t>
-        submit_script_file(size_t account_index,
-                           std::string_view script,
-                           std::vector<diem_types::TypeTag> type_tags,
-                           std::vector<diem_types::TransactionArgument> args,
-                           uint64_t max_gas_amount = 1'000'000,
-                           uint64_t gas_unit_price = 0,
-                           std::string_view gas_currency_code = "VLS",
-                           uint64_t expiration_timestamp_secs = 100) override
+        execute_script_file(size_t account_index,
+                            std::string_view script_file_name,
+                            std::vector<diem_types::TypeTag> type_tags,
+                            std::vector<diem_types::TransactionArgument> args,
+                            uint64_t max_gas_amount = 1'000'000,
+                            uint64_t gas_unit_price = 0,
+                            std::string_view gas_currency_code = "VLS",
+                            uint64_t expiration_timestamp_secs = 100) override
         {
+            ifstream ifs(script_file_name.data(), ios::binary);
+
+            if (!ifs.is_open())
+                throw runtime_error(format("failed to open file %s at submit_script_file", script_file_name).c_str());
+
+            bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
+            dt::Script script{
+                script_bytecode,
+                type_tags,
+                args,
+            };
+
+            return this->submit_script(account_index, move(script), max_gas_amount, gas_unit_price, gas_currency_code, expiration_timestamp_secs);
         }
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
@@ -533,9 +545,21 @@ namespace violas
 
         virtual void
         publish_module(size_t account_index,
-                       std::vector<uint8_t> module_bytes_code) override
+                       std::vector<uint8_t> &&module_bytes_code) override
         {
             this->submit_module(account_index, {module_bytes_code});
+        }
+
+        virtual void
+        publish_module(size_t account_index,
+                       std::string_view module_file_name) override
+        {
+            ifstream ifs(module_file_name.data(), ios::binary);
+
+            if (!ifs.is_open())
+                throw runtime_error(format("failed to open file %s at submit_script_file", module_file_name).c_str());
+
+            this->publish_module(account_index, bytes(istreambuf_iterator<char>(ifs), {}));
         }
         //
         //
@@ -563,6 +587,16 @@ namespace violas
             this->check_txn_vm_status(sender,
                                       sn,
                                       "add_currency");
+        }
+
+        virtual void
+        allow_publishing_module(bool is_allowing) override
+        {
+            bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 8, 7, 15, 48, 8, 63, 16, 0, 0, 0, 1, 2, 1, 0, 2, 12, 1, 0, 2, 6, 12, 1, 31, 68, 105, 101, 109, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105, 111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 109, 111, 100, 117, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 4, 14, 0, 10, 1, 17, 0, 2};
+
+            auto [sender, sn] = this->submit_script(ACCOUNT_ROOT_ID, dt::Script{script_bytecode, {}, make_txn_args(is_allowing)});
+
+            this->check_txn_vm_status(sender, sn, "allow_publishing_module");
         }
 
         virtual uint64_t
@@ -654,7 +688,7 @@ namespace violas
                 module_bytes_code = move(bytes(begin(currency_module), end(currency_module)));
             }
 
-            this->publish_module(ACCOUNT_ROOT_ID, module_bytes_code);
+            this->publish_module(ACCOUNT_ROOT_ID, move(module_bytes_code));
         }
 
         /**

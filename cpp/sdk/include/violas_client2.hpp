@@ -3,6 +3,7 @@
 #include <memory>
 #include <tuple>
 #include <diem_types.hpp>
+#include <utils.hpp>
 #include "wallet.hpp"
 
 namespace dt = diem_types;
@@ -10,18 +11,20 @@ using ta = diem_types::TransactionArgument;
 
 namespace violas
 {
+    inline static const diem_types::AccountAddress STD_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};          // 0x1
+    inline static const diem_types::AccountAddress ROOT_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0A, 0x55, 0x0C, 0x18}}; // 0xA550C18
+    inline static const diem_types::AccountAddress TC_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0B, 0x1E, 0x55, 0xED}};   // 0xB1E55ED
+    inline static const diem_types::AccountAddress TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
+
+    inline static const size_t ACCOUNT_ROOT_ID = std::numeric_limits<size_t>::max();
+    inline static const size_t ACCOUNT_TC_ID = std::numeric_limits<size_t>::max() - 1;
+    inline static const size_t ACCOUNT_DD_ID = std::numeric_limits<size_t>::max() - 2;
+
+    inline static const uint64_t MICRO_COIN = 1'000'000;
+
     class Client2
     {
     public:
-        inline static const diem_types::AccountAddress STD_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};          // 0x1
-        inline static const diem_types::AccountAddress ROOT_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0A, 0x55, 0x0C, 0x18}}; // 0xA550C18
-        inline static const diem_types::AccountAddress TC_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0B, 0x1E, 0x55, 0xED}};   // 0xB1E55ED
-        inline static const diem_types::AccountAddress TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
-
-        inline static const size_t ACCOUNT_ROOT_ID = std::numeric_limits<size_t>::max();
-        inline static const size_t ACCOUNT_TC_ID = std::numeric_limits<size_t>::max() - 1;
-        inline static const size_t ACCOUNT_DD_ID = std::numeric_limits<size_t>::max() - 2;
-
         static std::shared_ptr<Client2>
         create(std::string_view url,
                uint8_t chain_id,
@@ -51,24 +54,24 @@ namespace violas
          * @return uint64_t
          */
         virtual std::tuple<diem_types::AccountAddress, uint64_t>
-        submit_script_bytecode(size_t account_index,
-                               std::vector<uint8_t> script,
-                               std::vector<diem_types::TypeTag> type_tags,
-                               std::vector<diem_types::TransactionArgument> args,
-                               uint64_t max_gas_amount = 1'000'000,
-                               uint64_t gas_unit_price = 0,
-                               std::string_view gas_currency_code = "VLS",
-                               uint64_t expiration_timestamp_secs = 100) = 0;
+        execute_script_bytecode(size_t account_index,
+                                std::vector<uint8_t> script,
+                                std::vector<diem_types::TypeTag> type_tags,
+                                std::vector<diem_types::TransactionArgument> args,
+                                uint64_t max_gas_amount = 1'000'000,
+                                uint64_t gas_unit_price = 0,
+                                std::string_view gas_currency_code = "VLS",
+                                uint64_t expiration_timestamp_secs = 100) = 0;
 
         virtual std::tuple<diem_types::AccountAddress, uint64_t>
-        submit_script_file(size_t account_index,
-                           std::string_view script,
-                           std::vector<diem_types::TypeTag> type_tags,
-                           std::vector<diem_types::TransactionArgument> args,
-                           uint64_t max_gas_amount = 1'000'000,
-                           uint64_t gas_unit_price = 0,
-                           std::string_view gas_currency_code = "VLS",
-                           uint64_t expiration_timestamp_secs = 100) = 0;
+        execute_script_file(size_t account_index,
+                            std::string_view script_file_name,
+                            std::vector<diem_types::TypeTag> type_tags,
+                            std::vector<diem_types::TransactionArgument> args,
+                            uint64_t max_gas_amount = 1'000'000,
+                            uint64_t gas_unit_price = 0,
+                            std::string_view gas_currency_code = "VLS",
+                            uint64_t expiration_timestamp_secs = 100) = 0;
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
          *
@@ -117,7 +120,11 @@ namespace violas
 
         virtual void
         publish_module(size_t account_index,
-                       std::vector<uint8_t> module_bytes_code) = 0;
+                       std::vector<uint8_t> &&module_bytes_code) = 0;
+
+        virtual void
+        publish_module(size_t account_index,
+                       std::string_view module_file_name) = 0;
 
         ////////////////////////////////////////////////////////////////
         // Methods for Violas framework
@@ -128,11 +135,14 @@ namespace violas
         virtual void
         allow_custom_script(bool is_allowing) = 0;
 
+        virtual void
+        allow_publishing_module(bool is_allowing) = 0;
+
         virtual uint64_t
         create_parent_vasp_account(const diem_types::AccountAddress &address,
                                    const std::array<uint8_t, 32> &auth_key,
                                    std::string_view human_name,
-                                   bool add_all_currencies) = 0;
+                                   bool add_all_currencies = false) = 0;
 
         virtual void
         create_child_vasp_account(size_t account_index,
@@ -192,9 +202,10 @@ namespace violas
 
     using client2_ptr = std::shared_ptr<Client2>;
 
-    diem_types::TypeTag make_struct_type_tag(diem_types::AccountAddress address,
-                                             std::string_view module,
-                                             std::string_view name)
+    inline diem_types::TypeTag
+    make_struct_type_tag(diem_types::AccountAddress address,
+                         std::string_view module,
+                         std::string_view name)
     {
         return diem_types::TypeTag{
             diem_types::TypeTag::Struct{

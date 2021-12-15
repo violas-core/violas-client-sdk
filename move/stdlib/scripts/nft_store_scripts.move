@@ -5,7 +5,7 @@ script {
         sig: signer,
         provider_parent_address: address,
         sale_agent_parent_address: address) { 
-            
+
         NftStore::initialize(&sig, provider_parent_address, sale_agent_parent_address);
     }
 }
@@ -31,7 +31,7 @@ script {
     use 0x2::NftStore;
     use Std::FixedPoint32;
 
-    fun nft_store_make_order<NFT: key+store, Token: store>( 
+    fun nft_store_make_order<NFT: store, Token>( 
                                 sig: signer, 
                                 nft_token_id: vector<u8>,
                                 price : u64,
@@ -55,7 +55,7 @@ script {
 script {    
     use 0x2::NftStore;    
     
-    fun nft_store_revoke_order<NFT: key+store>(sig: signer, order_id: vector<u8>) { 
+    fun nft_store_revoke_order<NFT: store>(sig: signer, order_id: vector<u8>) { 
         NftStore::revoke_order<NFT>(&sig, order_id);
     }
 }

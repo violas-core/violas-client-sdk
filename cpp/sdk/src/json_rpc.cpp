@@ -120,10 +120,10 @@ namespace json_rpc
                         vm_status["location"].as_string(),
                         (uint64_t)vm_status["abort_code"].as_integer(),
                         {
-                            vm_status["explanation"]["category"].as_string(),
-                            vm_status["explanation"]["category_description"].as_string(),
-                            vm_status["explanation"]["reason"].as_string(),
-                            vm_status["explanation"]["reason_description"].as_string(),
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["category"].as_string(),
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["category_description"].as_string(),
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["reason"].as_string(),
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["reason_description"].as_string(),
                         }};
                 else
                     throw runtime_error("unknow vm status");

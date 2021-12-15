@@ -107,13 +107,29 @@ namespace violas
             auto index_address = m_wallet->create_next_account();
             auto [index, address] = index_address;
 
+            if (opt_address.has_value())
+                address = *opt_address;
+
             auto opt_account_view = m_rpc_cli->get_account(address);
             if (opt_account_view.has_value())
                 m_accounts[index] = *opt_account_view;
+            else
+            {
+                json_rpc::AccountView view;
+                view.address = address;
 
-            return index_address;
+                m_accounts[index] = view;
+            }   
+
+            return make_tuple<>(index, address);
         }
 
+        virtual void
+        update_account_info(size_t account_index) override
+        {
+
+        }
+        
         virtual std::vector<Wallet::Account>
         get_all_accounts() override
         {
@@ -137,7 +153,7 @@ namespace violas
             raw_txn.payload = txn_paylod;
 
             auto iter = m_accounts.find(account_index);
-            if (iter != end(m_accounts))
+            if (iter != end(m_accounts) && iter->second.sequence_number)
             {
                 raw_txn.sequence_number = iter->second.sequence_number;
                 raw_txn.sender = iter->second.address;
@@ -547,7 +563,9 @@ namespace violas
         publish_module(size_t account_index,
                        std::vector<uint8_t> &&module_bytes_code) override
         {
-            this->submit_module(account_index, {module_bytes_code});
+            auto [sender, sn] = this->submit_module(account_index, {module_bytes_code});
+
+            this->check_txn_vm_status(sender, sn, "publish_module");
         }
 
         virtual void
@@ -652,10 +670,10 @@ namespace violas
                                     std::string_view human_name,
                                     bool add_all_currencies) override
         {
-            bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 26, 7, 43, 75, 8, 118, 16, 0, 0, 0, 1, 1, 2, 2, 1, 0, 0, 3, 4, 1, 1, 0, 1, 3, 6, 12, 3, 5, 10, 2, 10, 2, 1, 0, 2, 6, 12, 3, 1, 9, 0, 5, 6, 12, 5, 10, 2, 10, 2, 1, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 12, 83, 108, 105, 100, 105, 110, 103, 78, 111, 110, 99, 101, 21, 114, 101, 99, 111, 114, 100, 95, 110, 111, 110, 99, 101, 95, 111, 114, 95, 97, 98, 111, 114, 116, 27, 99, 114, 101, 97, 116, 101, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100, 101, 97, 108, 101, 114, 95, 101, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 10, 14, 0, 10, 1, 17, 0, 14, 0, 10, 2, 11, 3, 11, 4, 10, 5, 56, 0, 2};
+            bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 6, 1, 0, 4, 3, 4, 11, 4, 15, 2, 5, 17, 26, 7, 43, 75, 8, 118, 16, 0, 0, 0, 1, 1, 2, 2, 1, 0, 0, 3, 4, 1, 1, 0, 1, 3, 6, 12, 3, 5, 10, 2, 10, 2, 1, 0, 2, 6, 12, 3, 1, 9, 0, 5, 6, 12, 5, 10, 2, 10, 2, 1, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 12, 83, 108, 105, 100, 105, 110, 103, 78, 111, 110, 99, 101, 21, 114, 101, 99, 111, 114, 100, 95, 110, 111, 110, 99, 101, 95, 111, 114, 95, 97, 98, 111, 114, 116, 27, 99, 114, 101, 97, 116, 101, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100, 101, 97, 108, 101, 114, 95, 101, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 10, 14, 0, 10, 1, 17, 0, 14, 0, 10, 2, 11, 3, 11, 4, 10, 5, 56, 0, 2};
 
             auto [sender, sn] = this->submit_script(
-                ACCOUNT_ROOT_ID,
+                ACCOUNT_TC_ID,
                 diem_types::Script{
                     script_bytecode,
                     {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},

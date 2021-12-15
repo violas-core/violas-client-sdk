@@ -147,6 +147,10 @@ module NftStore {
                 sent_trading_order_sig_events: Event::new_event_handle<SentSignedTxnEvent>(sig),
                 received_trading_order_sig_events: Event::new_event_handle<ReceivedSignedTxnEvent>(sig),
             });
+        
+        if(!NonFungibleToken::has_accepted<NFT>(sender)) {
+            NonFungibleToken::accept<NFT>(sig);
+        }; 
     }
 
     //

@@ -31,11 +31,12 @@ int main(int argc, char *argv[])
 
         args.parse_command_line(argc, argv);
 
-        test(args);
+        // test(args);
 
         auto rpc_cli = json_rpc::Client::create(args.url);
 
         auto client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
+        client->allow_custom_script(true);
 
         auto console = Console::create("NFT$ ");
         const string exit = "exit";
@@ -95,7 +96,8 @@ map<string, handle> create_commands(client2_ptr client, string url)
 {
     client->allow_custom_script(true);
 
-    dt::TypeTag tag = make_struct_type_tag(STD_LIB_ADDRESS, "MountWuyi", "Tea");
+    auto store = make_shared<nft::Store>(client,
+                                         make_struct_type_tag(VIOLAS_LIB_ADDRESS, "MountWuyi", "Tea"));
 
     return map<string, handle>{
         {"deploy", [=](istringstream &params)
@@ -111,21 +113,15 @@ map<string, handle> create_commands(client2_ptr client, string url)
          }},
         {"initalize", [=](istringstream &params)
          {
-             nft::Store store(client);
-
-             store.initialize(tag);
+             store->initialize();
          }},
         {"register", [=](istringstream &params)
          {
-             nft::Store store(client);
-
-             store.register_nft(tag);
+             store->register_nft();
          }},
-        {"test", [=](istringstream &params)
+        {"make-order", [=](istringstream &params)
          {
-             nft::Store store(client);
-
-             store.register_nft(tag);
+             //store->make_order();
          }},
     };
 }
@@ -170,8 +166,7 @@ void test(const Arguments &args)
 void test_nft_store(const Arguments &args)
 {
     client2_ptr client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
-    nft::Store store(client);
+    // nft::Store store(client);
 
-    store.initialize(make_struct_type_tag(STD_LIB_ADDRESS, "Tea", "Tea"));
-
+    // store.initialize(make_struct_type_tag(STD_LIB_ADDRESS, "Tea", "Tea"));
 }

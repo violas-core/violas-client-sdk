@@ -12,6 +12,7 @@ using ta = diem_types::TransactionArgument;
 namespace violas
 {
     inline static const diem_types::AccountAddress STD_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};          // 0x1
+    inline static const diem_types::AccountAddress VIOLAS_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}};       // 0x2
     inline static const diem_types::AccountAddress ROOT_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0A, 0x55, 0x0C, 0x18}}; // 0xA550C18
     inline static const diem_types::AccountAddress TC_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0B, 0x1E, 0x55, 0xED}};   // 0xB1E55ED
     inline static const diem_types::AccountAddress TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
@@ -37,6 +38,9 @@ namespace violas
         // return index and address
         virtual std::tuple<size_t, diem_types::AccountAddress>
         create_next_account(std::optional<diem_types::AccountAddress> opt_address = std::nullopt) = 0;
+
+        virtual void
+        update_account_info(size_t account_index) = 0;
 
         virtual std::vector<Wallet::Account>
         get_all_accounts() = 0;
@@ -256,7 +260,7 @@ namespace violas
             }
             else
                 // can't use 'false' -- expression has to depend on a template parameter
-                static_assert(!sizeof(arg), "The type fo arg for to_ta is unsupported.");
+                static_assert(!sizeof(arg), "The argument type of transaction is unsupported.");
         };
 
         // fold expression in C++ 17

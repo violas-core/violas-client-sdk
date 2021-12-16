@@ -13,7 +13,7 @@
             "program": "${workspaceFolder}/build/debug/bin/nft-store",
             "args": [
                 "-u",
-                "http://localhost:37627",
+                "http://localhost:42019",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
@@ -32,17 +32,17 @@
             "program": "${workspaceFolder}/build/debug/nft/nft",
             "args": [
                 "-u",
-                "http://localhost:37705",
+                "http://localhost:42019",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",
-                "0:12dfeb14ad64becfa1a44732291eb467929570f4337333686e6d078f9ec880fe",
+                "0:baa5e943ff21b59beed0945c266372e4d54d2184357f8948dd541327a3ec637f",
                 "-c",
-                "2",
+                "4",
                 "-n",
-                "cpp/testnet/mnemonic/nft.mne"
+                "mnemonic/nft.mne"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/build/debug"
         },
         {
             "name": "(gdb) Launch Test BCS",

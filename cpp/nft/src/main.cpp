@@ -244,7 +244,7 @@ map<string, handle> create_commands(client_ptr client, string url, nft_ptr<Tea> 
              auto addr = get_from_stream<Address>(params, client);
 
              auto opt_balance = nft->balance(addr);
-             if (opt_balance != nullopt)
+             if (opt_balance)
              {
                  // int i = 0;
                  //  for (const auto &tea : *opt_balance)
@@ -601,10 +601,10 @@ std::ostream &operator<<(ostream &os, const vector<Tea> &teas)
         cout << left << setw(8) << index++
              << left << setw(8) << short(tea.kind)
              //<< left << setw(20) << bytes_to_hex(tea.manufacture)
-             << left << setw(20) << bytes_to_hex(tea.PA)
+             << left << setw(20) << string(begin(tea.PA), end(tea.PA))
              << left << setw(20) << oss.str()
-             << left << setw(10) << bytes_to_hex(tea.SN)
-             << left << setw(30) << bytes_to_hex(tea.url)
+             << left << setw(10) << string(begin(tea.SN), end(tea.SN))
+             << left << setw(30) << string(begin(tea.url), end(tea.url))
              << left << setw(70) << violas::nft::compute_token_id(tea)
              << endl;
     }

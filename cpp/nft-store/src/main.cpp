@@ -119,9 +119,20 @@ map<string, handle> create_commands(client2_ptr client, string url)
          {
              store->register_nft();
          }},
+        {"list-orders", [=](istringstream &params)
+         {
+             store->register_nft();
+         }},
         {"make-order", [=](istringstream &params)
          {
-             //store->make_order();
+             nft::Id nft_token_id;
+             uint64_t price;
+             string currency;
+             double incentive;
+
+             params >> nft_token_id >> price >> currency >> incentive;
+
+             store->make_order(1, nft_token_id, price, currency, incentive);
          }},
     };
 }

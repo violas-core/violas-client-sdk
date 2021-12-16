@@ -17,6 +17,22 @@ using namespace std;
 
 namespace violas
 {
+    // AccountState::AccountState(const std::string &hex)
+    // {
+    //     auto bytes = hex_to_bytes(hex);
+
+    //     // Deserialize to vector
+    //     vector<uint8_t> data;
+    //     {
+    //         BcsSerde serde(move(bytes));
+    //         serde &&data;
+    //     }
+
+    //     BcsSerde serde(move(data));
+
+    //     serde &&_resources;
+    // }
+
     class Client2Imp : public Client2
     {
     private:
@@ -117,9 +133,10 @@ namespace violas
             {
                 json_rpc::AccountView view;
                 view.address = address;
+                view.sequence_number = 0;
 
                 m_accounts[index] = view;
-            }   
+            }
 
             return make_tuple<>(index, address);
         }
@@ -127,9 +144,8 @@ namespace violas
         virtual void
         update_account_info(size_t account_index) override
         {
-
         }
-        
+
         virtual std::vector<Wallet::Account>
         get_all_accounts() override
         {
@@ -153,7 +169,7 @@ namespace violas
             raw_txn.payload = txn_paylod;
 
             auto iter = m_accounts.find(account_index);
-            if (iter != end(m_accounts) && iter->second.sequence_number)
+            if (iter != end(m_accounts))
             {
                 raw_txn.sequence_number = iter->second.sequence_number;
                 raw_txn.sender = iter->second.address;
@@ -302,8 +318,8 @@ namespace violas
                                        << "vm_status : { "
                                        << "type : " << status.type << ", "
                                        << "abort code : " << status.abort_code
-                                       << " }"
-                                       << endl;
+                                       << " }";
+
                                    __throw_runtime_error(oss.str().c_str());
                                }},
                     opt_txn_view->vm_status.value);
@@ -579,6 +595,16 @@ namespace violas
 
             this->publish_module(account_index, bytes(istreambuf_iterator<char>(ifs), {}));
         }
+
+        virtual AccountState
+        get_account_state(const dt::AccountAddress address) override
+        {
+            json_rpc::AccountStateWithProof asp = m_rpc_cli->get_account_state_blob(string(begin(address.value), end(address.value)));
+            AccountState as(asp.blob);
+
+            return as;
+        }
+
         //
         //
         //

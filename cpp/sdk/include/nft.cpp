@@ -137,7 +137,7 @@ namespace violas::nft
         StructTag tag{
             Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
             "NonFungibleToken",
-            "Balance",
+            "NFT",
             {StructTag{T::module_address(), T::module_name(), T::resource_name()}}};
 
         violas::AccountState state(rpc_cli);

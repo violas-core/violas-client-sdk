@@ -4,6 +4,7 @@
 #include <tuple>
 #include <diem_types.hpp>
 #include <utils.hpp>
+#include <bcs_serde.hpp>
 #include "wallet.hpp"
 
 namespace dt = diem_types;
@@ -22,6 +23,43 @@ namespace violas
     inline static const size_t ACCOUNT_DD_ID = std::numeric_limits<size_t>::max() - 2;
 
     inline static const uint64_t MICRO_COIN = 1'000'000;
+
+    struct EventHandle
+    {
+        uint64_t counter;
+        std::vector<uint8_t> guid;
+
+        BcsSerde &serde(BcsSerde &serde)
+        {
+            return serde && counter && guid;
+        }
+    };
+
+    struct AccountState
+    {
+        std::map<std::vector<uint8_t>, std::vector<uint8_t>> _resources;
+
+    public:
+        AccountState(const std::string &hex);
+
+        template <typename T>
+        std::optional<T> get_resource(dt::StructTag tag)
+        {
+            auto iter = _resources.find(tag.bcsSerialize());
+            if (iter != end(_resources))
+            {
+                T t;
+
+                BcsSerde serde(iter->second);
+
+                serde &&t;
+
+                return t;
+            }
+            else
+                return {};
+        }
+    };
 
     class Client2
     {
@@ -130,6 +168,18 @@ namespace violas
         publish_module(size_t account_index,
                        std::string_view module_file_name) = 0;
 
+        // template<typename T>
+        // T get_account_resource(const dt::AccountAddress & address, const dt::StructTag path)
+        // {
+        //     T t;
+
+        //     _r
+        //     return t;
+        // }
+
+        virtual AccountState
+        get_account_state(const dt::AccountAddress address) = 0;
+
         ////////////////////////////////////////////////////////////////
         // Methods for Violas framework
         ////////////////////////////////////////////////////////////////
@@ -216,6 +266,14 @@ namespace violas
                 address,
                 diem_types::Identifier{std::string{module}},
                 diem_types::Identifier{std::string{name}}}};
+    }
+
+    inline dt::StructTag
+    make_struct_tag(diem_types::AccountAddress address,
+                    std::string_view module,
+                    std::string_view name,
+                    std::vector<dt::TypeTag> tags)
+    {
     }
 
     template <typename... Args>

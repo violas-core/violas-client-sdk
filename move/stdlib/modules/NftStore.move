@@ -20,13 +20,16 @@ module NftStore {
     const ENFT_TYPE_HAS_BEEN_REGISTERED: u64 = 10002;
 
     struct MadeOrderEvent has drop, store {
-        nft_token_id : vector<u8>,
         order_id : vector<u8>,
+        nft_token_id : vector<u8>,        
+        price: u64,
+        currency_code: vector<u8>,
+        sale_incentive: u64,
     }
 
     struct RevokedOrderEvent  has drop, store {
-        nft_token_id : vector<u8>,
         order_id : vector<u8>,
+        nft_token_id : vector<u8>,        
     }
 
     struct TradedOrderEvent  has copy, drop, store {        
@@ -50,11 +53,11 @@ module NftStore {
     }
 
     struct Order has drop, store {
+        nft_token_id : vector<u8>,
         price : u64,
         currency_code : vector<u8>,
         sale_incentive : FixedPoint32,
         provider : address,
-        nft_token_id : vector<u8>,
     } 
     //
     // Order list held by admin
@@ -137,7 +140,7 @@ module NftStore {
     public fun accept<NFT: store>(sig: &signer) {
         let sender = Signer::address_of(sig);
 
-        assert(exists<Account<NFT>>(sender), Errors::already_published(11111));
+        assert(!exists<Account<NFT>>(sender), (11111)); //Errors::already_published
 
         move_to(sig, 
             Account<NFT> {
@@ -173,8 +176,12 @@ module NftStore {
         
         NonFungibleToken::transfer<NFT>(sig, get_admind_address(), nft_token_id, &b"make order to NFT Store");
 
-        let currency_code = Diem::currency_code<Token>();
-        let order = Order { price, currency_code, sale_incentive, provider: sender, nft_token_id: *nft_token_id };
+        let currency_code = Diem::currency_code<Token>();        
+        let order = Order { price, 
+                            currency_code: copy currency_code, 
+                            sale_incentive: copy sale_incentive, 
+                            provider: sender, 
+                            nft_token_id: *nft_token_id };
         let order_id = compute_order_id(&order);
 
         Vector::push_back<Order>(&mut order_list.orders, order);
@@ -187,8 +194,11 @@ module NftStore {
         
         Event::emit_event(&mut account.made_order_events, 
             MadeOrderEvent {
-                nft_token_id: *nft_token_id,
-                order_id
+                order_id,
+                nft_token_id: *nft_token_id,                
+                price,
+                currency_code,
+                sale_incentive: FixedPoint32::get_raw_value(sale_incentive)
             });
     }
     //

@@ -46,7 +46,7 @@ namespace nft
         _client->create_parent_vasp_account(salge_agent_parent.address, salge_agent_parent.auth_key, "sales parent account");
 
         _client->execute_script_file(0, "move/stdlib/scripts/nft_store_initialize.mv", {}, {});
-        
+
         this->register_account(1);
         this->register_account(2);
     }
@@ -79,11 +79,45 @@ namespace nft
         double incentive)
     {
         auto [sender, sn] = _client->execute_script_file(
-            0,
+            account_index,
             "move/stdlib/scripts/nft_store_make_order.mv",
             {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
             {make_txn_args(nft_id, price, uint64_t(MICRO_COIN * incentive), uint64_t(MICRO_COIN))});
 
         _client->check_txn_vm_status(sender, sn, "Store::register_nft");
+    }
+
+    std::vector<Order>
+    Store::list_orders()
+    {
+        std::vector<Order> orders;
+
+        // StructTag tag{
+        //     Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+        //     "NonFungibleToken",
+        //     "NFT",
+        //     {StructTag{T::module_address(), T::module_name(), T::resource_name()}}};
+
+        // violas::AccountState state(rpc_cli);
+
+        try
+        {
+            auto state = _client->get_account_state(NFT_STORE_ADMIN_ADDRESS);
+            return state.get_resource<std::vector<Order>>(make_struct_type_tag(VIOLAS_LIB_ADDRESS, "NftStore", "OrderList"));
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << color::RED << e.what() << color::RESET << endl;
+        }        
+
+        return {};
+    }
+
+    std::vector<MadeOrderEvent>
+    list_made_order_events(Address address, uint64_t start, uint64_t limit)
+    {
+        std::vector<MadeOrderEvent> events;
+
+        return events;
     }
 }

@@ -6,9 +6,12 @@
 #include <optional>
 #include <variant>
 #include <diem_types.hpp>
+#include <bcs_serde.hpp>
 
 namespace json_rpc
 {
+    namespace dt = diem_types;    
+
     struct Currency
     {
         std::string code;
@@ -140,6 +143,10 @@ namespace json_rpc
         uint64_t gas_used;           // Amount of gas used by this transaction, to know how much you paid for the transaction,
                                      // you need multiply it with your RawTransaction#gas_unit_price
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    ////////////////////////////////////////////////////////////////////////////////////
 
     struct Client
     {

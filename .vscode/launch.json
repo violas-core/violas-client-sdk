@@ -13,7 +13,7 @@
             "program": "${workspaceFolder}/build/debug/bin/nft-store",
             "args": [
                 "-u",
-                "http://localhost:42019",
+                "http://localhost:39171",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-w",

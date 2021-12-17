@@ -121,18 +121,28 @@ map<string, handle> create_commands(client2_ptr client, string url)
          }},
         {"list-orders", [=](istringstream &params)
          {
-             store->register_nft();
+             cout << store->list_orders();
          }},
         {"make-order", [=](istringstream &params)
          {
+             size_t account_index;
              nft::Id nft_token_id;
              uint64_t price;
              string currency;
              double incentive;
 
-             params >> nft_token_id >> price >> currency >> incentive;
+             params >> account_index >> nft_token_id >> price >> currency >> incentive;
 
-             store->make_order(1, nft_token_id, price, currency, incentive);
+             store->make_order(account_index, nft_token_id, price, currency, incentive);
+         }},
+        {"revoke-order", [=](istringstream &params)
+         {
+             size_t account_index;
+             nft::Id order_id;
+
+             params >> account_index >> order_id;
+
+             store->revoke_order(account_index, order_id);
          }},
     };
 }

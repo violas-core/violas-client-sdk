@@ -45,7 +45,13 @@ namespace violas
         template <typename T>
         std::optional<T> get_resource(dt::StructTag tag)
         {
-            auto iter = _resources.find(tag.bcsSerialize());
+            auto bcs = tag.bcsSerialize();
+            bytes path;
+
+            path.push_back(1); 
+            copy(begin(bcs), end(bcs), std::back_inserter<>(path));
+
+            auto iter = _resources.find(path);
             if (iter != end(_resources))
             {
                 T t;
@@ -168,18 +174,10 @@ namespace violas
         publish_module(size_t account_index,
                        std::string_view module_file_name) = 0;
 
-        // template<typename T>
-        // T get_account_resource(const dt::AccountAddress & address, const dt::StructTag path)
-        // {
-        //     T t;
-
-        //     _r
-        //     return t;
-        // }
-
         virtual AccountState
         get_account_state(const dt::AccountAddress address) = 0;
 
+        virtual void get_events() = 0;
         ////////////////////////////////////////////////////////////////
         // Methods for Violas framework
         ////////////////////////////////////////////////////////////////
@@ -272,8 +270,14 @@ namespace violas
     make_struct_tag(diem_types::AccountAddress address,
                     std::string_view module,
                     std::string_view name,
-                    std::vector<dt::TypeTag> tags)
+                    std::vector<dt::TypeTag> type_tags)
     {
+        return dt::StructTag{
+            address,
+            diem_types::Identifier{std::string{module}},
+            diem_types::Identifier{std::string{name}},
+            type_tags,
+        };
     }
 
     template <typename... Args>

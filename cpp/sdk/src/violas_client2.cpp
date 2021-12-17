@@ -599,12 +599,17 @@ namespace violas
         virtual AccountState
         get_account_state(const dt::AccountAddress address) override
         {
-            json_rpc::AccountStateWithProof asp = m_rpc_cli->get_account_state_blob(string(begin(address.value), end(address.value)));
+            json_rpc::AccountStateWithProof asp = m_rpc_cli->get_account_state_blob(bytes_to_hex(address.value));
             AccountState as(asp.blob);
 
             return as;
         }
 
+        virtual void get_events() override
+        {
+
+        }
+        
         //
         //
         //

@@ -137,7 +137,7 @@ void operator>>(const std::string &str, std::array<uint8_t, N> &bytes)
 }
 
 template <size_t N>
-std::istringstream &operator>>(std::istringstream &iss, std::array<uint8_t, N> &bytes)
+std::istream &operator>>(std::istream &iss, std::array<uint8_t, N> &bytes)
 {
     std::string str;
 
@@ -252,6 +252,11 @@ auto bytes_to_hex(const auto &bytes)
 
     return oss.str();
 };
+
+std::string bytes_to_string(const auto &bytes)
+{
+    return std::string(std::begin(bytes), std::end(bytes));
+}
 
 auto u8_array_to_vector(const auto &u8_array)
 {

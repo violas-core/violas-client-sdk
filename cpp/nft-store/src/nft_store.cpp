@@ -1,4 +1,5 @@
 #include <tuple>
+#include <iomanip>
 #include <violas_client2.hpp>
 #include <utils.hpp>
 #include "nft_store.hpp"
@@ -84,40 +85,90 @@ namespace nft
             {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
             {make_txn_args(nft_id, price, uint64_t(MICRO_COIN * incentive), uint64_t(MICRO_COIN))});
 
-        _client->check_txn_vm_status(sender, sn, "Store::register_nft");
+        _client->check_txn_vm_status(sender, sn, "Store::make_order");
+    }
+
+    void Store::revoke_order(size_t account_index,
+                      Id order_id)
+    {
     }
 
     std::vector<Order>
     Store::list_orders()
     {
-        std::vector<Order> orders;
+        auto state = _client->get_account_state(NFT_STORE_ADMIN_ADDRESS);
 
-        // StructTag tag{
-        //     Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-        //     "NonFungibleToken",
-        //     "NFT",
-        //     {StructTag{T::module_address(), T::module_name(), T::resource_name()}}};
+        auto opt_orders = state.get_resource<std::vector<Order>>(
+            make_struct_tag(VIOLAS_LIB_ADDRESS,
+                            "NftStore",
+                            "OrderList",
+                            {make_struct_type_tag(VIOLAS_LIB_ADDRESS,
+                                                  "MountWuyi",
+                                                  "Tea")}));
+        if (opt_orders)
+            return *opt_orders;
+        else
+            return {};
+    }
 
-        // violas::AccountState state(rpc_cli);
+    std::optional<AccountInfo>
+    Store::get_account_info(Address address)
+    {
+        auto state = _client->get_account_state(NFT_STORE_ADMIN_ADDRESS);
 
-        try
-        {
-            auto state = _client->get_account_state(NFT_STORE_ADMIN_ADDRESS);
-            return state.get_resource<std::vector<Order>>(make_struct_type_tag(VIOLAS_LIB_ADDRESS, "NftStore", "OrderList"));
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << color::RED << e.what() << color::RESET << endl;
-        }        
-
-        return {};
+        auto opt_account_info = state.get_resource<AccountInfo>(
+            make_struct_tag(VIOLAS_LIB_ADDRESS,
+                            "NftStore",
+                            "OrderList",
+                            {make_struct_type_tag(VIOLAS_LIB_ADDRESS,
+                                                  "MountWuyi",
+                                                  "Tea")}));
+        if (opt_account_info)
+            return *opt_account_info;
+        else
+            return {};
     }
 
     std::vector<MadeOrderEvent>
-    list_made_order_events(Address address, uint64_t start, uint64_t limit)
+    get_made_order_events(Address address, uint64_t start, uint64_t limit)
     {
         std::vector<MadeOrderEvent> events;
 
         return events;
     }
+}
+
+std::ostream &operator<<(std::ostream &os, const std::vector<nft::Order> &orders)
+{
+    // Print talbe header
+    os << color::YELLOW
+       << left << setw(8) << "index"
+       << left << setw(66) << "NFT Token Id"
+       << right << setw(10) << "Price"
+       << left << setw(5) << ""
+       << left << setw(16) << "Sale Incentive"
+       << left << setw(34) << "Provider"
+       << left << setw(20) << "Order Id"
+       << color::RESET << endl;
+
+    int i = 0;
+    for (auto order : orders)
+    {
+        BcsSerde serde;
+
+        order.serde(serde);
+        auto bytes = serde.bytes();
+        auto order_id = sha3_256(bytes.data(), bytes.size());
+
+        os << left << setw(8) << i++
+           << left << setw(66) << bytes_to_hex(order.nft_token_id)
+           << right << setw(10) << order.price
+           << left << setw(5) << bytes_to_string(order.currency_code)
+           << left << setw(16) << order.sale_incentive
+           << left << setw(34) << bytes_to_hex(order.provider)
+           << left << setw(20) << bytes_to_hex(order_id)
+           << endl;
+    }
+
+    return os;
 }

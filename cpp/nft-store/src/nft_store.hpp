@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <violas_client2.hpp>
 #include <bcs_serde.hpp>
 
@@ -9,7 +10,7 @@ namespace nft
 
     struct Order
     {
-        Id nft_token_id;
+        bytes nft_token_id;
         uint64_t price;
         bytes currency_code;
         uint64_t sale_incentive;
@@ -32,6 +33,14 @@ namespace nft
         BcsSerde &serde(BcsSerde &bs)
         {
             return bs && order_id && nft_token_id && price && currency_code && sale_incentive;
+        }
+    };
+
+    struct AccountInfo
+    {
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs;
         }
     };
 
@@ -64,11 +73,16 @@ namespace nft
 
         void trade_order();
 
+        std::optional<AccountInfo>
+        get_account_info(Address address);
+
         std::vector<Order>
         list_orders();
 
         std::vector<MadeOrderEvent>
-        list_made_order_events(Address address, uint64_t start, uint64_t limit);
+        get_made_order_events(Address address, uint64_t start, uint64_t limit);
     };
 
 } // namespace nft
+
+std::ostream &operator<<(std::ostream &os, const std::vector<nft::Order> &orders);

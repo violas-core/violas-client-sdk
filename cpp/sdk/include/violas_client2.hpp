@@ -5,6 +5,7 @@
 #include <diem_types.hpp>
 #include <utils.hpp>
 #include <bcs_serde.hpp>
+#include <json_rpc.hpp>
 #include "wallet.hpp"
 
 namespace dt = diem_types;
@@ -48,7 +49,7 @@ namespace violas
             auto bcs = tag.bcsSerialize();
             bytes path;
 
-            path.push_back(1); 
+            path.push_back(1);
             copy(begin(bcs), end(bcs), std::back_inserter<>(path));
 
             auto iter = _resources.find(path);
@@ -177,7 +178,26 @@ namespace violas
         virtual AccountState
         get_account_state(const dt::AccountAddress address) = 0;
 
-        virtual void get_events() = 0;
+        virtual std::vector<json_rpc::EventView>
+        get_events(EventHandle handle, uint64_t start, uint64_t limit) = 0;
+
+        template <typename T>
+        std::vector<T> query_events(EventHandle handle, uint64_t start, uint64_t limit)
+        {
+            std::vector<T> events;
+
+            for (auto &e : this->get_events(handle, start, limit))
+            {
+                T event;
+                BcsSerde serde(std::get<json_rpc::UnknownEvent>(e.event).bytes);
+
+                serde && event;
+
+                events.push_back(event);
+            }
+
+            return events;
+        }
         ////////////////////////////////////////////////////////////////
         // Methods for Violas framework
         ////////////////////////////////////////////////////////////////

@@ -144,6 +144,42 @@ map<string, handle> create_commands(client2_ptr client, string url)
 
              store->revoke_order(account_index, order_id);
          }},
+        {"get-account-info", [=](istringstream &params)
+         {
+             nft::Address address;
+
+             auto accounts = client->get_all_accounts();
+
+             params >> address;
+
+             auto account_info = store->get_account_info(address);
+         }},
+        {"query-events", [=](istringstream &params)
+         {
+             string event_type;
+             nft::Address address;
+
+             auto accounts = client->get_all_accounts();
+
+             params >> event_type >> address;
+
+             if (event_type == "made")
+             {
+                 auto made_order_events = store->get_made_order_events(address, 0, 10);
+                 for (auto &event : made_order_events)
+                 {
+                     cout << "order id : " << (event.order_id)
+                          << ", nft id : " << bytes_to_hex(event.nft_token_id)
+                          << ", price : " << event.price
+                          << ", currency code : " << bytes_to_string(event.currency_code)
+                          << ", sale_incentive : " << event.sale_incentive
+                          << endl;
+                 }
+             }
+             else if (event_type == "revoked")
+             {
+             }
+         }},
     };
 }
 

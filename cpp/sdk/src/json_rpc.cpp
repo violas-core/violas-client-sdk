@@ -110,6 +110,14 @@ namespace json_rpc
                 auto type = vm_status["type"].as_string();
                 if (type == "executed")
                     txn.vm_status.value = VMStatus::Executed{type};
+                else if (type == "execution_failure")
+                {
+                    txn.vm_status.value = VMStatus::ExecutionFailure{
+                        type,
+                        vm_status["location"].as_string(),
+                        (uint64_t)vm_status["function_index"].as_integer(),
+                        (uint64_t)vm_status["code_offset"].as_integer()};
+                }
                 else if (type == "out_of_gas")
                     txn.vm_status.value = VMStatus::OutOfGas{type};
                 else if (type == "miscellaneous_error")

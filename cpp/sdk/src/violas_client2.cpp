@@ -299,6 +299,20 @@ namespace violas
             {
                 std::visit(
                     overloaded{[](VMStatus::Executed status) {},
+                               [=](VMStatus::ExecutionFailure status)
+                               {
+                                   ostringstream oss;
+
+                                   oss << error_info << " error, "
+                                       << "vm_status : {\n"
+                                       << "type : " << status.type << ", "
+                                       << "location : " << status.location << ", \n"
+                                       << "function index : " << status.function_index << ", \n"
+                                       << "code offset : " << status.code_offset << ", \n"
+                                       << "}";
+
+                                   __throw_runtime_error(oss.str().c_str());
+                               },
                                [](VMStatus::OutOfGas status)
                                {
                                    __throw_runtime_error(status.type.c_str());
@@ -605,11 +619,12 @@ namespace violas
             return as;
         }
 
-        virtual void get_events() override
+        virtual std::vector<json_rpc::EventView>
+        get_events(EventHandle handle, uint64_t start, uint64_t limit) override
         {
-
+            return m_rpc_cli->get_events(bytes_to_hex(handle.guid), start, limit);
         }
-        
+
         //
         //
         //

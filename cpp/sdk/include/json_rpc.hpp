@@ -10,7 +10,7 @@
 
 namespace json_rpc
 {
-    namespace dt = diem_types;    
+    namespace dt = diem_types;
 
     struct Currency
     {
@@ -105,6 +105,14 @@ namespace json_rpc
             std::string type;
         };
 
+        struct ExecutionFailure
+        {
+            std::string type;
+            std::string location;
+            uint64_t function_index;
+            uint64_t code_offset;
+        };
+
         struct OutOfGas
         {
             std::string type;
@@ -129,7 +137,7 @@ namespace json_rpc
             } explanation;
         };
 
-        std::variant<Executed, OutOfGas, MiscellaneousError, MoveAbort> value;
+        std::variant<Executed, ExecutionFailure, OutOfGas, MiscellaneousError, MoveAbort> value;
     };
 
     struct TransactionView
@@ -145,7 +153,7 @@ namespace json_rpc
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     ////////////////////////////////////////////////////////////////////////////////////
 
     struct Client

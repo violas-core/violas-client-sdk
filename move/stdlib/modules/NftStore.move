@@ -76,7 +76,7 @@ module NftStore {
     //
     //  account info held by each customer account
     //
-    struct Account<NFT> has key {
+    struct Account<NFT> has key, store {
         made_order_events: EventHandle<MadeOrderEvent>,
         revoked_order_events: EventHandle<RevokedOrderEvent>,
         traded_order_events : EventHandle<TradedOrderEvent>,
@@ -104,17 +104,18 @@ module NftStore {
         sig: &signer, 
         provider_parent_address: address,
         sale_agent_parent_address: address) 
-    {        
-        check_admin_permission(sig);
-
+    {
         let sender = Signer::address_of(sig);
+
+        check_admin_permission(sig);        
+
         assert(!exists<Configuration>(sender), Errors::already_published(ENFT_STORE_HAS_BEEN_INITIALIZED));
 
         move_to(sig, Configuration {
             withdraw_cap: NonFungibleToken::extract_opt_withdraw_capability(sig),
             provider_parent_address,
             sale_agent_parent_address
-        });        
+        });
     }
     //
     // Register a new NFT type into Store
@@ -132,7 +133,9 @@ module NftStore {
 
         if(!NonFungibleToken::has_accepted<NFT>(sender)) {
             NonFungibleToken::accept<NFT>(sig);
-        };        
+        };
+
+        
     }
     //
     //  Accpet Account info
@@ -206,7 +209,8 @@ module NftStore {
     //  note : the address of signer must be same as the address of provider of order
     //
     public fun revoke_order<NFT: store>(sig: &signer, order_id: vector<u8>)
-    acquires Account, OrderList, Configuration {        
+    acquires OrderList, Configuration { 
+    //acquires Account, OrderList, Configuration {        
         let sender = Signer::address_of(sig);
 
         let (ret, index) = find_order<NFT>(&order_id);
@@ -214,26 +218,26 @@ module NftStore {
 
         let order_list = borrow_global_mut<OrderList<NFT>>(ADMIN_ACCOUNT_ADDRESS);                    
 
-        {
+        {            
             let order = Vector::borrow(&order_list.orders, index);
         
             // Make sure the provider of order is the same as sender
             assert(order.provider == sender, 10004);
 
             let configuration = borrow_global<Configuration>(ADMIN_ACCOUNT_ADDRESS);
-
+                        
             NonFungibleToken::pay_from<NFT>(&configuration.withdraw_cap, order.provider, &order.nft_token_id, &b"revoke order from NFT store" );
-        };       
+        };
                 
-        // Destory order
-        let Order { price:_, currency_code:_, sale_incentive:_, provider:_, nft_token_id } = Vector::swap_remove(&mut order_list.orders, index);       
-
-        let account = borrow_global_mut<Account<NFT>>(sender);
-        Event::emit_event(&mut account.revoked_order_events, 
-            RevokedOrderEvent {
-                nft_token_id,
-                order_id
-            });
+        // // Destory order
+        // let Order { price:_, currency_code:_, sale_incentive:_, provider:_, nft_token_id } = Vector::swap_remove(&mut order_list.orders, index);       
+        
+        // let account = borrow_global_mut<Account<NFT>>(sender);
+        // Event::emit_event(&mut account.revoked_order_events, 
+        //     RevokedOrderEvent {
+        //         nft_token_id,
+        //         order_id
+        //     });        
     }
 
     //

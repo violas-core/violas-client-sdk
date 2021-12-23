@@ -46,7 +46,10 @@ namespace nft
         _client->create_parent_vasp_account(sale_parent.address, sale_parent.auth_key, "sales parent account");
         _client->create_parent_vasp_account(salge_agent_parent.address, salge_agent_parent.auth_key, "sales parent account");
 
-        _client->execute_script_file(0, "move/stdlib/scripts/nft_store_initialize.mv", {}, {});
+        auto [sender, sn] = _client->execute_script_file(0, "move/stdlib/scripts/nft_store_initialize.mv",
+                                                         {},
+                                                         make_txn_args(sale_parent.address, salge_agent_parent.address));
+        _client->check_txn_vm_status(sender, sn, "Store::initialize");
 
         this->register_account(1);
         this->register_account(2);
@@ -89,8 +92,15 @@ namespace nft
     }
 
     void Store::revoke_order(size_t account_index,
-                      Id order_id)
+                             Id order_id)
     {
+        auto [sender, sn] = _client->execute_script_file(
+            account_index,
+            "move/stdlib/scripts/nft_store_revoke_order.mv",
+            {_nft_type_tag},
+            {make_txn_args(order_id)});
+
+        _client->check_txn_vm_status(sender, sn, "Store::revoke_order");
     }
 
     std::vector<Order>
@@ -114,12 +124,12 @@ namespace nft
     std::optional<AccountInfo>
     Store::get_account_info(Address address)
     {
-        auto state = _client->get_account_state(NFT_STORE_ADMIN_ADDRESS);
+        auto state = _client->get_account_state(dt::AccountAddress{address});
 
         auto opt_account_info = state.get_resource<AccountInfo>(
             make_struct_tag(VIOLAS_LIB_ADDRESS,
                             "NftStore",
-                            "OrderList",
+                            "Account",
                             {make_struct_type_tag(VIOLAS_LIB_ADDRESS,
                                                   "MountWuyi",
                                                   "Tea")}));
@@ -130,11 +140,15 @@ namespace nft
     }
 
     std::vector<MadeOrderEvent>
-    get_made_order_events(Address address, uint64_t start, uint64_t limit)
+    Store::get_made_order_events(Address address, uint64_t start, uint64_t limit)
     {
-        std::vector<MadeOrderEvent> events;
-
-        return events;
+        auto account_info = this->get_account_info(address);
+        if (account_info)
+        {
+            return _client->query_events<MadeOrderEvent>(account_info->made_order_events, start, limit);
+        }
+        else
+            return {};
     }
 }
 

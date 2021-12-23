@@ -315,7 +315,7 @@ module NonFungibleToken {
     acquires NFT, Configuration {
         let sender = cap.account_address;
 
-        let token = withdraw<Token>(cap, receiver, *token_id, metadata);
+        let token = withdraw<Token>(cap, sender, *token_id, metadata);
         deposite<Token>(sender, receiver, token, metadata);
 
         // Update owner of token id

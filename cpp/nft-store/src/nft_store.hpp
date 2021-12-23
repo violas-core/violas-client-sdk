@@ -24,8 +24,8 @@ namespace nft
 
     struct MadeOrderEvent
     {
-        Id order_id;
-        Id nft_token_id;
+        bytes order_id;
+        bytes nft_token_id;
         uint64_t price;
         bytes currency_code;
         uint64_t sale_incentive;
@@ -38,9 +38,15 @@ namespace nft
 
     struct AccountInfo
     {
+        violas::EventHandle made_order_events;
+        violas::EventHandle revoked_order_events;
+        violas::EventHandle traded_order_events;
+        violas::EventHandle sent_trading_order_sig_events;
+        violas::EventHandle received_trading_order_sig_events;
+
         BcsSerde &serde(BcsSerde &bs)
         {
-            return bs;
+            return bs && made_order_events && revoked_order_events && traded_order_events && sent_trading_order_sig_events && received_trading_order_sig_events;
         }
     };
 

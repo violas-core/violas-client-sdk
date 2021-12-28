@@ -3,32 +3,30 @@ Violas Client SDK for Android, IOS and PC.
 
 SDK support the follwing programming language 
 1. Java for Android
-2. Swift for IOS
+2. Swift for IOS, coming soon ...
 3. C++ for Linux, MacOS and Windows.
 
 ## dependencies
 ```
-sudo apt install libtool automake autoconf gcc-8 libstdc++-dev clang-9
+sudo apt install cmake gcc-10 libstdc++-dev clang-12
 ```
 
-## Build
+## Build Rust code
 
-1. download Libra source code 
+1. git clone Violas source code 
 
-2. open ViolasClientSdk/rust-client-proxy/cargo.toml, replace all reference for 'Libra' with correct path.
+2. git clone violas-client-sk in the same folder
 
-3. run "cargo build --release"
+3. cd rust/violas-client, run "cargo build --release"
 
 4. in path ViolasClientSdk
 
+## Build Cpp code
 ```
-./autogen.sh
-./build_setup.sh
-cd build/release
-make install-strip
+mkdir build && cd build 
+cmake ../cpp/
+make
 ```
-5. all executeable files are in path build/release/bin,
-   all lib files are in path build/release/lib
 
 # Compiling Violas Client on Windows 
 

@@ -109,6 +109,8 @@ module NftStore {
 
         check_admin_permission(sig);        
 
+        NonFungibleToken::make_account(sig);
+
         assert(!exists<Configuration>(sender), Errors::already_published(ENFT_STORE_HAS_BEEN_INITIALIZED));
 
         move_to(sig, Configuration {
@@ -259,7 +261,7 @@ module NftStore {
 
         let balance = DiemAccount::balance<Token>(sender);
         
-        assert(balance > order.price, 100003);
+        assert(balance > order.price, 10003);
         
         let incentive_amount = FixedPoint32::multiply_u64(order.price, *&order.sale_incentive);
         

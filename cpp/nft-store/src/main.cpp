@@ -144,6 +144,27 @@ map<string, handle> create_commands(client2_ptr client, string url)
 
              store->revoke_order(account_index, order_id);
          }},
+        {"sign-trading-order", [=](istringstream &params)
+         {
+             size_t account_index;
+             nft::Id order_id;
+             nft::Address address;
+
+             params >> account_index >> address >> order_id;
+
+             auto signed_txn = store->sign_trading_order(account_index, dt::AccountAddress{address}, order_id);
+             store->submit_trading_order(2, move(signed_txn));
+         }},
+        {"submit-trading-order", [=](istringstream &params)
+         {
+             size_t account_index;
+             nft::Id order_id;
+             dt::SignedTransaction signed_txn;
+
+             params >> account_index >> order_id;
+
+             store->submit_trading_order(account_index, move(signed_txn));
+         }},
         {"get-account-info", [=](istringstream &params)
          {
              nft::Address address;

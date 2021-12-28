@@ -77,7 +77,13 @@ namespace nft
         void revoke_order(size_t account_index,
                           Id order_id);
 
-        void trade_order();
+        dt::SignedTransaction
+        sign_trading_order(size_t account_index,
+                           dt::AccountAddress sale_agent_address,
+                           Id order_id);
+
+        void submit_trading_order(size_t account_index,
+                                  dt::SignedTransaction &&txn);
 
         std::optional<AccountInfo>
         get_account_info(Address address);

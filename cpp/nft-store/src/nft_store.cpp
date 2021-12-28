@@ -1,3 +1,4 @@
+#include <fstream>
 #include <tuple>
 #include <iomanip>
 #include <violas_client2.hpp>
@@ -20,6 +21,9 @@ namespace nft
 
         tie(index, address) = _client->create_next_account();
         cout << index << " : " << bytes_to_hex(address.value) << endl;
+
+        tie(index, address) = _client->create_next_account();
+        cout << index << " : " << bytes_to_hex(address.value) << endl;
     }
 
     Store::~Store()
@@ -32,6 +36,7 @@ namespace nft
         auto &admin = accounts[0];
         auto &sale_parent = accounts[1];
         auto &salge_agent_parent = accounts[2];
+        auto &customer = accounts[3];
 
         // try_catch([=]()
         //           { _client->create_designated_dealer_ex("VLS", 0, admin.address, admin.auth_key,
@@ -45,7 +50,8 @@ namespace nft
 
         _client->create_parent_vasp_account(sale_parent.address, sale_parent.auth_key, "sales parent account");
         _client->create_parent_vasp_account(salge_agent_parent.address, salge_agent_parent.auth_key, "sales parent account");
-
+        _client->create_child_vasp_account(2, customer.address, customer.auth_key, "VLS", 0, true);
+        
         auto [sender, sn] = _client->execute_script_file(0, "move/stdlib/scripts/nft_store_initialize.mv",
                                                          {},
                                                          make_txn_args(sale_parent.address, salge_agent_parent.address));
@@ -99,6 +105,30 @@ namespace nft
             "move/stdlib/scripts/nft_store_revoke_order.mv",
             {_nft_type_tag},
             {make_txn_args(order_id)});
+
+        _client->check_txn_vm_status(sender, sn, "Store::revoke_order");
+    }
+
+    dt::SignedTransaction
+    Store::sign_trading_order(size_t account_index,
+                              dt::AccountAddress sale_agent_address,
+                              Id order_id)
+    {
+        ifstream ifs("move/stdlib/scripts/nft_store_revoke_order.mv", ios::in | ios::binary);
+        bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
+        dt::Script script{script_bytecode,
+                          {_nft_type_tag},
+                          {make_txn_args(order_id)}};
+
+        auto txn = _client->sign_multi_agent_script(account_index, move(script), {sale_agent_address});
+
+        return txn;
+    }
+
+    void Store::submit_trading_order(size_t account_index,
+                                     dt::SignedTransaction &&txn)
+    {
+        auto [sender, sn] = _client->sign_and_submit_multi_agent_signed_txn(account_index, move(txn));
 
         _client->check_txn_vm_status(sender, sn, "Store::revoke_order");
     }

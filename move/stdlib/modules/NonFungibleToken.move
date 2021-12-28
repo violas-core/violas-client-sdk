@@ -146,17 +146,24 @@ module NonFungibleToken {
                 received_events: Event::new_event_handle<ReceivedEvent>(sig),
             });
         
-        if(!exists<Account>(sender)){
-            move_to<Account>(sig, 
-                Account { opt_withdraw_cap: Option::some(WithdrawCapbility { account_address: sender }) });
-        };
-        
+        make_account(sig);        
     }
     //
     // Has accepted
     //
     public fun has_accepted<Token: store>(sender: address) : bool {
         exists<NFT<Token>>(sender)
+    }
+    //
+    //
+    //
+    public fun make_account(sig: &signer) {
+        let sender = Signer::address_of(sig);
+        
+        if(!exists<Account>(sender)){
+            move_to<Account>(sig, 
+                Account { opt_withdraw_cap: Option::some(WithdrawCapbility { account_address: sender }) });
+        };
     }
     //
     //  Get the number of balance for Token

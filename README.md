@@ -46,4 +46,37 @@ make
 
 ## How is this project organized?
 ```
+├── android
+│   ├── app
+│   ├── gradle
+│   └── sdk
+├── build
+│   ├── debug
+│   └── release
+├── cpp
+│   ├── command
+│   ├── framework
+│   ├── lib
+│   ├── nft
+│   ├── nft-store
+│   ├── sdk
+│   ├── test
+│   ├── testnet
+│   └── vls
+├── doc
+├── java
+│   ├── src
+│   └── test
+├── move
+│   ├── bank
+│   ├── currencies
+│   ├── exchange
+│   ├── oracle
+│   ├── stdlib
+│   ├── swap
+│   └── tea
+├── python
+└── rust
+    ├── violas-client
+    └── violas-oracle
 ```

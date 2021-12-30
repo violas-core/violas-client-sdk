@@ -52,7 +52,7 @@ module NftStore {
         signed_txn : vector<u8>
     }
 
-    struct Order has drop, store {
+    struct Order has store {
         nft_token_id : vector<u8>,
         price : u64,
         currency_code : vector<u8>,
@@ -211,8 +211,7 @@ module NftStore {
     //  note : the address of signer must be same as the address of provider of order
     //
     public fun revoke_order<NFT: store>(sig: &signer, order_id: vector<u8>)
-    acquires OrderList, Configuration { 
-    //acquires Account, OrderList, Configuration {        
+    acquires Account, OrderList, Configuration {        
         let sender = Signer::address_of(sig);
 
         let (ret, index) = find_order<NFT>(&order_id);
@@ -231,15 +230,15 @@ module NftStore {
             NonFungibleToken::pay_from<NFT>(&configuration.withdraw_cap, order.provider, &order.nft_token_id, &b"revoke order from NFT store" );
         };
                 
-        // // Destory order
-        // let Order { price:_, currency_code:_, sale_incentive:_, provider:_, nft_token_id } = Vector::swap_remove(&mut order_list.orders, index);       
+        // Destory order
+        let Order { price:_, currency_code:_, sale_incentive:_, provider:_, nft_token_id } = Vector::swap_remove(&mut order_list.orders, index);       
         
-        // let account = borrow_global_mut<Account<NFT>>(sender);
-        // Event::emit_event(&mut account.revoked_order_events, 
-        //     RevokedOrderEvent {
-        //         nft_token_id,
-        //         order_id
-        //     });        
+        let account = borrow_global_mut<Account<NFT>>(sender);
+        Event::emit_event(&mut account.revoked_order_events, 
+            RevokedOrderEvent {
+                nft_token_id,
+                order_id
+            });        
     }
 
     //
@@ -308,9 +307,14 @@ module NftStore {
                     agent : sale_agent,
                     price : order.price,
                     incentive : FixedPoint32::get_raw_value(*&order.sale_incentive),
-                };
+                };            
             
+            //
             // Emit trade order events to sender account
+            //
+            if(!exists<Account<NFT>>(sender))
+                accept<NFT>(sender_sig);
+
             let sender_account = borrow_global_mut<Account<NFT>>(sender);
             Event::emit_event(&mut sender_account.traded_order_events, 
                 copy traded_order_event);
@@ -319,19 +323,19 @@ module NftStore {
             let provider_account = borrow_global_mut<Account<NFT>>(order.provider);
             Event::emit_event(&mut provider_account.traded_order_events, 
                 copy traded_order_event);
-            
-            // Check if the account info exists under sale agent account
+            //
+            // Emit trade order events to sale agent account
+            //
             if(!exists<Account<NFT>>(sale_agent))
                 accept<NFT>(sale_agent_sig);
-
-            // Emit trade order events to sale agent account
+            
             let sale_agent_account = borrow_global_mut<Account<NFT>>(sale_agent);
             Event::emit_event(&mut sale_agent_account.traded_order_events, 
                 traded_order_event);
         };
         
         // Destory order
-        let Order { price:_, currency_code:_, sale_incentive:_, provider:_, nft_token_id:_ } = Vector::swap_remove(&mut order_list.orders, index);
+        let Order { price:_, currency_code:_, sale_incentive:_, provider:_, nft_token_id:_ } = order;
     }
 
 

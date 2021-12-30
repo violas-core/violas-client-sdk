@@ -88,6 +88,7 @@ mv build/scripts/nft_store_register_nft.mv scripts/
 mv build/scripts/nft_store_accept.mv scripts/
 mv build/scripts/nft_store_make_order.mv scripts/
 mv build/scripts/nft_store_revoke_order.mv scripts/
+mv build/scripts/nft_store_trade_order.mv scripts/
 
 
 rm -rf build

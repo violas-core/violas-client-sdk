@@ -59,3 +59,16 @@ script {
         NftStore::revoke_order<NFT>(&sig, order_id);
     }
 }
+
+script {    
+    use 0x2::NftStore;    
+    
+    fun nft_store_trade_order<NFT: store, Token>(sender_sig : signer,
+                                                sale_agent_sig : signer,
+                                                order_id: vector<u8>) { 
+        
+        NftStore::trade_order<NFT, Token>(&sender_sig, 
+                                        &sale_agent_sig, 
+                                        &order_id);
+    }
+}

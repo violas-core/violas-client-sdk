@@ -48,10 +48,10 @@ namespace nft
                                              "NFT Store administator",
                                              true);
 
-        _client->create_parent_vasp_account(sale_parent.address, sale_parent.auth_key, "sales parent account");
-        _client->create_parent_vasp_account(salge_agent_parent.address, salge_agent_parent.auth_key, "sales parent account");
+        _client->create_parent_vasp_account(sale_parent.address, sale_parent.auth_key, "sales parent account", true);
+        _client->create_parent_vasp_account(salge_agent_parent.address, salge_agent_parent.auth_key, "sales parent account", true);
         _client->create_child_vasp_account(2, customer.address, customer.auth_key, "VLS", 0, true);
-        
+
         auto [sender, sn] = _client->execute_script_file(0, "move/stdlib/scripts/nft_store_initialize.mv",
                                                          {},
                                                          make_txn_args(sale_parent.address, salge_agent_parent.address));
@@ -111,13 +111,14 @@ namespace nft
 
     dt::SignedTransaction
     Store::sign_trading_order(size_t account_index,
+                              std::string_view currency,
                               dt::AccountAddress sale_agent_address,
                               Id order_id)
     {
-        ifstream ifs("move/stdlib/scripts/nft_store_revoke_order.mv", ios::in | ios::binary);
+        ifstream ifs("move/stdlib/scripts/nft_store_trade_order.mv", ios::in | ios::binary);
         bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
         dt::Script script{script_bytecode,
-                          {_nft_type_tag},
+                          {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
                           {make_txn_args(order_id)}};
 
         auto txn = _client->sign_multi_agent_script(account_index, move(script), {sale_agent_address});
@@ -130,7 +131,7 @@ namespace nft
     {
         auto [sender, sn] = _client->sign_and_submit_multi_agent_signed_txn(account_index, move(txn));
 
-        _client->check_txn_vm_status(sender, sn, "Store::revoke_order");
+        _client->check_txn_vm_status(sender, sn, "Store::submit_trading_order");
     }
 
     std::vector<Order>

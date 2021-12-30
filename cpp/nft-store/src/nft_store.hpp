@@ -79,6 +79,7 @@ namespace nft
 
         dt::SignedTransaction
         sign_trading_order(size_t account_index,
+                           std::string_view currency,
                            dt::AccountAddress sale_agent_address,
                            Id order_id);
 

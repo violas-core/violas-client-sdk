@@ -540,8 +540,6 @@ namespace violas
             bytes = std::move(serializer).bytes();
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
 
-            // Set
-
             // Set sender's authenticator
             if (account_index == ACCOUNT_ROOT_ID)
             {
@@ -577,7 +575,7 @@ namespace violas
                 auto priv_key = m_wallet->get_account_priv_key(account_index);
                 ed25519::Signature signature = priv_key.sign(message.data(), message.size());
 
-                multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
+                //multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
                 multi_agent_auth.secondary_signers.push_back(
                     {AccountAuthenticator::Ed25519{
                         Ed25519PublicKey{u8_array_to_vector(priv_key.get_public_key().get_raw_key())},

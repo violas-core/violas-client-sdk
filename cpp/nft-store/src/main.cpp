@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <utils.hpp>
+#include <co_helper.hpp>
 #include <argument.hpp>
 #include <console.hpp>
 #include <json_rpc.hpp>

@@ -7,13 +7,23 @@ ELSE()
     link_directories(../../rust/violas-client/target/release)
 ENDIF()
 
+set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED true)
+set(CMAKE_CXX_FLAGS -fcoroutines)
+
 aux_source_directory(src SRC)
 
 add_executable(nft-store ${SRC})
 
-target_link_libraries(nft-store violas_sdk violas_client cpprest readline ssl crypto ${OBJ_FROM_RUST})
+target_link_libraries(nft-store violas_sdk violas_client cpprest readline ssl crypto)
 
+# test module
+add_executable(test-nft-store test/main.cpp src/nft_store.cpp)
+target_link_libraries(test-nft-store violas_sdk violas_client cpprest readline gtest pthread) 
+
+# installation
 install(TARGETS nft-store DESTINATION bin)
-
+install(TARGETS test-nft-store DESTINATION bin)
 
 

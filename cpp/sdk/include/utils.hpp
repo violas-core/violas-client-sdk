@@ -21,7 +21,7 @@ namespace color
 } // namespace color
 
 using bytes = std::vector<uint8_t>;
- 
+
 template <typename F>
 void try_catch(F f, bool showing_exp = true)
 {
@@ -218,24 +218,24 @@ inline std::vector<uint8_t> hex_to_bytes(const std::string &str)
     return bytes;
 }
 
-template<size_t N>
+template <size_t N>
 inline std::array<uint8_t, N> hex_to_array_u8(std::string_view hex)
 {
     std::array<uint8_t, N> array_u8;
 
-    if(hex.size() < array_u8.size())
+    if (hex.size() < array_u8.size())
         std::__throw_runtime_error("hex_to_array_u8 error, the length of hex is less than the size of array");
 
-    for(size_t i = 0; i < array_u8.size(); i++)
+    for (size_t i = 0; i < array_u8.size(); i++)
     {
         std::stringstream ss;
         uint16_t byte = 0;
 
-        ss << hex.at(i*2) << hex.at(i*2+1); // read two chars
+        ss << hex.at(i * 2) << hex.at(i * 2 + 1); // read two chars
         ss >> std::hex >> byte;
 
         array_u8[i] = byte;
-    }    
+    }
 
     return array_u8;
 }
@@ -328,5 +328,10 @@ inline std::string trim(std::string s)
 //
 //  helper for std::visit
 // refer to https://en.cppreference.com/w/cpp/utility/variant/visit
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+template <class... Ts>
+struct overloaded : Ts...
+{
+    using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;

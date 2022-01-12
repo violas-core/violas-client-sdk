@@ -4,7 +4,6 @@
 #include <functional>
 
 #include <utils.hpp>
-#include <co_helper.hpp>
 #include <argument.hpp>
 #include <console.hpp>
 #include <json_rpc.hpp>
@@ -253,4 +252,13 @@ void test_nft_store(const Arguments &args)
     // nft::Store store(client);
 
     // store.initialize(make_struct_type_tag(STD_LIB_ADDRESS, "Tea", "Tea"));
+}
+
+Task<void> test_co(const Arguments &args)
+{
+    client2_ptr client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
+
+    auto [sender_address, sn] = co_await client->await_execute_script(0, "", {}, {});
+
+    co_return;
 }

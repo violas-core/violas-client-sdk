@@ -5,8 +5,13 @@
 #include <list>
 #include <optional>
 #include <variant>
+#include <functional>
 #include <diem_types.hpp>
 #include <bcs_serde.hpp>
+
+#if defined(__GNUC__) && !defined(__llvm__)
+#include <coroutine>
+#endif
 
 namespace json_rpc
 {
@@ -156,14 +161,47 @@ namespace json_rpc
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-    struct Client
+    struct Client : public std::enable_shared_from_this<Client>
     {
         static std::shared_ptr<Client>
         create(std::string_view url);
 
         virtual ~Client() {}
-
+        /**
+         * @brief Submit a singed transaction to validator or full node
+         * 
+         * @param signed_txn a signed transaction
+         */
         virtual void submit(const diem_types::SignedTransaction &signed_txn) = 0;
+
+#if defined(__GNUC__) && !defined(__llvm__)
+        //
+        //  Async submit
+        //
+        virtual void async_submit(const diem_types::SignedTransaction &signed_txn,
+                                  std::function<void()> callback) = 0;
+        //
+        // co_wait await_submit
+        //
+        auto await_submit(diem_types::SignedTransaction &&signed_txn)
+        {
+            struct awaitable
+            {
+                std::shared_ptr<Client> _client;
+                diem_types::SignedTransaction signed_txn;
+
+                bool await_ready() { return false; }
+                void await_resume() {}
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    _client->async_submit(signed_txn, [h]()
+                                          { h.resume(); });
+                }
+            };
+
+            return awaitable{shared_from_this(), std::move(signed_txn)};
+        }
+#endif
 
         virtual std::optional<TransactionView>
         get_account_transaction(const diem_types::AccountAddress &address,

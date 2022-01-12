@@ -8,6 +8,10 @@
 #include <json_rpc.hpp>
 #include "wallet.hpp"
 
+#if defined(__GNUC__) && !defined(__llvm__)
+#include <coroutine>
+#endif
+
 namespace dt = diem_types;
 using ta = diem_types::TransactionArgument;
 
@@ -68,7 +72,7 @@ namespace violas
         }
     };
 
-    class Client2
+    class Client2 : public std::enable_shared_from_this<Client2>
     {
     public:
         static std::shared_ptr<Client2>
@@ -121,6 +125,60 @@ namespace violas
                             uint64_t gas_unit_price = 0,
                             std::string_view gas_currency_code = "VLS",
                             uint64_t expiration_timestamp_secs = 100) = 0;
+
+#if defined(__GNUC__) && !defined(__llvm__)
+        virtual void
+        async_submit_script(size_t account_index,
+                            std::string_view script_file_name,
+                            std::vector<diem_types::TypeTag> type_tags,
+                            std::vector<diem_types::TransactionArgument> args,
+                            uint64_t max_gas_amount = 1'000'000,
+                            uint64_t gas_unit_price = 0,
+                            std::string_view gas_currency_code = "VLS",
+                            uint64_t expiration_timestamp_secs = 100,
+                            std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) = 0;
+
+        auto await_execute_script(size_t account_index,
+                                  std::string_view script_file_name,
+                                  std::vector<diem_types::TypeTag> &&type_tags,
+                                  std::vector<diem_types::TransactionArgument> &&args,
+                                  uint64_t max_gas_amount = 1'000'000,
+                                  uint64_t gas_unit_price = 0,
+                                  std::string_view gas_currency_code = "VLS",
+                                  uint64_t expiration_timestamp_secs = 100)
+        {
+            struct awaitable
+            {
+                std::shared_ptr<Client2> _client;
+                size_t account_index;
+                std::string_view script_file_name;
+                std::vector<diem_types::TypeTag> type_tags;
+                std::vector<diem_types::TransactionArgument> args;
+                uint64_t max_gas_amount = 1'000'000;
+                uint64_t gas_unit_price = 0;
+                std::string_view gas_currency_code = "VLS";
+                uint64_t expiration_timestamp_secs = 100;
+
+                diem_types::AccountAddress _sender_address;
+                uint64_t _sequence_number;
+
+                bool await_ready() { return false; }
+                auto await_resume() { return std::make_tuple<>(_sender_address, _sequence_number); }
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    _client->async_submit_script(account_index, script_file_name, type_tags, args,
+                                                 max_gas_amount, gas_unit_price, gas_currency_code, expiration_timestamp_secs,
+                                                 [h, this](diem_types::AccountAddress address, uint64_t sn) mutable
+                                                 {
+                                                     this->_sender_address = address;
+                                                     h.resume();
+                                                 });
+                }
+            };
+
+            return awaitable{shared_from_this(), account_index, script_file_name, std::move(type_tags), std::move(args)};
+        }
+#endif
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
          *
@@ -191,7 +249,7 @@ namespace violas
                 T event;
                 BcsSerde serde(std::get<json_rpc::UnknownEvent>(e.event).bytes);
 
-                serde && event;
+                serde &&event;
 
                 events.push_back(event);
             }

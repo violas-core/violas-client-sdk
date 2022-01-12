@@ -76,7 +76,8 @@
         "unordered_set": "cpp",
         "*.ipp": "cpp",
         "csignal": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "coroutine": "cpp"
     },
     "git.ignoreLimitWarning": true,
     "cmake.configureOnOpen": false,

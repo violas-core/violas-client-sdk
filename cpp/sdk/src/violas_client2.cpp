@@ -791,7 +791,7 @@ namespace violas
                 ACCOUNT_TC_ID,
                 move(signed_txn));
 
-            check_txn_vm_status(sender, sn, "sign_and_submit_multi_agent_signed_txn");
+            check_txn_vm_status(sender, sn, "regiester_stable_currency");
         }
 
         /**

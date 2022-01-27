@@ -271,13 +271,15 @@ inline std::vector<uint8_t> string_to_bytes(const std::string &str)
 inline void set_stdin_echo(bool enable)
 {
     struct termios tty;
+    
     tcgetattr(STDIN_FILENO, &tty);
+    
     if (!enable)
         tty.c_lflag &= ~ECHO;
     else
         tty.c_lflag |= ECHO;
 
-    (void)tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
 template <typename... Args>

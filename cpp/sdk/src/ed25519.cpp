@@ -25,7 +25,7 @@
 
 using namespace std;
 
-namespace ed25519
+namespace crypto::ed25519
 {
     static void check_ret(int ret, const char *error)
     {

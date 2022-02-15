@@ -31,7 +31,7 @@ namespace violas
 
         Key extend_child_private_key(uint64_t index);
 
-        std::vector<ed25519::PrivateKey> m_private_keys;
+        std::vector<crypto::ed25519::PrivateKey> m_private_keys;
 
         Wallet();
 
@@ -45,8 +45,8 @@ namespace violas
 
         std::string export_mnemonic();
 
-        static Key pub_key_to_auth_key(const ed25519::PublicKey &pub_key);
-        static diem_types::AccountAddress pub_key_account_address(const ed25519::PublicKey &pub_key);
+        static Key pub_key_to_auth_key(const crypto::ed25519::PublicKey &pub_key);
+        static diem_types::AccountAddress pub_key_account_address(const crypto::ed25519::PublicKey &pub_key);
         
 
         // return account index and raw public key
@@ -64,7 +64,7 @@ namespace violas
         std::array<uint8_t, 16>
         get_account_address(size_t index);
 
-        ed25519::PrivateKey
+        crypto::ed25519::PrivateKey
         get_account_priv_key(size_t index);
 
         static void run_test_case();

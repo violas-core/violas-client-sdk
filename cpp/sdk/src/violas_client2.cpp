@@ -14,6 +14,7 @@
 #include "wallet.hpp"
 
 using namespace std;
+using namespace crypto;
 
 namespace violas
 {

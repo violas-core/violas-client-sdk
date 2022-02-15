@@ -14,66 +14,134 @@
 #include <array>
 #include <string>
 
-namespace ed25519
+namespace crypto
 {
-    const size_t KEY_LENGTH = 32;
-    const size_t SIGNATURE_LENGTH = 64;
-    using RawKey = std::array<uint8_t, KEY_LENGTH>;
-    using Signature = std::array<uint8_t, SIGNATURE_LENGTH>;
 
-    class PublicKey
+    namespace ed25519
     {
-    private:
-        /* data */
-        EVP_PKEY *m_pkey = nullptr;
+        const size_t KEY_LENGTH = 32;
+        const size_t SIGNATURE_LENGTH = 64;
+        using RawKey = std::array<uint8_t, KEY_LENGTH>;
+        using Signature = std::array<uint8_t, SIGNATURE_LENGTH>;
 
-    public:
-        PublicKey(RawKey raw_key);
+        class PublicKey
+        {
+        private:
+            /* data */
+            EVP_PKEY *m_pkey = nullptr;
 
-        static PublicKey from_hex_string(const std::string &hex_str);
+        public:
+            PublicKey(RawKey raw_key);
 
-        ~PublicKey();
+            static PublicKey from_hex_string(const std::string &hex_str);
 
-        RawKey get_raw_key() const;
+            ~PublicKey();
 
-        std::string dump_hex() const; 
+            RawKey get_raw_key() const;
 
-        bool verify(const Signature &sig, uint8_t *data, size_t len);
-    };
+            std::string dump_hex() const;
 
-    class PrivateKey
+            bool verify(const Signature &sig, uint8_t *data, size_t len);
+        };
+
+        class PrivateKey
+        {
+        private:
+            /* data */
+            EVP_PKEY *m_pkey = NULL;
+
+            PrivateKey(EVP_PKEY *pkey);
+
+        public:
+            ~PrivateKey();
+
+            PrivateKey(const PrivateKey &priv_key);
+
+            PrivateKey(PrivateKey &&priv_key);
+
+            PrivateKey operator=(const PrivateKey &priv_key);
+
+            static PrivateKey generate();
+
+            static PrivateKey from_raw_key(const RawKey &key);
+
+            static PrivateKey from_hex_string(const std::string &hex_str);
+
+            RawKey get_raw_key() const;
+
+            std::string dump_hex() const;
+
+            PublicKey get_public_key() const;
+            //
+            // sign for message
+            //
+            Signature sign(uint8_t *data, size_t len);
+        };
+
+        void run_test_case();
+
+    }
+
+    namespace x25519
     {
-    private:
-        /* data */
-        EVP_PKEY *m_pkey = NULL;
+        const size_t KEY_LENGTH = 32;
+        const size_t SIGNATURE_LENGTH = 64;
+        using RawKey = std::array<uint8_t, KEY_LENGTH>;
+        using Signature = std::array<uint8_t, SIGNATURE_LENGTH>;
 
-        PrivateKey(EVP_PKEY *pkey);
+        class PublicKey
+        {
 
-    public:
-        ~PrivateKey();
+        private:
+            /* data */
+            EVP_PKEY *m_pkey = nullptr;
 
-        PrivateKey(const PrivateKey &priv_key);
-        
-        PrivateKey(PrivateKey && priv_key);
+        public:
+            PublicKey(RawKey raw_key);
 
-        PrivateKey operator=(const PrivateKey &priv_key);
+            static PublicKey from_hex_string(const std::string &hex_str);
 
-        static PrivateKey generate();
+            ~PublicKey();
 
-        static PrivateKey from_raw_key(const RawKey &key);
+            RawKey get_raw_key() const;
 
-        static PrivateKey from_hex_string(const std::string &hex_str);
+            std::string dump_hex() const;
 
-        RawKey get_raw_key() const;
+            bool encrypt(const Signature &sig, uint8_t *data, size_t len);
+        };
 
-        std::string dump_hex() const;
+        class PrivateKey
+        {
+        private:
+            /* data */
+            EVP_PKEY *m_pkey = NULL;
 
-        PublicKey get_public_key() const;
-        //
-        // sign for message
-        //
-        Signature sign(uint8_t *data, size_t len);
-    };
+            PrivateKey(EVP_PKEY *pkey);
 
-    void run_test_case();
+        public:
+            ~PrivateKey();
+
+            PrivateKey(const PrivateKey &priv_key);
+
+            PrivateKey(PrivateKey &&priv_key);
+
+            PrivateKey operator=(const PrivateKey &priv_key);
+
+            static PrivateKey generate();
+
+            static PrivateKey from_raw_key(const RawKey &key);
+
+            static PrivateKey from_hex_string(const std::string &hex_str);
+
+            RawKey get_raw_key() const;
+
+            std::string dump_hex() const;
+
+            PublicKey get_public_key() const;
+            //
+            // sign for message
+            //
+            Signature sign(uint8_t *data, size_t len);
+        };
+    }
 }

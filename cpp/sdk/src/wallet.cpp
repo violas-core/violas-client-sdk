@@ -33,6 +33,7 @@
 #include "wallet.hpp"
 
 using namespace std;
+using namespace crypto;
 
 namespace violas
 {
@@ -111,7 +112,7 @@ namespace violas
     {
     }
 
-    ed25519::PrivateKey
+    crypto::ed25519::PrivateKey
     Wallet::get_account_priv_key(size_t index)
     {
         return m_private_keys.at(index);

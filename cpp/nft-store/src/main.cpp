@@ -213,7 +213,7 @@ void test(const Arguments &args)
 {
     violas::Wallet::run_test_case();
 
-    ed25519::run_test_case();
+    crypto::ed25519::run_test_case();
 
     client2_ptr client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
 

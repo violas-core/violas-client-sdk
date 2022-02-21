@@ -254,11 +254,13 @@ void test_nft_store(const Arguments &args)
     // store.initialize(make_struct_type_tag(STD_LIB_ADDRESS, "Tea", "Tea"));
 }
 
-Task<void> test_co(const Arguments &args)
+Task<void> test_coroutine(const Arguments &args)
 {
     client2_ptr client = Client2::create(args.url, args.chain_id, args.mnemonic, args.mint_key);
 
     auto [sender_address, sn] = co_await client->await_execute_script(0, "", {}, {});
+
+    co_await client->await_check_txn_vm_status(sender_address, sn, "");
 
     co_return;
 }

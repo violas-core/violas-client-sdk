@@ -171,6 +171,7 @@ namespace violas
                                                  [h, this](diem_types::AccountAddress address, uint64_t sn) mutable
                                                  {
                                                      this->_sender_address = address;
+                                                     this->_sequence_number = sn;
                                                      h.resume();
                                                  });
                 }
@@ -225,6 +226,33 @@ namespace violas
                             uint64_t sequence_number,
                             std::string_view error_info) = 0;
 
+        virtual void
+        async_check_txn_vm_status(const diem_types::AccountAddress &address,
+                            uint64_t sequence_number,
+                            std::function<void()> callback) = 0;
+
+#if defined(__GNUC__) && !defined(__llvm__)
+        auto await_check_txn_vm_status(const diem_types::AccountAddress &address,
+                                       uint64_t sequence_number,
+                                       std::string_view error_info)
+        {
+            struct awaitable
+            {
+                const diem_types::AccountAddress &address;
+                uint64_t sequence_number;
+
+                bool await_ready() { return false; }
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    // std::jthread([h]
+                    //              { h.resume(); });
+                }
+                void await_resume() {}
+            };
+
+            return awaitable{address, sequence_number};
+        }
+#endif
         virtual void
         publish_module(size_t account_index,
                        std::vector<uint8_t> &&module_bytes_code) = 0;

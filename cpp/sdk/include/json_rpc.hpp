@@ -169,7 +169,7 @@ namespace json_rpc
         virtual ~Client() {}
         /**
          * @brief Submit a singed transaction to validator or full node
-         * 
+         *
          * @param signed_txn a signed transaction
          */
         virtual void submit(const diem_types::SignedTransaction &signed_txn) = 0;
@@ -208,6 +208,48 @@ namespace json_rpc
                                 uint64_t sequence_number,
                                 bool include_events) = 0;
 
+        virtual void
+        async_get_account_transaction(const diem_types::AccountAddress &address,
+                                      uint64_t sequence_number,
+                                      bool include_events,
+                                      std::function<void(TransactionView &)>) = 0;
+
+#if defined(__GNUC__) && !defined(__llvm__)
+        auto await_get_account_transaction(const diem_types::AccountAddress &address,
+                                           uint64_t sequence_number,
+                                           bool include_events)
+        {
+            struct awaitable
+            {
+                std::shared_ptr<Client> _client;
+                diem_types::AccountAddress address;
+                uint64_t sequence_number;
+                bool include_events;
+
+                TransactionView _txn_view;
+
+                bool await_ready() { return false; }
+                auto await_resume() { return _txn_view; }
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    _client->async_get_account_transaction(
+                        address,
+                        sequence_number,
+                        include_events,
+                        [h, this](TransactionView &view)
+                        { 
+                            _txn_view = view;
+                            h.resume(); });
+                }
+            };
+
+            return awaitable{
+                shared_from_this(),
+                address,
+                sequence_number,
+                include_events};
+        }
+#endif
         virtual std::optional<AccountView>
         get_account(const diem_types::AccountAddress &, std::optional<uint64_t> version = std::nullopt) = 0;
 

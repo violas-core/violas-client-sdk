@@ -92,3 +92,6 @@ mv build/scripts/nft_store_trade_order.mv scripts/
 
 
 rm -rf build
+
+
+# clear && move sandbox publish modules/Map.move modules/NonFungibleToken.move --mode diem

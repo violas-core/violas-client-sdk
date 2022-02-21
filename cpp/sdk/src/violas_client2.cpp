@@ -343,6 +343,14 @@ namespace violas
                 __throw_runtime_error("check_txn_vm_status is timeout.");
         }
 
+        virtual void
+        async_check_txn_vm_status(const diem_types::AccountAddress &address,
+                            uint64_t sequence_number,
+                            std::function<void()> callback) override
+        {
+
+        }
+
         virtual std::tuple<dt::AccountAddress, uint64_t>
         execute_script_bytecode(size_t account_index,
                                 std::vector<uint8_t> script_byte_code,

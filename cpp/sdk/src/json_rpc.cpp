@@ -143,6 +143,14 @@ namespace json_rpc
                 return std::nullopt;
         }
 
+        virtual void
+        async_get_account_transaction(const diem_types::AccountAddress &address,
+                                      uint64_t sequence_number,
+                                      bool include_events,
+                                      std::function<void(TransactionView &)>) override
+        {
+        }
+
         virtual std::optional<AccountView>
         get_account(const diem_types::AccountAddress &address, std::optional<uint64_t> version) override
         {

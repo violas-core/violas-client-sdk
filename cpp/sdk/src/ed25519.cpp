@@ -243,12 +243,12 @@ namespace crypto::ed25519
             bool ret = false;
             string msg = "This is a test of the tsunami alert system.";
             string hex_key = "4cc9cd70d755484327b5164fa8f3f080b12aea9cbcc7bf0d4e7d92f58d4ae990";
-            string hex_key1 = "d8b5edb968050bc9589b64e1d2445a5455745630449eef2f0005fe362b4379d4";            
+            string hex_key1 = "d8b5edb968050bc9589b64e1d2445a5455745630449eef2f0005fe362b4379d4";
 
             auto priv_key = PrivateKey::from_hex_string(hex_key);
             string hex_pub_key = priv_key.get_public_key().dump_hex();
             assert(hex_pub_key == "5efff47b51644c4a247fc73b3e20e3ee5d44ff31de2ad7192aa6e00c724b6bc1");
-            
+
             auto priv_key1 = PrivateKey::from_hex_string(hex_key1);
             string hex_pub_key1 = priv_key1.get_public_key().dump_hex();
 
@@ -271,4 +271,9 @@ namespace crypto::ed25519
             assert(false);
         }
     }
+}
+
+namespace crypto::x25519
+{
+
 }

@@ -51,7 +51,7 @@ module NonFungibleToken {
     //
     //  NFT global infomation held by the administrator account
     //
-    struct Configuration<Token> has key, store {
+    struct Configuration<Token> has key {
         limited: bool,
         total: u64,
         amount: u64,
@@ -251,7 +251,7 @@ module NonFungibleToken {
     ///
     /// Mint a NFT to a receiver
     /// 
-    public fun mint<Token: copy + drop + store>(sig: &signer, receiver: address, token: Token) : bool
+    public fun mint<Token: store>(sig: &signer, receiver: address, token: Token) : bool
     acquires NFT, Configuration  {
 
         let sender = Signer::address_of(sig);

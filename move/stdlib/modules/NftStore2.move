@@ -18,7 +18,9 @@ module NftStore2 {
 
     const ENFT_STORE_HAS_BEEN_INITIALIZED: u64 = 10001;
     const ENFT_TYPE_HAS_BEEN_REGISTERED: u64 = 10002;
-
+    //
+    //  All events declaration
+    //
     struct MadeOrderEvent has drop, store {
         order_id : vector<u8>,
         nft_token_id : vector<u8>,        

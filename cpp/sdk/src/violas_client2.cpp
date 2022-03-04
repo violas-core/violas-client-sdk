@@ -264,6 +264,22 @@ namespace violas
                 gas_currency_code,
                 expiration_timestamp_secs);
         }
+        
+#if defined(__GNUC__) && !defined(__llvm__)
+        virtual void
+        async_submit_script(size_t account_index,
+                            std::string_view script_file_name,
+                            std::vector<diem_types::TypeTag> type_tags,
+                            std::vector<diem_types::TransactionArgument> args,
+                            uint64_t max_gas_amount = 1'000'000,
+                            uint64_t gas_unit_price = 0,
+                            std::string_view gas_currency_code = "VLS",
+                            uint64_t expiration_timestamp_secs = 100,
+                            std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) override
+        {
+
+        }
+#endif
 
         std::tuple<dt::AccountAddress, uint64_t>
         submit_module(size_t account_index,

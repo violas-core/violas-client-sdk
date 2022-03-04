@@ -3,10 +3,10 @@
 #include <violas_client2.hpp>
 #include <bcs_serde.hpp>
 
-namespace nft
+namespace violas::nft
 {
     using Id = std::array<uint8_t, 32>;
-    using Address = std::array<uint8_t, 16>;
+    using Address = dt::AccountAddress;
 
     struct Order
     {
@@ -77,14 +77,9 @@ namespace nft
         void revoke_order(size_t account_index,
                           Id order_id);
 
-        dt::SignedTransaction
-        sign_trading_order(size_t account_index,
+        void trade_order(size_t account_index,
                            std::string_view currency,
-                           dt::AccountAddress sale_agent_address,
                            Id order_id);
-
-        void submit_trading_order(size_t account_index,
-                                  dt::SignedTransaction &&txn);
 
         std::optional<AccountInfo>
         get_account_info(Address address);
@@ -98,4 +93,4 @@ namespace nft
 
 } // namespace nft
 
-std::ostream &operator<<(std::ostream &os, const std::vector<nft::Order> &orders);
+std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::Order> &orders);

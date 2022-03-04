@@ -76,7 +76,17 @@ namespace json_rpc
 
             auto version = rpc_response["diem_ledger_version"].as_integer();
         }
+        
+#if defined(__GNUC__) && !defined(__llvm__)
+        //
+        //  Async submit
+        //
+        virtual void async_submit(const diem_types::SignedTransaction &signed_txn,
+                                  std::function<void()> callback) override
+        {
 
+        }
+#endif
         virtual std::optional<TransactionView>
         get_account_transaction(const diem_types::AccountAddress &address,
                                 uint64_t sequence_number,

@@ -8,10 +8,9 @@
 using namespace std;
 using namespace violas;
 
-
 const diem_types::AccountAddress NFT_STORE_ADMIN_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x11, 0x22};
 
-namespace nft
+namespace violas::nft
 {
     Store::Store(violas::client2_ptr client, const diem_types::TypeTag &nft) : _client(client), _nft_type_tag(nft)
     {
@@ -54,9 +53,9 @@ namespace nft
         _client->create_parent_vasp_account(salge_agent_parent.address, salge_agent_parent.auth_key, "sales parent account", true);
         _client->create_child_vasp_account(2, customer.address, customer.auth_key, "VLS", 0, true);
 
-        auto [sender, sn] = _client->execute_script_file(0, "move/stdlib/scripts/nft_store_initialize.mv",
+        auto [sender, sn] = _client->execute_script_file(0, "move/build/scripts/nft_store_2_initialize.mv",
                                                          {},
-                                                         make_txn_args(sale_parent.address, salge_agent_parent.address));
+                                                         make_txn_args(sale_parent.address));
         _client->check_txn_vm_status(sender, sn, "Store::initialize");
 
         this->register_account(1);
@@ -76,7 +75,7 @@ namespace nft
     void Store::register_account(size_t account_index)
     {
         auto [sender, sn] = _client->execute_script_file(account_index,
-                                                         "move/stdlib/scripts/nft_store_accept.mv",
+                                                         "move/build/scripts/nft_store_2_accept.mv",
                                                          {_nft_type_tag},
                                                          {});
 
@@ -92,7 +91,7 @@ namespace nft
     {
         auto [sender, sn] = _client->execute_script_file(
             account_index,
-            "move/stdlib/scripts/nft_store_make_order.mv",
+            "move/build/scripts/nft_store_2_make_order.mv",
             {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
             {make_txn_args(nft_id, price, uint64_t(MICRO_COIN * incentive), uint64_t(MICRO_COIN))});
 
@@ -104,34 +103,26 @@ namespace nft
     {
         auto [sender, sn] = _client->execute_script_file(
             account_index,
-            "move/stdlib/scripts/nft_store_revoke_order.mv",
+            "move/build/scripts/nft_store_2_revoke_order.mv",
             {_nft_type_tag},
             {make_txn_args(order_id)});
 
         _client->check_txn_vm_status(sender, sn, "Store::revoke_order");
     }
 
-    dt::SignedTransaction
-    Store::sign_trading_order(size_t account_index,
-                              std::string_view currency,
-                              dt::AccountAddress sale_agent_address,
+    void Store::trade_order(size_t account_index,
+                              std::string_view currency,                              
                               Id order_id)
     {
-        ifstream ifs("move/stdlib/scripts/nft_store_trade_order.mv", ios::in | ios::binary);
+        ifstream ifs("move/build/scripts/nft_store_2_trade_order.mv", ios::in | ios::binary);
         bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
         dt::Script script{script_bytecode,
                           {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
                           {make_txn_args(order_id)}};
 
-        auto txn = _client->sign_multi_agent_script(account_index, move(script), {sale_agent_address});
-
-        return txn;
-    }
-
-    void Store::submit_trading_order(size_t account_index,
-                                     dt::SignedTransaction &&txn)
-    {
-        auto [sender, sn] = _client->sign_and_submit_multi_agent_signed_txn(account_index, move(txn));
+        auto [sender, sn] = _client->execute_script_bytecode(account_index, script_bytecode,
+                                                             {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
+                                                             {make_txn_args(order_id)});
 
         _client->check_txn_vm_status(sender, sn, "Store::submit_trading_order");
     }

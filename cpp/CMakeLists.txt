@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 #set(CMAKE_CXX_FLAGS -Werror)
 set(CMAKE_EXE_LINKER_FLAGS -Wl,-rpath=./lib)
+set(CMAKE_SHARED_LINKER_FLAGS -Wl,-rpath=./lib)
 
 include_directories(sdk/include framework/src ../rust/violas-client/src/ffi)
 link_directories(../../rust/violas-client/target/debug)
@@ -20,6 +21,8 @@ add_subdirectory(sdk)
 add_subdirectory(nft)
 
 add_subdirectory(nft-store)
+
+# add_subdirectory(nft-store-2)
 
 # executable cmd
 add_subdirectory(command)

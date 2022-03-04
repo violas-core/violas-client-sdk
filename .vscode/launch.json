@@ -4,26 +4,55 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
-
         {
-            "type": "lldb",
+            "name": "(gdb) Launch nft-store-2",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "Launch nft-store",
-            "program": "${workspaceFolder}/build/debug/bin/nft-store",
+            "program": "${workspaceFolder}/build/nft-store-2/bin/nft-store-2",
             "args": [
                 "-u",
-                "http://localhost:38689",
+                "http://localhost:41389",
                 "-m",
                 "/tmp/diem/mint.key",
-                "-w",
-                "0:0a8f2604b215e5b04cbdf21f9364fa77e1e1c518eb493a0fde731b81f2937452",
                 "-c",
                 "4",
                 "-n",
                 "mnemonic/nft-store.mne"
             ],
-            "cwd": "${workspaceFolder}/build/debug"
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/nft-store-2",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch nft-store-2",
+            "program": "${workspaceFolder}/build/nft-store-2/bin/nft-store-2",
+            "args": [
+                "-u",
+                "http://localhost:45405",
+                "-m",
+                "/tmp/diem/mint.key",
+                "-c",
+                "4",
+                "-n",
+                "mnemonic/nft-store.mne"
+            ],
+            "cwd": "${workspaceFolder}/build/nft-store-2/"
         },
         {
             "type": "lldb",
@@ -199,7 +228,7 @@
             "args": [
                 "test",
                 "-u",
-                "http://124.251.110.220:50001",                
+                "http://124.251.110.220:50001",
                 "-w",
                 "0:144c3b0ed4c9aa872b8baf31a7c544b84fb6204e3d1760a1fbdbfa995d02798b",
                 "-c",

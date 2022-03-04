@@ -7,7 +7,7 @@ namespace dt = diem_types;
 
 void test();
 
-int main(int argc, char *argv[])
+int main1(int argc, char *argv[])
 {
     using namespace diem_framework;
     using namespace diem_types;

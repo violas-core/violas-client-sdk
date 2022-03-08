@@ -58,6 +58,7 @@ namespace violas::nft
                                                          make_txn_args(sale_parent.address));
         _client->check_txn_vm_status(sender, sn, "Store::initialize");
 
+        
         this->register_account(1);
         this->register_account(2);
     }

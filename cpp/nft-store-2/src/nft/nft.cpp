@@ -10,9 +10,11 @@
 #include <violas_client2.hpp>
 #include <utils.hpp>
 #include <account_state_2.hpp>
+#include <diem_types.hpp>
 #include "nft.hpp"
 
 using namespace std;
+namespace dt = diem_types;
 
 namespace violas::nft
 {
@@ -62,7 +64,7 @@ namespace violas::nft
     void NonFungibleToken<T>::register_instance(uint64_t total_number)
     {
         auto accounts = _client->get_all_accounts();
-        auto &admin = accounts[0];
+        auto &admin = accounts[1];
 
         try
         {
@@ -77,10 +79,12 @@ namespace violas::nft
         //  Rgiester NFT and set admin address
         //
         cout << "Registering NFT and set admin account address " << admin.address << endl;
-        _client->execute_script_file(ACCOUNT_ROOT_ID,
-                                     "move/stdlib/scripts/nft_register.mv",
+        auto [sender, sn] = _client->execute_script_file(ACCOUNT_ROOT_ID,
+                                     "move/build/scripts/nft_register.mv",
                                      {T::type_tag()},
-                                     {uint64_t(total_number), admin.address});
+                                     make_txn_args(uint64_t(total_number), admin.address));
+
+        _client->check_txn_vm_status(sender, sn, "failed to execute nft_register");
 
         accept(admin.index);
         // accept(dealer1.index);
@@ -97,15 +101,15 @@ namespace violas::nft
 
         _client->execute_script_file(admin.index,
                                      "move/stdlib/scripts/nft_burn.mv",
-                                     {T::type_tag()},
-                                     {vector<uint8_t>(begin(token_id), end(token_id))});
+                                     {},
+                                     make_txn_args(vector<uint8_t>(begin(token_id), end(token_id))));
     }
 
     template <typename T>
     void NonFungibleToken<T>::accept(size_t account_index)
     {
         _client->execute_script_file(account_index,
-                                     "move/stdlib/scripts/nft_accept.mv",
+                                     "move/build/scripts/nft_accept.mv",
                                      {T::type_tag()},
                                      {});
     }
@@ -119,7 +123,7 @@ namespace violas::nft
         _client->execute_script_file(account_index,
                                      "move/stdlib/scripts/nft_transfer_by_token_index.mv",
                                      {T::type_tag()},
-                                     {receiver, token_index, metadata});
+                                     make_txn_args(dt::AccountAddress{receiver}, token_index, metadata));
     }
 
     template <typename T>
@@ -131,7 +135,7 @@ namespace violas::nft
         _client->execute_script_file(account_index,
                                      "move/stdlib/scripts/nft_transfer_by_token_id.mv",
                                      {T::type_tag()},
-                                     {receiver, std::vector<uint8_t>(begin(token_id), end(token_id)), metadata});
+                                     make_txn_args(dt::AccountAddress{receiver}, std::vector<uint8_t>(begin(token_id), end(token_id)), metadata));
     }
 
     template <typename T>
@@ -142,16 +146,16 @@ namespace violas::nft
         auto rpc_cli = json_rpc::Client::create(_url);
 
         dt::StructTag tag{
-            Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-            "NonFungibleToken",
-            "NFT",
-            {dt::StructTag{T::module_address(), T::module_name(), T::resource_name()}}};
+            {STD_LIB_ADDRESS},
+            {"NonFungibleToken"},
+            {"NFT"},
+            {T::type_tag()}};
 
-        violas::AccountState state(rpc_cli);
+        violas::AccountState2 state(rpc_cli);
 
         try
         {
-            return state.get_resource<std::vector<T>>(addr, tag);
+            return state.get_resource<std::vector<T>>({addr}, tag);
         }
         catch (const std::exception &e)
         {
@@ -161,24 +165,24 @@ namespace violas::nft
         return {};
     }
 
-    // template <typename T>
-    // optional<NftInfo> NonFungibleToken<T>::get_nft_info(string url)
-    // {
-    //     using namespace json_rpc;
-    //     auto rpc_cli = json_rpc::Client::create(url);
+    template <typename T>
+    optional<NftInfo> NonFungibleToken<T>::get_nft_info(string url)
+    {
+        using namespace json_rpc;
+        auto rpc_cli = json_rpc::Client::create(url);
 
-    //     violas::AccountState state(rpc_cli);
+        violas::AccountState2 state(rpc_cli);
 
-    //     auto type_tag = T::type_tag();
+        auto type_tag = T::type_tag();
 
-    //     violas::StructTag tag{
-    //         Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    //         "NonFungibleToken",
-    //         "Configuration",
-    //         {violas::StructTag{type_tag.address, type_tag.module_name, type_tag.resource_name}}};
+        dt::StructTag tag{
+            Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+            "NonFungibleToken",
+            "Configuration",
+            {T::type_tag()}};
 
-    //     return state.get_resource<NftInfo>(violas::ROOT_ADDRESS, tag);
-    // }
+        return state.get_resource<NftInfo>(violas::ROOT_ADDRESS, tag);
+    }
 
     template <typename T>
     optional<Address> NonFungibleToken<T>::get_owner(string url, const TokenId &token_id)
@@ -207,15 +211,13 @@ namespace violas::nft
 
         violas::AccountState2 state(rpc_cli);
 
-        auto type_tag = T::type_tag();
-
         dt::StructTag tag{
-            Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-            "NonFungibleToken",
-            "Account",
-            {dt::StructTag{type_tag.address, type_tag.module_name, type_tag.resource_name}}};
+            {STD_LIB_ADDRESS},
+            {"NonFungibleToken"},
+            {"Account"},
+            {T::type_tag()}}; 
 
-        return state.get_resource<Account>(address, tag);
+        return state.get_resource<Account>({address}, tag);
     }
 
     template <typename T>
@@ -329,4 +331,91 @@ namespace violas::nft
 
         return nft_events;
     }
+}
+
+std::ostream &operator<<(ostream &os, const vector<violas::nft::MintedEvent> &minted_events)
+{
+    cout << color::YELLOW
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(40) << "Receiver Address"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : minted_events)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(40) << e.receiver
+             << left << setw(10) << e.transaction_version
+             << endl;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::BurnedEvent> &burnedevents)
+{
+    cout << color::YELLOW
+         << color::CYAN
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : burnedevents)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(10) << e.transaction_version
+             << endl;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::SentEvent> &sent_events)
+{
+    cout << color::YELLOW
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(40) << "Payee"
+         << left << setw(20) << "Metadata"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : sent_events)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(40) << e.payee
+             << left << setw(20) << bytes_to_hex(e.metadata)
+             << left << setw(10) << e.transaction_version
+             << endl;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::ReceivedEvent> &received_events)
+{
+    cout << color::YELLOW
+         << left << setw(10) << "SN"
+         << left << setw(70) << "Token ID"
+         << left << setw(40) << "Payer"
+         << left << setw(20) << "Metadata"
+         << left << setw(10) << "Version"
+         << color::RESET << endl;
+
+    for (auto &e : received_events)
+    {
+        cout << left << setw(10) << e.sequence_number
+             << left << setw(70) << e.token_id
+             << left << setw(40) << e.payer
+             << left << setw(20) << bytes_to_hex(e.metadata)
+             << left << setw(10) << e.transaction_version
+             << endl;
+    }
+
+    return os;
 }

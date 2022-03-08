@@ -29,6 +29,8 @@ namespace violas
 
     inline static const uint64_t MICRO_COIN = 1'000'000;
 
+    using AuthenticationKey = std::array<uint8_t, 32>;
+
     struct EventHandle
     {
         uint64_t counter;

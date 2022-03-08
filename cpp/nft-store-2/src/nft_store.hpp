@@ -6,7 +6,7 @@
 namespace violas::nft
 {
     using Id = std::array<uint8_t, 32>;
-    using Address = dt::AccountAddress;
+    using Address = std::array<uint8_t, 16>;
 
     struct Order
     {

@@ -8,9 +8,8 @@
 
 namespace violas
 {
-    //using dt == diem_types;
+    namespace dt = diem_types;
     using Address = diem_types::AccountAddress;
-
 
     class AccountState2
     {
@@ -27,10 +26,10 @@ namespace violas
         {
             get_account_state(address);
 
-            dt::AccessPath path { tag };
+            dt::AccessPath path{{address}, tag.bcsSerialize()};
 
             BcsSerde serde;
-            //serde &&path;
+            // serde &&path;
 
             auto iter = _resources.find(serde.bytes());
             if (iter != end(_resources))
@@ -48,6 +47,9 @@ namespace violas
         }
 
     protected:
-        void get_account_state(Address address);
+        void get_account_state(Address address)
+        {
+            
+        }
     };
 }

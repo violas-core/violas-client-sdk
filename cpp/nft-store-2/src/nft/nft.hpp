@@ -8,7 +8,7 @@
 namespace violas::nft
 {
     using TokenId = std::array<uint8_t, 32>;
-    using Address = dt::AccountAddress;
+    using Address = std::array<uint8_t, 16>;
 
     struct NftInfo
     {
@@ -182,8 +182,12 @@ namespace violas::nft
 
 }
 
+// std::ostream &operator<<(std::ostream &os, const violas::nft::MintedEvent &minted_event);
+std::ostream &operator<<(std::ostream &os, const diem_types::AccountAddress &address);
+std::istream &operator>>(std::istream &os, const diem_types::AccountAddress &address);
+std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::MintedEvent> &minted_events);
+std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::BurnedEvent> &burnedevents);
+std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::SentEvent> &sent_events);
+
 #include "nft.cpp"
 
-// std::ostream &operator<<(std::ostream &os, const violas::nft::MintedEvent &minted_event);
-ostream &operator<<(ostream &os, const diem_types::AccountAddress &address);
-istream &operator>>(istream &os, const diem_types::AccountAddress &address);

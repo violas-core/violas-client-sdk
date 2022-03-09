@@ -6,15 +6,15 @@ module Portrait {
     
     const SECONDS_IN_ONE_DAY : u64 = 86400; // 24 * 60 * 60
     
-    struct Portrait has store {
+    struct Portrait has store, drop {
         description: vector<u8>,       
         ipfs_cid: vector<u8>,		// refer to an address of a web page
     }
     
     public fun mint_portrait_nft(sig: &signer,                             
-                            description: vector<u8>,                             
-                            ipfs_cid: vector<u8>,	   
-                            receiver: address) {        
+                                description: vector<u8>,                             
+                                ipfs_cid: vector<u8>,	   
+                                receiver: address) {        
 
         let portrait = Portrait {
             description,            

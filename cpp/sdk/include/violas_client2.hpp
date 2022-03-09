@@ -230,8 +230,8 @@ namespace violas
 
         virtual void
         async_check_txn_vm_status(const diem_types::AccountAddress &address,
-                            uint64_t sequence_number,
-                            std::function<void()> callback) = 0;
+                                  uint64_t sequence_number,
+                                  std::function<void()> callback) = 0;
 
 #if defined(__GNUC__) && !defined(__llvm__)
         auto await_check_txn_vm_status(const diem_types::AccountAddress &address,

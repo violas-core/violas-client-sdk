@@ -141,13 +141,13 @@ namespace violas::nft
 
         void deploy();
 
-        void register_instance(uint64_t total_number);
+        void register_instance(uint64_t total_number, Address admin);
 
         void accept(size_t account);
 
         // void mint();
 
-        void burn(TokenId token_id);
+        void burn(size_t account_index, TokenId token_id);
 
         void transfer_by_token_index(uint64_t account_index,
                                      Address receiver,
@@ -190,4 +190,3 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::Burned
 std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::SentEvent> &sent_events);
 
 #include "nft.cpp"
-

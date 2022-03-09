@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <optional>
+#include <variant>
 #include <diem_types.hpp>
 #include "json_rpc.hpp"
 
@@ -10,6 +11,28 @@ namespace violas
 {
     namespace dt = diem_types;
     using Address = diem_types::AccountAddress;
+
+    struct ResourcePath
+    {
+        std::variant<dt::ModuleId, dt::StructTag> path;
+
+        ResourcePath(const dt::StructTag &tag)
+        {
+            path = tag;
+        }
+
+        ResourcePath(const dt::ModuleId &module_id)
+        {
+            path = module_id;
+        }
+
+        inline std::vector<uint8_t> bcsSerialize() const
+        {
+            auto serializer = serde::BcsSerializer();
+            serde::Serializable<ResourcePath>::serialize(*this, serializer);
+            return std::move(serializer).bytes();
+        }
+    };
 
     class AccountState2
     {
@@ -26,12 +49,9 @@ namespace violas
         {
             get_account_state(address);
 
-            dt::AccessPath path{{address}, tag.bcsSerialize()};
+            ResourcePath path{tag};
 
-            BcsSerde serde;
-            // serde &&path;
-
-            auto iter = _resources.find(serde.bytes());
+            auto iter = _resources.find(path.bcsSerialize());
             if (iter != end(_resources))
             {
                 T t;
@@ -49,7 +69,40 @@ namespace violas
     protected:
         void get_account_state(Address address)
         {
-            
+            using namespace std;
+
+            ostringstream oss;
+            oss << address.value;
+
+            auto as = _client->get_account_state_blob(oss.str());
+
+            if (as.blob.empty())
+                __throw_runtime_error("Failed to get account state due to blob is null.");
+
+            // cout << "blob = " <<  as.blob << endl;
+
+            auto bytes = hex_to_bytes(as.blob);
+
+            // Deserialize to vector
+            vector<uint8_t> data;
+            {
+                BcsSerde serde(bytes);
+                serde &&data;
+            }
+
+            // Deserialize to map
+            BcsSerde serde(data);
+
+            serde &&_resources;
         }
     };
+}
+
+template <>
+template <typename Serializer>
+void serde::Serializable<violas::ResourcePath>::serialize(const violas::ResourcePath &obj, Serializer &serializer)
+{
+    serializer.increase_container_depth();
+    serde::Serializable<decltype(obj.path)>::serialize(obj.path, serializer);
+    serializer.decrease_container_depth();
 }

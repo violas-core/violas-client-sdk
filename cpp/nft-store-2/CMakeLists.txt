@@ -25,9 +25,9 @@ link_directories(../framework)
 
 target_link_libraries(violas_sdk violas_framework)
 
-aux_source_directory(src SRC)
+aux_source_directory(src SRCS)
 
-add_executable(nft-store-2 ${SRC} ${FRAMEWORK} )
+add_executable(nft-store-2 ${SRCS} ${FRAMEWORK} )
 
 target_link_libraries(nft-store-2 violas_sdk cpprest readline ssl crypto)
 

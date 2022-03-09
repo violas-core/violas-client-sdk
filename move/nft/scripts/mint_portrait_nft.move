@@ -1,12 +1,12 @@
 script {    
     use 0x2::Portrait;
 
-    fun mint_mountwuyi_tea_nft(sig: signer,                 
-                kind: u8, 
-                manufacturer: vector<u8>,               
-                url: vector<u8>,	    // url
-                receiver: address) {        
-        Portrait::mint_tea_nft(&sig, kind, manufacturer, pa, pd, sn, url, receiver);
+    fun mint_portrait_nft(sig: signer,                
+                description: vector<u8>,
+                ipfs_cid: vector<u8>,
+                receiver: address) {
+
+        Portrait::mint_portrait_nft(&sig, description, ipfs_cid, receiver);
     }
 
 }

@@ -39,13 +39,12 @@ int main(int argc, char *argv[])
         console->add_completion("exit");
 
         auto commands = create_store_commands(client, args.url);
-        for (auto cmd : commands)
-        {
-            console->add_completion(cmd.first);
-        }
-
         auto nft_cmds = create_nft_commands(client, args.url);
-        for (auto cmd : nft_cmds)
+
+        commands.merge(nft_cmds);
+        assert(nft_cmds.size() == 0); //  nft_cmds must be empty.
+
+        for (auto cmd : commands)
         {
             console->add_completion(cmd.first);
         }
@@ -63,12 +62,8 @@ int main(int argc, char *argv[])
             // Read a command
             iss >> cmd;
 
-            auto iter = commands.find(cmd);
-            
-            if(iter == end(commands))
-                iter = nft_cmds.find(cmd);
-
-            if (iter != end(nft_cmds))
+            if (auto iter = commands.find(cmd);
+                iter != end(commands))
             {
                 try
                 {
@@ -84,9 +79,9 @@ int main(int argc, char *argv[])
                               << "Runtime error : " << e.what()
                               << color::RESET << endl;
                 }
-            }
 
-            console->add_history(line);
+                console->add_history(line);
+            }
         }
     }
     catch (const std::exception &e)
@@ -157,12 +152,28 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
              client->allow_publishing_module(true);
 
              // 1.  deploy nft store
-             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/Compare.mv");
-             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/Map.mv");
-             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/NonFungibleToken.mv");
-             client->publish_module(ACCOUNT_ROOT_ID, "move/stdlib/modules/NftStore2.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/build/package/stdlib/compiled/Compare.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/0_Map.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/1_NonFungibleToken.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/4_NftStore2.mv");
              // client->publish_module(ACCOUNT_ROOT_ID, "move/tea/modules/MountWuyi.mv");
-             client->publish_module(ACCOUNT_ROOT_ID, "move/tea/modules/Portrait.mv");
+             client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/5_Portrait.mv");
+
+             auto accounts = client->get_all_accounts();
+             auto &a1 = accounts[1];
+             auto &a2 = accounts[2];
+             auto &a3 = accounts[3];
+
+             try
+             {
+                 client->create_parent_vasp_account(a1.address, a1.auth_key, "NFT VASP", true);
+                 client->create_child_vasp_account(1, a2.address, a2.auth_key, "VLS", 0, true);
+                 client->create_child_vasp_account(1, a3.address, a3.auth_key, "VLS", 0, true);
+             }
+             catch (const std::exception &e)
+             {
+                 std::cerr << e.what() << '\n';
+             }
          }},
         {"store-initalize", [=](istringstream &params)
          {
@@ -263,35 +274,43 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
         //  }},
         {"nft-register", [=](istringstream &params)
          {
-             check_istream_eof(params, "NFT total number");
+             check_istream_eof(params, "nft_total_amount, admin_address");
 
              uint64_t total = 1000;
-             params >> total;
+             Address address;
+             params >> total >> address;
 
-             // register_mountwuyi_tea_nft(client, total);
-             nft->register_instance(total);
+             nft->register_instance(total, address);
          }},
         {"nft-accept", [=](istringstream &params)
          {
              size_t account_index = 0;
              params >> account_index;
 
-             // accept(client, account_index);
              nft->accept(account_index);
          }},
         {"nft-mint", [=](istringstream &params)
          {
-             auto addr = get_from_stream<violas::nft::Address>(params, client);
-             mint_portrait(client, addr);
+             // auto addr = get_from_stream<violas::nft::Address>(params, client);
+             check_istream_eof(params, "account_index description ipfs_cid receiver_address");
+
+             size_t account_index;
+             string description;
+             string ipfs_cid;
+             Address receiver;
+
+             params >> account_index >> description >> ipfs_cid >> receiver;
+
+             Portrait::mint(client, account_index, description, ipfs_cid, {receiver});
          }},
         {"nft-burn", [=](istringstream &params)
          {
+             size_t account_index;
              TokenId token_id;
 
-             params >> token_id;
+             params >> account_index >> token_id;
 
-             // burn_tea_nft(client, token_id);
-             nft->burn(token_id);
+             nft->burn(account_index, token_id);
          }},
         {"nft-transfer", [=](istringstream &params)
          {
@@ -340,11 +359,11 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
              auto opt_balance = nft->balance(addr);
              if (opt_balance)
              {
-                 // int i = 0;
-                 //  for (const auto &tea : *opt_balance)
-                 //  {
-                 //      cout << i++ << " - " << tea << endl;
-                 //  }
+                 int i = 0;
+                 for (const auto &item : *opt_balance)
+                 {
+                     cout << i++ << " - " << item << endl;
+                 }
                  // cout << *opt_balance;
              }
          }},

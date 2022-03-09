@@ -19,7 +19,7 @@ namespace dt = diem_types;
 namespace violas::nft
 {
 
-    ostream &operator<<(ostream &os, const diem_types::AccountAddress &address)
+    ostream &operator<<(ostream &os, const Address &address)
     {
         return os;
     }
@@ -61,57 +61,42 @@ namespace violas::nft
     }
 
     template <typename T>
-    void NonFungibleToken<T>::register_instance(uint64_t total_number)
+    void NonFungibleToken<T>::register_instance(uint64_t total_number, Address admin)
     {
-        auto accounts = _client->get_all_accounts();
-        auto &admin = accounts[1];
-
-        try
-        {
-            _client->create_parent_vasp_account(admin.address, admin.auth_key, "NFT VASP", true);
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-
         //
         //  Rgiester NFT and set admin address
         //
-        cout << "Registering NFT and set admin account address " << admin.address << endl;
+        cout << "Registering NFT and set admin account address " << admin << endl;
         auto [sender, sn] = _client->execute_script_file(ACCOUNT_ROOT_ID,
-                                     "move/build/scripts/nft_register.mv",
-                                     {T::type_tag()},
-                                     make_txn_args(uint64_t(total_number), admin.address));
+                                                         "move/build/scripts/nft_register.mv",
+                                                         {T::type_tag()},
+                                                         make_txn_args(uint64_t(total_number), dt::AccountAddress{admin}));
 
         _client->check_txn_vm_status(sender, sn, "failed to execute nft_register");
-
-        accept(admin.index);
-        // accept(dealer1.index);
-        // accept(dealer2.index);
 
         cout << "Register NFT successfully." << endl;
     }
 
     template <typename T>
-    void NonFungibleToken<T>::burn(TokenId token_id)
+    void NonFungibleToken<T>::burn(size_t account_index, TokenId token_id)
     {
-        auto accounts = _client->get_all_accounts();
-        auto &admin = accounts[0];
+        auto [sender, sn] = _client->execute_script_file(account_index,
+                                                         "move/build/scripts/nft_burn.mv",
+                                                         {T::type_tag()},
+                                                         make_txn_args(token_id));
 
-        _client->execute_script_file(admin.index,
-                                     "move/stdlib/scripts/nft_burn.mv",
-                                     {},
-                                     make_txn_args(vector<uint8_t>(begin(token_id), end(token_id))));
+        _client->check_txn_vm_status(sender, sn, "NonFungibleToken::burn");
     }
 
     template <typename T>
     void NonFungibleToken<T>::accept(size_t account_index)
     {
-        _client->execute_script_file(account_index,
-                                     "move/build/scripts/nft_accept.mv",
-                                     {T::type_tag()},
-                                     {});
+        auto [sender, sn] = _client->execute_script_file(account_index,
+                                                         "move/build/scripts/nft_accept.mv",
+                                                         {T::type_tag()},
+                                                         {});
+
+        _client->check_txn_vm_status(sender, sn, "nft::accept");
     }
 
     template <typename T>
@@ -132,10 +117,11 @@ namespace violas::nft
                                                    TokenId token_id,
                                                    std::vector<uint8_t> metadata)
     {
-        _client->execute_script_file(account_index,
-                                     "move/stdlib/scripts/nft_transfer_by_token_id.mv",
-                                     {T::type_tag()},
-                                     make_txn_args(dt::AccountAddress{receiver}, std::vector<uint8_t>(begin(token_id), end(token_id)), metadata));
+        auto [sender, sn] = _client->execute_script_file(account_index,
+                                                         "move/build/scripts/nft_transfer_by_token_id.mv",
+                                                         {T::type_tag()},
+                                                         make_txn_args(dt::AccountAddress{receiver}, token_id, metadata));
+        _client->check_txn_vm_status(sender, sn, "nft::transfer_by_token_id");
     }
 
     template <typename T>
@@ -146,7 +132,7 @@ namespace violas::nft
         auto rpc_cli = json_rpc::Client::create(_url);
 
         dt::StructTag tag{
-            {STD_LIB_ADDRESS},
+            {VIOLAS_LIB_ADDRESS},
             {"NonFungibleToken"},
             {"NFT"},
             {T::type_tag()}};
@@ -215,7 +201,7 @@ namespace violas::nft
             {STD_LIB_ADDRESS},
             {"NonFungibleToken"},
             {"Account"},
-            {T::type_tag()}}; 
+            {T::type_tag()}};
 
         return state.get_resource<Account>({address}, tag);
     }

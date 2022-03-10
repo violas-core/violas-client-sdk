@@ -7,10 +7,9 @@
 #include <diem_types.hpp>
 #include "json_rpc.hpp"
 
-namespace violas
+namespace violas1
 {
-    namespace dt = diem_types;
-    using Address = diem_types::AccountAddress;
+    namespace dt = diem_types;    
 
     struct ResourcePath
     {
@@ -45,7 +44,7 @@ namespace violas
         AccountState2(json_rpc::client_ptr client) : _client(client) {}
 
         template <typename T>
-        std::optional<T> get_resource(Address address, dt::StructTag tag)
+        std::optional<T> get_resource(dt::AccountAddress address, dt::StructTag tag)
         {
             get_account_state(address);
 
@@ -67,7 +66,7 @@ namespace violas
         }
 
     protected:
-        void get_account_state(Address address)
+        void get_account_state(dt::AccountAddress address)
         {
             using namespace std;
 

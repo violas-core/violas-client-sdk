@@ -1,3 +1,13 @@
+/**
+ * @file main.cpp
+ * @author Hunter Sun (huntersun2018@gmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2022-03-10
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include <iostream>
 #include <string>
 // violas sdk header files
@@ -14,6 +24,7 @@ using namespace std;
 using namespace violas;
 
 using handle = function<void(istringstream &params)>;
+map<string, handle> create_cli_commands(client2_ptr client, string url);
 map<string, handle> create_store_commands(client2_ptr client, string url);
 map<string, handle> create_nft_commands(client2_ptr client, string url);
 
@@ -39,9 +50,11 @@ int main(int argc, char *argv[])
         console->add_completion("exit");
 
         auto commands = create_store_commands(client, args.url);
-        auto nft_cmds = create_nft_commands(client, args.url);
 
+        commands.merge(create_cli_commands(client, args.url));
+        auto nft_cmds = create_nft_commands(client, args.url);
         commands.merge(nft_cmds);
+
         assert(nft_cmds.size() == 0); //  nft_cmds must be empty.
 
         for (auto cmd : commands)
@@ -106,7 +119,7 @@ void check_istream_eof(istream &is, string_view err)
 template <typename T>
 T get_from_stream(istringstream &params, client2_ptr client, string_view err_info = "index or address")
 {
-    violas::nft::Address addr;
+    Address addr;
     int account_index = -1;
 
     check_istream_eof(params, err_info);
@@ -134,17 +147,79 @@ T get_from_stream(istringstream &params, client2_ptr client, string_view err_inf
     return addr;
 }
 
-void mint_portrait(client2_ptr client, const violas::nft::Address addr)
+/**
+ * @brief Create a cli commands object
+ *
+ * @param client
+ * @param url
+ * @return map<string, handle>
+ */
+map<string, handle> create_cli_commands(client2_ptr client, string url)
 {
-}
+    return {
+        {"cli-add-account", [=](istringstream &params)
+         {
+             client->create_next_account();
+         }},
+        {"cli-list-accounts", [=](istringstream &params)
+         {
+             auto accounts = client->get_all_accounts();
 
+             cout << color::CYAN
+                  << left << setw(10) << "index"
+                  << left << setw(40) << "Address"
+                  << left << setw(40) << "Authentication key"
+                  << color::RESET << endl;
+
+             int i = 0;
+             for (auto &account : accounts)
+             {
+                 cout << left << setw(10) << i++
+                      << left << setw(40) << account.address.value
+                      << left << setw(40) << account.auth_key
+                      << endl;
+             }
+         }},
+        {"cli-create_child_account", [=](istringstream &params)
+         {
+             Address addr;
+             AuthenticationKey auth_key;
+
+             check_istream_eof(params, "authentication key");
+             params >> auth_key;
+
+             copy(begin(auth_key) + 16, begin(auth_key) + 32, begin(addr));
+
+             client->create_child_vasp_account(0, {addr}, auth_key, "VLS", 0, true);
+         }},
+    };
+}
+/**
+ * @brief Create a store commands object
+ *
+ * @param client
+ * @param url
+ * @return map<string, handle>
+ */
 map<string, handle> create_store_commands(client2_ptr client, string url)
 {
     using namespace violas::nft;
     client->allow_custom_script(true);
 
-    auto type_tag = make_struct_type_tag({STD_LIB_ADDRESS}, "MountWuyi", "Tea");
+    auto type_tag = make_struct_type_tag({VIOLAS_LIB_ADDRESS}, "Portrait", "Portrait");
     auto store = make_shared<violas::nft::Store>(client, type_tag);
+
+    auto [index, address] = client->create_next_account(NFT_STORE_ADMIN_ADDRESS);
+    cout << index << " : " << bytes_to_hex(address.value) << endl;
+
+    tie(index, address) = client->create_next_account();
+    cout << index << " : " << bytes_to_hex(address.value) << endl;
+
+    tie(index, address) = client->create_next_account();
+    cout << index << " : " << bytes_to_hex(address.value) << endl;
+
+    tie(index, address) = client->create_next_account();
+    cout << index << " : " << bytes_to_hex(address.value) << endl;
 
     return map<string, handle>{
         {"deploy", [=](istringstream &params)
@@ -156,48 +231,72 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
              client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/0_Map.mv");
              client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/1_NonFungibleToken.mv");
              client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/4_NftStore2.mv");
-             // client->publish_module(ACCOUNT_ROOT_ID, "move/tea/modules/MountWuyi.mv");
              client->publish_module(ACCOUNT_ROOT_ID, "move/build/modules/5_Portrait.mv");
 
              auto accounts = client->get_all_accounts();
+             auto &a0 = accounts[0];
              auto &a1 = accounts[1];
              auto &a2 = accounts[2];
              auto &a3 = accounts[3];
 
              try
              {
+                 client->create_designated_dealer_ex("VLS", a0.index, NFT_STORE_ADMIN_ADDRESS, a0.auth_key, "NFT Store Admin", true);
+                 cout << a0.index << " : " << a0.address.value << "\tRole : DD" << endl;
+
                  client->create_parent_vasp_account(a1.address, a1.auth_key, "NFT VASP", true);
+                 cout << a1.index << " : " << a1.address.value << "\tRole : VASP" << endl;
+
                  client->create_child_vasp_account(1, a2.address, a2.auth_key, "VLS", 0, true);
+                 cout << a2.index << " : " << a2.address.value << "\tRole : Child VASP" << endl;
+
                  client->create_child_vasp_account(1, a3.address, a3.auth_key, "VLS", 0, true);
+                 cout << a3.index << " : " << a3.address.value << "\tRole : Child VASP" << endl;
              }
              catch (const std::exception &e)
              {
                  std::cerr << e.what() << '\n';
              }
+
+             cout << "All modules were published successfully." << endl;
          }},
-        {"store-initalize", [=](istringstream &params)
+        {"store-initalize", [=](istringstream &args)
          {
-             store->initialize();
+             size_t account_index = 0;
+             args >> account_index;
+
+             store->initialize(account_index);
          }},
-        {"store-register", [=](istringstream &params)
+        {"store-register-nft", [=](istringstream &args)
          {
-             store->register_nft();
+             size_t account_index = 0;
+             args >> account_index;
+
+             store->register_nft(account_index);
+         }},
+        {"store-accept-nft", [=](istringstream &args)
+         {
+             check_istream_eof(args, "account_index");
+
+             size_t account_index = 0;
+             args >> account_index;
+
+             store->accept_nft(account_index);
          }},
         {"store-list-orders", [=](istringstream &params)
          {
-             // cout << store->list_orders();
+             cout << store->list_orders();
          }},
-        {"store-make-order", [=](istringstream &params)
+        {"store-make-order", [=](istringstream &args)
          {
              size_t account_index;
              violas::nft::TokenId nft_token_id;
              uint64_t price;
-             string currency;
-             double incentive;
+             string currency;             
 
-             params >> account_index >> nft_token_id >> price >> currency >> incentive;
+             args >> account_index >> nft_token_id >> price >> currency;
 
-             store->make_order(account_index, nft_token_id, price, currency, incentive);
+             store->make_order(account_index, nft_token_id, price, currency);
          }},
         {"store-revoke-order", [=](istringstream &params)
          {
@@ -212,7 +311,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
          {
              size_t account_index;
              nft::Id order_id;
-             nft::Address address;
+             Address address;
              string currency;
 
              params >> account_index >> currency >> address >> order_id;
@@ -223,18 +322,21 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
          }},
         {"store-get-account-info", [=](istringstream &params)
          {
-             nft::Address address;
+             check_istream_eof(params, "usage : account_index or account_address");
 
-             auto accounts = client->get_all_accounts();
+             Address address;
 
-             params >> address;
+             address = get_from_stream<Address>(params, client);
 
              auto account_info = store->get_account_info(address);
+
+             if (account_info)
+                 cout << *account_info << endl;
          }},
         {"store-query-events", [=](istringstream &params)
          {
              string event_type;
-             nft::Address address;
+             Address address;
 
              auto accounts = client->get_all_accounts();
 
@@ -245,7 +347,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
                  auto made_order_events = store->get_made_order_events(address, 0, 10);
                  for (auto &event : made_order_events)
                  {
-                     cout << "order id : " << (event.order_id)
+                     cout << "order id : " << bytes_to_hex(event.order_id)
                           << ", nft id : " << bytes_to_hex(event.nft_token_id)
                           << ", price : " << event.price
                           << ", currency code : " << bytes_to_string(event.currency_code)
@@ -263,8 +365,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
 map<string, handle> create_nft_commands(client2_ptr client, string url)
 {
     using namespace violas::nft;
-    using Address = violas::nft::Address;
-    auto nft = make_shared<NonFungibleToken<Portrait>>(client, url);
+    auto nft = make_shared<NonFungibleToken<Portrait>>(client);
 
     return map<string, handle>{
         // {"deploy", [=](istringstream &params)
@@ -315,7 +416,7 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
         {"nft-transfer", [=](istringstream &params)
          {
              size_t account_index = 0;
-             violas::nft::Address receiver;
+             Address receiver;
              string metadata;
 
              check_istream_eof(params, "usage : transfer account_index account_address token_id_or_index metadata");
@@ -323,7 +424,7 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
              params >> account_index;
 
              check_istream_eof(params, "receiver address");
-             receiver = get_from_stream<violas::nft::Address>(params, client);
+             receiver = get_from_stream<Address>(params, client);
 
              check_istream_eof(params, "index or token id");
              string token_id_or_index;
@@ -354,7 +455,7 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
          }},
         {"nft-balance", [=](istringstream &params)
          {
-             auto addr = get_from_stream<violas::nft::Address>(params, client);
+             auto addr = get_from_stream<Address>(params, client);
 
              auto opt_balance = nft->balance(addr);
              if (opt_balance)
@@ -364,7 +465,6 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
                  {
                      cout << i++ << " - " << item << endl;
                  }
-                 // cout << *opt_balance;
              }
          }},
         {"nft-owner", [=](istringstream &params)
@@ -373,7 +473,7 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
 
              params >> id;
 
-             auto owner = nft->get_owner(url, id);
+             auto owner = nft->get_owner(id);
              if (owner != nullopt)
              {
                  // print the address of owner
@@ -389,7 +489,7 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
              check_istream_eof(params, "token id");
              params >> token_id;
 
-             auto receiver = nft->get_owner(url, token_id);
+             auto receiver = nft->get_owner(token_id);
              if (receiver != nullopt)
              {
                  size_t i = 0;
@@ -401,45 +501,10 @@ map<string, handle> create_nft_commands(client2_ptr client, string url)
          }},
         {"nft-info", [=](istringstream &params)
          {
-             auto opt_info = nft->get_nft_info(url);
+             auto opt_info = nft->get_nft_info();
 
-             // if (opt_info != nullopt)
-             //     cout << *opt_info << endl;
-         }},
-        {"nft-create_child_account", [=](istringstream &params)
-         {
-             Address addr;
-             AuthenticationKey auth_key;
-
-             check_istream_eof(params, "authentication key");
-             params >> auth_key;
-
-             copy(begin(auth_key) + 16, begin(auth_key) + 32, begin(addr));
-
-             client->create_child_vasp_account(0, {addr}, auth_key, "VLS", 0, true);
-         }},
-        {"nft-add-account", [=](istringstream &params)
-         {
-             client->create_next_account();
-         }},
-        {"nft-list-accounts", [=](istringstream &params)
-         {
-             auto accounts = client->get_all_accounts();
-
-             cout << color::CYAN
-                  << left << setw(10) << "index"
-                  << left << setw(40) << "Address"
-                  << left << setw(40) << "Authentication key"
-                  << color::RESET << endl;
-
-             int i = 0;
-             for (auto &account : accounts)
-             {
-                 cout << left << setw(10) << i++
-                      << left << setw(40) << account.address.value
-                      << left << setw(40) << account.auth_key
-                      << endl;
-             }
+             if (opt_info != nullopt)
+                 cout << *opt_info << endl;
          }},
         {"nft-query-events", [=](istringstream &params)
          {

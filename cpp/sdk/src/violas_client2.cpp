@@ -18,21 +18,21 @@ using namespace crypto;
 
 namespace violas
 {
-    // AccountState::AccountState(const std::string &hex)
-    // {
-    //     auto bytes = hex_to_bytes(hex);
+    AccountState2::AccountState2(const std::string &hex)
+    {
+        auto bytes = hex_to_bytes(hex);
 
-    //     // Deserialize to vector
-    //     vector<uint8_t> data;
-    //     {
-    //         BcsSerde serde(move(bytes));
-    //         serde &&data;
-    //     }
+        // Deserialize to vector
+        vector<uint8_t> data;
+        {
+            BcsSerde serde(move(bytes));
+            serde &&data;
+        }
 
-    //     BcsSerde serde(move(data));
+        BcsSerde serde(move(data));
 
-    //     serde &&_resources;
-    // }
+        serde &&_resources;
+    }
 
     class Client2Imp : public Client2
     {
@@ -264,7 +264,7 @@ namespace violas
                 gas_currency_code,
                 expiration_timestamp_secs);
         }
-        
+
 #if defined(__GNUC__) && !defined(__llvm__)
         virtual void
         async_submit_script(size_t account_index,
@@ -277,7 +277,6 @@ namespace violas
                             uint64_t expiration_timestamp_secs = 100,
                             std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) override
         {
-
         }
 #endif
 
@@ -361,10 +360,9 @@ namespace violas
 
         virtual void
         async_check_txn_vm_status(const diem_types::AccountAddress &address,
-                            uint64_t sequence_number,
-                            std::function<void()> callback) override
+                                  uint64_t sequence_number,
+                                  std::function<void()> callback) override
         {
-
         }
 
         virtual std::tuple<dt::AccountAddress, uint64_t>
@@ -600,7 +598,7 @@ namespace violas
                 auto priv_key = m_wallet->get_account_priv_key(account_index);
                 ed25519::Signature signature = priv_key.sign(message.data(), message.size());
 
-                //multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
+                // multi_agent_auth.secondary_signer_addresses.push_back(m_accounts[account_index].address);
                 multi_agent_auth.secondary_signers.push_back(
                     {AccountAuthenticator::Ed25519{
                         Ed25519PublicKey{u8_array_to_vector(priv_key.get_public_key().get_raw_key())},
@@ -633,13 +631,15 @@ namespace violas
             this->publish_module(account_index, bytes(istreambuf_iterator<char>(ifs), {}));
         }
 
-        virtual AccountState
+        virtual std::optional<AccountState2>
         get_account_state(const dt::AccountAddress address) override
         {
             json_rpc::AccountStateWithProof asp = m_rpc_cli->get_account_state_blob(bytes_to_hex(address.value));
-            AccountState as(asp.blob);
 
-            return as;
+            if (asp.blob.empty())
+                return {};
+            else
+                return AccountState2(asp.blob);
         }
 
         virtual std::vector<json_rpc::EventView>

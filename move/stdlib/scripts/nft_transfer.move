@@ -14,3 +14,5 @@ script {
         NonFungibleToken::transfer_by_index<T>(&sig, receiver, index, &metadata);
     }
 }
+
+

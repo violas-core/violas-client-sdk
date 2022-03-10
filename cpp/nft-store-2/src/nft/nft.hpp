@@ -8,7 +8,6 @@
 namespace violas::nft
 {
     using TokenId = std::array<uint8_t, 32>;
-    using Address = std::array<uint8_t, 16>;
 
     struct NftInfo
     {
@@ -27,14 +26,16 @@ namespace violas::nft
         }
     };
 
-    struct Account
+    template <typename T>
+    struct NFT
     {
+        std::vector<T> tokens;
         violas::EventHandle sent_event;
         violas::EventHandle received_event;
 
         BcsSerde &serde(BcsSerde &bs)
         {
-            return bs && sent_event && received_event;
+            return bs && tokens && sent_event && received_event;
         }
     };
 
@@ -131,11 +132,10 @@ namespace violas::nft
     class NonFungibleToken
     {
     protected:
-        violas::client2_ptr _client;
-        std::string _url; // json rpc url
+        violas::client2_ptr _client;        
 
     public:
-        NonFungibleToken(client2_ptr client, std::string url);
+        NonFungibleToken(client2_ptr client);
 
         virtual ~NonFungibleToken() {}
 
@@ -161,11 +161,11 @@ namespace violas::nft
 
         std::optional<std::vector<T>> balance(const Address &addr);
 
-        std::optional<Address> get_owner(std::string url, const TokenId &token_id);
+        std::optional<Address> get_owner(const TokenId &token_id);
 
-        std::optional<NftInfo> get_nft_info(std::string url);
+        std::optional<NftInfo> get_nft_info();
 
-        std::optional<Account> get_account(const Address &address);
+        std::optional<NFT<T>> get_account(const Address &address);
 
         std::optional<EventHandle> get_event_handle(EventType event_type,
                                                     const Address &address);
@@ -182,11 +182,12 @@ namespace violas::nft
 
 }
 
+// std::ostream &operator<<(std::ostream &os, const diem_types::AccountAddress &address);
+// std::istream &operator>>(std::istream &os, const diem_types::AccountAddress &address);
 // std::ostream &operator<<(std::ostream &os, const violas::nft::MintedEvent &minted_event);
-std::ostream &operator<<(std::ostream &os, const diem_types::AccountAddress &address);
-std::istream &operator>>(std::istream &os, const diem_types::AccountAddress &address);
-std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::MintedEvent> &minted_events);
-std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::BurnedEvent> &burnedevents);
-std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::SentEvent> &sent_events);
+// std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::MintedEvent> &minted_events);
+// std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::BurnedEvent> &burnedevents);
+// std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::SentEvent> &sent_events);
+// std::ostream &operator<<(std::ostream &os, const violas::nft::NftInfo &nft_info);
 
 #include "nft.cpp"

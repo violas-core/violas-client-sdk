@@ -29,6 +29,7 @@ namespace violas
 
     inline static const uint64_t MICRO_COIN = 1'000'000;
 
+    using Address = std::array<uint8_t, 16>;
     using AuthenticationKey = std::array<uint8_t, 32>;
 
     struct EventHandle
@@ -42,23 +43,41 @@ namespace violas
         }
     };
 
-    struct AccountState
+    struct ResourcePath
+    {
+        std::variant<dt::ModuleId, dt::StructTag> path;
+
+        ResourcePath(const dt::StructTag &tag)
+        {
+            path = tag;
+        }
+
+        ResourcePath(const dt::ModuleId &module_id)
+        {
+            path = module_id;
+        }
+
+        inline std::vector<uint8_t> bcsSerialize() const
+        {
+            auto serializer = serde::BcsSerializer();
+            serde::Serializable<ResourcePath>::serialize(*this, serializer);
+            return std::move(serializer).bytes();
+        }
+    };
+
+    class AccountState2
     {
         std::map<std::vector<uint8_t>, std::vector<uint8_t>> _resources;
 
     public:
-        AccountState(const std::string &hex);
+        AccountState2(const std::string &hex);
 
         template <typename T>
         std::optional<T> get_resource(dt::StructTag tag)
         {
-            auto bcs = tag.bcsSerialize();
-            bytes path;
+            ResourcePath path{tag};
 
-            path.push_back(1);
-            copy(begin(bcs), end(bcs), std::back_inserter<>(path));
-
-            auto iter = _resources.find(path);
+            auto iter = _resources.find(path.bcsSerialize());
             if (iter != end(_resources))
             {
                 T t;
@@ -263,7 +282,7 @@ namespace violas
         publish_module(size_t account_index,
                        std::string_view module_file_name) = 0;
 
-        virtual AccountState
+        virtual std::optional<AccountState2>
         get_account_state(const dt::AccountAddress address) = 0;
 
         virtual std::vector<json_rpc::EventView>

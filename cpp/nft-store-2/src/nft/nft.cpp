@@ -14,18 +14,13 @@
 #include "nft.hpp"
 
 using namespace std;
+using namespace violas;
 namespace dt = diem_types;
 
 namespace violas::nft
 {
-
-    ostream &operator<<(ostream &os, const Address &address)
-    {
-        return os;
-    }
-
     template <typename T>
-    NonFungibleToken<T>::NonFungibleToken(client2_ptr client, string url) : _client(client), _url(url)
+    NonFungibleToken<T>::NonFungibleToken(client2_ptr client) : _client(client)
     {
     }
 
@@ -127,21 +122,17 @@ namespace violas::nft
     template <typename T>
     std::optional<std::vector<T>> NonFungibleToken<T>::balance(const Address &addr)
     {
-        using namespace json_rpc;
-
-        auto rpc_cli = json_rpc::Client::create(_url);
-
         dt::StructTag tag{
             {VIOLAS_LIB_ADDRESS},
             {"NonFungibleToken"},
             {"NFT"},
             {T::type_tag()}};
 
-        violas::AccountState2 state(rpc_cli);
+        auto state = _client->get_account_state({addr});
 
         try
         {
-            return state.get_resource<std::vector<T>>({addr}, tag);
+            return state->get_resource<std::vector<T>>(tag);
         }
         catch (const std::exception &e)
         {
@@ -152,28 +143,23 @@ namespace violas::nft
     }
 
     template <typename T>
-    optional<NftInfo> NonFungibleToken<T>::get_nft_info(string url)
+    optional<NftInfo> NonFungibleToken<T>::get_nft_info()
     {
-        using namespace json_rpc;
-        auto rpc_cli = json_rpc::Client::create(url);
-
-        violas::AccountState2 state(rpc_cli);
-
-        auto type_tag = T::type_tag();
+        auto state = _client->get_account_state(violas::ROOT_ADDRESS);
 
         dt::StructTag tag{
-            Address{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+            {VIOLAS_LIB_ADDRESS},
             "NonFungibleToken",
             "Configuration",
             {T::type_tag()}};
 
-        return state.get_resource<NftInfo>(violas::ROOT_ADDRESS, tag);
+        return state->get_resource<NftInfo>(tag);
     }
 
     template <typename T>
-    optional<Address> NonFungibleToken<T>::get_owner(string url, const TokenId &token_id)
+    optional<Address> NonFungibleToken<T>::get_owner(const TokenId &token_id)
     {
-        auto opt_nft_info = get_nft_info(url);
+        auto opt_nft_info = get_nft_info();
         if (opt_nft_info != nullopt)
         {
             vector<uint8_t> id;
@@ -190,70 +176,26 @@ namespace violas::nft
     }
 
     template <typename T>
-    optional<Account> NonFungibleToken<T>::get_account(const Address &address)
+    optional<NFT<T>> NonFungibleToken<T>::get_account(const Address &address)
     {
-        using namespace json_rpc;
-        auto rpc_cli = json_rpc::Client::create(_url);
-
-        violas::AccountState2 state(rpc_cli);
+        auto state = _client->get_account_state({address});
 
         dt::StructTag tag{
-            {STD_LIB_ADDRESS},
+            {VIOLAS_LIB_ADDRESS},
             {"NonFungibleToken"},
-            {"Account"},
+            {"NFT"},
             {T::type_tag()}};
 
-        return state.get_resource<Account>({address}, tag);
+        return state->get_resource<NFT<T>>(tag);
     }
 
     template <typename T>
     std::optional<EventHandle> NonFungibleToken<T>::get_event_handle(EventType event_type,
                                                                      const Address &address)
     {
-        // switch (event_type)
-        // {
-        // case minted:
-        // case burned:
-        // {
-        //     auto nft_info_opt = get_nft_info(_url);
-        //     if (nft_info_opt != nullopt)
-        //     {
-        //         ostringstream oss;
-
-        //         if (event_type == minted)
-        //             oss << nft_info_opt->mint_event.guid;
-        //         else
-        //             oss << nft_info_opt->burn_event.guid;
-
-        //         return oss.str();
-        //     }
-        // }
-        // break;
-        // case sent:
-        // case received:
-        // {
-        //     auto opt_account = get_account(address);
-        //     if (opt_account != nullopt)
-        //     {
-        //         ostringstream oss;
-
-        //         if (event_type == sent)
-        //             oss << opt_account->sent_event.guid;
-        //         else
-        //             oss << opt_account->received_event.guid;
-
-        //         return oss.str();
-        //     }
-        // }
-        // break;
-
-        // default:
-        //     break;
-        // }
-
         if (event_type == minted)
         {
-            auto nft_info_opt = get_nft_info(_url);
+            auto nft_info_opt = get_nft_info();
             if (nft_info_opt != nullopt)
             {
                 return nft_info_opt->mint_event;
@@ -261,7 +203,7 @@ namespace violas::nft
         }
         else if (event_type == burned)
         {
-            auto nft_info_opt = get_nft_info(_url);
+            auto nft_info_opt = get_nft_info();
             if (nft_info_opt != nullopt)
             {
                 return nft_info_opt->burn_event;
@@ -295,27 +237,9 @@ namespace violas::nft
                                                          uint64_t start,
                                                          uint64_t limit)
     {
-        std::vector<EVENT> nft_events;
+        auto events = _client->query_events<EVENT>(event_handle, start, limit);
 
-        using namespace json_rpc;
-        auto rpc_cli = json_rpc::Client::create(_url);
-
-        auto events = rpc_cli->get_events(bytes_to_hex(event_handle.guid), start, limit);
-
-        for (auto &e : events)
-        {
-            EVENT nft_event;
-            BcsSerde serde(std::get<UnknownEvent>(e.event).bytes);
-
-            serde &&nft_event;
-
-            nft_event.sequence_number = e.sequence_number;
-            nft_event.transaction_version = e.transaction_version;
-
-            nft_events.emplace_back(nft_event);
-        }
-
-        return nft_events;
+        return events;
     }
 }
 
@@ -402,6 +326,20 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::Receiv
              << left << setw(10) << e.transaction_version
              << endl;
     }
+
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const violas::nft::NftInfo &nft_info)
+{
+    os << "NonFungibleToken Info { \n\t"
+       << "total : " << nft_info.total << "\n\t"
+       << "amount : " << nft_info.amount << "\n\t"
+       << "admin address: " << nft_info.admin << "\n\t"
+       << "minted amount : " << nft_info.mint_event.counter << "\n\t"
+       << "burned amount : "
+       << nft_info.burn_event.counter << "\n"
+       << "}";
 
     return os;
 }

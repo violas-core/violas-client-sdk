@@ -1,11 +1,10 @@
 script {    
     use 0x2::NftStore2;    
     
-    fun nft_store_2_initialize(
-        sig: signer,
-        provider_parent_address: address) { 
+    fun nft_store_2_initialize( sig: signer) {
 
-        NftStore2::initialize(&sig, provider_parent_address);
+        NftStore2::initialize(&sig);
+        
     }
 }
 
@@ -36,8 +35,8 @@ script {
                                 ) {
 
         NftStore2::make_order<NFT, Token>(&sig, 
-                            price,                             
-                            &nft_token_id);
+                            &nft_token_id,
+                            price);
     }
 
 }

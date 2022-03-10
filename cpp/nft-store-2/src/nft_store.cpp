@@ -8,93 +8,57 @@
 using namespace std;
 using namespace violas;
 
-const diem_types::AccountAddress NFT_STORE_ADMIN_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x11, 0x22};
-
 namespace violas::nft
 {
+    const string script_path_prefix = "move/build/scripts/nft_store_2_";
+
     Store::Store(violas::client2_ptr client, const diem_types::TypeTag &nft) : _client(client), _nft_type_tag(nft)
     {
-        auto [index, address] = _client->create_next_account(NFT_STORE_ADMIN_ADDRESS);
-        cout << index << " : " << bytes_to_hex(address.value) << endl;
-
-        tie(index, address) = _client->create_next_account();
-        cout << index << " : " << bytes_to_hex(address.value) << endl;
-
-        tie(index, address) = _client->create_next_account();
-        cout << index << " : " << bytes_to_hex(address.value) << endl;
-
-        tie(index, address) = _client->create_next_account();
-        cout << index << " : " << bytes_to_hex(address.value) << endl;
     }
 
     Store::~Store()
     {
     }
 
-    void Store::initialize()
+    void Store::initialize(size_t account_index)
     {
-        auto accounts = _client->get_all_accounts();
-        auto &admin = accounts[0];
-        auto &sale_parent = accounts[1];
-        auto &salge_agent_parent = accounts[2];
-        auto &customer = accounts[3];
-
-        // try_catch([=]()
-        //           { _client->create_designated_dealer_ex("VLS", 0, admin.address, admin.auth_key,
-        //                                                  "NFT Store admin", true); });
-        _client->create_designated_dealer_ex("VLS",
-                                             0,
-                                             NFT_STORE_ADMIN_ADDRESS,
-                                             admin.auth_key,
-                                             "NFT Store administator",
-                                             true);
-
-        _client->create_parent_vasp_account(sale_parent.address, sale_parent.auth_key, "sales parent account", true);
-        _client->create_parent_vasp_account(salge_agent_parent.address, salge_agent_parent.auth_key, "sales parent account", true);
-        _client->create_child_vasp_account(2, customer.address, customer.auth_key, "VLS", 0, true);
-
-        auto [sender, sn] = _client->execute_script_file(0, "move/build/scripts/nft_store_2_initialize.mv",
+        auto [sender, sn] = _client->execute_script_file(account_index,
+                                                         "move/build/scripts/nft_store_2_initialize.mv",
                                                          {},
-                                                         make_txn_args(sale_parent.address));
+                                                         {});
         _client->check_txn_vm_status(sender, sn, "Store::initialize");
-
-        
-        this->register_account(1);
-        this->register_account(2);
     }
 
-    void Store::register_nft()
+    void Store::register_nft(size_t account_index)
     {
         auto [sender, sn] = _client->execute_script_file(0,
-                                                         "move/stdlib/scripts/nft_store_register_nft.mv",
+                                                         "move/build/scripts/nft_store_2_register_nft.mv",
                                                          {_nft_type_tag},
                                                          {});
 
         _client->check_txn_vm_status(sender, sn, "Store::register_nft");
     }
 
-    void Store::register_account(size_t account_index)
+    void Store::accept_nft(size_t account_index)
     {
         auto [sender, sn] = _client->execute_script_file(account_index,
                                                          "move/build/scripts/nft_store_2_accept.mv",
                                                          {_nft_type_tag},
                                                          {});
 
-        _client->check_txn_vm_status(sender, sn, "Store::register_account");
+        _client->check_txn_vm_status(sender, sn, "Store::accept_nft");
     }
 
     void Store::make_order(
         size_t account_index,
         Id nft_id,
         uint64_t price,
-        std::string_view currency,
-        double incentive)
+        std::string_view currency)
     {
-        auto [sender, sn] = _client->execute_script_file(
-            account_index,
-            "move/build/scripts/nft_store_2_make_order.mv",
-            {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
-            {make_txn_args(nft_id, price, uint64_t(MICRO_COIN * incentive), uint64_t(MICRO_COIN))});
+        auto [sender, sn] = _client->execute_script_file(account_index,
+                                                         script_path_prefix + "make_order.mv",
+                                                         {_nft_type_tag, make_struct_type_tag(STD_LIB_ADDRESS, currency, currency)},
+                                                         {make_txn_args(nft_id, price)});
 
         _client->check_txn_vm_status(sender, sn, "Store::make_order");
     }
@@ -104,7 +68,7 @@ namespace violas::nft
     {
         auto [sender, sn] = _client->execute_script_file(
             account_index,
-            "move/build/scripts/nft_store_2_revoke_order.mv",
+            script_path_prefix + "revoke_order.mv",
             {_nft_type_tag},
             {make_txn_args(order_id)});
 
@@ -112,8 +76,8 @@ namespace violas::nft
     }
 
     void Store::trade_order(size_t account_index,
-                              std::string_view currency,                              
-                              Id order_id)
+                            std::string_view currency,
+                            Id order_id)
     {
         ifstream ifs("move/build/scripts/nft_store_2_trade_order.mv", ios::in | ios::binary);
         bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
@@ -131,15 +95,15 @@ namespace violas::nft
     std::vector<Order>
     Store::list_orders()
     {
-        auto state = _client->get_account_state(NFT_STORE_ADMIN_ADDRESS);
+        auto state = _client->get_account_state({NFT_STORE_ADMIN_ADDRESS});
+        if (!state)
+            return {};
 
-        auto opt_orders = state.get_resource<std::vector<Order>>(
-            make_struct_tag(VIOLAS_LIB_ADDRESS,
+        auto opt_orders = state->get_resource<std::vector<Order>>(
+            make_struct_tag({VIOLAS_LIB_ADDRESS},
                             "NftStore",
                             "OrderList",
-                            {make_struct_type_tag(VIOLAS_LIB_ADDRESS,
-                                                  "MountWuyi",
-                                                  "Tea")}));
+                            {_nft_type_tag}));
         if (opt_orders)
             return *opt_orders;
         else
@@ -150,14 +114,14 @@ namespace violas::nft
     Store::get_account_info(Address address)
     {
         auto state = _client->get_account_state(dt::AccountAddress{address});
+        if (!state)
+            return {};
 
-        auto opt_account_info = state.get_resource<AccountInfo>(
+        auto opt_account_info = state->get_resource<AccountInfo>(
             make_struct_tag(VIOLAS_LIB_ADDRESS,
-                            "NftStore",
+                            "NftStore2",
                             "Account",
-                            {make_struct_type_tag(VIOLAS_LIB_ADDRESS,
-                                                  "MountWuyi",
-                                                  "Tea")}));
+                            {_nft_type_tag}));
         if (opt_account_info)
             return *opt_account_info;
         else
@@ -175,6 +139,15 @@ namespace violas::nft
         else
             return {};
     }
+}
+
+std::ostream &operator<<(std::ostream &os, const violas::nft::AccountInfo &account_info)
+{
+    os << "made order counter = " << account_info.made_order_events.counter << "\n"
+       << "revoked order counter = " << account_info.revoked_order_events.counter << "\n"
+       << "traded order counter = " << account_info.traded_order_events.counter;
+
+    return os;
 }
 
 std::ostream &operator<<(std::ostream &os, const std::vector<nft::Order> &orders)

@@ -39,17 +39,7 @@ module NftStore2 {
         payer : address,
         payee : address,        
         price : u64,          
-    }
-
-    struct SentSignedTxnEvent has drop , store {
-        receiver_address: address,
-        signed_txn : vector<u8>
-    }
-
-    struct ReceivedSignedTxnEvent has drop , store {
-        sender_address: address,
-        signed_txn : vector<u8>
-    }
+    }    
 
     struct Order has store {
         nft_token_id : vector<u8>,
@@ -58,27 +48,24 @@ module NftStore2 {
         provider : address,
     } 
     //
-    // Order list held by admin
+    // Order list held holden by admin account
     //
-    struct OrderList<T> has key, store {
+    struct OrderList<T> has key {
         orders : vector<Order>,        
     }
     //
-    //  Global configuration held by admin
+    //  Global configuration holden by admin account
     //
-    struct Configuration has key, store {
+    struct Configuration has key {
         withdraw_cap: NonFungibleToken::WithdrawCapbility,
-        provider_parent_address : address,        
     }
     //
-    //  account info held by each customer account
+    //  account info holden by each customer account
     //
     struct Account<NFT> has key, store {
         made_order_events: EventHandle<MadeOrderEvent>,
         revoked_order_events: EventHandle<RevokedOrderEvent>,
         traded_order_events : EventHandle<TradedOrderEvent>,
-        sent_trading_order_sig_events: EventHandle<SentSignedTxnEvent>,
-        received_trading_order_sig_events: EventHandle<ReceivedSignedTxnEvent>,
     }    
 
     //
@@ -90,16 +77,14 @@ module NftStore2 {
     //
     //
     //
-    public fun get_admind_address() : address {
+    public fun get_admin_address() : address {
         ADMIN_ACCOUNT_ADDRESS
     }
 
     //
     //  Initialize Order Store by admin account
     //
-    public fun initialize(
-        sig: &signer, 
-        provider_parent_address: address ) 
+    public fun initialize( sig: &signer ) 
     {
         let sender = Signer::address_of(sig);
 
@@ -111,7 +96,6 @@ module NftStore2 {
 
         move_to(sig, Configuration {
             withdraw_cap: NonFungibleToken::extract_opt_withdraw_capability(sig),
-            provider_parent_address            
         });
     }
     //
@@ -130,9 +114,7 @@ module NftStore2 {
 
         if(!NonFungibleToken::has_accepted<NFT>(sender)) {
             NonFungibleToken::accept<NFT>(sig);
-        };
-
-        
+        };        
     }
     //
     //  Accpet Account info
@@ -146,9 +128,7 @@ module NftStore2 {
             Account<NFT> {
                 made_order_events: Event::new_event_handle<MadeOrderEvent>(sig),
                 revoked_order_events: Event::new_event_handle<RevokedOrderEvent>(sig),
-                traded_order_events: Event::new_event_handle<TradedOrderEvent>(sig),
-                sent_trading_order_sig_events: Event::new_event_handle<SentSignedTxnEvent>(sig),
-                received_trading_order_sig_events: Event::new_event_handle<ReceivedSignedTxnEvent>(sig),
+                traded_order_events: Event::new_event_handle<TradedOrderEvent>(sig),                
             });
         
         if(!NonFungibleToken::has_accepted<NFT>(sender)) {
@@ -161,9 +141,9 @@ module NftStore2 {
     //
     public fun make_order<NFT: store, Token>(
         sig : &signer, 
-        price : u64,         
-        nft_token_id: &vector<u8>) 
-    acquires Account, OrderList {        
+        nft_token_id: &vector<u8>,
+        price : u64) 
+    acquires Account, OrderList {
         
         let sender = Signer::address_of(sig);               
         
@@ -173,7 +153,7 @@ module NftStore2 {
 
         let order_list = borrow_global_mut<OrderList<NFT>>(ADMIN_ACCOUNT_ADDRESS);
         
-        NonFungibleToken::transfer<NFT>(sig, get_admind_address(), nft_token_id, &b"make order to NFT Store");
+        NonFungibleToken::transfer<NFT>(sig, get_admin_address(), nft_token_id, &b"make order to NFT Store");
 
         let currency_code = Diem::currency_code<Token>();        
         let order = Order { price, 

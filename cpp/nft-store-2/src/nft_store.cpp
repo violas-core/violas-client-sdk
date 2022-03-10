@@ -101,7 +101,7 @@ namespace violas::nft
 
         auto opt_orders = state->get_resource<std::vector<Order>>(
             make_struct_tag({VIOLAS_LIB_ADDRESS},
-                            "NftStore",
+                            "NftStore2",
                             "OrderList",
                             {_nft_type_tag}));
         if (opt_orders)
@@ -154,11 +154,9 @@ std::ostream &operator<<(std::ostream &os, const std::vector<nft::Order> &orders
 {
     // Print talbe header
     os << color::YELLOW
-       << left << setw(8) << "index"
+       << left << setw(8) << "Index"
        << left << setw(66) << "NFT Token Id"
-       << right << setw(10) << "Price"
-       << left << setw(5) << ""
-       << left << setw(16) << "Sale Incentive"
+       << left << setw(15) << "Price"
        << left << setw(34) << "Provider"
        << left << setw(20) << "Order Id"
        << color::RESET << endl;
@@ -174,10 +172,8 @@ std::ostream &operator<<(std::ostream &os, const std::vector<nft::Order> &orders
 
         os << left << setw(8) << i++
            << left << setw(66) << bytes_to_hex(order.nft_token_id)
-           << right << setw(10) << order.price
-           << left << setw(5) << bytes_to_string(order.currency_code)
-           << left << setw(16) << order.sale_incentive
-           << left << setw(34) << bytes_to_hex(order.provider)
+           << left << setw(15) << to_string(order.price) + " " +  bytes_to_string(order.currency_code)
+           << left << setw(34) << order.provider
            << left << setw(20) << bytes_to_hex(order_id)
            << endl;
     }

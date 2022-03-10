@@ -13,27 +13,25 @@ namespace violas::nft
     {
         bytes nft_token_id;
         uint64_t price;
-        bytes currency_code;
-        uint64_t sale_incentive;
+        bytes currency_code;        
         Address provider;
 
         BcsSerde &serde(BcsSerde &bs)
         {
-            return bs && nft_token_id && price && currency_code && sale_incentive && provider;
+            return bs && nft_token_id && price && currency_code && provider;
         }
     };
 
-    struct MadeOrderEvent
+    struct MadeOrderEvent : public EventBase
     {
         bytes order_id;
         bytes nft_token_id;
         uint64_t price;
         bytes currency_code;
-        uint64_t sale_incentive;
-
+        
         BcsSerde &serde(BcsSerde &bs)
         {
-            return bs && order_id && nft_token_id && price && currency_code && sale_incentive;
+            return bs && order_id && nft_token_id && price && currency_code;
         }
     };
 

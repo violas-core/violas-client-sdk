@@ -32,6 +32,12 @@ namespace violas
     using Address = std::array<uint8_t, 16>;
     using AuthenticationKey = std::array<uint8_t, 32>;
 
+    struct EventBase
+    {
+        uint64_t sequence_number;
+        uint64_t transaction_version;
+    };
+
     struct EventHandle
     {
         uint64_t counter;
@@ -295,10 +301,15 @@ namespace violas
 
             for (auto &e : this->get_events(handle, start, limit))
             {
-                T event;
+                auto unknow_event = std::get<json_rpc::UnknownEvent>(e.event);
+
                 BcsSerde serde(std::get<json_rpc::UnknownEvent>(e.event).bytes);
+                T event;
 
                 serde &&event;
+
+                event.sequence_number = e.sequence_number;
+                event.transaction_version = e.transaction_version;
 
                 events.push_back(event);
             }

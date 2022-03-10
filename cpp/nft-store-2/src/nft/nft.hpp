@@ -37,26 +37,20 @@ namespace violas::nft
         {
             return bs && tokens && sent_event && received_event;
         }
-    };
+    };    
 
-    struct Event
-    {
-        uint64_t sequence_number;
-        uint64_t transaction_version;
-    };
-
-    struct MintedEvent : public Event
+    struct MintedEvent : public EventBase
     {
         std::vector<uint8_t> token_id;
         Address receiver;
 
         BcsSerde &serde(BcsSerde &bs)
         {
-            return bs && token_id && receiver;
+            return bs && token_id && receiver;            
         }
     };
 
-    struct BurnedEvent : public Event
+    struct BurnedEvent : public EventBase
     {
         std::vector<uint8_t> token_id;
 
@@ -66,7 +60,7 @@ namespace violas::nft
         }
     };
 
-    struct SentEvent : public Event
+    struct SentEvent : public EventBase
     {
         std::vector<uint8_t> token_id;
         Address payee;
@@ -78,7 +72,7 @@ namespace violas::nft
         }
     };
 
-    struct ReceivedEvent : public Event
+    struct ReceivedEvent : public EventBase
     {
         std::vector<uint8_t> token_id;
         Address payer;
@@ -90,7 +84,7 @@ namespace violas::nft
         }
     };
 
-    struct TransferredEvent : public Event
+    struct TransferredEvent : public EventBase
     {
         std::vector<uint8_t> token_id;
         Address payer;
@@ -132,7 +126,7 @@ namespace violas::nft
     class NonFungibleToken
     {
     protected:
-        violas::client2_ptr _client;        
+        violas::client2_ptr _client;
 
     public:
         NonFungibleToken(client2_ptr client);

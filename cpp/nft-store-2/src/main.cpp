@@ -350,8 +350,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
                      cout << "order id : " << bytes_to_hex(event.order_id)
                           << ", nft id : " << bytes_to_hex(event.nft_token_id)
                           << ", price : " << event.price
-                          << ", currency code : " << bytes_to_string(event.currency_code)
-                          << ", sale_incentive : " << event.sale_incentive
+                          << ", currency code : " << bytes_to_string(event.currency_code)                          
                           << endl;
                  }
              }

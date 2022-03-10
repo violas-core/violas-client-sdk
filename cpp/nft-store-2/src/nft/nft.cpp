@@ -100,10 +100,12 @@ namespace violas::nft
                                                       uint64_t token_index,
                                                       std::vector<uint8_t> metadata)
     {
-        _client->execute_script_file(account_index,
-                                     "move/stdlib/scripts/nft_transfer_by_token_index.mv",
-                                     {T::type_tag()},
-                                     make_txn_args(dt::AccountAddress{receiver}, token_index, metadata));
+        auto [sender, sn] = _client->execute_script_file(account_index,
+                                                         "move/stdlib/scripts/nft_transfer_by_token_index.mv",
+                                                         {T::type_tag()},
+                                                         make_txn_args(dt::AccountAddress{receiver}, token_index, metadata));
+
+        _client->check_txn_vm_status(sender, sn, "nft::transfer_by_token_index");
     }
 
     template <typename T>
@@ -196,35 +198,27 @@ namespace violas::nft
         if (event_type == minted)
         {
             auto nft_info_opt = get_nft_info();
-            if (nft_info_opt != nullopt)
-            {
+            if (nft_info_opt)
                 return nft_info_opt->mint_event;
-            }
         }
         else if (event_type == burned)
         {
             auto nft_info_opt = get_nft_info();
-            if (nft_info_opt != nullopt)
-            {
+            if (nft_info_opt)
                 return nft_info_opt->burn_event;
-            }
         }
         else if (event_type == sent)
         {
             auto opt_account = get_account(address);
-            if (opt_account != nullopt)
-            {
+            if (opt_account)
                 return opt_account->sent_event;
-            }
         }
         else
         {
             assert(event_type == received);
             auto opt_account = get_account(address);
-            if (opt_account != nullopt)
-            {
+            if (opt_account)
                 return opt_account->received_event;
-            }
         }
 
         return {};

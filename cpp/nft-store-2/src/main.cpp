@@ -109,11 +109,14 @@ void check_istream_eof(istream &is, string_view err)
 {
     if (is.eof())
     {
-        ostringstream oss;
-
-        oss << err;
-        __throw_invalid_argument(oss.str().c_str());
+        throw invalid_argument(err.data());
     }
+}
+
+void check_account_index(client2_ptr client, size_t account_index)
+{
+    if (account_index >= client->get_all_accounts().size())
+        throw invalid_argument("The account index is more than the size of all accounts.");
 }
 
 template <typename T>
@@ -209,7 +212,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
     auto type_tag = make_struct_type_tag({VIOLAS_LIB_ADDRESS}, "Portrait", "Portrait");
     auto store = make_shared<violas::nft::Store>(client, type_tag);
 
-    auto [index, address] = client->create_next_account(NFT_STORE_ADMIN_ADDRESS);
+    auto [index, address] = client->create_next_account(dt::AccountAddress{NFT_STORE_ADMIN_ADDRESS});
     cout << index << " : " << bytes_to_hex(address.value) << endl;
 
     tie(index, address) = client->create_next_account();
@@ -241,7 +244,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
 
              try
              {
-                 client->create_designated_dealer_ex("VLS", a0.index, NFT_STORE_ADMIN_ADDRESS, a0.auth_key, "NFT Store Admin", true);
+                 client->create_designated_dealer_ex("VLS", a0.index, {NFT_STORE_ADMIN_ADDRESS}, a0.auth_key, "NFT Store Admin", true);
                  cout << a0.index << " : " << a0.address.value << "\tRole : DD" << endl;
 
                  client->create_parent_vasp_account(a1.address, a1.auth_key, "NFT VASP", true);
@@ -264,6 +267,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
          {
              size_t account_index = 0;
              args >> account_index;
+             check_account_index(client, account_index);
 
              store->initialize(account_index);
          }},
@@ -271,6 +275,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
          {
              size_t account_index = 0;
              args >> account_index;
+             check_account_index(client, account_index);
 
              store->register_nft(account_index);
          }},
@@ -280,6 +285,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
 
              size_t account_index = 0;
              args >> account_index;
+             check_account_index(client, account_index);
 
              store->accept_nft(account_index);
          }},
@@ -289,32 +295,43 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
          }},
         {"store-make-order", [=](istringstream &args)
          {
-             size_t account_index;
-             violas::nft::TokenId nft_token_id;
-             uint64_t price;
-             string currency;             
+             check_istream_eof(args, "account_index, nft_token_id, price, currency");
+
+             size_t account_index = 0;
+             violas::nft::TokenId nft_token_id = {0};
+             uint64_t price = 0;
+             string currency;
 
              args >> account_index >> nft_token_id >> price >> currency;
 
-             store->make_order(account_index, nft_token_id, price, currency);
+             check_account_index(client, account_index);
+
+             store->make_order(account_index, nft_token_id, price * MICRO_COIN, currency);
          }},
-        {"store-revoke-order", [=](istringstream &params)
+        {"store-revoke-order", [=](istringstream &args)
          {
+             check_istream_eof(args, "account_index, order_id");
+
              size_t account_index;
              violas::nft::Id order_id;
 
-             params >> account_index >> order_id;
+             args >> account_index >> order_id;
+
+             check_account_index(client, account_index);
 
              store->revoke_order(account_index, order_id);
          }},
-        {"store-trade-order", [=](istringstream &params)
+        {"store-trade-order", [=](istringstream &args)
          {
+             check_istream_eof(args, "account_index, order_id, currency");
+
              size_t account_index;
              nft::Id order_id;
-             Address address;
              string currency;
 
-             params >> account_index >> currency >> address >> order_id;
+             args >> account_index >> order_id >> currency;
+
+             check_account_index(client, account_index);
 
              store->trade_order(account_index,
                                 currency,
@@ -333,30 +350,66 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
              if (account_info)
                  cout << *account_info << endl;
          }},
-        {"store-query-events", [=](istringstream &params)
+        {"store-query-events", [=](istringstream &args)
          {
+             check_istream_eof(args, "account_index_or_address [made, revoked, sold, bought, traded] start limit");
+
              string event_type;
              Address address;
+             uint64_t start = 0;
+             uint64_t limit = 10;
 
-             auto accounts = client->get_all_accounts();
+             address = get_from_stream<Address>(args, client);
 
-             // params >> event_type >> address;
+             args >> event_type >> start >> limit;
 
              if (event_type == "made")
              {
-                 auto made_order_events = store->get_made_order_events(address, 0, 10);
-                 for (auto &event : made_order_events)
+                 auto handle = store->get_event_handle(address, event_type::made);
+                 if (handle)
                  {
-                     cout << "order id : " << bytes_to_hex(event.order_id)
-                          << ", nft id : " << bytes_to_hex(event.nft_token_id)
-                          << ", price : " << event.price
-                          << ", currency code : " << bytes_to_string(event.currency_code)                          
-                          << endl;
+                     auto events = store->query_order_events<MadeOrderEvent>(*handle, start, limit);
+                     cout << events << endl;
                  }
              }
              else if (event_type == "revoked")
              {
+                 auto handle = store->get_event_handle(address, event_type::revoked);
+                 if (handle)
+                 {
+                     auto events = store->query_order_events<RevokedOrderEvent>(*handle, start, limit);
+                     cout << events << endl;
+                 }
              }
+             else if (event_type == "sold")
+             {
+                 auto handle = store->get_event_handle(address, event_type::sold);
+                 if (handle)
+                 {
+                     auto events = store->query_order_events<SoldOrderEvent>(*handle, start, limit);
+                     cout << events << endl;
+                 }
+             }
+             else if (event_type == "bought")
+             {
+                 auto handle = store->get_event_handle(address, event_type::bought);
+                 if (handle)
+                 {
+                     auto events = store->query_order_events<BoughtOrderEvent>(*handle, start, limit);
+                     cout << events << endl;
+                 }
+             }
+             else if (event_type == "traded")
+             {
+                 auto handle = store->get_event_handle(address, event_type::traded);
+                 if (handle)
+                 {
+                     auto events = store->query_order_events<TradedOrderEvent>(*handle, start, limit);
+                     cout << events << endl;
+                 }
+             }
+             else
+                 throw invalid_argument(fmt("event type '", event_type, "' is unknown"));
          }},
     };
 }

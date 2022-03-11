@@ -398,8 +398,8 @@ namespace violas
         {
             ifstream ifs(script_file_name.data(), ios::binary);
 
-            if (!ifs.is_open())
-                throw runtime_error(format("failed to open file %s at submit_script_file", script_file_name).c_str());
+            if (!ifs.is_open())                
+                throw runtime_error(fmt("failed to open file ", script_file_name, " at execute_script_file"));
 
             bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
             dt::Script script{

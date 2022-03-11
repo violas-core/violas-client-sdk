@@ -7,11 +7,13 @@ module NftStore2 {
     use Std::Errors;
     use Std::Event::{Self, EventHandle};
     use Std::Compare;
-    //use Std::FixedPoint32::{Self, FixedPoint32};
+    use Std::FixedPoint32::{Self, FixedPoint32};
     use Std::Hash;
     //use DiemFramework::VASP;
     use DiemFramework::Diem;
     use DiemFramework::DiemAccount;
+    use DiemFramework::DiemTimestamp;
+    
     use 0x2::NonFungibleToken;
     
     const ADMIN_ACCOUNT_ADDRESS : address = @0x1122;
@@ -38,20 +40,42 @@ module NftStore2 {
         nft_token_id : vector<u8>,
         payer : address,
         payee : address,        
-        price : u64,          
-    }    
+        price : u64,
+        currency: vector<u8>,
+        fee_rate: FixedPoint32,
+    }
+    
+    struct SoldOrderEvent has drop, store {
+        order_id : vector<u8>,
+        nft_token_id : vector<u8>,
+        buyer: address,
+        price : u64,        
+        currency: vector<u8>,
+        fee_rate: FixedPoint32,
+    }
+
+    struct BoughtOrderEvent has drop, store {
+        order_id : vector<u8>,
+        nft_token_id : vector<u8>,
+        seller: address,
+        price : u64,
+        currency: vector<u8>,
+    }
 
     struct Order has store {
         nft_token_id : vector<u8>,
         price : u64,
         currency_code : vector<u8>,        
-        provider : address,
+        provider : address,        
+        timestamp : u64
     } 
     //
     // Order list held holden by admin account
     //
-    struct OrderList<T> has key {
-        orders : vector<Order>,        
+    struct OrderList<NFT> has key {
+        orders : vector<Order>,
+        fee_rate : FixedPoint32,
+        traded_order_events : EventHandle<TradedOrderEvent>,
     }
     //
     //  Global configuration holden by admin account
@@ -65,7 +89,8 @@ module NftStore2 {
     struct Account<NFT> has key, store {
         made_order_events: EventHandle<MadeOrderEvent>,
         revoked_order_events: EventHandle<RevokedOrderEvent>,
-        traded_order_events : EventHandle<TradedOrderEvent>,
+        sold_order_events: EventHandle<SoldOrderEvent>,
+        bought_order_events: EventHandle<BoughtOrderEvent>,
     }    
 
     //
@@ -101,7 +126,7 @@ module NftStore2 {
     //
     // Register a new NFT type into Store
     //
-    public fun register<NFT: store>(sig: &signer) {        
+    public fun register<NFT: store>(sig: &signer, fee_rate :FixedPoint32) {        
         check_admin_permission(sig);
         
         let sender = Signer::address_of(sig);
@@ -109,7 +134,9 @@ module NftStore2 {
 
         move_to(sig, 
             OrderList<NFT> {
-            orders : Vector::empty<Order>()            
+            orders : Vector::empty<Order>(),
+            fee_rate,
+            traded_order_events: Event::new_event_handle<TradedOrderEvent>(sig),
         });
 
         if(!NonFungibleToken::has_accepted<NFT>(sender)) {
@@ -128,7 +155,8 @@ module NftStore2 {
             Account<NFT> {
                 made_order_events: Event::new_event_handle<MadeOrderEvent>(sig),
                 revoked_order_events: Event::new_event_handle<RevokedOrderEvent>(sig),
-                traded_order_events: Event::new_event_handle<TradedOrderEvent>(sig),                
+                sold_order_events: Event::new_event_handle<SoldOrderEvent>(sig),
+                bought_order_events: Event::new_event_handle<BoughtOrderEvent>(sig),
             });
         
         if(!NonFungibleToken::has_accepted<NFT>(sender)) {
@@ -145,7 +173,7 @@ module NftStore2 {
         price : u64) 
     acquires Account, OrderList {
         
-        let sender = Signer::address_of(sig);               
+        let sender = Signer::address_of(sig);
         
         // ensure that the provider is a child account of admin account
         // assert(VASP::parent_address(provider) == ADMIN_ACCOUNT_ADDRESS, 100005);
@@ -159,7 +187,8 @@ module NftStore2 {
         let order = Order { price, 
                             currency_code: copy currency_code,                             
                             provider: sender, 
-                            nft_token_id: *nft_token_id };
+                            nft_token_id: *nft_token_id,
+                            timestamp: DiemTimestamp::now_seconds() };
         let order_id = compute_order_id(&order);
 
         Vector::push_back<Order>(&mut order_list.orders, order);
@@ -203,7 +232,7 @@ module NftStore2 {
         };
                 
         // Destory order
-        let Order { price:_, currency_code:_, provider:_, nft_token_id } = Vector::swap_remove(&mut order_list.orders, index);       
+        let Order { price:_, currency_code:_, provider:_, nft_token_id, timestamp:_ } = Vector::swap_remove(&mut order_list.orders, index);       
         
         let account = borrow_global_mut<Account<NFT>>(sender);
         Event::emit_event(&mut account.revoked_order_events, 
@@ -234,10 +263,20 @@ module NftStore2 {
                 
         let sender_withdraw_cap = DiemAccount::extract_withdraw_capability(sender_sig);
         
-        // Pay to asset provider
+        let fee = FixedPoint32::multiply_u64(order.price, *&order_list.fee_rate);
+        let revenue = order.price - fee;
+        
+        // Pay to Store
+        DiemAccount::pay_from<Token>(&sender_withdraw_cap, 
+                                    get_admin_address(), 
+                                    fee, 
+                                    b"", 
+                                    b"");
+
+        // Pay to NFT provider
         DiemAccount::pay_from<Token>(&sender_withdraw_cap, 
                                     order.provider, 
-                                    order.price, 
+                                    revenue,
                                     b"", 
                                     b"");
 
@@ -256,36 +295,57 @@ module NftStore2 {
 
             NonFungibleToken::pay_from<NFT>(&configuration.withdraw_cap, sender, &order.nft_token_id, &b"transfer a NFT from NFT store to sender" );            
         };
-
-        // Emit traded order event
+        //
+        // Emit all event
+        //
         {
-            // Make a traded order event      
-            let traded_order_event = TradedOrderEvent {
+            // Emit a traded order event to global storage                             
+            Event::emit_event(
+                &mut order_list.traded_order_events,
+                TradedOrderEvent {
                     order_id: *order_id,
                     nft_token_id : *&order.nft_token_id,
                     payer : order.provider,
                     payee : sender,                    
-                    price : order.price,                    
-                };            
-            
+                    price : order.price,
+                    currency: *&order.currency_code,
+                    fee_rate: *&order_list.fee_rate,
+                });
+
             //
-            // Emit trade order events to sender account
+            // Emit sold order event to seller account
             //
             if(!exists<Account<NFT>>(sender))
                 accept<NFT>(sender_sig);
 
-            let sender_account = borrow_global_mut<Account<NFT>>(sender);
-            Event::emit_event(&mut sender_account.traded_order_events, 
-                copy traded_order_event);
-            
-            // Emit trade order events to provider account
-            let provider_account = borrow_global_mut<Account<NFT>>(order.provider);
-            Event::emit_event(&mut provider_account.traded_order_events, 
-                copy traded_order_event);            
+            let seller_account = borrow_global_mut<Account<NFT>>(order.provider);
+            Event::emit_event(
+                &mut seller_account.sold_order_events, 
+                SoldOrderEvent {
+                    order_id : *order_id,
+                    nft_token_id : *&order.nft_token_id,
+                    buyer: sender,
+                    price : order.price,                    
+                    currency: *&order.currency_code,
+                    fee_rate: *&order_list.fee_rate,
+                });
+            //            
+            // Emit trade order events to buyer account
+            //
+            let buyer_account = borrow_global_mut<Account<NFT>>(sender);
+            Event::emit_event(
+                &mut buyer_account.bought_order_events, 
+                BoughtOrderEvent {
+                    order_id : *order_id,
+                    nft_token_id : *&order.nft_token_id,
+                    seller: order.provider,
+                    price : order.price,
+                    currency: *&order.currency_code,
+                });            
         };
         
         // Destory order
-        let Order { price:_, currency_code:_, provider:_, nft_token_id:_ } = order;
+        let Order { price:_, currency_code:_, provider:_, nft_token_id:_, timestamp:_ } = order;
     }
     
 

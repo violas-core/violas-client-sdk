@@ -10,9 +10,15 @@ script {
 
 script {    
     use 0x2::NftStore2;    
-    
-    fun nft_store_2_register_nft<NFT: store>(sig: signer) { 
-        NftStore2::register<NFT>(&sig);
+    use Std::FixedPoint32;
+
+    fun nft_store_2_register_nft<NFT: store>(sig: signer, 
+                                            fee_rate_numerator:u64, 
+                                            fee_rate_denominator :u64) { 
+            
+            NftStore2::register<NFT>(&sig, 
+            
+            FixedPoint32::create_from_rational(fee_rate_numerator, fee_rate_denominator));
     }
 }
 
@@ -52,8 +58,9 @@ script {
 script {    
     use 0x2::NftStore2;    
     
-    fun nft_store_2_trade_order<NFT: store, Token>(sender_sig : signer,                                                
-                                                order_id: vector<u8>) { 
+    fun nft_store_2_trade_order<NFT: store, Token>(
+        sender_sig : signer,                                                
+        order_id: vector<u8>) { 
         
         NftStore2::trade_order<NFT, Token>(&sender_sig, &order_id);
     }

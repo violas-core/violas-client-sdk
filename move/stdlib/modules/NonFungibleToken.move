@@ -56,12 +56,17 @@ module NonFungibleToken {
         total: u64,
         amount: u64,
         admin_address: address, // administrator's address
+        symbol : vector<u8>,       // NFT symbol
         owners: Map<vector<u8>, address>,  // token id maps to owner's address        
         // Global events
         minted_events: EventHandle<MintedEvent>,
         burned_events: EventHandle<BurnedEvent>,
         transferred_events: EventHandle<TransferredEvent>
     }   
+
+    struct RegisteredNfts {
+        nft_syms : vector<vector<u8>>,
+    }
 
     struct WithdrawCapbility has store {
         account_address : address,
@@ -112,8 +117,19 @@ module NonFungibleToken {
 
         assert(info.admin_address == account_address, 10001);
     }
-    
-    public fun register<Token: store>(sig: &signer, limited: bool, total: u64, admin_address: address) {
+    //
+    //  Get NFT symbol
+    //
+    public fun get_symbol<Token : store>() : vector<u8>
+    acquires Configuration {
+        let configuration = borrow_global<Configuration<Token>>(NFT_PUBLISHER);
+
+        *&configuration.symbol
+    }
+    //
+    //
+    //
+    public fun register<Token: store>(sig: &signer, limited: bool, total: u64, admin_address: address, symbol: vector<u8>) {
         let sender = Signer::address_of(sig);
         assert(sender == NFT_PUBLISHER, 8000);
 
@@ -122,6 +138,7 @@ module NonFungibleToken {
             total: total,
             amount: 0,
             admin_address,
+            symbol,
             owners:  Map::empty<vector<u8>, address>(),
             minted_events: Event::new_event_handle<MintedEvent>(sig),
             burned_events: Event::new_event_handle<BurnedEvent>(sig),

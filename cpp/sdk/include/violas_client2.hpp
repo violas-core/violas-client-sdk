@@ -446,7 +446,8 @@ namespace violas
             {
                 txn_args.push_back({ta::U8Vector{arg}});
             }
-            else if constexpr (is_same<decay_t<decltype(arg)>, string_view>::value)
+            else if constexpr (is_same<decay_t<decltype(arg)>, string_view>::value ||
+                               is_same<decay_t<decltype(arg)>, string>::value)
             {
                 txn_args.push_back({ta::U8Vector{bytes(begin(arg), end(arg))}});
             }

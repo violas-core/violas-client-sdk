@@ -65,7 +65,9 @@ namespace violas::nft
         auto [sender, sn] = _client->execute_script_file(ACCOUNT_ROOT_ID,
                                                          "move/build/scripts/nft_register.mv",
                                                          {T::type_tag()},
-                                                         make_txn_args(uint64_t(total_number), dt::AccountAddress{admin}));
+                                                         make_txn_args(uint64_t(total_number),
+                                                                       dt::AccountAddress{admin},
+                                                                       T::module_name()));
 
         _client->check_txn_vm_status(sender, sn, "failed to execute nft_register");
 

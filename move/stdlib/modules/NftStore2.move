@@ -82,6 +82,7 @@ module NftStore2 {
     //
     struct Configuration has key {
         withdraw_cap: NonFungibleToken::WithdrawCapbility,
+        nft_syms :vector<vector<u8>>,       // NFT symbole list
     }
     //
     //  account info holden by each customer account
@@ -121,12 +122,14 @@ module NftStore2 {
 
         move_to(sig, Configuration {
             withdraw_cap: NonFungibleToken::extract_opt_withdraw_capability(sig),
+            nft_syms: Vector::empty(),
         });
     }
     //
     // Register a new NFT type into Store
     //
-    public fun register<NFT: store>(sig: &signer, fee_rate :FixedPoint32) {        
+    public fun register<NFT: store>(sig: &signer, fee_rate :FixedPoint32) 
+    acquires Configuration {        
         check_admin_permission(sig);
         
         let sender = Signer::address_of(sig);
@@ -141,7 +144,21 @@ module NftStore2 {
 
         if(!NonFungibleToken::has_accepted<NFT>(sender)) {
             NonFungibleToken::accept<NFT>(sig);
-        };        
+        };
+
+        let config = borrow_global_mut<Configuration>(ADMIN_ACCOUNT_ADDRESS);
+        let nft_symbol = NonFungibleToken::get_symbol<NFT>();
+
+        Vector::push_back(&mut config.nft_syms, nft_symbol);
+    }
+    //
+    //  get all registered NFT symbol list
+    //
+    public fun get_nft_symbols() : vector<vector<u8>>
+    acquires Configuration {
+        let configuration = borrow_global<Configuration>(ADMIN_ACCOUNT_ADDRESS);
+
+        *&configuration.nft_syms
     }
     //
     //  Accpet Account info

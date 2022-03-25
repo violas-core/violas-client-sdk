@@ -265,7 +265,6 @@ namespace violas
                 expiration_timestamp_secs);
         }
 
-#if defined(__GNUC__) && !defined(__llvm__)
         virtual void
         async_submit_script(size_t account_index,
                             std::string_view script_file_name,
@@ -278,7 +277,7 @@ namespace violas
                             std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) override
         {
         }
-#endif
+
 
         std::tuple<dt::AccountAddress, uint64_t>
         submit_module(size_t account_index,

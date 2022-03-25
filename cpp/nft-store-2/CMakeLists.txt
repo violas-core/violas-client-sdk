@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(nft-store-2 VERSION 1.0)
 
-set(CMAKE_CXX_COMPILER g++-10)
+set(CMAKE_CXX_COMPILER clang++-14)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
-set(CMAKE_CXX_FLAGS -fcoroutines)
+#set(CMAKE_CXX_FLAGS -fcoroutines)
 set(CMAKE_EXE_LINKER_FLAGS  -Wl,-rpath=./lib)
 set(CMAKE_SHARED_LINKER_FLAGS -Wl,-rpath=./lib)
 
@@ -40,4 +40,11 @@ install(TARGETS nft-store-2 DESTINATION bin)
 install(TARGETS test-nft-store-2 DESTINATION bin)
 install(TARGETS violas_sdk DESTINATION lib)
 install(TARGETS violas_framework DESTINATION lib)
-install(DIRECTORY ../../move DESTINATION . FILES_MATCHING PATTERN "*.mv")
+install(DIRECTORY ../../move/build DESTINATION ./move FILES_MATCHING PATTERN "*.mv")
+
+# pack all files
+include(InstallRequiredSystemLibraries)
+#set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
+set(CPACK_PACKAGE_VERSION_MAJOR "${deployment_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${deployment_VERSION_MINOR}")
+include(CPack)

@@ -68,14 +68,14 @@ module NonFungibleToken {
         nft_syms : vector<vector<u8>>,
     }
 
-    struct WithdrawCapbility has store {
+    struct WithdrawCapability has store {
         account_address : address,
     }
     //
     //  Account struct held by the account
     //
     struct Account has key {
-        opt_withdraw_cap : Option<WithdrawCapbility>,
+        opt_withdraw_cap : Option<WithdrawCapability>,
     }
     //
     //  Non Fungiable Token resource held by the account
@@ -179,7 +179,7 @@ module NonFungibleToken {
         
         if(!exists<Account>(sender)){
             move_to<Account>(sig, 
-                Account { opt_withdraw_cap: Option::some(WithdrawCapbility { account_address: sender }) });
+                Account { opt_withdraw_cap: Option::some(WithdrawCapability { account_address: sender }) });
         };
     }
     //
@@ -332,7 +332,7 @@ module NonFungibleToken {
     //  pay NFT with withdraw capabilidy
     //
     public fun pay_from<Token: store>(
-        cap: &WithdrawCapbility, 
+        cap: &WithdrawCapability, 
         receiver: address, 
         token_id: &vector<u8>, 
         metadata: &vector<u8>)
@@ -393,7 +393,7 @@ module NonFungibleToken {
         transfer<Token>(sig, receiver, &token_id, metadata);
     }
 
-    fun withdraw<Token: store>(cap: &WithdrawCapbility, receiver: address, token_id : vector<u8>, metadata: &vector<u8>) : Token
+    fun withdraw<Token: store>(cap: &WithdrawCapability, receiver: address, token_id : vector<u8>, metadata: &vector<u8>) : Token
     acquires NFT {
         let sender = cap.account_address;
         
@@ -433,7 +433,7 @@ module NonFungibleToken {
         Event::emit_event(&mut receiver_account.received_events, ReceivedEvent{ token_id, payer: sender, metadata: *metadata });
     }
 
-    public fun extract_opt_withdraw_capability(sig: &signer) : WithdrawCapbility
+    public fun extract_opt_withdraw_capability(sig: &signer) : WithdrawCapability
     acquires Account {
         let sender = Signer::address_of(sig);
         assert(exists<Account>(sender), Errors::not_published(EACCOUNT));
@@ -444,7 +444,7 @@ module NonFungibleToken {
         Option::extract(&mut account.opt_withdraw_cap)
     }
 
-    public fun restore_opt_withdraw_capability(cap : WithdrawCapbility) 
+    public fun restore_opt_withdraw_capability(cap : WithdrawCapability) 
     acquires Account {
         assert(exists<Account>(cap.account_address), Errors::not_published(EACCOUNT));
         

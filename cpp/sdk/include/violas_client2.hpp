@@ -1,16 +1,17 @@
 #pragma once
+
 #include <string_view>
 #include <memory>
 #include <tuple>
+#include <coroutine>
+
 #include <diem_types.hpp>
 #include <utils.hpp>
 #include <bcs_serde.hpp>
 #include <json_rpc.hpp>
+
 #include "wallet.hpp"
 
-#if defined(__GNUC__) && !defined(__llvm__)
-#include <coroutine>
-#endif
 
 namespace dt = diem_types;
 using ta = diem_types::TransactionArgument;
@@ -153,7 +154,7 @@ namespace violas
                             std::string_view gas_currency_code = "VLS",
                             uint64_t expiration_timestamp_secs = 100) = 0;
 
-#if defined(__GNUC__) && !defined(__llvm__)
+
         virtual void
         async_submit_script(size_t account_index,
                             std::string_view script_file_name,
@@ -206,7 +207,7 @@ namespace violas
 
             return awaitable{shared_from_this(), account_index, script_file_name, std::move(type_tags), std::move(args)};
         }
-#endif
+
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
          *
@@ -258,7 +259,6 @@ namespace violas
                                   uint64_t sequence_number,
                                   std::function<void()> callback) = 0;
 
-#if defined(__GNUC__) && !defined(__llvm__)
         auto await_check_txn_vm_status(const diem_types::AccountAddress &address,
                                        uint64_t sequence_number,
                                        std::string_view error_info)
@@ -279,7 +279,7 @@ namespace violas
 
             return awaitable{address, sequence_number};
         }
-#endif
+
         virtual void
         publish_module(size_t account_index,
                        std::vector<uint8_t> &&module_bytes_code) = 0;
@@ -474,4 +474,13 @@ namespace violas
                        uint8_t chain_id,
                        std::string_view mint_key,
                        std::string_view mnemonic);
+}
+
+template <>
+template <typename Serializer>
+void serde::Serializable<violas::ResourcePath>::serialize(const violas::ResourcePath &obj, Serializer &serializer)
+{
+    serializer.increase_container_depth();
+    serde::Serializable<decltype(obj.path)>::serialize(obj.path, serializer);
+    serializer.decrease_container_depth();
 }

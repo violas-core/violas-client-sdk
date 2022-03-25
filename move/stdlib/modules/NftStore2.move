@@ -81,7 +81,7 @@ module NftStore2 {
     //  Global configuration holden by admin account
     //
     struct Configuration has key {
-        withdraw_cap: NonFungibleToken::WithdrawCapbility,
+        withdraw_cap: NonFungibleToken::WithdrawCapability,
         nft_syms :vector<vector<u8>>,       // NFT symbole list
     }
     //

@@ -96,12 +96,3 @@ namespace violas1
         }
     };
 }
-
-template <>
-template <typename Serializer>
-void serde::Serializable<violas::ResourcePath>::serialize(const violas::ResourcePath &obj, Serializer &serializer)
-{
-    serializer.increase_container_depth();
-    serde::Serializable<decltype(obj.path)>::serialize(obj.path, serializer);
-    serializer.decrease_container_depth();
-}

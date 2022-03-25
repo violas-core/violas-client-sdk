@@ -69,7 +69,7 @@ module NftStore {
     //  Global configuration held by admin
     //
     struct Configuration has key, store {
-        withdraw_cap: NonFungibleToken::WithdrawCapbility,
+        withdraw_cap: NonFungibleToken::WithdrawCapability,
         provider_parent_address : address,
         sale_agent_parent_address: address,
     }

@@ -139,7 +139,7 @@ namespace nft
     {
         auto state = _client->get_account_state(NFT_STORE_ADMIN_ADDRESS);
 
-        auto opt_orders = state.get_resource<std::vector<Order>>(
+        auto opt_orders = state->get_resource<std::vector<Order>>(
             make_struct_tag(VIOLAS_LIB_ADDRESS,
                             "NftStore",
                             "OrderList",
@@ -157,7 +157,7 @@ namespace nft
     {
         auto state = _client->get_account_state(dt::AccountAddress{address});
 
-        auto opt_account_info = state.get_resource<AccountInfo>(
+        auto opt_account_info = state->get_resource<AccountInfo>(
             make_struct_tag(VIOLAS_LIB_ADDRESS,
                             "NftStore",
                             "Account",

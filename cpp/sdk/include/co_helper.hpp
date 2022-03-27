@@ -1,6 +1,5 @@
 #pragma once
 
-#if defined(__GNUC__) && !defined(__llvm__)
 #include <coroutine>
 //
 //  Task class for C++ 20 coroutine  
@@ -52,5 +51,3 @@ struct Task<void>
         void unhandled_exception() { std::rethrow_exception(std::current_exception()); }
     };
 };
-
-#endif

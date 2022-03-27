@@ -11,6 +11,7 @@
 #include "nft_store.hpp"
 #include <violas_client2.hpp>
 #include <wallet.hpp>
+#include <co_helper.hpp>
 
 using namespace std;
 using namespace violas;

@@ -22,7 +22,7 @@ namespace nft
         }
     };
 
-    struct MadeOrderEvent
+    struct MadeOrderEvent : public violas::EventBase
     {
         bytes order_id;
         bytes nft_token_id;

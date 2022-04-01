@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
         auto client = Client::create(args.chain_id, args.url, args.mint_key, args.mnemonic, args.waypoint);
 
-        client->test_connection();
+        //client->test_connection();
 
         if (args.mnemonic.empty())
         {

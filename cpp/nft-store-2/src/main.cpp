@@ -24,7 +24,7 @@ using namespace std;
 using namespace violas;
 
 using handle = function<void(istringstream &params)>;
-map<string, handle> create_cli_commands(client2_ptr client, string url);
+map<string, handle> create_std_commands(client2_ptr client, string url);
 map<string, handle> create_store_commands(client2_ptr client, string url);
 map<string, handle> create_nft_commands(client2_ptr client, string url);
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
         auto commands = create_store_commands(client, args.url);
 
-        commands.merge(create_cli_commands(client, args.url));
+        commands.merge(create_std_commands(client, args.url));
         auto nft_cmds = create_nft_commands(client, args.url);
         commands.merge(nft_cmds);
 
@@ -157,14 +157,14 @@ T get_from_stream(istringstream &params, client2_ptr client, string_view err_inf
  * @param url
  * @return map<string, handle>
  */
-map<string, handle> create_cli_commands(client2_ptr client, string url)
+map<string, handle> create_std_commands(client2_ptr client, string url)
 {
     return {
-        {"cli-add-account", [=](istringstream &params)
+        {"std-add-account", [=](istringstream &params)
          {
              client->create_next_account();
          }},
-        {"cli-list-accounts", [=](istringstream &params)
+        {"std-list-accounts", [=](istringstream &params)
          {
              auto accounts = client->get_all_accounts();
 
@@ -183,7 +183,7 @@ map<string, handle> create_cli_commands(client2_ptr client, string url)
                       << endl;
              }
          }},
-        {"cli-create_child_account", [=](istringstream &params)
+        {"std-create-child-account", [=](istringstream &params)
          {
              Address addr;
              AuthenticationKey auth_key;

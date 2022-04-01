@@ -129,20 +129,20 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch violas_vls",
-            "program": "${workspaceFolder}/build/debug/bin/violas_vls",
+            "program": "${workspaceFolder}/build/debug/bin/vls",
             "args": [
                 "-u",
-                "http://localhost:39929",
+                "http://124.251.110.220:50001",
                 "-m",
-                "/tmp/diem/mint.key",
+                "mint.key",
                 "-n",
-                "vls.mne",
+                "mnemonic/vls.mne",
                 "-w",
                 "0:c047fe739c948c3d3ce0636bf457d631c88060e561bf34dd4acfd2f6b47b0037",
                 "-c",
                 "4"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/build/debug"
         },
         {
             "type": "lldb",

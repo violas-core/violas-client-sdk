@@ -220,7 +220,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::MadeOr
     // Print table header
     os << color::YELLOW
        << left << setw(4) << "SN"
-       << left << setw(8) << "Version"
+       << left << setw(12) << "Version"
        << left << setw(66) << "Token Id"
        << left << setw(10) << "Price"
        << left << setw(5) << "CUR"
@@ -231,7 +231,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::MadeOr
     for (const auto &event : events)
     {
         os << left << setw(4) << event.sequence_number
-           << left << setw(8) << event.transaction_version
+           << left << setw(12) << event.transaction_version
            << left << setw(66) << event.nft_token_id
            << left << setw(10) << (double)event.price / MICRO_COIN
            << left << setw(5) << bytes_to_string(event.currency)
@@ -247,7 +247,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::Revoke
     // Print table header
     os << color::YELLOW
        << left << setw(4) << "SN"
-       << left << setw(8) << "Version"
+       << left << setw(12) << "Version"
        << left << setw(66) << "Token Id"
        << left << setw(64) << "Order Id"
        << color::RESET << endl;
@@ -256,7 +256,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::Revoke
     for (const auto &event : events)
     {
         os << left << setw(4) << event.sequence_number
-           << left << setw(8) << event.transaction_version
+           << left << setw(12) << event.transaction_version
            << left << setw(66) << event.nft_token_id
            << left << setw(66) << event.order_id
            << endl;
@@ -270,7 +270,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::SoldOr
     // Print table header
     os << color::YELLOW
        << left << setw(4) << "SN"
-       << left << setw(8) << "Version"
+       << left << setw(12) << "Version"
        << left << setw(66) << "Token Id"
        << left << setw(34) << "Buyer"
        << left << setw(10) << "Price"
@@ -283,7 +283,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::SoldOr
     for (const auto &event : events)
     {
         os << left << setw(4) << event.sequence_number
-           << left << setw(8) << event.transaction_version
+           << left << setw(12) << event.transaction_version
            << left << setw(66) << event.nft_token_id
            << left << setw(34) << event.buyer
            << left << setw(10) << (double)event.price / MICRO_COIN
@@ -301,7 +301,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::Bought
     // Print table header
     os << color::YELLOW
        << left << setw(4) << "SN"
-       << left << setw(8) << "Version"
+       << left << setw(12) << "Version"
        << left << setw(66) << "Token Id"
        << left << setw(34) << "Seller"
        << left << setw(10) << "Price"
@@ -313,7 +313,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<violas::nft::Bought
     for (const auto &event : events)
     {
         os << left << setw(4) << event.sequence_number
-           << left << setw(8) << event.transaction_version
+           << left << setw(12) << event.transaction_version
            << left << setw(66) << event.nft_token_id
            << left << setw(34) << event.seller
            << left << setw(10) << (double)event.price / MICRO_COIN

@@ -10,7 +10,8 @@ module Meta42 {
     use Std::Vector;
 
     struct MintedTokenEvent has drop, store {
-
+        token_id :  vector<u8>,
+        hdfs :      vector<u8>
     }
 
     struct BurnedTokenEvent has drop, store {
@@ -18,13 +19,14 @@ module Meta42 {
     }
 
     struct SharedTokenEvent has drop, store {
-        sender: address,
-        receiver: address,
-        token_id : vector<u8>,
-        metadata: vector<u8>
+        sender:     address,
+        receiver:   address,
+        token_id:   vector<u8>,
+        metadata:   vector<u8>
     }
     
     struct GlobalInfo has key {
+        minted_events : EventHandle<MintedTokenEvent>,
         shared_events : EventHandle<SharedTokenEvent>
     }
 
@@ -51,7 +53,8 @@ module Meta42 {
         assert(sender == get_admind_address(), 10000);
 
         if(!exists<GlobalInfo>(sender))
-            move_to<GlobalInfo>(sig, GlobalInfo { 
+            move_to<GlobalInfo>(sig, GlobalInfo {
+                minted_events : Event::new_event_handle<MintedTokenEvent>(sig),
                 shared_events : Event::new_event_handle<SharedTokenEvent>(sig)
             });        
     }
@@ -63,6 +66,17 @@ module Meta42 {
             });
         }
     }
+
+    fun emit_minted_event(token_id: vector<u8>, hdfs: vector<u8>)
+    acquires GlobalInfo {
+        
+        assert(exists<GlobalInfo>(get_admind_address()), 10005);
+        
+        let global_info = borrow_global_mut<GlobalInfo>(get_admind_address());
+
+        Event::emit_event<MintedTokenEvent>(&mut global_info.minted_events, MintedTokenEvent { token_id, hdfs} );
+    }
+
     /*
      * fun : mint_token
      * description : mint a token into current account
@@ -76,7 +90,11 @@ module Meta42 {
 
         let account_info = borrow_global_mut<AccountInfo>(sender);
 
-        Vector::push_back<Token>(&mut account_info.tokens, Token { hdfs });
+        let token = Token { hdfs };
+
+        assert(!Vector::contains<Token>(&account_info.tokens, &token), 10009);
+
+        Vector::push_back<Token>(&mut account_info.tokens, token);
     }   
 
     fun get_token_index_by_id(owner: address, token_id: vector<u8>) : Option<u64> 

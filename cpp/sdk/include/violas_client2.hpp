@@ -12,17 +12,16 @@
 
 #include "wallet.hpp"
 
-
 namespace dt = diem_types;
-using ta = diem_types::TransactionArgument;
+using ta = dt::TransactionArgument;
 
 namespace violas
 {
-    inline static const diem_types::AccountAddress STD_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};          // 0x1
-    inline static const diem_types::AccountAddress VIOLAS_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}};       // 0x2
-    inline static const diem_types::AccountAddress ROOT_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0A, 0x55, 0x0C, 0x18}}; // 0xA550C18
-    inline static const diem_types::AccountAddress TC_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0B, 0x1E, 0x55, 0xED}};   // 0xB1E55ED
-    inline static const diem_types::AccountAddress TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
+    inline static const dt::AccountAddress STD_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};          // 0x1
+    inline static const dt::AccountAddress VIOLAS_LIB_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}};       // 0x2
+    inline static const dt::AccountAddress ROOT_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0A, 0x55, 0x0C, 0x18}}; // 0xA550C18
+    inline static const dt::AccountAddress TC_ADDRESS{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0B, 0x1E, 0x55, 0xED}};   // 0xB1E55ED
+    inline static const dt::AccountAddress TESTNET_DD_ADDRESS = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0xDD};
 
     inline static const size_t ACCOUNT_ROOT_ID = std::numeric_limits<size_t>::max();
     inline static const size_t ACCOUNT_TC_ID = std::numeric_limits<size_t>::max() - 1;
@@ -113,8 +112,8 @@ namespace violas
 
         // Create the next account by inner wallet
         // return index and address
-        virtual std::tuple<size_t, diem_types::AccountAddress>
-        create_next_account(std::optional<diem_types::AccountAddress> opt_address = std::nullopt) = 0;
+        virtual std::tuple<size_t, dt::AccountAddress>
+        create_next_account(std::optional<dt::AccountAddress> opt_address = std::nullopt) = 0;
 
         virtual void
         update_account_info(size_t account_index) = 0;
@@ -134,79 +133,35 @@ namespace violas
          * @param expiration_timestamp_secs
          * @return uint64_t
          */
-        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        virtual std::tuple<dt::AccountAddress, uint64_t>
         execute_script_bytecode(size_t account_index,
                                 std::vector<uint8_t> script,
-                                std::vector<diem_types::TypeTag> type_tags,
-                                std::vector<diem_types::TransactionArgument> args,
+                                std::vector<dt::TypeTag> type_tags,
+                                std::vector<dt::TransactionArgument> args,
                                 uint64_t max_gas_amount = 1'000'000,
                                 uint64_t gas_unit_price = 0,
                                 std::string_view gas_currency_code = "VLS",
                                 uint64_t expiration_timestamp_secs = 100) = 0;
 
-        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        virtual std::tuple<dt::AccountAddress, uint64_t>
         execute_script_file(size_t account_index,
                             std::string_view script_file_name,
-                            std::vector<diem_types::TypeTag> type_tags,
-                            std::vector<diem_types::TransactionArgument> args,
+                            std::vector<dt::TypeTag> type_tags,
+                            std::vector<dt::TransactionArgument> args,
                             uint64_t max_gas_amount = 1'000'000,
                             uint64_t gas_unit_price = 0,
                             std::string_view gas_currency_code = "VLS",
                             uint64_t expiration_timestamp_secs = 100) = 0;
 
-
-        virtual void
-        async_submit_script(size_t account_index,
-                            std::string_view script_file_name,
-                            std::vector<diem_types::TypeTag> type_tags,
-                            std::vector<diem_types::TransactionArgument> args,
-                            uint64_t max_gas_amount = 1'000'000,
-                            uint64_t gas_unit_price = 0,
-                            std::string_view gas_currency_code = "VLS",
-                            uint64_t expiration_timestamp_secs = 100,
-                            std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) = 0;
-
-        auto await_execute_script(size_t account_index,
+        virtual Task<std::tuple<dt::AccountAddress, uint64_t>>
+        await_execute_script(size_t account_index,
                                   std::string_view script_file_name,
-                                  std::vector<diem_types::TypeTag> &&type_tags,
-                                  std::vector<diem_types::TransactionArgument> &&args,
+                                  std::vector<dt::TypeTag> &&type_tags,
+                                  std::vector<dt::TransactionArgument> &&args,
                                   uint64_t max_gas_amount = 1'000'000,
                                   uint64_t gas_unit_price = 0,
                                   std::string_view gas_currency_code = "VLS",
-                                  uint64_t expiration_timestamp_secs = 100)
-        {
-            struct awaitable
-            {
-                std::shared_ptr<Client2> _client;
-                size_t account_index;
-                std::string_view script_file_name;
-                std::vector<diem_types::TypeTag> type_tags;
-                std::vector<diem_types::TransactionArgument> args;
-                uint64_t max_gas_amount = 1'000'000;
-                uint64_t gas_unit_price = 0;
-                std::string_view gas_currency_code = "VLS";
-                uint64_t expiration_timestamp_secs = 100;
-
-                diem_types::AccountAddress _sender_address;
-                uint64_t _sequence_number;
-
-                bool await_ready() { return false; }
-                auto await_resume() { return std::make_tuple<>(_sender_address, _sequence_number); }
-                void await_suspend(std::coroutine_handle<> h)
-                {
-                    _client->async_submit_script(account_index, script_file_name, type_tags, args,
-                                                 max_gas_amount, gas_unit_price, gas_currency_code, expiration_timestamp_secs,
-                                                 [h, this](diem_types::AccountAddress address, uint64_t sn) mutable
-                                                 {
-                                                     this->_sender_address = address;
-                                                     this->_sequence_number = sn;
-                                                     h.resume();
-                                                 });
-                }
-            };
-
-            return awaitable{shared_from_this(), account_index, script_file_name, std::move(type_tags), std::move(args)};
-        }
+                                  uint64_t expiration_timestamp_secs = 100) = 0;        
 
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
@@ -222,10 +177,10 @@ namespace violas
          * @param expiration_timestamp_secs
          * @return SignedTransaction
          */
-        virtual diem_types::SignedTransaction
+        virtual dt::SignedTransaction
         sign_multi_agent_script(size_t account_index,
-                                diem_types::Script &&script,
-                                std::vector<diem_types::AccountAddress> secondary_signer_addresses,
+                                dt::Script &&script,
+                                std::vector<dt::AccountAddress> secondary_signer_addresses,
                                 uint64_t max_gas_amount = 1'000'000,
                                 uint64_t gas_unit_price = 0,
                                 std::string_view gas_currency_code = "VLS",
@@ -236,12 +191,12 @@ namespace violas
          * @param account_index
          * @param txn
          * @param secondary_signer_addresse
-         * @return std::tuple<diem_types::AccountAddress, uint64_t>
+         * @return std::tuple<dt::AccountAddress, uint64_t>
          *          return the sender's address and sequence number
          */
-        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        virtual std::tuple<dt::AccountAddress, uint64_t>
         sign_and_submit_multi_agent_signed_txn(size_t account_index,
-                                               diem_types::SignedTransaction &&txn) = 0;
+                                               dt::SignedTransaction &&txn) = 0;
         /**
          * @brief Check the VM status of transaction, if the VM status is not "executed" it throw a exception with error info
          *
@@ -250,35 +205,14 @@ namespace violas
          * @param error_info        if vm status is not "executed", throw an exception with error_info
          */
         virtual void
-        check_txn_vm_status(const diem_types::AccountAddress &address,
+        check_txn_vm_status(const dt::AccountAddress &address,
                             uint64_t sequence_number,
                             std::string_view error_info) = 0;
 
-        virtual void
-        async_check_txn_vm_status(const diem_types::AccountAddress &address,
-                                  uint64_t sequence_number,
-                                  std::function<void()> callback) = 0;
-
-        auto await_check_txn_vm_status(const diem_types::AccountAddress &address,
-                                       uint64_t sequence_number,
-                                       std::string_view error_info)
-        {
-            struct awaitable
-            {
-                const diem_types::AccountAddress &address;
-                uint64_t sequence_number;
-
-                bool await_ready() { return false; }
-                void await_suspend(std::coroutine_handle<> h)
-                {
-                    // std::jthread([h]
-                    //              { h.resume(); });
-                }
-                void await_resume() {}
-            };
-
-            return awaitable{address, sequence_number};
-        }
+        virtual Task<void>
+        await_check_txn_vm_status(const dt::AccountAddress &address,
+                                   uint64_t sequence_number,
+                                   std::string_view error_info) = 0;        
 
         virtual void
         publish_module(size_t account_index,
@@ -290,6 +224,9 @@ namespace violas
 
         virtual std::optional<AccountState2>
         get_account_state(const dt::AccountAddress address) = 0;
+
+        virtual Task<std::optional<AccountState2>>
+        await_get_account_state(const dt::AccountAddress address) = 0;
 
         virtual std::vector<json_rpc::EventView>
         get_events(EventHandle handle, uint64_t start, uint64_t limit) = 0;
@@ -329,14 +266,14 @@ namespace violas
         allow_publishing_module(bool is_allowing) = 0;
 
         virtual uint64_t
-        create_parent_vasp_account(const diem_types::AccountAddress &address,
+        create_parent_vasp_account(const dt::AccountAddress &address,
                                    const std::array<uint8_t, 32> &auth_key,
                                    std::string_view human_name,
                                    bool add_all_currencies = false) = 0;
 
         virtual void
         create_child_vasp_account(size_t account_index,
-                                  const diem_types::AccountAddress &address,
+                                  const dt::AccountAddress &address,
                                   const std::array<uint8_t, 32> &auth_key,
                                   std::string_view currency,
                                   uint64_t child_initial_balance,
@@ -345,7 +282,7 @@ namespace violas
         virtual void
         create_designated_dealer_ex(std::string_view currency_code,
                                     uint64_t sliding_nonce,
-                                    const diem_types::AccountAddress &address,
+                                    const dt::AccountAddress &address,
                                     const std::array<uint8_t, 32> &auth_key,
                                     std::string_view human_name,
                                     bool add_all_currencies) = 0;
@@ -373,7 +310,7 @@ namespace violas
         virtual void
         add_currency_for_designated_dealer(
             std::string_view currency_code,
-            diem_types::AccountAddress dd_address) = 0;
+            dt::AccountAddress dd_address) = 0;
 
         /**
          * @brief mint amount of currency to a DD account
@@ -386,34 +323,34 @@ namespace violas
         mint(std::string_view currency_code,
              uint64_t sliding_nonce,
              uint64_t amount,
-             diem_types::AccountAddress dd_address,
+             dt::AccountAddress dd_address,
              uint64_t tier_index) = 0;
     };
 
     using client2_ptr = std::shared_ptr<Client2>;
 
-    inline diem_types::TypeTag
-    make_struct_type_tag(diem_types::AccountAddress address,
+    inline dt::TypeTag
+    make_struct_type_tag(dt::AccountAddress address,
                          std::string_view module,
                          std::string_view name)
     {
-        return diem_types::TypeTag{
-            diem_types::TypeTag::Struct{
+        return dt::TypeTag{
+            dt::TypeTag::Struct{
                 address,
-                diem_types::Identifier{std::string{module}},
-                diem_types::Identifier{std::string{name}}}};
+                dt::Identifier{std::string{module}},
+                dt::Identifier{std::string{name}}}};
     }
 
     inline dt::StructTag
-    make_struct_tag(diem_types::AccountAddress address,
+    make_struct_tag(dt::AccountAddress address,
                     std::string_view module,
                     std::string_view name,
                     std::vector<dt::TypeTag> type_tags)
     {
         return dt::StructTag{
             address,
-            diem_types::Identifier{std::string{module}},
-            diem_types::Identifier{std::string{name}},
+            dt::Identifier{std::string{module}},
+            dt::Identifier{std::string{name}},
             type_tags,
         };
     }

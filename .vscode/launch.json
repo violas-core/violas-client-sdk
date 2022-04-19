@@ -5,6 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch meta42-cli",
+            "program": "${workspaceFolder}/build/meta42/bin/meta42-cli",
+            "args": [
+                "-u",
+                "http://localhost:34007",
+                "-m",
+                "/tmp/diem/mint.key",
+                "-c",
+                "4",
+                "-n",
+                "mnemonic/meta42.mne"
+            ],
+            "cwd": "${workspaceFolder}/build/meta42"
+        },
+        {
             "name": "(gdb) Launch nft-store-2",
             "type": "cppdbg",
             "request": "launch",

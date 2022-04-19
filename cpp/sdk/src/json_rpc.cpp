@@ -76,17 +76,40 @@ namespace json_rpc
 
             auto version = rpc_response["diem_ledger_version"].as_integer();
         }
-        
-#if defined(__GNUC__) && !defined(__llvm__)
+
         //
         //  Async submit
         //
         virtual void async_submit(const diem_types::SignedTransaction &signed_txn,
                                   std::function<void()> callback) override
         {
+            auto data = bytes_to_hex(signed_txn.bcsSerialize());
 
+            string method = format(R"({"jsonrpc":"2.0","method":"submit","params":["%s"],"id":1})", data.c_str());
+            string content_type = "application/json";
+
+            m_http_cli.request(methods::POST, "/", method, content_type)
+                .then([=](http_response response) -> pplx::task<json::value>
+                      {
+                    if (response.status_code() != 200)
+                        __throw_runtime_error(response.extract_string().get().c_str());
+
+                    return response.extract_json(); 
+                ; })
+                .then(
+                    [=](json::value json_value)
+                    {
+                    auto error = json_value["error"];
+                    if (!error.is_null())
+                        __throw_runtime_error(("fun : get_account_state_blob, error : " + error.serialize()).c_str());
+
+                    auto version = json_value["diem_ledger_version"].as_integer();
+                    
+                    if(callback)
+                        callback(); 
+                ; });
         }
-#endif
+
         virtual std::optional<TransactionView>
         get_account_transaction(const diem_types::AccountAddress &address,
                                 uint64_t sequence_number,
@@ -153,12 +176,98 @@ namespace json_rpc
                 return std::nullopt;
         }
 
-        virtual void
-        async_get_account_transaction(const diem_types::AccountAddress &address,
+        virtual Task<std::optional<TransactionView>>
+        await_get_account_transaction(const diem_types::AccountAddress &address,
                                       uint64_t sequence_number,
-                                      bool include_events,
-                                      std::function<void(TransactionView &)>) override
+                                      bool include_events) override
         {
+            struct Awaitable
+            {
+                http_client &_http_cli;
+                const diem_types::AccountAddress &address;
+                uint64_t sequence_number;
+                bool include_events;
+                json::value result;
+
+                TransactionView _txn_view;
+
+                bool await_ready() { return false; }
+                auto await_resume() { return result; }
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    string method = format(R"({"jsonrpc":"2.0","method":"get_account_transaction","params":["%s", %d, %s],"id":1})",
+                                           bytes_to_hex(address.value).c_str(),
+                                           sequence_number,
+                                           include_events ? "true" : "false");
+                    string content_type = "application/json";
+
+                    _http_cli.request(methods::POST, "/", method, content_type)
+                        .then([=](http_response response) -> pplx::task<json::value>
+                              {
+                            if (response.status_code() != 200)
+                                __throw_runtime_error(response.extract_string().get().c_str());
+
+                            return response.extract_json(); })
+                        .then([this, h](json::value value)
+                              {
+                                  try
+                                  {
+                                      result = value;
+                                      h.resume();
+                                  }
+                                  catch (const std::exception &e)
+                                  {
+                                      std::cerr << e.what() << '\n';
+                                  } });
+                }
+            };
+
+            auto rpc_response = co_await Awaitable{m_http_cli, address, sequence_number, include_events};
+
+            auto error = rpc_response["error"];
+            if (!error.is_null())
+                __throw_runtime_error(("get_account_transaction error, " + error.serialize()).c_str());
+
+            auto result = rpc_response["result"];
+            TransactionView txn;
+
+            if (!result.is_null())
+            {
+                auto vm_status = result["vm_status"];
+                auto type = vm_status["type"].as_string();
+                if (type == "executed")
+                    txn.vm_status.value = VMStatus::Executed{type};
+                else if (type == "execution_failure")
+                {
+                    txn.vm_status.value = VMStatus::ExecutionFailure{
+                        type,
+                        vm_status["location"].as_string(),
+                        (uint64_t)vm_status["function_index"].as_integer(),
+                        (uint64_t)vm_status["code_offset"].as_integer()};
+                }
+                else if (type == "out_of_gas")
+                    txn.vm_status.value = VMStatus::OutOfGas{type};
+                else if (type == "miscellaneous_error")
+                    txn.vm_status.value = VMStatus::MiscellaneousError{type};
+                else if (type == "move_abort")
+                    txn.vm_status.value = VMStatus::MoveAbort{
+                        type,
+                        vm_status["location"].as_string(),
+                        (uint64_t)vm_status["abort_code"].as_integer(),
+                        {
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["category"].as_string(),
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["category_description"].as_string(),
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["reason"].as_string(),
+                            vm_status["explanation"].is_null() ? "" : vm_status["explanation"]["reason_description"].as_string(),
+                        }};
+                else
+                    throw runtime_error("unknow vm status");
+
+                // cout << result.serialize() << endl;
+                co_return txn;
+            }
+            else
+                co_return std::nullopt;
         }
 
         virtual std::optional<AccountView>
@@ -244,6 +353,63 @@ namespace json_rpc
             asp.proof.transaction_info_to_account_proof = result["proof"]["transaction_info_to_account_proof"].as_string();
 
             return asp;
+        }
+
+        virtual Task<AccountStateWithProof>
+        await_get_account_state_blob(string account_address) override
+        {
+            struct Awaitable
+            {
+                http_client &_http_cli;
+                const string &address;
+                json::value result;
+
+                bool await_ready() { return false; }
+                auto await_resume() { return result; }
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    AccountStateWithProof asp;
+                    string method = format(R"({"jsonrpc":"2.0","method":"get_account_state_with_proof","params":["%s", null, null],"id":1})", address.c_str());
+                    string content_type = "application/json";
+
+                    _http_cli.request(methods::POST, "/", method, content_type)
+                        .then([=](http_response response) -> pplx::task<json::value> {
+                            if (response.status_code() != 200)
+                                __throw_runtime_error(response.extract_string().get().c_str());
+
+                            return response.extract_json();
+                        })
+                        .then([=](json::value rpc_response) {
+                            result = rpc_response;
+                            h.resume();
+                        });
+                }
+            };
+
+            auto rpc_response = co_await Awaitable{m_http_cli, account_address, {}};
+            AccountStateWithProof asp;
+
+            auto error = rpc_response["error"];
+            if (!error.is_null())
+                __throw_runtime_error(("fun : get_account_state_blob, error : " + error.serialize()).c_str());
+
+            auto result = rpc_response["result"];
+            // cout << result.serialize() << endl;
+
+            asp.version = result["version"].as_integer();
+
+            auto blob = result["blob"];
+            if (blob.is_null())
+                 __throw_runtime_error(("json_rpc::await_get_account_state_blob, error : " + rpc_response.serialize()).c_str());
+
+            if (!blob.is_null())
+                asp.blob = blob.as_string();
+
+            asp.proof.ledger_info_to_transaction_info_proof = result["proof"]["ledger_info_to_transaction_info_proof"].as_string();
+            asp.proof.transaction_info = result["proof"]["transaction_info"].as_string();
+            asp.proof.transaction_info_to_account_proof = result["proof"]["transaction_info_to_account_proof"].as_string();
+
+            co_return asp;
         }
 
         virtual std::vector<EventView>

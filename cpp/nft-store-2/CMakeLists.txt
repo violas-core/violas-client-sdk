@@ -14,7 +14,7 @@ include_directories(../sdk/include ../framework/src
 
 aux_source_directory(../framework/src FRAMEWORK)
 
-add_library(violas_framework SHARED ${FRAMEWORK} )
+add_library(violas_framework SHARED ${FRAMEWORK})
 
 target_link_libraries(violas_framework)
 

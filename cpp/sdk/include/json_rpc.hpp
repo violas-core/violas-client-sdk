@@ -1,5 +1,6 @@
 #ifndef JSON_RPC
 #define JSON_RPC
+#include <coroutine>
 #include <string>
 #include <vector>
 #include <list>
@@ -8,10 +9,7 @@
 #include <functional>
 #include <diem_types.hpp>
 #include <bcs_serde.hpp>
-
-#if defined(__GNUC__) && !defined(__llvm__)
-#include <coroutine>
-#endif
+#include "co_helper.hpp"
 
 namespace json_rpc
 {
@@ -174,14 +172,13 @@ namespace json_rpc
          */
         virtual void submit(const diem_types::SignedTransaction &signed_txn) = 0;
 
-#if defined(__GNUC__) && !defined(__llvm__)
         //
         //  Async submit
         //
         virtual void async_submit(const diem_types::SignedTransaction &signed_txn,
                                   std::function<void()> callback) = 0;
         //
-        // co_wait await_submit
+        // await_submit for keyword co_wait
         //
         auto await_submit(diem_types::SignedTransaction &&signed_txn)
         {
@@ -201,55 +198,17 @@ namespace json_rpc
 
             return awaitable{shared_from_this(), std::move(signed_txn)};
         }
-#endif
 
         virtual std::optional<TransactionView>
         get_account_transaction(const diem_types::AccountAddress &address,
                                 uint64_t sequence_number,
                                 bool include_events) = 0;
 
-        virtual void
-        async_get_account_transaction(const diem_types::AccountAddress &address,
-                                      uint64_t sequence_number,
-                                      bool include_events,
-                                      std::function<void(TransactionView &)>) = 0;
+        virtual Task<std::optional<TransactionView>>
+        await_get_account_transaction(const diem_types::AccountAddress &address,
+                                       uint64_t sequence_number,
+                                       bool include_events) = 0;        
 
-#if defined(__GNUC__) && !defined(__llvm__)
-        auto await_get_account_transaction(const diem_types::AccountAddress &address,
-                                           uint64_t sequence_number,
-                                           bool include_events)
-        {
-            struct awaitable
-            {
-                std::shared_ptr<Client> _client;
-                diem_types::AccountAddress address;
-                uint64_t sequence_number;
-                bool include_events;
-
-                TransactionView _txn_view;
-
-                bool await_ready() { return false; }
-                auto await_resume() { return _txn_view; }
-                void await_suspend(std::coroutine_handle<> h)
-                {
-                    _client->async_get_account_transaction(
-                        address,
-                        sequence_number,
-                        include_events,
-                        [h, this](TransactionView &view)
-                        { 
-                            _txn_view = view;
-                            h.resume(); });
-                }
-            };
-
-            return awaitable{
-                shared_from_this(),
-                address,
-                sequence_number,
-                include_events};
-        }
-#endif
         virtual std::optional<AccountView>
         get_account(const diem_types::AccountAddress &, std::optional<uint64_t> version = std::nullopt) = 0;
 
@@ -258,6 +217,9 @@ namespace json_rpc
 
         virtual AccountStateWithProof
         get_account_state_blob(std::string account_address) = 0;
+
+        virtual Task<AccountStateWithProof>
+        await_get_account_state_blob(std::string account_address) = 0;
 
         virtual std::vector<EventView>
         get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id = 1) = 0;

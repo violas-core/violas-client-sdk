@@ -118,8 +118,8 @@ namespace violas
         {
         }
 
-        virtual tuple<size_t, diem_types::AccountAddress>
-        create_next_account(std::optional<diem_types::AccountAddress> opt_address = std::nullopt) override
+        virtual tuple<size_t, dt::AccountAddress>
+        create_next_account(std::optional<dt::AccountAddress> opt_address = std::nullopt) override
         {
             auto index_address = m_wallet->create_next_account();
             auto [index, address] = index_address;
@@ -153,17 +153,17 @@ namespace violas
             return m_wallet->get_all_accounts();
         }
         //
-        // submit a script and return sequence number of sender's account
+        // make a signed transaction
         //
-        std::tuple<dt::AccountAddress, uint64_t>
-        submit_txn_paylod(size_t account_index,
-                          diem_types::TransactionPayload &&txn_paylod,
-                          uint64_t max_gas_amount = 1'000'000,
-                          uint64_t gas_unit_price = 0,
-                          std::string_view gas_currency_code = "VLS",
-                          uint64_t expiration_timestamp_secs = 100)
+        dt::SignedTransaction
+        make_signed_txn(size_t account_index,
+                        dt::TransactionPayload &&txn_paylod,
+                        uint64_t max_gas_amount = 1'000'000,
+                        uint64_t gas_unit_price = 0,
+                        std::string_view gas_currency_code = "VLS",
+                        uint64_t expiration_timestamp_secs = 100)
         {
-            using namespace diem_types;
+            using namespace dt;
             SignedTransaction signed_txn;
             RawTransaction &raw_txn = signed_txn.raw_txn;
 
@@ -190,7 +190,7 @@ namespace violas
             raw_txn.gas_unit_price = gas_unit_price;
             raw_txn.gas_currency_code = gas_currency_code;
             raw_txn.expiration_timestamp_secs = time(nullptr) + expiration_timestamp_secs;
-            raw_txn.chain_id = diem_types::ChainId{m_chain_id};
+            raw_txn.chain_id = dt::ChainId{m_chain_id};
             if (account_index == ACCOUNT_ROOT_ID)
                 raw_txn.sender = ROOT_ADDRESS;
             else if (account_index == ACCOUNT_TC_ID)
@@ -242,15 +242,68 @@ namespace violas
                     Ed25519Signature{u8_array_to_vector(signature)}};
             }
 
+            return signed_txn;
+        }
+
+        //
+        // submit a script and return sequence number of sender's account
+        //
+        std::tuple<dt::AccountAddress, uint64_t>
+        submit_txn_paylod(size_t account_index,
+                          dt::TransactionPayload &&txn_paylod,
+                          uint64_t max_gas_amount = 1'000'000,
+                          uint64_t gas_unit_price = 0,
+                          std::string_view gas_currency_code = "VLS",
+                          uint64_t expiration_timestamp_secs = 100)
+        {
+            auto signed_txn = make_signed_txn(account_index,
+                                              move(txn_paylod),
+                                              max_gas_amount,
+                                              gas_unit_price,
+                                              gas_currency_code,
+                                              expiration_timestamp_secs);
+
             m_rpc_cli->submit(signed_txn);
 
+            auto iter = m_accounts.find(account_index);
+            if (iter != end(m_accounts))
+                iter->second.sequence_number++;
+
             // return the current sequence number and then increment it
-            return make_tuple<>(raw_txn.sender, iter->second.sequence_number++);
+            return make_tuple<>(signed_txn.raw_txn.sender, signed_txn.raw_txn.sequence_number);
+        }
+
+        void async_submit_txn_paylod(size_t account_index,
+                                     dt::TransactionPayload &&txn_paylod,
+                                     uint64_t max_gas_amount = 1'000'000,
+                                     uint64_t gas_unit_price = 0,
+                                     std::string_view gas_currency_code = "VLS",
+                                     uint64_t expiration_timestamp_secs = 100,
+                                     std::function<void(dt::AccountAddress, uint64_t)> callback = nullptr)
+        {
+            auto signed_txn = make_signed_txn(account_index,
+                                              move(txn_paylod),
+                                              max_gas_amount,
+                                              gas_unit_price,
+                                              gas_currency_code,
+                                              expiration_timestamp_secs);
+
+            m_rpc_cli->async_submit(
+                signed_txn,
+                [=]()
+                {
+                    auto iter = m_accounts.find(account_index);
+                    if (iter != end(m_accounts))
+                        iter->second.sequence_number++;
+
+                    if (callback)
+                        callback(signed_txn.raw_txn.sender, signed_txn.raw_txn.sequence_number);
+                });
         }
 
         std::tuple<dt::AccountAddress, uint64_t>
         submit_script(size_t account_index,
-                      diem_types::Script &&script,
+                      dt::Script &&script,
                       uint64_t max_gas_amount = 1'000'000,
                       uint64_t gas_unit_price = 0,
                       std::string_view gas_currency_code = "VLS",
@@ -258,7 +311,7 @@ namespace violas
         {
             return this->submit_txn_paylod(
                 account_index,
-                {diem_types::TransactionPayload::Script{script}},
+                {dt::TransactionPayload::Script{script}},
                 max_gas_amount,
                 gas_unit_price,
                 gas_currency_code,
@@ -267,21 +320,26 @@ namespace violas
 
         virtual void
         async_submit_script(size_t account_index,
-                            std::string_view script_file_name,
-                            std::vector<diem_types::TypeTag> type_tags,
-                            std::vector<diem_types::TransactionArgument> args,
+                            dt::Script &&script,
                             uint64_t max_gas_amount = 1'000'000,
                             uint64_t gas_unit_price = 0,
                             std::string_view gas_currency_code = "VLS",
                             uint64_t expiration_timestamp_secs = 100,
-                            std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) override
+                            std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr)
         {
+            return this->async_submit_txn_paylod(
+                account_index,
+                {dt::TransactionPayload::Script{script}},
+                max_gas_amount,
+                gas_unit_price,
+                gas_currency_code,
+                expiration_timestamp_secs,
+                callback);
         }
-
 
         std::tuple<dt::AccountAddress, uint64_t>
         submit_module(size_t account_index,
-                      diem_types::Module &&module,
+                      dt::Module &&module,
                       uint64_t max_gas_amount = 1'000'000,
                       uint64_t gas_unit_price = 0,
                       std::string_view gas_currency_code = "VLS",
@@ -289,14 +347,14 @@ namespace violas
         {
             return this->submit_txn_paylod(
                 account_index,
-                {diem_types::TransactionPayload::Module{module}},
+                {dt::TransactionPayload::Module{module}},
                 max_gas_amount,
                 gas_unit_price,
                 gas_currency_code,
                 expiration_timestamp_secs);
         }
 
-        void check_txn_vm_status(const diem_types::AccountAddress &address, uint64_t sequence_number, string_view error_info) override
+        void check_txn_vm_status(const dt::AccountAddress &address, uint64_t sequence_number, string_view error_info) override
         {
             using namespace json_rpc;
             optional<TransactionView> opt_txn_view = nullopt;
@@ -357,39 +415,96 @@ namespace violas
                 __throw_runtime_error("check_txn_vm_status is timeout.");
         }
 
-        virtual void
-        async_check_txn_vm_status(const diem_types::AccountAddress &address,
+        Task<void>
+        await_check_txn_vm_status(const dt::AccountAddress &address,
                                   uint64_t sequence_number,
-                                  std::function<void()> callback) override
+                                  std::string_view error_info) override
         {
+            using namespace json_rpc;
+            optional<TransactionView> opt_txn_view = nullopt;
+
+            for (int i = 0; i < 50; i++)
+            {
+                opt_txn_view = co_await m_rpc_cli->await_get_account_transaction(address, sequence_number, false);
+                if (opt_txn_view.has_value())
+                    break;
+
+                this_thread::sleep_for(chrono::milliseconds(100)); // 0.1 second
+            }
+
+            if (opt_txn_view.has_value())
+            {
+                std::visit(
+                    overloaded{[](VMStatus::Executed status) {},
+                               [=](VMStatus::ExecutionFailure status)
+                               {
+                                   ostringstream oss;
+
+                                   oss << error_info << " error, "
+                                       << "vm_status : {\n"
+                                       << "type : " << status.type << ", "
+                                       << "location : " << status.location << ", \n"
+                                       << "function index : " << status.function_index << ", \n"
+                                       << "code offset : " << status.code_offset << ", \n"
+                                       << "}";
+
+                                   __throw_runtime_error(oss.str().c_str());
+                               },
+                               [](VMStatus::OutOfGas status)
+                               {
+                                   __throw_runtime_error(status.type.c_str());
+                               },
+                               [=](VMStatus::MiscellaneousError status)
+                               {
+                                   ostringstream oss;
+                                   oss << error_info << " failed, VM status : " << status.type;
+
+                                   __throw_runtime_error(oss.str().c_str());
+                               },
+                               [=](VMStatus::MoveAbort status)
+                               {
+                                   ostringstream oss;
+
+                                   oss << error_info << " error, "
+                                       << "vm_status : { "
+                                       << "type : " << status.type << ", "
+                                       << "abort code : " << status.abort_code
+                                       << " }";
+
+                                   __throw_runtime_error(oss.str().c_str());
+                               }},
+                    opt_txn_view->vm_status.value);
+            }
+            else
+                __throw_runtime_error("check_txn_vm_status is timeout.");
         }
 
         virtual std::tuple<dt::AccountAddress, uint64_t>
         execute_script_bytecode(size_t account_index,
                                 std::vector<uint8_t> script_byte_code,
-                                std::vector<diem_types::TypeTag> type_tags,
-                                std::vector<diem_types::TransactionArgument> args,
+                                std::vector<dt::TypeTag> type_tags,
+                                std::vector<dt::TransactionArgument> args,
                                 uint64_t max_gas_amount,
                                 uint64_t gas_unit_price,
                                 std::string_view gas_currency_code,
                                 uint64_t expiration_timestamp_secs) override
         {
-            using namespace diem_types;
+            using namespace dt;
 
             return this->submit_txn_paylod(
                 account_index,
-                {TransactionPayload::Script({diem_types::Script({script_byte_code, type_tags, args})})},
+                {TransactionPayload::Script({dt::Script({script_byte_code, type_tags, args})})},
                 max_gas_amount,
                 gas_unit_price,
                 gas_currency_code,
                 expiration_timestamp_secs);
         }
 
-        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        virtual std::tuple<dt::AccountAddress, uint64_t>
         execute_script_file(size_t account_index,
                             std::string_view script_file_name,
-                            std::vector<diem_types::TypeTag> type_tags,
-                            std::vector<diem_types::TransactionArgument> args,
+                            std::vector<dt::TypeTag> type_tags,
+                            std::vector<dt::TransactionArgument> args,
                             uint64_t max_gas_amount = 1'000'000,
                             uint64_t gas_unit_price = 0,
                             std::string_view gas_currency_code = "VLS",
@@ -397,7 +512,7 @@ namespace violas
         {
             ifstream ifs(script_file_name.data(), ios::binary);
 
-            if (!ifs.is_open())                
+            if (!ifs.is_open())
                 throw runtime_error(fmt("failed to open file ", script_file_name, " at execute_script_file"));
 
             bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
@@ -409,6 +524,97 @@ namespace violas
 
             return this->submit_script(account_index, move(script), max_gas_amount, gas_unit_price, gas_currency_code, expiration_timestamp_secs);
         }
+
+        virtual Task<std::tuple<dt::AccountAddress, uint64_t>>
+        await_execute_script(size_t account_index,
+                             std::string_view script_file_name,
+                             std::vector<dt::TypeTag> &&type_tags,
+                             std::vector<dt::TransactionArgument> &&args,
+                             uint64_t max_gas_amount = 1'000'000,
+                             uint64_t gas_unit_price = 0,
+                             std::string_view gas_currency_code = "VLS",
+                             uint64_t expiration_timestamp_secs = 100) override
+        {
+            struct awaitable
+            {
+                Client2Imp &_client;
+                size_t account_index;
+                std::string_view script_file_name;
+                std::vector<dt::TypeTag> type_tags;
+                std::vector<dt::TransactionArgument> args;
+                uint64_t max_gas_amount = 1'000'000;
+                uint64_t gas_unit_price = 0;
+                std::string_view gas_currency_code = "VLS";
+                uint64_t expiration_timestamp_secs = 100;
+
+                dt::AccountAddress _sender_address;
+                uint64_t _sequence_number;
+
+                bool await_ready() { return false; }
+                auto await_resume() { return std::make_tuple<>(_sender_address, _sequence_number); }
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    ifstream ifs(script_file_name.data(), ios::binary);
+
+                    if (!ifs.is_open())
+                        throw runtime_error(fmt("failed to open file ", script_file_name, " at execute_script_file"));
+
+                    bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
+                    dt::Script script{
+                        script_bytecode,
+                        type_tags,
+                        args,
+                    };
+
+                    _client.async_submit_script(account_index, move(script),
+                                                max_gas_amount, gas_unit_price, gas_currency_code,
+                                                expiration_timestamp_secs,
+                                                [h, this](dt::AccountAddress address, uint64_t sn) mutable
+                                                {
+                                                    this->_sender_address = address;
+                                                    this->_sequence_number = sn;
+                                                    h.resume();
+                                                });
+                }
+            };
+
+            auto ret = co_await awaitable{*this, account_index, script_file_name, std::move(type_tags), std::move(args)};
+            co_return ret;
+        }
+
+        // virtual void
+        // async_execute_script(size_t account_index,
+        //                      std::string_view script_file_name,
+        //                      std::vector<diem_types::TypeTag> type_tags,
+        //                      std::vector<diem_types::TransactionArgument> args,
+        //                      uint64_t max_gas_amount = 1'000'000,
+        //                      uint64_t gas_unit_price = 0,
+        //                      std::string_view gas_currency_code = "VLS",
+        //                      uint64_t expiration_timestamp_secs = 100,
+        //                      std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) override
+        // {
+        //     ifstream ifs(script_file_name.data(), ios::binary);
+
+        //     if (!ifs.is_open())
+        //         throw runtime_error(fmt("failed to open file ", script_file_name, " at execute_script_file"));
+
+        //     bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
+        //     dt::Script script{
+        //         script_bytecode,
+        //         type_tags,
+        //         args,
+        //     };
+
+        //     return this->async_submit_script(
+        //         account_index,
+        //         move(script),
+        //         max_gas_amount,
+        //         gas_unit_price,
+        //         gas_currency_code,
+        //         expiration_timestamp_secs,
+        //         callback);
+        // }
+
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
          *
@@ -423,16 +629,16 @@ namespace violas
          * @param expiration_timestamp_secs
          * @return SignedTransaction
          */
-        virtual diem_types::SignedTransaction
+        virtual dt::SignedTransaction
         sign_multi_agent_script(size_t account_index,
-                                diem_types::Script &&script,
-                                std::vector<diem_types::AccountAddress> secondary_signer_addresses,
+                                dt::Script &&script,
+                                std::vector<dt::AccountAddress> secondary_signer_addresses,
                                 uint64_t max_gas_amount = 1'000'000,
                                 uint64_t gas_unit_price = 0,
                                 std::string_view gas_currency_code = "VLS",
                                 uint64_t expiration_timestamp_secs = 100) override
         {
-            using namespace diem_types;
+            using namespace dt;
 
             SignedTransaction signed_txn;
             RawTransaction &raw_txn = signed_txn.raw_txn;
@@ -443,7 +649,7 @@ namespace violas
             raw_txn.gas_unit_price = gas_unit_price;
             raw_txn.gas_currency_code = gas_currency_code;
             raw_txn.expiration_timestamp_secs = time(nullptr) + expiration_timestamp_secs;
-            raw_txn.chain_id = diem_types::ChainId{m_chain_id};
+            raw_txn.chain_id = dt::ChainId{m_chain_id};
 
             // Set sender and sequence number
             auto iter = m_accounts.find(account_index);
@@ -536,11 +742,11 @@ namespace violas
          * @param secondary_signer_addresse
          * @return uint64_t
          */
-        virtual std::tuple<diem_types::AccountAddress, uint64_t>
+        virtual std::tuple<dt::AccountAddress, uint64_t>
         sign_and_submit_multi_agent_signed_txn(size_t account_index,
-                                               diem_types::SignedTransaction &&signed_txn) override
+                                               dt::SignedTransaction &&signed_txn) override
         {
-            using namespace diem_types;
+            using namespace dt;
             const RawTransaction &raw_txn = signed_txn.raw_txn;
             auto &multi_agent_auth = get<TransactionAuthenticator::MultiAgent>(signed_txn.authenticator.value);
             auto &secondary_signer_addresses = multi_agent_auth.secondary_signer_addresses;
@@ -558,7 +764,7 @@ namespace violas
 
             // Serialize secondary signer addresses
             auto serializer = serde::BcsSerializer();
-            serde::Serializable<std::vector<diem_types::AccountAddress>>::serialize(secondary_signer_addresses, serializer);
+            serde::Serializable<std::vector<dt::AccountAddress>>::serialize(secondary_signer_addresses, serializer);
             bytes = std::move(serializer).bytes();
             copy(begin(bytes), end(bytes), back_insert_iterator(message));
 
@@ -641,6 +847,17 @@ namespace violas
                 return AccountState2(asp.blob);
         }
 
+        virtual Task<std::optional<AccountState2>>
+        await_get_account_state(const dt::AccountAddress address) override
+        {
+            json_rpc::AccountStateWithProof asp = co_await m_rpc_cli->await_get_account_state_blob(bytes_to_hex(address.value));
+
+            if (asp.blob.empty())
+                co_return {};
+            else
+                co_return AccountState2(asp.blob);
+        }
+
         virtual std::vector<json_rpc::EventView>
         get_events(EventHandle handle, uint64_t start, uint64_t limit) override
         {
@@ -668,7 +885,7 @@ namespace violas
             bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 5, 1, 0, 2, 3, 2, 5, 5, 7, 6, 7, 13, 48, 8, 61, 16, 0, 0, 0, 1, 2, 1, 0, 1, 12, 0, 1, 6, 12, 31, 68, 105, 101, 109, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 80, 117, 98, 108, 105, 115, 104, 105, 110, 103, 79, 112, 116, 105, 111, 110, 15, 115, 101, 116, 95, 111, 112, 101, 110, 95, 115, 99, 114, 105, 112, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 14, 0, 17, 0, 2};
 
             auto [sender, sn] = submit_script(ACCOUNT_ROOT_ID,
-                                              diem_types::Script{script_bytecode, {}, {}});
+                                              dt::Script{script_bytecode, {}, {}});
 
             this->check_txn_vm_status(sender,
                                       sn,
@@ -687,7 +904,7 @@ namespace violas
 
         virtual uint64_t
         create_parent_vasp_account(
-            const diem_types::AccountAddress &address,
+            const dt::AccountAddress &address,
             const std::array<uint8_t, 32> &auth_key,
             string_view human_name,
             bool add_all_currencies) override
@@ -712,7 +929,7 @@ namespace violas
 
         virtual void
         create_child_vasp_account(size_t account_index,
-                                  const diem_types::AccountAddress &address,
+                                  const dt::AccountAddress &address,
                                   const std::array<uint8_t, 32> &auth_key,
                                   string_view currency,
                                   uint64_t child_initial_balance,
@@ -733,7 +950,7 @@ namespace violas
         virtual void
         create_designated_dealer_ex(std::string_view currency_code,
                                     uint64_t sliding_nonce,
-                                    const diem_types::AccountAddress &address,
+                                    const dt::AccountAddress &address,
                                     const std::array<uint8_t, 32> &auth_key,
                                     std::string_view human_name,
                                     bool add_all_currencies) override
@@ -742,7 +959,7 @@ namespace violas
 
             auto [sender, sn] = this->submit_script(
                 ACCOUNT_TC_ID,
-                diem_types::Script{
+                dt::Script{
                     script_bytecode,
                     {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},
                     make_txn_args(sliding_nonce, address, auth_key, human_name, add_all_currencies),
@@ -796,7 +1013,7 @@ namespace violas
             this->publish_currency_module(currency_code);
 
             bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 7, 1, 0, 6, 2, 6, 4, 3, 10, 17, 4, 27, 4, 5, 31, 33, 7, 64, 103, 8, 167, 1, 16, 0, 0, 0, 1, 0, 2, 2, 2, 7, 0, 2, 3, 3, 1, 0, 1, 4, 5, 2, 1, 0, 0, 5, 6, 2, 1, 0, 1, 4, 2, 4, 7, 12, 12, 3, 3, 3, 3, 10, 2, 1, 8, 0, 0, 2, 3, 3, 1, 9, 0, 6, 6, 12, 6, 12, 8, 0, 3, 3, 10, 2, 1, 6, 12, 13, 65, 99, 99, 111, 117, 110, 116, 76, 105, 109, 105, 116, 115, 4, 68, 105, 101, 109, 12, 70, 105, 120, 101, 100, 80, 111, 105, 110, 116, 51, 50, 20, 99, 114, 101, 97, 116, 101, 95, 102, 114, 111, 109, 95, 114, 97, 116, 105, 111, 110, 97, 108, 21, 114, 101, 103, 105, 115, 116, 101, 114, 95, 83, 67, 83, 95, 99, 117, 114, 114, 101, 110, 99, 121, 27, 112, 117, 98, 108, 105, 115, 104, 95, 117, 110, 114, 101, 115, 116, 114, 105, 99, 116, 101, 100, 95, 108, 105, 109, 105, 116, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 14, 10, 2, 10, 3, 17, 0, 12, 7, 14, 0, 14, 1, 11, 7, 10, 4, 10, 5, 11, 6, 56, 0, 14, 0, 56, 1, 2};
-            auto script = diem_types::Script{
+            auto script = dt::Script{
                 script_bytecode,
                 {make_struct_type_tag(STD_LIB_ADDRESS, currency_code, currency_code)},
                 make_txn_args(exchange_rate_denom,
@@ -826,7 +1043,7 @@ namespace violas
         virtual void
         add_currency_for_designated_dealer(
             std::string_view currency_code,
-            diem_types::AccountAddress dd_address) override
+            dt::AccountAddress dd_address) override
         {
             bytes script_bytecode = {161, 28, 235, 11, 3, 0, 0, 0, 6, 1, 0, 2, 3, 2, 6, 4, 8, 2, 5, 10, 11, 7, 21, 47, 8, 68, 16, 0, 0, 0, 1, 3, 1, 1, 4, 0, 2, 2, 12, 5, 0, 1, 9, 0, 2, 6, 12, 5, 11, 68, 105, 101, 109, 65, 99, 99, 111, 117, 110, 116, 34, 97, 100, 100, 95, 99, 117, 114, 114, 101, 110, 99, 121, 95, 102, 111, 114, 95, 100, 101, 115, 105, 103, 110, 97, 116, 101, 100, 95, 100, 101, 97, 108, 101, 114, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 0, 1, 4, 14, 0, 10, 1, 56, 0, 2};
             dt::Script script{
@@ -852,7 +1069,7 @@ namespace violas
         mint(std::string_view currency_code,
              uint64_t sliding_nonce,
              uint64_t amount,
-             diem_types::AccountAddress dd_address,
+             dt::AccountAddress dd_address,
              uint64_t tier_index) override
         {
             auto script = diem_framework::encode_tiered_mint_script(

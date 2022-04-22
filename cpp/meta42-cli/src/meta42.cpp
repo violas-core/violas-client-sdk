@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-//#include <syncstream>
+#include <sqlite_orm.hpp>
 #include <violas_client2.hpp>
 #include "meta42.hpp"
 
@@ -150,6 +150,66 @@ namespace meta42
 
                 if (account_info)
                     co_return account_info->tokens;
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+
+        co_return {};
+    }
+
+    Task<std::vector<SharedTokenEvent>>
+    Client::query_shared_token_events_history(const Address &address, const TokenId &id)
+    {
+        struct SharedTokenHistory
+        {
+            uint64_t sn; // sequence number for table
+            string sender;
+            string receiver;
+            string token_id;
+            std::string message;
+            uint64_t block_version;
+
+            SharedTokenHistory(const SharedTokenEvent &event)
+            {
+                sn = event.sequence_number;
+                sender = bytes_to_hex(event.sender);
+                receiver = bytes_to_hex(event.receiver);
+                token_id = bytes_to_hex(event.token_id);
+                message = event.message;
+                block_version = event.transaction_version;
+            }
+        };
+
+        using namespace sqlite_orm;
+        auto storage = make_storage("db.sqlite",
+                                    make_table("shared_token_events",
+                                               make_column("sn", &SharedTokenHistory::sn, unique(), primary_key()),
+                                               make_column("sender", &SharedTokenHistory::sender),
+                                               make_column("receiver", &SharedTokenHistory::receiver),
+                                               make_column("token_id", &SharedTokenHistory::token_id),
+                                               make_column("message", &SharedTokenHistory::message),
+                                               make_column("block_version", &SharedTokenHistory::block_version)));
+
+        storage.sync_schema();
+
+        try
+        {
+            auto account_state = co_await m_violas_client->await_get_account_state({ADMIN_ADDRESS});
+
+            if (account_state)
+            {
+                auto global_info = account_state->get_resource<GlobalInfo>(make_struct_tag(VIOLAS_LIB_ADDRESS, "Meta42", "GlobalInfo", {}));
+
+                if (global_info)
+                {
+                    auto events = co_await m_violas_client->await_query_events<SharedTokenEvent>(global_info->shared_token_event, 0, 10);
+
+                    for (const auto &event : events)
+                        storage.insert(SharedTokenHistory(event));
+                }
             }
         }
         catch (const std::exception &e)

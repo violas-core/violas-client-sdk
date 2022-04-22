@@ -223,6 +223,9 @@ namespace json_rpc
 
         virtual std::vector<EventView>
         get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id = 1) = 0;
+
+        virtual Task<std::vector<EventView>>
+        await_get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id = 1) = 0;
     };
 
     using client_ptr = std::shared_ptr<Client>;

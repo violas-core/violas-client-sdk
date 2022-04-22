@@ -23,7 +23,7 @@ add_library(sdk STATIC  ../sdk/src/violas_client2.cpp
                         ../sdk/src/json_rpc.cpp
                         ../sdk/src/wallet.cpp)
 
-target_link_libraries(meta42-cli sdk cpprest readline ssl crypto pthread)
+target_link_libraries(meta42-cli sdk cpprest readline sqlite3 ssl crypto pthread)
 target_link_libraries(meta42-test gtest pthread)
 
 install(TARGETS meta42-cli DESTINATION bin)
@@ -31,6 +31,7 @@ install(TARGETS meta42-test DESTINATION bin)
 install(FILES ../../move/build/modules/00_Meta42.mv DESTINATION ./move/modules/ )
 install(FILES ../../move/build/package/stdlib/compiled/Compare.mv DESTINATION ./move/modules/ )
 install(DIRECTORY ../../move/build/scripts DESTINATION ./move FILES_MATCHING PATTERN "meta42*.mv")
+install(FILES ../testnet/mnemonic/meta42.mne DESTINATION ./mnemonic )
 
 # pack all files
 include(InstallRequiredSystemLibraries)

@@ -373,16 +373,16 @@ namespace json_rpc
                     string content_type = "application/json";
 
                     _http_cli.request(methods::POST, "/", method, content_type)
-                        .then([=](http_response response) -> pplx::task<json::value> {
+                        .then([=](http_response response) -> pplx::task<json::value>
+                              {
                             if (response.status_code() != 200)
                                 __throw_runtime_error(response.extract_string().get().c_str());
 
-                            return response.extract_json();
-                        })
-                        .then([=](json::value rpc_response) {
+                            return response.extract_json(); })
+                        .then([=](json::value rpc_response)
+                              {
                             result = rpc_response;
-                            h.resume();
-                        });
+                            h.resume(); });
                 }
             };
 
@@ -400,7 +400,7 @@ namespace json_rpc
 
             auto blob = result["blob"];
             if (blob.is_null())
-                 __throw_runtime_error(("json_rpc::await_get_account_state_blob, error : " + rpc_response.serialize()).c_str());
+                __throw_runtime_error(("json_rpc::await_get_account_state_blob, error : " + rpc_response.serialize()).c_str());
 
             if (!blob.is_null())
                 asp.blob = blob.as_string();
@@ -460,6 +460,76 @@ namespace json_rpc
             }
 
             return events;
+        }
+
+        virtual Task<std::vector<EventView>>
+        await_get_events(std::string event_key, uint64_t start, uint64_t limit, uint64_t rpc_id = 1) override
+        {
+            string method = format(R"({"jsonrpc":"2.0","method":"get_events","params":["%s", %d, %d],"id":1})",
+                                   event_key.c_str(),
+                                   start,
+                                   limit,
+                                   rpc_id);
+            string content_type = "application/json";
+
+            struct Awaitable
+            {
+                http_client _http_client;
+                string _method;
+                string _content_type;
+                string _event_key;
+
+                json::value result;
+
+                bool await_ready() { return false; }
+                auto await_resume() { return result; }
+                void await_suspend(std::coroutine_handle<> h)
+                {
+                    _http_client.request(methods::POST, "/", _method, _content_type)
+                        .then([=](http_response response) -> pplx::task<json::value>
+                              {
+                        if (response.status_code() != 200)
+                            __throw_runtime_error(response.extract_string().get().c_str());
+
+                        return response.extract_json(); })
+                        .then([=](json::value value)
+                              {
+                        result = value;
+                        h.resume(); });
+                }
+            };
+
+            auto rpc_response = co_await Awaitable{m_http_cli, method, content_type};
+
+            auto error = rpc_response["error"];
+            if (!error.is_null())
+                __throw_runtime_error(("fun : get_events, error : " + error.serialize()).c_str());
+
+            vector<EventView> events;
+            auto result = rpc_response["result"];
+            for (auto &e : result.as_array())
+            {
+                // cout << e.serialize() << endl;
+
+                EventView ev;
+
+                ev.key = e["key"].as_string();
+                ev.sequence_number = e["sequence_number"].as_integer();
+                ev.transaction_version = e["transaction_version"].as_integer();
+
+                if (e["data"]["type"].as_string() == "unknown")
+                {
+                    UnknownEvent ue;
+
+                    ue.bytes = hex_to_bytes(e["data"]["bytes"].as_string());
+
+                    ev.event = ue;
+                }
+
+                events.emplace_back(ev);
+            }
+
+            co_return events;
         }
     };
 

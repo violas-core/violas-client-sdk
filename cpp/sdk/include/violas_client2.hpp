@@ -231,6 +231,9 @@ namespace violas
         virtual std::vector<json_rpc::EventView>
         get_events(EventHandle handle, uint64_t start, uint64_t limit) = 0;
 
+        virtual Task<std::vector<json_rpc::EventView>>
+        await_get_events(EventHandle handle, uint64_t start, uint64_t limit) = 0;
+
         template <typename T>
         std::vector<T> query_events(EventHandle handle, uint64_t start, uint64_t limit)
         {
@@ -252,6 +255,29 @@ namespace violas
             }
 
             return events;
+        }
+
+        template <typename T>
+        Task<std::vector<T>> await_query_events(EventHandle handle, uint64_t start, uint64_t limit)
+        {
+            std::vector<T> events;
+
+            for (auto &e : co_await this->await_get_events(handle, start, limit))
+            {
+                auto unknow_event = std::get<json_rpc::UnknownEvent>(e.event);
+
+                BcsSerde serde(std::get<json_rpc::UnknownEvent>(e.event).bytes);
+                T event;
+
+                serde &&event;
+
+                event.sequence_number = e.sequence_number;
+                event.transaction_version = e.transaction_version;
+
+                events.push_back(event);
+            }
+
+            co_return events;
         }
         ////////////////////////////////////////////////////////////////
         // Methods for Violas framework

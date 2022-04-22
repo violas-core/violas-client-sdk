@@ -7,6 +7,7 @@ namespace meta42
 {
     using Address = std::array<uint8_t, 16>;
     using TokenId = std::array<uint8_t, 32>;
+    using Bytes = std::vector<uint8_t>;
 
     struct Token
     {
@@ -43,6 +44,31 @@ namespace meta42
         }
     };
 
+    struct GlobalInfo
+    {
+        violas::EventHandle minted_token_event;
+        violas::EventHandle shared_token_event;
+
+         BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && minted_token_event && shared_token_event;
+        }
+    };
+
+    struct SharedTokenEvent : public violas::EventBase
+    {
+        uint64_t sn; // sequence number for table
+        Address sender;
+        Address receiver;
+        Bytes token_id;
+        std::string message;
+
+        BcsSerde &serde(BcsSerde &bs)
+        {
+            return bs && sender && receiver && token_id && message;
+        }
+    };
+
     class Client
     {
     private:
@@ -71,6 +97,9 @@ namespace meta42
 
         Task<std::vector<Token>>
         await_get_tokens(Address address);
+
+        Task<std::vector<SharedTokenEvent>>
+        query_shared_token_events_history(const Address &address, const TokenId &id);
     };
 }
 

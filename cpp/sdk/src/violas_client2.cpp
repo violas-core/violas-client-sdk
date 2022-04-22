@@ -582,39 +582,6 @@ namespace violas
             co_return ret;
         }
 
-        // virtual void
-        // async_execute_script(size_t account_index,
-        //                      std::string_view script_file_name,
-        //                      std::vector<diem_types::TypeTag> type_tags,
-        //                      std::vector<diem_types::TransactionArgument> args,
-        //                      uint64_t max_gas_amount = 1'000'000,
-        //                      uint64_t gas_unit_price = 0,
-        //                      std::string_view gas_currency_code = "VLS",
-        //                      uint64_t expiration_timestamp_secs = 100,
-        //                      std::function<void(diem_types::AccountAddress, uint64_t)> callback = nullptr) override
-        // {
-        //     ifstream ifs(script_file_name.data(), ios::binary);
-
-        //     if (!ifs.is_open())
-        //         throw runtime_error(fmt("failed to open file ", script_file_name, " at execute_script_file"));
-
-        //     bytes script_bytecode(istreambuf_iterator<char>(ifs), {});
-        //     dt::Script script{
-        //         script_bytecode,
-        //         type_tags,
-        //         args,
-        //     };
-
-        //     return this->async_submit_script(
-        //         account_index,
-        //         move(script),
-        //         max_gas_amount,
-        //         gas_unit_price,
-        //         gas_currency_code,
-        //         expiration_timestamp_secs,
-        //         callback);
-        // }
-
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
          *
@@ -862,6 +829,12 @@ namespace violas
         get_events(EventHandle handle, uint64_t start, uint64_t limit) override
         {
             return m_rpc_cli->get_events(bytes_to_hex(handle.guid), start, limit);
+        }
+
+        virtual Task<std::vector<json_rpc::EventView>>
+        await_get_events(EventHandle handle, uint64_t start, uint64_t limit) override
+        {
+            co_return co_await m_rpc_cli->await_get_events(bytes_to_hex(handle.guid), start, limit);
         }
 
         //

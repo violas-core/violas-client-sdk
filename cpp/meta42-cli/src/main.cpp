@@ -247,14 +247,17 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
 
                  cout << endl
                       << color::CYAN
+                      << setw(10) << std::left << "Index"
                       << setw(70) << std::left << "Token Id"
                       << setw(40) << std::left << "HDFS Path"
                       << color::RESET
                       << endl;
 
+                 int index = 0;
                  for (auto &token : tokens)
                  {
-                     cout << setw(70) << std::left << bytes_to_hex(token.get_token_id())
+                     cout << setw(10) << std::left << index
+                          << setw(70) << std::left << bytes_to_hex(token.get_token_id())
                           << setw(40) << std::left << token.hdfs_path << endl;
                  }
              }();
@@ -267,7 +270,7 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
          }
 
         },
-        {"get-sharing-tokens", [=](istringstream &params)
+        {"get-sent-tokens", [=](istringstream &params)
          {
              //
          }
@@ -276,6 +279,17 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
         {"get-received-tokens", [=](istringstream &params)
          {
              //
+         }
+
+        },
+        {"query-shared-token-history", [=](istringstream &params)
+         {
+             Address addr = get_from_stream<Address>(params, client);
+             
+             meta42::TokenId token_id;
+             params >> token_id;
+
+             meta42_client->query_shared_token_events_history(addr, token_id);
          }
 
         },

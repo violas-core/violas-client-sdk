@@ -144,11 +144,11 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
     auto meta42_client = make_shared<meta42::Client>(client);
 
     return {
-        {"cli-add-account", [=](istringstream &params)
+        {"add-account", [=](istringstream &params)
          {
              client->create_next_account();
          }},
-        {"cli-list-accounts", [=](istringstream &params)
+        {"list-accounts", [=](istringstream &params)
          {
              auto accounts = client->get_all_accounts();
 

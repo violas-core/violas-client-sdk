@@ -100,7 +100,11 @@ namespace meta42
 
         Task<std::vector<SharedTokenEvent>>
         query_shared_token_events_history(const Address &address, const TokenId &id);
+    
+    private:
+        void make_recursive_query_shared_token(Address addr, TokenId token_id);
     };
+
 }
 
 std::ostream &operator<<(std::ostream &os, const meta42::Token &token);

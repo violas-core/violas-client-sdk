@@ -2,6 +2,7 @@
 #include <string>
 #include <sqlite_orm.hpp>
 #include <violas_client2.hpp>
+#include <sqlite3.h>
 #include "meta42.hpp"
 
 using namespace std;
@@ -17,6 +18,7 @@ namespace meta42
     const string MINT_TOKEN_SCRIPT_FILE = SCRIPT_PATH + "meta42_mint_token.mv";
     const string SHARE_TOKEN_BY_ID_SCRIPT_FILE = SCRIPT_PATH + "meta42_share_token_by_id.mv";
     const string SHARE_TOKEN_BY_INDEX_SCRIPT_FILE = SCRIPT_PATH + "meta42_share_token_by_index.mv";
+    const string DB_NAME = "db.sqlite";
 
     Client::Client(violas::client2_ptr violas_client)
         : m_violas_client(violas_client)
@@ -161,7 +163,7 @@ namespace meta42
     }
 
     Task<std::vector<SharedTokenEvent>>
-    Client::query_shared_token_events_history(const Address &address, const TokenId &id)
+    Client::query_shared_token_events_history(const Address &address, const TokenId &token_id)
     {
         struct SharedTokenHistory
         {
@@ -195,6 +197,8 @@ namespace meta42
 
         storage.sync_schema();
 
+        auto count = storage.count<SharedTokenHistory>();
+
         try
         {
             auto account_state = co_await m_violas_client->await_get_account_state({ADMIN_ADDRESS});
@@ -205,10 +209,13 @@ namespace meta42
 
                 if (global_info)
                 {
-                    auto events = co_await m_violas_client->await_query_events<SharedTokenEvent>(global_info->shared_token_event, 0, 10);
+                    if (uint64_t event_count = global_info->shared_token_event.counter; count < event_count)
+                    {
+                        auto events = co_await m_violas_client->await_query_events<SharedTokenEvent>(global_info->shared_token_event, count, event_count);
 
-                    for (const auto &event : events)
-                        storage.insert(SharedTokenHistory(event));
+                        for (const auto &event : events)
+                            storage.insert(SharedTokenHistory(event));
+                    }
                 }
             }
         }
@@ -217,7 +224,42 @@ namespace meta42
             std::cerr << e.what() << '\n';
         }
 
+        make_recursive_query_shared_token(address, token_id);
+
         co_return {};
+    }
+
+    void Client::make_recursive_query_shared_token(Address addr, TokenId token_id)
+    {
+        int result = 0;
+        sqlite3 *db = nullptr;
+        sqlite3_stmt *stmt = nullptr;
+
+        result = sqlite3_open("db.sqlite", &db);
+
+        string_view sql = "SELECT * FROM shared_token_events";
+        const char *ptail = nullptr;
+        sqlite3_prepare_v3(db, sql.data(), sql.size(), 0, &stmt, &ptail);
+
+        auto show_history = [](void *para, int n_column, char **column_value, char **column_name) -> int
+        {
+            for (int i = 0; i < n_column; i++)
+            {
+                cout << column_name[i] << ":" << column_value[i] << ", ";
+            }
+            cout << endl;
+
+            return 0;
+        };
+
+        char *err_msg = nullptr;
+        sqlite3_exec(db, sql.data(), show_history, (void *)this, &err_msg);
+
+        if (err_msg)
+            sqlite3_free(err_msg);
+
+        if (db)
+            sqlite3_close(db);
     }
 }
 

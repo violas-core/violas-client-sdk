@@ -243,9 +243,11 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
 
              [=]() -> Task<void>
              {
+                 auto address = addr;
                  auto tokens = co_await meta42_client->await_get_tokens(addr);
 
                  cout << endl
+                      << bytes_to_hex(address) << "\n"
                       << color::CYAN
                       << setw(10) << std::left << "Index"
                       << setw(70) << std::left << "Token Id"
@@ -285,11 +287,11 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
         {"query-shared-token-history", [=](istringstream &params)
          {
              Address addr = get_from_stream<Address>(params, client);
-             
+
              meta42::TokenId token_id;
              params >> token_id;
 
-             meta42_client->query_shared_token_events_history(addr, token_id);
+             meta42_client->query_shared_token_events_history(move(addr), move(token_id));
          }
 
         },

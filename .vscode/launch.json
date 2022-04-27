@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/meta42/bin/meta42-cli",
             "args": [
                 "-u",
-                "http://localhost:38151",
+                "http://localhost:34829",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-c",

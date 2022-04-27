@@ -99,7 +99,7 @@ namespace meta42
         await_get_tokens(Address address);
 
         Task<std::vector<SharedTokenEvent>>
-        query_shared_token_events_history(const Address &address, const TokenId &id);
+        query_shared_token_events_history(Address && address, TokenId &&id);
     
     private:
         void make_recursive_query_shared_token(Address addr, TokenId token_id);

@@ -163,8 +163,11 @@ namespace meta42
     }
 
     Task<std::vector<SharedTokenEvent>>
-    Client::query_shared_token_events_history(const Address &address, const TokenId &token_id)
+    Client::query_shared_token_events_history(Address &&address, TokenId &&token_id)
     {
+        auto addr = move(address);
+        auto id = move(token_id);
+
         struct SharedTokenHistory
         {
             uint64_t sn; // sequence number for table
@@ -224,7 +227,7 @@ namespace meta42
             std::cerr << e.what() << '\n';
         }
 
-        make_recursive_query_shared_token(address, token_id);
+        make_recursive_query_shared_token(addr, id);
 
         co_return {};
     }
@@ -237,15 +240,40 @@ namespace meta42
 
         result = sqlite3_open("db.sqlite", &db);
 
-        string_view sql = "SELECT * FROM shared_token_events";
+        string_view sql = R"(WITH RECURSIVE
+                                history(sn, sender, receiver, token_id, message, block_version) AS (
+                                SELECT sth.* FROM shared_token_events as sth WHERE sth.receiver='%s' AND sth.token_id='%s'
+                                UNION ALL
+                                SELECT ste.* FROM history AS h INNER JOIN shared_token_events AS ste ON h.sender = ste.receiver AND h.token_id=ste.token_id
+                                )
+                            SELECT * FROM history h)";
+
         const char *ptail = nullptr;
-        sqlite3_prepare_v3(db, sql.data(), sql.size(), 0, &stmt, &ptail);
+        string sql_with_args = format(sql.data(), bytes_to_hex(addr).data(), bytes_to_hex(token_id).data()).data();
+        sqlite3_prepare_v3(db, sql_with_args.data(), sql.size(), 0, &stmt, &ptail);
 
         auto show_history = [](void *para, int n_column, char **column_value, char **column_name) -> int
         {
+            size_t left_width[] = {10, 36, 36, 68, 20, 10};
+
+            static bool initialized = false;
+            if (!initialized)
+            {
+                cout << endl;
+
+                for (int i = 0; i < n_column; i++)
+                {
+                    cout << std::left << setw(left_width[i]) << column_name[i];
+                }
+
+                cout << endl;
+
+                initialized = true;
+            }
+
             for (int i = 0; i < n_column; i++)
             {
-                cout << column_name[i] << ":" << column_value[i] << ", ";
+                cout << std::left << setw(left_width[i]) << column_value[i];
             }
             cout << endl;
 
@@ -253,7 +281,7 @@ namespace meta42
         };
 
         char *err_msg = nullptr;
-        sqlite3_exec(db, sql.data(), show_history, (void *)this, &err_msg);
+        sqlite3_exec(db, sql_with_args.data(), show_history, (void *)this, &err_msg);
 
         if (err_msg)
             sqlite3_free(err_msg);

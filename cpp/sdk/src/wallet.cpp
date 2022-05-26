@@ -344,7 +344,7 @@ namespace violas
     array<uint8_t, 32>
     Wallet::get_account_pub_key(size_t index)
     {
-        auto pubkey = ed25519::PrivateKey::generate().get_public_key().get_raw_key();
+        auto pubkey = m_private_keys.at(index).get_public_key().get_raw_key();
         
         return pubkey;
     }

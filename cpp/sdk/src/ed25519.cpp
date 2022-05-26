@@ -201,7 +201,7 @@ namespace crypto::ed25519
         auto raw_key = get_raw_key();
         ostringstream oss;
 
-        for_each(rbegin(raw_key), rend(raw_key), [&](uint8_t v)
+        for_each(begin(raw_key), end(raw_key), [&](uint8_t v)
                  { oss << hex << setw(2) << setfill('0') << (uint16_t)v; });
 
         return oss.str();

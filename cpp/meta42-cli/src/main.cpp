@@ -312,12 +312,15 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
              Wallet wallet = Wallet::generate_from_mnemonic(mnemonic);
              wallet.create_next_account();
 
-             cout << "Private key : " << wallet.get_account_priv_key(index).dump_hex() << endl;
+             cout << "Private key : " << wallet.get_account_priv_key(index).get_raw_key() << endl;
              cout << "Public Key  : " << wallet.get_account_pub_key(index) << endl;
 
              auto accounts = wallet.get_all_accounts();
-             cout << "Auth Key    : " <<accounts[0].auth_key << endl;
-             cout << "Address     : " <<accounts[0].address.value << endl;
+             cout << "Auth Key    : " << accounts[0].auth_key << endl;
+             cout << "Address     : " << accounts[0].address.value << endl;
+
+             auto priv = crypto::ed25519::PrivateKey::from_hex_string(wallet.get_account_priv_key(index).dump_hex());
+             cout << "pub : " << priv.get_public_key().dump_hex() << endl;
          }
 
         },

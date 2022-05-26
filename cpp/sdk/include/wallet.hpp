@@ -61,8 +61,8 @@ namespace violas
 
         std::vector<Account> get_all_accounts();
 
-        std::array<uint8_t, 16>
-        get_account_address(size_t index);
+        std::array<uint8_t, 32>
+        get_account_pub_key(size_t index);
 
         crypto::ed25519::PrivateKey
         get_account_priv_key(size_t index);

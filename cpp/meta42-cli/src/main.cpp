@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <violas_client2.hpp>
@@ -292,6 +293,31 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
              params >> token_id;
 
              meta42_client->query_shared_token_events_history(move(addr), move(token_id));
+         }
+
+        },
+        {"export-key", [=](istringstream &params)
+         {
+             // string mnemonic = "mnemonic/meta42.mne";
+             size_t index = 0;
+
+             // params >> mnemonic;
+
+             ifstream ifs("mnemonic/meta42.mne", ios::in);
+             string mnemonic(istreambuf_iterator<char>(ifs), {});
+             mnemonic.erase(mnemonic.length() - 2, 2);
+
+             params >> index;
+
+             Wallet wallet = Wallet::generate_from_mnemonic(mnemonic);
+             wallet.create_next_account();
+
+             cout << "Private key : " << wallet.get_account_priv_key(index).dump_hex() << endl;
+             cout << "Public Key  : " << wallet.get_account_pub_key(index) << endl;
+
+             auto accounts = wallet.get_all_accounts();
+             cout << "Auth Key    : " <<accounts[0].auth_key << endl;
+             cout << "Address     : " <<accounts[0].address.value << endl;
          }
 
         },

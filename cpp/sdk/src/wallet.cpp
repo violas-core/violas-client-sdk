@@ -341,15 +341,12 @@ namespace violas
         return make_tuple<>(keys_size, address);
     }
 
-    array<uint8_t, 16>
-    Wallet::get_account_address(size_t index)
+    array<uint8_t, 32>
+    Wallet::get_account_pub_key(size_t index)
     {
         auto pubkey = ed25519::PrivateKey::generate().get_public_key().get_raw_key();
-        array<uint8_t, 16> address;
-
-        copy(begin(pubkey), begin(pubkey) + 16, begin(address));
-
-        return address;
+        
+        return pubkey;
     }
 
     std::vector<Wallet::Account> Wallet::get_all_accounts()

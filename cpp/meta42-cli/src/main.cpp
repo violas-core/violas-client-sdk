@@ -18,8 +18,7 @@ int main(int argc, char *argv[])
 {
     cout << "meta42-cli is getting started ..." << endl;
 
-    std::set_unexpected([]()
-                        {
+    std::set_unexpected([]() { //
         try
         {
             std::rethrow_exception(std::current_exception());
@@ -27,7 +26,8 @@ int main(int argc, char *argv[])
         catch (const std::exception &e)
         {
             std::cerr << e.what() << endl;
-        } });
+        }
+    });
 
     try
     {

@@ -199,6 +199,14 @@ namespace json_rpc
             return awaitable{shared_from_this(), std::move(signed_txn)};
         }
 
+        //
+        //  Submit a signed transaction with awaitable
+        //
+        //  Usage : co_await await_submit(txn);
+        //
+        virtual Task<void>
+        await_submit2(dt::SignedTransaction &&signed_txn) = 0;
+
         virtual std::optional<TransactionView>
         get_account_transaction(const diem_types::AccountAddress &address,
                                 uint64_t sequence_number,

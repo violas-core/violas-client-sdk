@@ -7,6 +7,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Launch nft-cli",
+            "program": "${workspaceFolder}/build/nft-cli/bin/nft-cli",
+            "args": [
+                "-u",
+                "http://localhost:33619",
+                "-m",
+                "/tmp/diem/mint.key",
+                "-c",
+                "4",
+                "-n",
+                "mnemonic/nft.mne"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Launch meta42-cli",
             "program": "${workspaceFolder}/build/meta42/bin/meta42-cli",
             "args": [

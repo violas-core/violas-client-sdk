@@ -155,13 +155,13 @@ namespace violas
 
         virtual Task<std::tuple<dt::AccountAddress, uint64_t>>
         await_execute_script(size_t account_index,
-                                  std::string_view script_file_name,
-                                  std::vector<dt::TypeTag> &&type_tags,
-                                  std::vector<dt::TransactionArgument> &&args,
-                                  uint64_t max_gas_amount = 1'000'000,
-                                  uint64_t gas_unit_price = 0,
-                                  std::string_view gas_currency_code = "VLS",
-                                  uint64_t expiration_timestamp_secs = 100) = 0;        
+                             std::string_view script_file_name,
+                             std::vector<dt::TypeTag> &&type_tags,
+                             std::vector<dt::TransactionArgument> &&args,
+                             uint64_t max_gas_amount = 1'000'000,
+                             uint64_t gas_unit_price = 0,
+                             std::string_view gas_currency_code = "VLS",
+                             uint64_t expiration_timestamp_secs = 100) = 0;
 
         /**
          * @brief Sign a multi agent script bytes code and return a signed txn which contains sender authenticator and no secondary signature
@@ -211,16 +211,24 @@ namespace violas
 
         virtual Task<void>
         await_check_txn_vm_status(const dt::AccountAddress &address,
-                                   uint64_t sequence_number,
-                                   std::string_view error_info) = 0;        
+                                  uint64_t sequence_number,
+                                  std::string_view error_info) = 0;
 
         virtual void
         publish_module(size_t account_index,
                        std::vector<uint8_t> &&module_bytes_code) = 0;
 
+        virtual Task<void>
+        await_publish_module(size_t account_index,
+                             std::vector<uint8_t> &&module_bytes_code) = 0;
+
         virtual void
         publish_module(size_t account_index,
                        std::string_view module_file_name) = 0;
+
+        virtual Task<void>
+        await_publish_module(size_t account_index,
+                             std::string_view module_file_name) = 0;
 
         virtual std::optional<AccountState2>
         get_account_state(const dt::AccountAddress address) = 0;
@@ -288,8 +296,14 @@ namespace violas
         virtual void
         allow_custom_script(bool is_allowing) = 0;
 
+        virtual Task<void>
+        await_allow_custom_script(bool is_allowing) = 0;
+
         virtual void
         allow_publishing_module(bool is_allowing) = 0;
+
+        virtual Task<void>
+        await_allow_publishing_module(bool is_allowing) = 0;
 
         virtual uint64_t
         create_parent_vasp_account(const dt::AccountAddress &address,

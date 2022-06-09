@@ -1,5 +1,4 @@
-#ifndef CONSOLE
-#define CONSOLE
+#pragma once
 #include <string>
 #include <string_view>
 #include <memory>
@@ -22,5 +21,3 @@ struct Console
 };
 
 using console_ptr = std::shared_ptr<Console>;
-
-#endif

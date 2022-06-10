@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/nft-cli/bin/nft-cli",
             "args": [
                 "-u",
-                "http://localhost:33619",
+                "http://localhost:35845",
                 "-m",
                 "/tmp/diem/mint.key",
                 "-c",
@@ -19,7 +19,7 @@
                 "-n",
                 "mnemonic/nft.mne"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/build/nft-cli/"
         },
 
         {

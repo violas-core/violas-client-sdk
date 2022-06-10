@@ -44,14 +44,30 @@ struct Task
         {
             if (_exception)
                 std::rethrow_exception(_exception);
-            
-            return value;
-        }
-    };    
 
-    //
-    //  Calling co_await by chain
-    //
+            return std::move(value);
+        }
+
+        // auto await_transform(promise_type && p) noexcept
+        // {
+        //     struct awaiter : std::suspend_never
+        //     {
+        //         promise_type&& _p;
+        //         auto await_resume() const noexcept
+        //         {
+        //             return _p.result();
+        //         }
+        //     };
+
+        //     return awaiter{ p };
+        // }
+        // template <typename U>
+        // U &&await_transform(U &&awaitable) noexcept
+        // {
+        //     return static_cast<U &&>(awaitable);
+        // }
+    };
+
     auto operator co_await()
     {
         struct Awaitor
@@ -59,10 +75,10 @@ struct Task
             Task &task;
 
             bool await_ready() const noexcept { return false; }
-            
+
             T await_resume() const
             {
-                return task._handle.promise().result();                
+                return task._handle.promise().result();
             }
 
             // template <typename PROMISE>
@@ -86,32 +102,37 @@ struct Task<void>
     struct promise_type
     {
         std::coroutine_handle<> _prev = nullptr; // previous promise
-        std::exception_ptr _exception = nullptr;
+        bool _is_ready = false;
+        std::exception_ptr _exception;
+        std::string _txt;
 
         Task<void> get_return_object()
         {
-            return Task{co_handle::from_promise(*this)};
+            return Task{std::move(co_handle::from_promise(*this))};
         }
+
         std::suspend_never initial_suspend() { return {}; }
-        std::suspend_never final_suspend() noexcept
+
+        auto final_suspend() noexcept
         {
+            _is_ready = true;
+
             if (_prev)
                 _prev.resume();
 
-            return {};
-        }
-        
-        void return_void() {}
-        
-        void unhandled_exception()
-        {
-            _exception = std::current_exception();
+            return std::suspend_never();
         }
 
-        void result()
+        void return_void()
         {
             if (_exception)
                 std::rethrow_exception(_exception);
+        }
+
+        void unhandled_exception()
+        {
+            _exception = std::current_exception();
+            _txt = "hello";
         }
     };
 
@@ -122,20 +143,24 @@ struct Task<void>
     {
         struct Awaitor
         {
-            Task<void> &task;
+            co_handle &handle;
 
-            bool await_ready() const noexcept { return false; }
+            bool await_ready() const noexcept { return handle.promise()._is_ready; }
             void await_resume() const
             {
-                task._handle.promise().result();
+                handle.promise().return_void();
+                // std::move(task._handle.promise()).return_void();
             }
 
             void await_suspend(std::coroutine_handle<> h)
             {
-                task._handle.promise()._prev = h;
+                handle.promise()._prev = h;
             }
         };
 
-        return Awaitor{*this};
+        return Awaitor{_handle};
     }
+
+    // Task(const Task &) = delete;
+    // Task &operator=(const Task &) = delete;
 };

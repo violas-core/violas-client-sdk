@@ -178,10 +178,7 @@ map<string, handle> create_commands(client2_ptr client, string url)
          }},
         {"initialize", [=](istringstream &params)
          {
-             [=]() -> Task<void> { //
-                co_await nft_client->initialize();
-             }();
-             
+             nft_client->initialize();
          }},
         {"accept", [=](istringstream &params)
          {

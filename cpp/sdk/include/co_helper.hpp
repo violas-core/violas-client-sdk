@@ -1,6 +1,7 @@
 #pragma once
 
 #include <coroutine>
+#include <future>
 //
 //  Task class for C++ 20 coroutine
 //
@@ -9,15 +10,17 @@ struct Task
 {
     struct promise_type;
     using co_handle = std::coroutine_handle<promise_type>;
+
     co_handle _handle;
+    std::future<T> _future;
 
-    struct promise_type
+    T get() { return _future.get(); }
+
+    struct promise_type : std::promise<T>
     {
-        T value;
         std::coroutine_handle<> _prev = nullptr; // previous promise
-        std::exception_ptr _exception = nullptr;
 
-        Task get_return_object() { return Task{co_handle::from_promise(*this)}; }
+        Task get_return_object() { return Task{co_handle::from_promise(*this), this->get_future()}; }
 
         std::suspend_never initial_suspend() { return {}; }
 
@@ -31,21 +34,17 @@ struct Task
 
         void unhandled_exception()
         {
-            _exception = std::current_exception();
+            this->set_exception(std::current_exception());
         }
 
-        std::suspend_never return_value(T v)
+        void return_value(const T &v) noexcept(std::is_nothrow_copy_constructible_v<T>)
         {
-            value = v;
-            return {};
+            this->set_value(v);
         }
 
-        T result()
+        void return_value(T &&value) noexcept(std::is_nothrow_move_constructible_v<T>)
         {
-            if (_exception)
-                std::rethrow_exception(_exception);
-
-            return std::move(value);
+            this->set_value(std::move(value));
         }
 
         // auto await_transform(promise_type && p) noexcept
@@ -74,11 +73,15 @@ struct Task
         {
             Task &task;
 
-            bool await_ready() const noexcept { return false; }
+            bool await_ready() const noexcept
+            {
+                using namespace std::chrono_literals;
+                return task._future.wait_for(0s) == std::future_status::ready;
+            }
 
             T await_resume() const
             {
-                return task._handle.promise().result();
+                return task.get();
             }
 
             // template <typename PROMISE>
@@ -97,26 +100,23 @@ struct Task<void>
 {
     struct promise_type;
     using co_handle = std::coroutine_handle<promise_type>;
-    co_handle _handle;
 
-    struct promise_type
+    co_handle _handle;
+    std::future<void> _future;
+
+    struct promise_type : std::promise<void>
     {
         std::coroutine_handle<> _prev = nullptr; // previous promise
-        bool _is_ready = false;
-        std::exception_ptr _exception;
-        std::string _txt;
 
         Task<void> get_return_object()
         {
-            return Task{std::move(co_handle::from_promise(*this))};
+            return Task{co_handle::from_promise(*this), get_future()}; // initialize co_handle, future
         }
 
         std::suspend_never initial_suspend() { return {}; }
 
         auto final_suspend() noexcept
         {
-            _is_ready = true;
-
             if (_prev)
                 _prev.resume();
 
@@ -125,14 +125,12 @@ struct Task<void>
 
         void return_void()
         {
-            if (_exception)
-                std::rethrow_exception(_exception);
+            this->set_value();
         }
 
         void unhandled_exception()
         {
-            _exception = std::current_exception();
-            _txt = "hello";
+            this->set_exception(std::current_exception());
         }
     };
 
@@ -143,22 +141,31 @@ struct Task<void>
     {
         struct Awaitor
         {
-            co_handle &handle;
+            Task &task;
 
-            bool await_ready() const noexcept { return handle.promise()._is_ready; }
+            bool await_ready() const noexcept
+            {
+                using namespace std::chrono_literals;
+                return task._future.wait_for(0s) == std::future_status::ready;
+            }
+
             void await_resume() const
             {
-                handle.promise().return_void();
-                // std::move(task._handle.promise()).return_void();
+                task._future.get();
             }
 
             void await_suspend(std::coroutine_handle<> h)
             {
-                handle.promise()._prev = h;
+                task._handle.promise()._prev = h;
             }
         };
 
-        return Awaitor{_handle};
+        return Awaitor{*this};
+    }
+
+    void get()
+    {
+        _future.get();
     }
 
     // Task(const Task &) = delete;

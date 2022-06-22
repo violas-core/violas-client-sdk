@@ -77,7 +77,8 @@
         "*.ipp": "cpp",
         "csignal": "cpp",
         "semaphore": "cpp",
-        "coroutine": "cpp"
+        "coroutine": "cpp",
+        "future": "cpp"
     },
     "git.ignoreLimitWarning": true,
     "cmake.configureOnOpen": false,

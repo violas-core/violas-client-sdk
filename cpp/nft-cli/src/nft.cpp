@@ -9,7 +9,7 @@ using namespace violas;
 namespace nft
 {
     const Address ADMIN_ADDRESS = hex_to_array_u8<16>("458d623300e797451b3e794a45b41065");
-    const string MODULE_FILE_NAME = "move/modules/00_NonFungibleToken2.mv";
+    const string MODULE_FILE_NAME = "move/modules/02_NonFungibleToken.mv";
     const string SCRIPT_PATH = "move/scripts/";
     const string INITIALIZE_SCRIPT_FILE = SCRIPT_PATH + "meta42_initialize.mv";
     const string ACCEPT_SCRIPT_FILE = SCRIPT_PATH + "meta42_accept.mv";
@@ -36,6 +36,7 @@ namespace nft
             co_await m_violas_client->await_allow_publishing_module(true);
 
             co_await m_violas_client->await_publish_module(ACCOUNT_ROOT_ID, "move/modules/Compare.mv");
+            co_await m_violas_client->await_publish_module(ACCOUNT_ROOT_ID, "move/modules/0_Map.mv");
             co_await m_violas_client->await_publish_module(ACCOUNT_ROOT_ID, MODULE_FILE_NAME);
             cout << "Succeeded to publish module " << std::quoted(MODULE_FILE_NAME) << "." << endl;
         }

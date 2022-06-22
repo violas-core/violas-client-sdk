@@ -842,7 +842,7 @@ namespace violas
             ifstream ifs(module_file_name.data(), ios::binary);
 
             if (!ifs.is_open())
-                throw runtime_error(format("failed to open file %s at submit_script_file", module_file_name.data()).c_str());
+                throw runtime_error(fmt("failed to open file ", module_file_name, "at fun publish_module"));
 
             this->publish_module(account_index, bytes(istreambuf_iterator<char>(ifs), {}));
         }
@@ -854,10 +854,9 @@ namespace violas
             ifstream ifs(module_file_name.data(), ios::binary);
 
             if (!ifs.is_open())
-                //throw runtime_error(format("failed to open file %s at submit_script_file", module_file_name).c_str());
-                throw runtime_error("module file cannot be open");
+                throw runtime_error(fmt("await_publish_module : failed to open file ", module_file_name));
 
-            co_await await_publish_module(account_index, bytes(istreambuf_iterator<char>(ifs), {}));            
+            co_await await_publish_module(account_index, bytes(istreambuf_iterator<char>(ifs), {}));
         }
 
         virtual std::optional<AccountState2>

@@ -167,7 +167,4 @@ struct Task<void>
     {
         _future.get();
     }
-
-    // Task(const Task &) = delete;
-    // Task &operator=(const Task &) = delete;
 };

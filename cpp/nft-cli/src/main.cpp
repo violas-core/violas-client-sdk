@@ -178,7 +178,18 @@ map<string, handle> create_commands(client2_ptr client, string url)
          }},
         {"initialize", [=](istringstream &params)
          {
-             nft_client->initialize();
+             nft_client->initialize().get();
+             //  [=]() -> Task<void>
+             //  {
+             //      try
+             //      {
+             //          co_await nft_client->initialize();
+             //      }
+             //      catch (const std::exception &e)
+             //      {
+             //          std::cerr << e.what() << '\n';
+             //      }
+             //  }();
          }},
         {"accept", [=](istringstream &params)
          {

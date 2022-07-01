@@ -293,7 +293,7 @@ module NonFungibleToken2 {
     ///
     /// Mint a NFT to a receiver
     /// 
-    public fun mint<Token: store>(sig: &signer, receiver: address, token: Token) : bool
+    public fun mint<Token: store>(sig: &signer, receiver: address, token: Token) : vector<u8>
     acquires NFT, Configuration  {
 
         let sender = Signer::address_of(sig);
@@ -314,7 +314,7 @@ module NonFungibleToken2 {
         assert( ret, Errors::invalid_argument(ENFT_TOKEN_HAS_ALREADY_EXISTED) );  
         
         // Emit a minted event
-        Event::emit_event(&mut info.minted_events, MintedEvent{ token_id, receiver });
+        Event::emit_event(&mut info.minted_events, MintedEvent{ token_id: copy token_id, receiver });
         
         //  Increment NFT amount
         increase_nft_amount<Token>();
@@ -325,7 +325,7 @@ module NonFungibleToken2 {
                 
         Vector::push_back<Token>(&mut receiver_token_ref_mut.tokens, token);        
         
-        true
+        token_id
     }
     
     //

@@ -842,7 +842,7 @@ namespace violas
             ifstream ifs(module_file_name.data(), ios::binary);
 
             if (!ifs.is_open())
-                throw runtime_error(fmt("failed to open file ", module_file_name, "at fun publish_module"));
+                throw runtime_error(fmt("failed to open file ", module_file_name, " at function publish_module"));
 
             this->publish_module(account_index, bytes(istreambuf_iterator<char>(ifs), {}));
         }

@@ -289,6 +289,8 @@ map<string, handle> create_std_commands(client2_ptr client, string url)
          {
              Address addr = get_from_stream<Address>(params, client);
 
+             check_istream_eof(params, "account_index(or account_address)  token_id");
+
              meta42::TokenId token_id;
              params >> token_id;
 

@@ -147,7 +147,7 @@ namespace json_rpc
                 }
             };
 
-            co_await awaitable{m_http_cli, move(signed_txn), move(method)};
+            co_await awaitable{m_http_cli, std::move(signed_txn), std::move(method)};
         }
 
         virtual std::optional<TransactionView>

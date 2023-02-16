@@ -168,7 +168,7 @@ namespace violas
         ret = EVP_PKEY_CTX_set_hkdf_md(ctx.get(), EVP_sha3_256());
         check_ret(ret, "EVP_PKEY_CTX_set_hkdf_md");
 
-        ret = EVP_PKEY_CTX_set1_hkdf_salt(ctx.get(), MAIN_KEY_SALT.data(), MAIN_KEY_SALT.length());
+        ret = EVP_PKEY_CTX_set1_hkdf_salt(ctx.get(), (uint8_t*)MAIN_KEY_SALT.data(), MAIN_KEY_SALT.length());
         check_ret(ret, "EVP_PKEY_CTX_set1_hkdf_salt");
 
         ret = EVP_PKEY_CTX_set1_hkdf_key(ctx.get(), m_seed.data(), m_seed.size());

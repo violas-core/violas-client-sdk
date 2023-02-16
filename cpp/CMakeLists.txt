@@ -18,19 +18,19 @@ add_subdirectory(framework)
 add_subdirectory(sdk)
 
 # executable nft
-add_subdirectory(nft)
+# add_subdirectory(nft)
 
-add_subdirectory(nft-store)
+# add_subdirectory(nft-store)
 
 # add_subdirectory(nft-store-2)
 
 # executable cmd
-add_subdirectory(command)
+# add_subdirectory(command)
 
-add_subdirectory(testnet)
+# add_subdirectory(testnet)
 
 # executable vls
-add_subdirectory(vls)
+# add_subdirectory(vls)
 
 install(DIRECTORY ../move DESTINATION . FILES_MATCHING PATTERN "*.mv")
 

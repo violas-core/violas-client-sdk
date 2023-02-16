@@ -2,9 +2,11 @@
 
 #include <iostream>
 #include <sstream>
+#include <memory>
 #include <iterator>
 #include <string>
 #include <array>
+#include <vector>
 #include <algorithm>
 #include <iomanip>
 #include <termios.h>

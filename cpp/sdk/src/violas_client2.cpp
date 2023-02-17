@@ -25,11 +25,11 @@ namespace violas
         // Deserialize to vector
         vector<uint8_t> data;
         {
-            BcsSerde serde(move(bytes));
+            BcsSerde serde(std::move(bytes));
             serde &&data;
         }
 
-        BcsSerde serde(move(data));
+        BcsSerde serde(std::move(data));
 
         serde &&_resources;
     }
@@ -257,7 +257,7 @@ namespace violas
                            uint64_t expiration_timestamp_secs = 100)
         {
             auto signed_txn = make_signed_txn(account_index,
-                                              move(txn_paylod),
+                                              std::move(txn_paylod),
                                               max_gas_amount,
                                               gas_unit_price,
                                               gas_currency_code,
@@ -282,7 +282,7 @@ namespace violas
                                  uint64_t expiration_timestamp_secs = 100)
         {
             auto signed_txn = make_signed_txn(account_index,
-                                              move(txn_paylod),
+                                              std::move(txn_paylod),
                                               max_gas_amount,
                                               gas_unit_price,
                                               gas_currency_code,
@@ -290,7 +290,7 @@ namespace violas
 
             auto result = make_tuple(signed_txn.raw_txn.sender, signed_txn.raw_txn.sequence_number);
 
-            co_await m_rpc_cli->await_submit2(move(signed_txn));
+            co_await m_rpc_cli->await_submit2(std::move(signed_txn));
 
             auto iter = m_accounts.find(account_index);
             if (iter != end(m_accounts))
@@ -537,7 +537,7 @@ namespace violas
                 args,
             };
 
-            return this->submit_script(account_index, move(script), max_gas_amount, gas_unit_price, gas_currency_code, expiration_timestamp_secs);
+            return this->submit_script(account_index, std::move(script), max_gas_amount, gas_unit_price, gas_currency_code, expiration_timestamp_secs);
         }
 
         virtual Task<std::tuple<dt::AccountAddress, uint64_t>>
@@ -608,7 +608,7 @@ namespace violas
             };
 
             auto ret = co_await await_submit_script(account_index,
-                                                    move(script),
+                                                    std::move(script),
                                                     max_gas_amount,
                                                     gas_unit_price,
                                                     gas_currency_code,
@@ -1038,10 +1038,10 @@ namespace violas
                     copy(begin(currency_code), end(currency_code), iter);
                 }
 
-                module_bytes_code = move(bytes(begin(currency_module), end(currency_module)));
+                module_bytes_code = std::move(bytes(begin(currency_module), end(currency_module)));
             }
 
-            this->publish_module(ACCOUNT_ROOT_ID, move(module_bytes_code));
+            this->publish_module(ACCOUNT_ROOT_ID, std::move(module_bytes_code));
         }
 
         /**
@@ -1075,12 +1075,12 @@ namespace violas
 
             auto signed_txn = this->sign_multi_agent_script(
                 ACCOUNT_ROOT_ID,
-                move(script),
+                std::move(script),
                 {TC_ADDRESS});
 
             auto [sender, sn] = this->sign_and_submit_multi_agent_signed_txn(
                 ACCOUNT_TC_ID,
-                move(signed_txn));
+                std::move(signed_txn));
 
             check_txn_vm_status(sender, sn, "regiester_stable_currency");
         }
@@ -1104,7 +1104,7 @@ namespace violas
 
             make_txn_args(__uint128_t(0));
 
-            auto [sender, sn] = this->submit_script(ACCOUNT_TC_ID, move(script));
+            auto [sender, sn] = this->submit_script(ACCOUNT_TC_ID, std::move(script));
             check_txn_vm_status(sender, sn, "tc_add_currency_for_designated_dealer");
         }
 
@@ -1129,7 +1129,7 @@ namespace violas
                 amount,
                 tier_index);
 
-            auto [sender, sn] = this->submit_script(ACCOUNT_TC_ID, move(script));
+            auto [sender, sn] = this->submit_script(ACCOUNT_TC_ID, std::move(script));
             check_txn_vm_status(sender, sn, "mint");
         }
     };

@@ -299,7 +299,7 @@ map<string, handle> create_store_commands(client2_ptr client, string url)
 
              size_t account_index = 0;
              violas::nft::TokenId nft_token_id = {0};
-             uint64_t price = 0;
+             double price = 0;
              string currency;
 
              args >> account_index >> nft_token_id >> price >> currency;

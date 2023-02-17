@@ -454,11 +454,11 @@ namespace violas
         // Deserialize to vector
         vector<uint8_t> data;
         {
-            BcsSerde serde(move(bytes));
+            BcsSerde serde(std::move(bytes));
             serde &&data;
         }
 
-        BcsSerde serde(move(data));
+        BcsSerde serde(std::move(data));
 
         serde &&_resources;
     }
